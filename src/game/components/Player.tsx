@@ -80,7 +80,7 @@ export function Player({
   const currentSpeedRef = useRef(0); // actual interpolated speed for acceleration feel
   const survivalAccumRef = useRef(0);
   const lootCheckRef = useRef(0);
-  const horseCheckRef = useRef(0);
+  
   const landingImpactRef = useRef(0);
   const wasInAirRef = useRef(false);
   const targetRotRef = useRef(0);
