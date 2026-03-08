@@ -9,6 +9,7 @@ import {
 import { getMovementInput } from '../systems/InputSystem';
 import { ResourceInventory, LootPickup } from '../types';
 import { PlacedStructure } from '../systems/BuildingData';
+import { HorseData, MOUNT_RANGE } from '../systems/HorseData';
 
 interface Props {
   resources: WorldResource[];
@@ -20,6 +21,8 @@ interface Props {
   structures: PlacedStructure[];
   inventory: ResourceInventory;
   onEatFood: () => void;
+  horses: HorseData[];
+  isMounted: boolean;
 }
 
 const trunkGeo = new THREE.CylinderGeometry(0.15, 0.25, 1, 5);
@@ -44,7 +47,7 @@ const crateBandMat = new THREE.MeshLambertMaterial({ color: '#4a3a20' });
 export function WorldObjects({
   resources, playerPositionRef, onSetInteraction,
   onAddResource, onDepleteResource, onHitResource,
-  structures, inventory, onEatFood,
+  structures, inventory, onEatFood, horses, isMounted,
 }: Props) {
   const cooldownRef = useRef(0);
   const lastInteractIdRef = useRef<string | null>(null);
