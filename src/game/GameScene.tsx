@@ -12,7 +12,7 @@ import { Enemies } from './components/Enemies';
 import { AmbientEffects } from './components/AmbientEffects';
 import { BuildingSystem } from './components/BuildingSystem';
 import { LootPickups } from './components/LootPickups';
-import { Horses } from './components/Horses';
+import { Horse } from './components/Horses';
 import { CameraController } from './systems/CameraController';
 import { InputFlusher } from './systems/InputFlusher';
 import { BuildModeController } from './systems/BuildModeController';
@@ -33,7 +33,7 @@ export function GameScene() {
     progression, recordEnemyKill, secureArea,
     lootPickups, addLootPickups, collectLoot,
     notification, getAvailableBuildables,
-    horses, mountedHorseId, mountHorse, dismountHorse, updateHorsePosition,
+    horse, isMounted, mountHorse, dismountHorse, callHorse, updateHorse,
   } = useGameState();
 
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
@@ -59,18 +59,21 @@ export function GameScene() {
     return () => cancelAnimationFrame(raf);
   }, [applyPlayerDamage]);
 
-  // Update horse position when mounted
+  // Sync horse position when mounted
   useEffect(() => {
-    if (!mountedHorseId) return;
+    if (!isMounted) return;
     let raf: number;
     const sync = () => {
       const pos = playerPositionRef.current;
-      updateHorsePosition(mountedHorseId, [pos.x, pos.y - 2.2, pos.z], playerRotationRef.current);
+      updateHorse({
+        position: [pos.x, pos.y - 2.2, pos.z],
+        rotation: playerRotationRef.current,
+      });
       raf = requestAnimationFrame(sync);
     };
     raf = requestAnimationFrame(sync);
     return () => cancelAnimationFrame(raf);
-  }, [mountedHorseId, updateHorsePosition]);
+  }, [isMounted, updateHorse]);
 
   // Check if areas are secured
   useEffect(() => {
@@ -127,7 +130,8 @@ export function GameScene() {
     setEnemies(updated);
   }, []);
 
-  const isMounted = mountedHorseId !== null;
+  // Wrap horse as single-element array for collision system compatibility
+  const horsesArray = [horse];
 
   return (
     <div className="w-screen h-screen bg-background overflow-hidden cursor-crosshair">
@@ -174,10 +178,11 @@ export function GameScene() {
           lootPickups={lootPickups}
           onCollectLoot={collectLoot}
           onEatFood={eatFood}
-          horses={horses}
+          horse={horse}
+          isMounted={isMounted}
           onMountHorse={mountHorse}
           onDismountHorse={dismountHorse}
-          mountedHorseId={mountedHorseId}
+          onCallHorse={callHorse}
           onSetInteractionText={setInteractionText}
           resources={resources}
         />
@@ -191,11 +196,11 @@ export function GameScene() {
           structures={structures}
           inventory={inventory}
           onEatFood={eatFood}
-          horses={horses}
+          horse={horse}
           isMounted={isMounted}
         />
         <LootPickups pickups={lootPickups} />
-        <Horses horses={horses} playerPositionRef={playerPositionRef} />
+        <Horse horse={horse} playerPositionRef={playerPositionRef} onUpdateHorse={updateHorse} />
         <Enemies
           enemies={enemies}
           playerPositionRef={playerPositionRef}
