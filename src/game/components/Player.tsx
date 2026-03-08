@@ -45,6 +45,15 @@ const _up = new THREE.Vector3(0, 1, 0);
 const _forward = new THREE.Vector3();
 const _toEnemy = new THREE.Vector3();
 
+// Movement feel constants
+const ACCEL_GROUND = 35;
+const ACCEL_GROUND_RUN = 40;
+const DECEL_GROUND = 18;
+const ACCEL_MOUNTED = 20;
+const DECEL_MOUNTED = 10;
+const TURN_SPEED_FOOT = 12;
+const TURN_SPEED_MOUNTED = 6;
+
 export function Player({
   onSurvivalUpdate, survival, playerPositionRef, playerRotationRef,
   cameraAzimuthRef, enemies, onEnemyHit, onRespawn, buildMode,
@@ -58,10 +67,19 @@ export function Player({
   const animTimeRef = useRef(0);
   const attackCooldownRef = useRef(0);
   const attackAnimRef = useRef(0);
+  const comboRef = useRef(0); // 0 = no combo, 1 = first swing done, can chain
+  const comboWindowRef = useRef(0);
   const moveSpeedRef = useRef(0);
+  const currentSpeedRef = useRef(0); // actual interpolated speed for acceleration feel
   const survivalAccumRef = useRef(0);
   const lootCheckRef = useRef(0);
   const horseCheckRef = useRef(0);
+  const landingImpactRef = useRef(0);
+  const wasInAirRef = useRef(false);
+  const targetRotRef = useRef(0);
+  const leanRef = useRef(0); // lateral lean
+  const hipSwayRef = useRef(0);
+  const idleShiftRef = useRef(0);
   const isDead = survival.health <= 0;
   const isMounted = mountedHorseId !== null;
 
@@ -97,31 +115,29 @@ export function Player({
 
     attackCooldownRef.current = Math.max(0, attackCooldownRef.current - dt);
     attackAnimRef.current = Math.max(0, attackAnimRef.current - dt);
+    comboWindowRef.current = Math.max(0, comboWindowRef.current - dt);
+    landingImpactRef.current = Math.max(0, landingImpactRef.current - dt * 4);
+    idleShiftRef.current += dt;
+
+    if (comboWindowRef.current <= 0) comboRef.current = 0;
 
     const input = getMovementInput();
     const azimuth = cameraAzimuthRef.current;
 
-    // Eat food with F key (only when not near a horse to mount)
-    if (input.eat && !isMounted) {
-      onEatFood();
-    }
+    if (input.eat && !isMounted) onEatFood();
 
-    // Mount/dismount logic
+    // Mount/dismount
     horseCheckRef.current += dt;
     if (horseCheckRef.current > 0.15) {
       horseCheckRef.current = 0;
-
       if (isMounted) {
-        // Show dismount prompt
         if (input.interact) {
           onDismountHorse();
-          // Move player to side of horse
           const angle = bodyRef.current.rotation.y;
           pos.x += Math.cos(angle) * DISMOUNT_OFFSET;
           pos.z -= Math.sin(angle) * DISMOUNT_OFFSET;
         }
       } else {
-        // Check for nearby horses
         let nearHorse: HorseData | null = null;
         let nearHorseDist = MOUNT_RANGE;
         for (const h of horses) {
@@ -129,16 +145,12 @@ export function Player({
           const dx = pos.x - h.position[0];
           const dz = pos.z - h.position[2];
           const d = Math.sqrt(dx * dx + dz * dz);
-          if (d < nearHorseDist) {
-            nearHorseDist = d;
-            nearHorse = h;
-          }
+          if (d < nearHorseDist) { nearHorseDist = d; nearHorse = h; }
         }
         if (nearHorse) {
           onSetInteractionText('🐴 Press E — Mount Horse');
           if (input.interact) {
             onMountHorse(nearHorse.id);
-            // Snap player to horse position
             pos.x = nearHorse.position[0];
             pos.z = nearHorse.position[2];
             pos.y = nearHorse.position[1] + 1.8;
@@ -147,7 +159,7 @@ export function Player({
       }
     }
 
-    // Movement
+    // === MOVEMENT WITH ACCELERATION ===
     _camForward.set(-Math.sin(azimuth), 0, -Math.cos(azimuth));
     _camRight.crossVectors(_up, _camForward).negate();
 
@@ -158,47 +170,94 @@ export function Player({
     if (input.d) _moveDir.sub(_camRight);
 
     const canRun = input.run && survival.stamina > 0;
-
-    // Speed depends on mounted state
     let baseSpeed: number, runSpeed: number;
-    if (isMounted) {
-      baseSpeed = HORSE_SPEED;
-      runSpeed = HORSE_RUN_SPEED;
-    } else {
-      baseSpeed = PLAYER_SPEED;
-      runSpeed = PLAYER_RUN_SPEED;
-    }
-    const speed = canRun ? runSpeed : baseSpeed;
+    if (isMounted) { baseSpeed = HORSE_SPEED; runSpeed = HORSE_RUN_SPEED; }
+    else { baseSpeed = PLAYER_SPEED; runSpeed = PLAYER_RUN_SPEED; }
+    const targetSpeed = canRun ? runSpeed : baseSpeed;
     const isMoving = _moveDir.lengthSq() > 0.001;
+
+    const accel = isMounted ? ACCEL_MOUNTED : (canRun ? ACCEL_GROUND_RUN : ACCEL_GROUND);
+    const decel = isMounted ? DECEL_MOUNTED : DECEL_GROUND;
+    const turnSpeed = isMounted ? TURN_SPEED_MOUNTED : TURN_SPEED_FOOT;
 
     if (isMoving) {
       _moveDir.normalize();
-      vel.x = _moveDir.x * speed;
-      vel.z = _moveDir.z * speed;
+      // Accelerate toward target speed
+      currentSpeedRef.current = THREE.MathUtils.lerp(
+        currentSpeedRef.current, targetSpeed, 1 - Math.exp(-accel * dt / targetSpeed)
+      );
+      const spd = currentSpeedRef.current;
+      vel.x = _moveDir.x * spd;
+      vel.z = _moveDir.z * spd;
+
+      // Smooth turning
       const angle = Math.atan2(_moveDir.x, _moveDir.z);
-      bodyRef.current.rotation.y = THREE.MathUtils.lerp(bodyRef.current.rotation.y, angle, dt * 10);
+      targetRotRef.current = angle;
+      let rotDiff = angle - bodyRef.current.rotation.y;
+      // Wrap angle
+      while (rotDiff > Math.PI) rotDiff -= Math.PI * 2;
+      while (rotDiff < -Math.PI) rotDiff += Math.PI * 2;
+      bodyRef.current.rotation.y += rotDiff * Math.min(1, turnSpeed * dt);
       playerRotationRef.current = bodyRef.current.rotation.y;
-      const animSpeed = isMounted ? (canRun ? 18 : 12) : (canRun ? 14 : 9);
+
+      // Lateral lean from turning
+      leanRef.current = THREE.MathUtils.lerp(leanRef.current, -rotDiff * 0.4, dt * 6);
+
+      const animSpeed = isMounted ? (canRun ? 20 : 13) : (canRun ? 16 : 10);
       animTimeRef.current += dt * animSpeed;
-      moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, canRun ? 1 : 0.6, dt * 8);
+      moveSpeedRef.current = THREE.MathUtils.lerp(
+        moveSpeedRef.current, canRun ? 1 : 0.55, dt * 6
+      );
     } else {
-      vel.x *= 0.8;
-      vel.z *= 0.8;
-      moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, 0, dt * 6);
+      // Decelerate
+      const curSpeed = Math.sqrt(vel.x * vel.x + vel.z * vel.z);
+      if (curSpeed > 0.1) {
+        const newSpeed = Math.max(0, curSpeed - decel * dt);
+        const ratio = newSpeed / curSpeed;
+        vel.x *= ratio;
+        vel.z *= ratio;
+        currentSpeedRef.current = newSpeed;
+      } else {
+        vel.x = 0;
+        vel.z = 0;
+        currentSpeedRef.current = 0;
+      }
+      moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, 0, dt * 5);
+      leanRef.current = THREE.MathUtils.lerp(leanRef.current, 0, dt * 4);
     }
 
-    // Jump (not while mounted)
+    // Hip sway (subtle lateral weight shift while walking)
+    hipSwayRef.current = THREE.MathUtils.lerp(
+      hipSwayRef.current,
+      isMoving ? Math.sin(animTimeRef.current * 0.5) * 0.03 * moveSpeedRef.current : 0,
+      dt * 8
+    );
+
+    // Jump
     if (!isMounted && input.jump && isGroundedRef.current) {
       vel.y = PLAYER_JUMP_FORCE;
       isGroundedRef.current = false;
+      wasInAirRef.current = true;
     }
 
-    // Attack (not while mounted, not in build mode)
+    // === COMBO ATTACK SYSTEM ===
     if (!isMounted && !buildMode && input.attack && attackCooldownRef.current <= 0) {
-      attackCooldownRef.current = PLAYER_ATTACK_COOLDOWN;
-      attackAnimRef.current = 0.35;
+      const isCombo = comboRef.current === 1 && comboWindowRef.current > 0;
+      const atkDuration = isCombo ? 0.3 : 0.4;
+      const atkDamage = isCombo ? PLAYER_ATTACK_DAMAGE * 1.3 : PLAYER_ATTACK_DAMAGE;
 
+      attackCooldownRef.current = isCombo ? PLAYER_ATTACK_COOLDOWN * 0.8 : PLAYER_ATTACK_COOLDOWN;
+      attackAnimRef.current = atkDuration;
+      comboRef.current = isCombo ? 0 : 1;
+      comboWindowRef.current = isCombo ? 0 : 0.6;
+
+      // Lunge forward slightly
       const playerAngle = bodyRef.current.rotation.y;
+      if (!isMoving) {
+        vel.x += Math.sin(playerAngle) * 3;
+        vel.z += Math.cos(playerAngle) * 3;
+      }
+
       _forward.set(Math.sin(playerAngle), 0, Math.cos(playerAngle));
       const cosArc = Math.cos(PLAYER_ATTACK_ARC);
 
@@ -212,15 +271,16 @@ export function Player({
         const dist = Math.sqrt(distSq);
         _toEnemy.set(dx / dist, 0, dz / dist);
         if (_forward.dot(_toEnemy) > cosArc) {
-          onEnemyHit(enemy.id, PLAYER_ATTACK_DAMAGE);
+          onEnemyHit(enemy.id, atkDamage);
         }
       }
     }
 
+    // Gravity & position
     if (!isMounted) {
       vel.y -= GRAVITY * dt;
     } else {
-      vel.y = 0; // No vertical velocity while mounted
+      vel.y = 0;
     }
     pos.x += vel.x * dt;
     pos.z += vel.z * dt;
@@ -228,12 +288,23 @@ export function Player({
 
     const heightOffset = isMounted ? 1.8 : PLAYER_HEIGHT / 2;
     const terrainY = getTerrainHeight(pos.x, pos.z) + heightOffset;
-    if (pos.y <= terrainY) { pos.y = terrainY; vel.y = 0; isGroundedRef.current = true; }
+    if (pos.y <= terrainY) {
+      // Landing impact
+      if (wasInAirRef.current && vel.y < -3) {
+        landingImpactRef.current = Math.min(1, Math.abs(vel.y) / 15);
+      }
+      pos.y = terrainY;
+      vel.y = 0;
+      isGroundedRef.current = true;
+      wasInAirRef.current = false;
+    } else {
+      wasInAirRef.current = true;
+    }
     pos.x = THREE.MathUtils.clamp(pos.x, -230, 230);
     pos.z = THREE.MathUtils.clamp(pos.z, -230, 230);
     playerPositionRef.current.copy(pos);
 
-    // Auto-collect nearby loot pickups (not while mounted for balance)
+    // Loot collection
     if (!isMounted) {
       lootCheckRef.current += dt;
       if (lootCheckRef.current > 0.2) {
@@ -242,9 +313,7 @@ export function Player({
           if (loot.collected) continue;
           const dx = pos.x - loot.position[0];
           const dz = pos.z - loot.position[2];
-          if (dx * dx + dz * dz < 4) {
-            onCollectLoot(loot.id);
-          }
+          if (dx * dx + dz * dz < 4) onCollectLoot(loot.id);
         }
       }
     }
@@ -255,9 +324,7 @@ export function Player({
       const elapsed = survivalAccumRef.current;
       survivalAccumRef.current = 0;
 
-      let nearCampfire = false;
-      let nearShelter = false;
-      let nearBedroll = false;
+      let nearCampfire = false, nearShelter = false, nearBedroll = false;
       for (const s of structures) {
         const sdx = pos.x - s.position[0];
         const sdz = pos.z - s.position[2];
@@ -271,9 +338,7 @@ export function Player({
       for (const poi of Object.values(POIS)) {
         const pdx = pos.x - poi.x;
         const pdz = pos.z - poi.z;
-        if (pdx * pdx + pdz * pdz < POI_ZONE_RADIUS * POI_ZONE_RADIUS) {
-          zoneTempMod += poi.tempMod;
-        }
+        if (pdx * pdx + pdz * pdz < POI_ZONE_RADIUS * POI_ZONE_RADIUS) zoneTempMod += poi.tempMod;
       }
 
       let tempChange = -TEMPERATURE_DRAIN * elapsed + zoneTempMod * elapsed;
@@ -281,12 +346,10 @@ export function Player({
 
       let hungerDrain = HUNGER_DRAIN * elapsed;
       if (nearShelter) hungerDrain *= SHELTER_HUNGER_REDUCTION;
-      // Mounted travel is less tiring
       if (isMounted) hungerDrain *= 0.7;
 
       let staminaChange: number;
       if (canRun && isMoving) {
-        // Mounted running costs less stamina
         staminaChange = -(isMounted ? STAMINA_DRAIN * 0.4 : STAMINA_DRAIN) * elapsed;
       } else {
         let regenRate = STAMINA_REGEN;
@@ -311,24 +374,96 @@ export function Player({
     }
   });
 
-  // Animation values
+  // === RICH PROCEDURAL ANIMATION ===
   const t = animTimeRef.current;
   const ms = moveSpeedRef.current;
   const attackT = attackAnimRef.current;
   const attacking = attackT > 0;
+  const inAir = wasInAirRef.current;
+  const landImpact = landingImpactRef.current;
+  const lean = leanRef.current;
+  const hipSway = hipSwayRef.current;
+  const isComboSwing = comboRef.current === 0 && attacking; // second swing
 
-  const legSwing = Math.sin(t) * 0.6 * ms;
-  const armSwing = Math.sin(t) * 0.5 * ms;
-  const bodyBob = Math.abs(Math.sin(t * 2)) * 0.06 * ms;
-  const bodyTilt = Math.sin(t) * 0.03 * ms;
-  const atkPhase = attacking ? (1 - attackT / 0.35) : 0;
-  const atkSwing = attacking ? (atkPhase < 0.3 ? -0.5 * (atkPhase / 0.3) : -0.5 + (atkPhase - 0.3) * 3.5) : 0;
-  const atkBodyTwist = attacking ? Math.sin(atkPhase * Math.PI) * 0.15 : 0;
-  const idleBob = ms < 0.1 ? Math.sin(Date.now() * 0.002) * 0.015 : 0;
+  // Locomotion
+  const legSwing = Math.sin(t) * 0.7 * ms;
+  const legSwingBack = Math.sin(t + Math.PI) * 0.7 * ms;
+  const armSwing = Math.sin(t + 0.3) * 0.55 * ms;
+  const armSwingBack = Math.sin(t + Math.PI + 0.3) * 0.55 * ms;
+  const bodyBob = Math.abs(Math.sin(t * 2)) * 0.08 * ms - landImpact * 0.15;
+  const bodyForwardLean = ms * 0.06 + (ms > 0.8 ? 0.04 : 0); // lean forward when running
+  const shoulderRoll = Math.sin(t) * 0.04 * ms; // subtle shoulder twist
+  const torsoTwist = Math.sin(t) * 0.06 * ms; // upper body counter-rotation
 
-  // Mounted horse animation
-  const horseLegAnim = isMounted ? Math.sin(t) * 0.4 * ms : 0;
-  const horseBodyBob = isMounted ? Math.abs(Math.sin(t * 2)) * 0.08 * ms : 0;
+  // Attack animation — multi-phase with wind-up
+  let atkSwingR = 0, atkSwingL = 0, atkBodyTwist = 0, atkLunge = 0;
+  if (attacking) {
+    const duration = isComboSwing ? 0.3 : 0.4;
+    const phase = 1 - attackT / duration;
+
+    if (isComboSwing) {
+      // Second swing — backhand from left
+      if (phase < 0.15) {
+        // Wind-up
+        atkSwingR = 0.3 * (phase / 0.15);
+        atkSwingL = -0.8 * (phase / 0.15);
+        atkBodyTwist = 0.2 * (phase / 0.15);
+      } else if (phase < 0.4) {
+        // Strike
+        const sp = (phase - 0.15) / 0.25;
+        atkSwingR = 0.3 - sp * 0.3;
+        atkSwingL = -0.8 + sp * 2.2;
+        atkBodyTwist = 0.2 - sp * 0.5;
+        atkLunge = sp * 0.15;
+      } else {
+        // Recovery
+        const rp = (phase - 0.4) / 0.6;
+        atkSwingL = 1.4 * (1 - rp);
+        atkBodyTwist = -0.3 * (1 - rp);
+      }
+    } else {
+      // First swing — overhead/diagonal from right
+      if (phase < 0.2) {
+        // Wind-up: raise sword
+        const wp = phase / 0.2;
+        atkSwingR = -1.2 * wp;
+        atkBodyTwist = -0.15 * wp;
+      } else if (phase < 0.45) {
+        // Strike: swing down
+        const sp = (phase - 0.2) / 0.25;
+        atkSwingR = -1.2 + sp * 2.8;
+        atkBodyTwist = -0.15 + sp * 0.4;
+        atkLunge = sp * 0.2;
+      } else {
+        // Recovery
+        const rp = (phase - 0.45) / 0.55;
+        atkSwingR = 1.6 * (1 - rp * rp);
+        atkBodyTwist = 0.25 * (1 - rp);
+        atkLunge = 0.2 * (1 - rp);
+      }
+    }
+  }
+
+  // Idle animation — weight shifting and breathing
+  const idleT = idleShiftRef.current;
+  const idleBreath = ms < 0.1 ? Math.sin(idleT * 1.8) * 0.012 : 0;
+  const idleWeightShift = ms < 0.1 ? Math.sin(idleT * 0.4) * 0.02 : 0;
+  const idleSway = ms < 0.1 ? Math.sin(idleT * 0.7) * 0.015 : 0;
+
+  // In-air pose
+  const airLegSpread = inAir ? 0.15 : 0;
+  const airArmRaise = inAir ? -0.3 : 0;
+
+  // Horse animation
+  const horseLegFL = isMounted ? Math.sin(t) * 0.5 * ms : 0;
+  const horseLegFR = isMounted ? Math.sin(t + Math.PI * 0.5) * 0.5 * ms : 0;
+  const horseLegBL = isMounted ? Math.sin(t + Math.PI) * 0.5 * ms : 0;
+  const horseLegBR = isMounted ? Math.sin(t + Math.PI * 1.5) * 0.5 * ms : 0;
+  const horseBodyBob = isMounted ? Math.abs(Math.sin(t * 2)) * 0.1 * ms : 0;
+  const horseNeckBob = isMounted ? Math.sin(t * 2 + 0.5) * 0.08 * ms : 0;
+  const horseHeadNod = isMounted ? Math.sin(t * 2 + 1) * 0.05 * ms : 0;
+  const riderBounce = isMounted ? Math.abs(Math.sin(t * 2)) * 0.06 * ms : 0;
+  const riderSway = isMounted ? Math.sin(t) * 0.03 * ms : 0;
 
   if (isDead) {
     return (
@@ -343,13 +478,15 @@ export function Player({
     );
   }
 
+  const playerY = isMounted ? 0.3 + riderBounce : bodyBob + idleBreath;
+
   return (
     <group ref={groupRef}>
       <group ref={bodyRef}>
-        {/* Horse mesh when mounted */}
+        {/* ===== MOUNTED HORSE ===== */}
         {isMounted && (
           <group position={[0, -1.8 + horseBodyBob, 0]}>
-            {/* Horse body */}
+            {/* Body */}
             <mesh position={[0, 1.1, 0]} castShadow>
               <boxGeometry args={[0.7, 0.65, 1.6]} />
               <meshLambertMaterial color="#6a4a2a" />
@@ -362,20 +499,32 @@ export function Player({
               <boxGeometry args={[0.55, 0.5, 0.35]} />
               <meshLambertMaterial color="#6a4a2a" />
             </mesh>
-            {/* Neck */}
-            <mesh position={[0, 1.55, 0.8]} rotation={[0.5, 0, 0]} castShadow>
-              <boxGeometry args={[0.35, 0.7, 0.35]} />
-              <meshLambertMaterial color="#6a4a2a" />
-            </mesh>
-            {/* Head */}
-            <mesh position={[0, 1.85, 1.15]} castShadow>
-              <boxGeometry args={[0.3, 0.28, 0.45]} />
-              <meshLambertMaterial color="#6a4a2a" />
-            </mesh>
-            <mesh position={[0, 1.77, 1.4]} castShadow>
-              <boxGeometry args={[0.22, 0.18, 0.25]} />
-              <meshLambertMaterial color="#4a3218" />
-            </mesh>
+            {/* Neck with bob */}
+            <group position={[0, 1.55 + horseNeckBob, 0.8]} rotation={[0.5 + horseHeadNod, 0, 0]}>
+              <mesh castShadow>
+                <boxGeometry args={[0.35, 0.7, 0.35]} />
+                <meshLambertMaterial color="#6a4a2a" />
+              </mesh>
+            </group>
+            {/* Head with nod */}
+            <group position={[0, 1.85 + horseNeckBob, 1.15 + horseHeadNod * 0.5]}>
+              <mesh castShadow>
+                <boxGeometry args={[0.3, 0.28, 0.45]} />
+                <meshLambertMaterial color="#6a4a2a" />
+              </mesh>
+              <mesh position={[0, -0.08, 0.25]} castShadow>
+                <boxGeometry args={[0.22, 0.18, 0.25]} />
+                <meshLambertMaterial color="#4a3218" />
+              </mesh>
+              <mesh position={[-0.08, 0.2, 0]} castShadow>
+                <boxGeometry args={[0.06, 0.14, 0.06]} />
+                <meshLambertMaterial color="#4a3218" />
+              </mesh>
+              <mesh position={[0.08, 0.2, 0]} castShadow>
+                <boxGeometry args={[0.06, 0.14, 0.06]} />
+                <meshLambertMaterial color="#4a3218" />
+              </mesh>
+            </group>
             {/* Mane */}
             <mesh position={[0, 1.65, 0.65]} rotation={[0.4, 0, 0]} castShadow>
               <boxGeometry args={[0.08, 0.5, 0.3]} />
@@ -386,13 +535,13 @@ export function Player({
               <boxGeometry args={[0.55, 0.12, 0.5]} />
               <meshLambertMaterial color="#5a2010" />
             </mesh>
-            {/* Legs with animation */}
-            {[
-              [-0.22, 0.5, horseLegAnim],
-              [0.22, 0.5, -horseLegAnim],
-              [-0.22, -0.5, -horseLegAnim],
-              [0.22, -0.5, horseLegAnim],
-            ].map(([lx, lz, anim], i) => (
+            {/* Legs — proper gait cycle */}
+            {([
+              [-0.22, 0.5, horseLegFL],
+              [0.22, 0.5, horseLegFR],
+              [-0.22, -0.5, horseLegBL],
+              [0.22, -0.5, horseLegBR],
+            ] as [number, number, number][]).map(([lx, lz, anim], i) => (
               <group key={i} position={[lx, 0.55, lz]} rotation={[anim, 0, 0]}>
                 <mesh position={[0, 0, 0]} castShadow>
                   <boxGeometry args={[0.16, 0.7, 0.16]} />
@@ -409,7 +558,8 @@ export function Player({
               </group>
             ))}
             {/* Tail */}
-            <group position={[0, 1.0, -0.95]} rotation={[Math.sin(t * 1.5) * 0.3 - 0.3, 0, 0]}>
+            <group position={[0, 1.0, -0.95]}
+              rotation={[Math.sin(t * 1.5 + 1) * 0.35 * Math.max(0.3, ms) - 0.3, Math.sin(t * 0.7) * 0.1, 0]}>
               <mesh castShadow>
                 <boxGeometry args={[0.06, 0.5, 0.06]} />
                 <meshLambertMaterial color="#2a1a08" />
@@ -418,17 +568,28 @@ export function Player({
           </group>
         )}
 
-        {/* Player character — raised when mounted */}
-        <group position={[0, (isMounted ? 0.3 : 0) + bodyBob + idleBob, 0]} rotation={[bodyTilt, atkBodyTwist, 0]}>
-          {/* Torso */}
+        {/* ===== PLAYER CHARACTER ===== */}
+        <group
+          position={[hipSway + idleWeightShift, playerY, atkLunge]}
+          rotation={[
+            bodyForwardLean + idleSway,
+            torsoTwist + atkBodyTwist + (isMounted ? riderSway : 0),
+            lean
+          ]}
+        >
+          {/* Torso - lower */}
           <mesh position={[0, -0.05, 0]} castShadow>
             <boxGeometry args={[0.75, 0.5, 0.4]} />
             <meshLambertMaterial color="#555555" />
           </mesh>
-          <mesh position={[0, 0.3, 0]} castShadow>
-            <boxGeometry args={[0.8, 0.55, 0.42]} />
-            <meshLambertMaterial color="#6a6a72" />
-          </mesh>
+          {/* Torso - upper with shoulder roll */}
+          <group position={[0, 0.3, 0]} rotation={[0, shoulderRoll, 0]}>
+            <mesh castShadow>
+              <boxGeometry args={[0.8, 0.55, 0.42]} />
+              <meshLambertMaterial color="#6a6a72" />
+            </mesh>
+          </group>
+          {/* Belt */}
           <mesh position={[0, -0.1, 0]} castShadow>
             <boxGeometry args={[0.82, 0.1, 0.44]} />
             <meshLambertMaterial color="#3a2810" />
@@ -461,8 +622,13 @@ export function Player({
               <meshLambertMaterial color="#1a1a1a" />
             </mesh>
           </group>
-          {/* Left arm */}
-          <group position={[-0.52, 0.15, 0]} rotation={[isMounted ? -0.3 : armSwing, 0, 0]}>
+          {/* Left arm — shield side */}
+          <group position={[-0.52, 0.15, 0]}
+            rotation={[
+              isMounted ? -0.3 : (armSwing + airArmRaise + atkSwingL),
+              0,
+              isMounted ? -0.15 : 0
+            ]}>
             <mesh position={[0, -0.15, 0]} castShadow>
               <boxGeometry args={[0.2, 0.6, 0.22]} />
               <meshLambertMaterial color="#555555" />
@@ -472,8 +638,13 @@ export function Player({
               <meshLambertMaterial color="#4a3010" />
             </mesh>
           </group>
-          {/* Right arm + sword */}
-          <group position={[0.52, 0.15, 0]} rotation={[isMounted ? -0.3 : (-armSwing + atkSwing), 0, 0]}>
+          {/* Right arm — sword */}
+          <group position={[0.52, 0.15, 0]}
+            rotation={[
+              isMounted ? -0.3 : (armSwingBack + airArmRaise + atkSwingR),
+              0,
+              isMounted ? 0.15 : 0
+            ]}>
             <mesh position={[0, -0.15, 0]} castShadow>
               <boxGeometry args={[0.2, 0.6, 0.22]} />
               <meshLambertMaterial color="#555555" />
@@ -489,7 +660,7 @@ export function Player({
               </mesh>
             </group>
           </group>
-          {/* Legs — spread when mounted */}
+          {/* Legs */}
           {isMounted ? (
             <>
               <group position={[-0.25, -0.5, 0]} rotation={[0, 0, 0.3]}>
@@ -515,7 +686,8 @@ export function Player({
             </>
           ) : (
             <>
-              <group position={[-0.18, -0.5, 0]} rotation={[-legSwing, 0, 0]}>
+              <group position={[-0.18, -0.5, 0]}
+                rotation={[-legSwing - airLegSpread, 0, 0]}>
                 <mesh position={[0, -0.2, 0]} castShadow>
                   <boxGeometry args={[0.24, 0.55, 0.24]} />
                   <meshLambertMaterial color="#3a3030" />
@@ -525,7 +697,8 @@ export function Player({
                   <meshLambertMaterial color="#4a3520" />
                 </mesh>
               </group>
-              <group position={[0.18, -0.5, 0]} rotation={[legSwing, 0, 0]}>
+              <group position={[0.18, -0.5, 0]}
+                rotation={[-legSwingBack + airLegSpread, 0, 0]}>
                 <mesh position={[0, -0.2, 0]} castShadow>
                   <boxGeometry args={[0.24, 0.55, 0.24]} />
                   <meshLambertMaterial color="#3a3030" />
@@ -537,11 +710,14 @@ export function Player({
               </group>
             </>
           )}
-          {/* Cape */}
-          <mesh position={[0, 0.1, -0.24]} castShadow>
-            <boxGeometry args={[0.65, 0.9, 0.04]} />
-            <meshLambertMaterial color="#2a1a0a" />
-          </mesh>
+          {/* Cape — sways with movement */}
+          <group position={[0, 0.1, -0.24]}
+            rotation={[ms * 0.15 + (isMounted ? ms * 0.3 : 0), Math.sin(t * 0.8) * 0.05 * ms, 0]}>
+            <mesh castShadow>
+              <boxGeometry args={[0.65, 0.9, 0.04]} />
+              <meshLambertMaterial color="#2a1a0a" />
+            </mesh>
+          </group>
         </group>
       </group>
     </group>
