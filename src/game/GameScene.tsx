@@ -214,6 +214,7 @@ export function GameScene() {
           shakeResourceRef={shakeResourceRef}
           highlightedResourceRef={highlightedResourceRef}
           resources={resources}
+          mountedDebugRef={mountedDebugRef}
         />
         <WorldObjects
           resources={resources}

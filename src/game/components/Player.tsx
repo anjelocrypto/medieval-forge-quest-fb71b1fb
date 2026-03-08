@@ -528,7 +528,7 @@ export function Player({
 
       // Debug data
       const rawTerrainY = getTerrainHeight(pos.x, pos.z);
-      mountedDebugRef.current = {
+      debugRef.current = {
         terrainY: rawTerrainY,
         horseY: rawTerrainY,
         riderY: pos.y,
