@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChatMessage, EMOTES } from './types';
+import { setInputFocused } from '../systems/InputSystem';
 
 interface Props {
   messages: ChatMessage[];
@@ -14,6 +15,12 @@ export function ChatPanel({ messages, onSendChat, onSendEmote, displayName }: Pr
   const [showEmotes, setShowEmotes] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sync input focus state with InputSystem to block game controls
+  useEffect(() => {
+    setInputFocused(open);
+    return () => setInputFocused(false);
+  }, [open]);
 
   useEffect(() => {
     if (scrollRef.current) {

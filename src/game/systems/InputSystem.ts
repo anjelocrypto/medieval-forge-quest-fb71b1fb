@@ -17,15 +17,31 @@ const inputState = {
   _justPressedNext: new Set<string>(),
   _justClickedNext: new Set<number>(),
   pointerJustLockedNext: false,
+
+  // Chat/UI input focus — when true, game input is suppressed
+  inputFocused: false,
 };
 
 let initialized = false;
+
+export function setInputFocused(focused: boolean) {
+  inputState.inputFocused = focused;
+  if (focused) {
+    // Clear all held keys when focusing input to prevent stuck keys
+    inputState.keys.clear();
+    inputState.mouseButtons.clear();
+    inputState._justPressedNext.clear();
+    inputState._justClickedNext.clear();
+  }
+}
 
 export function initInput() {
   if (initialized) return;
   initialized = true;
 
   window.addEventListener('keydown', (e) => {
+    // Skip game input when UI input is focused
+    if (inputState.inputFocused) return;
     if (!inputState.keys.has(e.code)) {
       inputState._justPressedNext.add(e.code);
     }
@@ -35,6 +51,7 @@ export function initInput() {
     inputState.keys.delete(e.code);
   });
   window.addEventListener('mousedown', (e) => {
+    if (inputState.inputFocused) return;
     if (!inputState.mouseButtons.has(e.button)) {
       inputState._justClickedNext.add(e.button);
     }
