@@ -171,7 +171,7 @@ function addCapitalHouseCollision(sx: number, sz: number, sid: string) {
       rotation: rot, id: `${sid}-house-o${i}`,
     });
   }
-  // Inner ring — 8 houses
+  // Inner ring — 8 houses (style is hardcoded 'stone', no rng call for style)
   for (let i = 0; i < 8; i++) {
     const angle = (i / 8) * Math.PI * 2 + 0.2;
     const r = 8 + rng() * 5;
@@ -181,7 +181,7 @@ function addCapitalHouseCollision(sx: number, sz: number, sid: string) {
     const w = 3 + rng() * 1.5;
     const d = 3.5 + rng() * 1.5;
     rng(); // h
-    rng(); // style  
+    // NO rng() for style — it's hardcoded 'stone' in visual
     boxObstacles.push({
       cx: sx + hx, cz: sz + hz, halfW: w / 2, halfD: d / 2,
       rotation: rot, id: `${sid}-house-i${i}`,
