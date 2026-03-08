@@ -2,19 +2,36 @@
  * Debug collision visualization overlay.
  * Renders all active circle and box obstacles as wireframe shapes.
  * Toggle with backtick (`) key.
+ * 
+ * Shows: player collider, mounted collider, spawn marker, 
+ * all circle/box obstacles, gate passage indicators.
  */
 import { useState, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { getCircleObstacles, getBoxObstacles } from '../systems/CollisionSystem';
+import { getTerrainHeight } from './Terrain';
 
 const debugMat = new THREE.MeshBasicMaterial({ color: '#ff0000', wireframe: true, transparent: true, opacity: 0.5 });
 const debugMatBox = new THREE.MeshBasicMaterial({ color: '#00ff00', wireframe: true, transparent: true, opacity: 0.5 });
 const debugMatPlayer = new THREE.MeshBasicMaterial({ color: '#ffff00', wireframe: true, transparent: true, opacity: 0.6 });
+const debugMatMounted = new THREE.MeshBasicMaterial({ color: '#ff8800', wireframe: true, transparent: true, opacity: 0.4 });
+const debugMatSpawn = new THREE.MeshBasicMaterial({ color: '#00ffff', wireframe: true, transparent: true, opacity: 0.7 });
+const debugMatGate = new THREE.MeshBasicMaterial({ color: '#ff00ff', wireframe: true, transparent: true, opacity: 0.5 });
 const circleGeo = new THREE.CylinderGeometry(1, 1, 2, 12);
 const boxGeo = new THREE.BoxGeometry(1, 2, 1);
+const markerGeo = new THREE.CylinderGeometry(0.3, 0.3, 6, 6);
 
-export function DebugCollision({ playerPositionRef, playerRadius = 0.4 }: {
+// Spawn and gate coordinates
+const SPAWN_POS: [number, number] = [0, 45];
+const GATE_MARKERS: [number, number][] = [
+  [0, 38],     // Capital south gate
+  [185, -155 + 20],  // Fort south gate (fort at 185,-155, gate at z+20)
+  [155, 195 + 14],   // Monastery south gate (monastery at 155,195, gate at z+14)
+];
+
+export function DebugCollision({ playerPositionRef, isMounted = false, playerRadius = 0.4 }: {
   playerPositionRef: React.RefObject<THREE.Vector3>;
+  isMounted?: boolean;
   playerRadius?: number;
 }) {
   const [enabled, setEnabled] = useState(false);
@@ -46,24 +63,39 @@ export function DebugCollision({ playerPositionRef, playerRadius = 0.4 }: {
   if (!enabled) return null;
 
   const pp = playerPositionRef.current;
+  const effectiveRadius = isMounted ? 1.0 : playerRadius;
 
   return (
     <group>
-      {/* Player collision radius */}
+      {/* Player collision radius — yellow for foot, orange for mounted */}
       {pp && (
-        <mesh position={[pp.x, pp.y + 1, pp.z]} geometry={circleGeo}
-          scale={[playerRadius, 1, playerRadius]} material={debugMatPlayer} />
+        <mesh position={[pp.x, pp.y, pp.z]} geometry={circleGeo}
+          scale={[effectiveRadius, 1, effectiveRadius]}
+          material={isMounted ? debugMatMounted : debugMatPlayer} />
       )}
+
+      {/* Spawn marker — cyan pillar */}
+      <mesh position={[SPAWN_POS[0], getTerrainHeight(SPAWN_POS[0], SPAWN_POS[1]) + 3, SPAWN_POS[1]]}
+        geometry={markerGeo} material={debugMatSpawn} />
+
+      {/* Gate passage markers — magenta pillars */}
+      {GATE_MARKERS.map(([gx, gz], i) => (
+        <mesh key={`gate${i}`}
+          position={[gx, getTerrainHeight(gx, gz) + 3, gz]}
+          geometry={markerGeo} material={debugMatGate} />
+      ))}
 
       {/* Circle obstacles */}
       {circles.map((c, i) => (
-        <mesh key={`c${i}`} position={[c.x, 1, c.z]} geometry={circleGeo}
+        <mesh key={`c${i}`} position={[c.x, getTerrainHeight(c.x, c.z) + 1, c.z]}
+          geometry={circleGeo}
           scale={[c.radius, 1, c.radius]} material={debugMat} />
       ))}
 
       {/* Box obstacles */}
       {boxes.map((b, i) => (
-        <mesh key={`b${i}`} position={[b.cx, 1, b.cz]} rotation={[0, b.rotation, 0]}
+        <mesh key={`b${i}`} position={[b.cx, getTerrainHeight(b.cx, b.cz) + 1, b.cz]}
+          rotation={[0, b.rotation, 0]}
           geometry={boxGeo} scale={[b.halfW * 2, 1, b.halfD * 2]} material={debugMatBox} />
       ))}
     </group>

@@ -355,49 +355,52 @@ export function resolveCollision(px: number, pz: number, playerRadius: number): 
   let x = px;
   let z = pz;
 
-  for (const obs of circleObstacles) {
-    const dx = x - obs.x;
-    const dz = z - obs.z;
-    const distSq = dx * dx + dz * dz;
-    const minDist = playerRadius + obs.radius;
-    if (distSq < minDist * minDist && distSq > 0.0001) {
-      const dist = Math.sqrt(distSq);
-      const overlap = minDist - dist;
-      x += (dx / dist) * overlap;
-      z += (dz / dist) * overlap;
+  // Multi-pass resolution: 2 iterations to handle chain push-out in dense areas
+  for (let pass = 0; pass < 2; pass++) {
+    for (const obs of circleObstacles) {
+      const dx = x - obs.x;
+      const dz = z - obs.z;
+      const distSq = dx * dx + dz * dz;
+      const minDist = playerRadius + obs.radius;
+      if (distSq < minDist * minDist && distSq > 0.0001) {
+        const dist = Math.sqrt(distSq);
+        const overlap = minDist - dist;
+        x += (dx / dist) * overlap;
+        z += (dz / dist) * overlap;
+      }
     }
-  }
 
-  for (const obs of boxObstacles) {
-    const cos = _cos(obs.rotation);
-    const sin = _sin(obs.rotation);
-    const lx = cos * (x - obs.cx) + sin * (z - obs.cz);
-    const lz = -sin * (x - obs.cx) + cos * (z - obs.cz);
-    const clampX = Math.max(-obs.halfW, Math.min(obs.halfW, lx));
-    const clampZ = Math.max(-obs.halfD, Math.min(obs.halfD, lz));
-    const dlx = lx - clampX;
-    const dlz = lz - clampZ;
-    const dSq = dlx * dlx + dlz * dlz;
+    for (const obs of boxObstacles) {
+      const cos = _cos(obs.rotation);
+      const sin = _sin(obs.rotation);
+      const lx = cos * (x - obs.cx) + sin * (z - obs.cz);
+      const lz = -sin * (x - obs.cx) + cos * (z - obs.cz);
+      const clampX = Math.max(-obs.halfW, Math.min(obs.halfW, lx));
+      const clampZ = Math.max(-obs.halfD, Math.min(obs.halfD, lz));
+      const dlx = lx - clampX;
+      const dlz = lz - clampZ;
+      const dSq = dlx * dlx + dlz * dlz;
 
-    if (dSq < playerRadius * playerRadius) {
-      if (dSq > 0.0001) {
-        const d = Math.sqrt(dSq);
-        const overlap = playerRadius - d;
-        const nlx = dlx / d;
-        const nlz = dlz / d;
-        x += cos * (nlx * overlap) - sin * (nlz * overlap);
-        z += sin * (nlx * overlap) + cos * (nlz * overlap);
-      } else {
-        const overlapX = obs.halfW - Math.abs(lx) + playerRadius;
-        const overlapZ = obs.halfD - Math.abs(lz) + playerRadius;
-        if (overlapX < overlapZ) {
-          const sign = lx >= 0 ? 1 : -1;
-          x += cos * (sign * overlapX);
-          z += sin * (sign * overlapX);
+      if (dSq < playerRadius * playerRadius) {
+        if (dSq > 0.0001) {
+          const d = Math.sqrt(dSq);
+          const overlap = playerRadius - d;
+          const nlx = dlx / d;
+          const nlz = dlz / d;
+          x += cos * (nlx * overlap) - sin * (nlz * overlap);
+          z += sin * (nlx * overlap) + cos * (nlz * overlap);
         } else {
-          const sign = lz >= 0 ? 1 : -1;
-          x += -sin * (sign * overlapZ);
-          z += cos * (sign * overlapZ);
+          const overlapX = obs.halfW - Math.abs(lx) + playerRadius;
+          const overlapZ = obs.halfD - Math.abs(lz) + playerRadius;
+          if (overlapX < overlapZ) {
+            const sign = lx >= 0 ? 1 : -1;
+            x += cos * (sign * overlapX);
+            z += sin * (sign * overlapX);
+          } else {
+            const sign = lz >= 0 ? 1 : -1;
+            x += -sin * (sign * overlapZ);
+            z += cos * (sign * overlapZ);
+          }
         }
       }
     }
