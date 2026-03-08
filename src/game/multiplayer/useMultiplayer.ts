@@ -309,6 +309,8 @@ export function useMultiplayer() {
     setRoomId(null);
     setRoomCode(null);
     setRemotePlayers(new Map());
+    setChatMessages([]); // FIX: Clear chat on leave
+    setWorldEvents([]); // FIX: Clear world events on leave
     setMockMode(false);
   }, [roomId, playerId]);
 
@@ -319,27 +321,36 @@ export function useMultiplayer() {
     hasAttemptedReconnect.current = true;
 
     const session = loadSession();
-    if (!session || session.playerId !== playerId) return;
+    // FIX: Clear session if playerId mismatch (different browser session)
+    if (!session) return;
+    if (session.playerId !== playerId) {
+      clearSession();
+      return;
+    }
 
     // Check room is still open
     (async () => {
+      setConnectionStatus('reconnecting');
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('game_rooms')
           .select('status')
           .eq('id', session.roomId)
           .single();
 
-        if (data?.status === 'open') {
-          setConnectionStatus('reconnecting');
-          const dbRoomId = await apiJoinRoom(session.roomCode, playerId, session.displayName);
-          await subscribeToChannel(session.roomCode, dbRoomId, session.displayName);
-          updateDisplayName(session.displayName);
-        } else {
+        if (error || !data || data.status !== 'open') {
           clearSession();
+          setConnectionStatus('disconnected'); // FIX: Reset status on failure
+          return;
         }
-      } catch {
+
+        const dbRoomId = await apiJoinRoom(session.roomCode, playerId, session.displayName);
+        await subscribeToChannel(session.roomCode, dbRoomId, session.displayName);
+        updateDisplayName(session.displayName);
+      } catch (err) {
+        console.warn('Reconnect failed:', err);
         clearSession();
+        setConnectionStatus('disconnected'); // FIX: Reset status on failure
       }
     })();
   }, [playerId, subscribeToChannel, updateDisplayName]);
