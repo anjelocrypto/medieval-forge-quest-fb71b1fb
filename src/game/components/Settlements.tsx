@@ -193,7 +193,7 @@ function CapitalCity({ def }: { def: SettlementDef }) {
       <Wall from={[-35, 0, -35]} to={[35, 0, -35]} h={8} thickness={2.5} />
       <Wall from={[35, 0, -35]} to={[35, 0, 35]} h={8} thickness={2.5} />
       {/* South wall — split for gate opening (10-unit gap centered) */}
-      <Wall from={[35, 0, 35]} to={5, 0, 35]} h={8} thickness={2.5} />
+      <Wall from={[35, 0, 35]} to={[5, 0, 35]} h={8} thickness={2.5} />
       <Wall from={[-5, 0, 35]} to={[-35, 0, 35]} h={8} thickness={2.5} />
       <Wall from={[-35, 0, 35]} to={[-35, 0, -35]} h={8} thickness={2.5} />
 
