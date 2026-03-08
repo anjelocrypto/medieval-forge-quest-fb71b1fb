@@ -35,10 +35,11 @@ export function generateEnemies(): EnemyData[] {
       const x = cx + Math.cos(angle) * r;
       const z = cz + Math.sin(angle) * r;
       const y = getTerrainHeight(x, z);
+      const groundOffset = type === 'wolf' ? 0.45 : 0.9;
       enemies.push({
         id: `enemy-${id++}`,
         type,
-        position: [x, y + 0.9, z],
+        position: [x, y + groundOffset, z],
         health: type === 'bandit' ? 30 : 20,
         maxHealth: type === 'bandit' ? 30 : 20,
         state: 'idle',
@@ -72,6 +73,14 @@ export function generateEnemies(): EnemyData[] {
 
   return enemies;
 }
+
+// Ground offset per enemy type — distance from terrain to mesh group origin
+// Bandit: legs + boots extend to local y ≈ -0.875, so offset ≈ 0.9
+// Wolf: legs extend to local y ≈ -0.425, so offset ≈ 0.45
+export const ENEMY_GROUND_OFFSET: Record<string, number> = {
+  bandit: 0.9,
+  wolf: 0.45,
+};
 
 export const PLAYER_ATTACK_DAMAGE = 15;
 export const PLAYER_ATTACK_RANGE = 3;

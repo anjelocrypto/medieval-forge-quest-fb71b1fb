@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { EnemyData, ENEMY_ATTACK_COOLDOWN, ENEMY_DESPAWN_TIME } from '../systems/EnemyData';
+import { EnemyData, ENEMY_ATTACK_COOLDOWN, ENEMY_DESPAWN_TIME, ENEMY_GROUND_OFFSET } from '../systems/EnemyData';
 import { getTerrainHeight } from './Terrain';
 
 interface Props {
@@ -91,7 +91,8 @@ export function Enemies({ enemies, playerPositionRef, onEnemiesUpdate, pendingPl
       if (isStaggered && stagger) {
         newPos[0] += stagger.x * 4 * dt * stagger.timer;
         newPos[2] += stagger.z * 4 * dt * stagger.timer;
-        newPos[1] = getTerrainHeight(newPos[0], newPos[2]) + 0.9;
+        const gOff = ENEMY_GROUND_OFFSET[e.type] ?? 0.9;
+        newPos[1] = getTerrainHeight(newPos[0], newPos[2]) + gOff;
         changed = true;
       }
 
@@ -125,7 +126,7 @@ export function Enemies({ enemies, playerPositionRef, onEnemiesUpdate, pendingPl
           const mz = dirX * sin + dirZ * cos;
           newPos[0] += mx * e.speed * dt;
           newPos[2] += mz * e.speed * dt;
-          newPos[1] = getTerrainHeight(newPos[0], newPos[2]) + 0.9;
+          newPos[1] = getTerrainHeight(newPos[0], newPos[2]) + (ENEMY_GROUND_OFFSET[e.type] ?? 0.9);
         } else if (newState === 'patrol') {
           newAngle += dt * 0.3;
           const tx = e.patrolCenter[0] + Math.cos(newAngle) * e.patrolRadius;
@@ -135,7 +136,7 @@ export function Enemies({ enemies, playerPositionRef, onEnemiesUpdate, pendingPl
           if (pd > 0.5) {
             newPos[0] += (pdx / pd) * e.speed * 0.4 * dt;
             newPos[2] += (pdz / pd) * e.speed * 0.4 * dt;
-            newPos[1] = getTerrainHeight(newPos[0], newPos[2]) + 0.9;
+            newPos[1] = getTerrainHeight(newPos[0], newPos[2]) + (ENEMY_GROUND_OFFSET[e.type] ?? 0.9);
           }
         } else if (newState === 'attack') {
           // Track wind-up
@@ -192,10 +193,11 @@ export function Enemies({ enemies, playerPositionRef, onEnemiesUpdate, pendingPl
           // Death tumble
           const deathRoll = Math.min(timer * 4, Math.PI / 2);
           const deathSlide = Math.min(timer * 2, 1);
+          const deathDrop = e.type === 'wolf' ? 0.15 : 0.3;
           return (
-            <group key={e.id} position={[e.position[0], e.position[1] - 0.3 - deathSlide * 0.3, e.position[2]]}>
+            <group key={e.id} position={[e.position[0], e.position[1] - deathDrop - deathSlide * 0.3, e.position[2]]}>
               <mesh rotation={[deathRoll, 0, deathRoll * 0.3]} geometry={boxGeo}
-                scale={[0.6, 0.8, 0.3]} material={deadMat} />
+                scale={e.type === 'wolf' ? [0.4, 0.35, 0.8] : [0.6, 0.8, 0.3]} material={deadMat} />
             </group>
           );
         }
