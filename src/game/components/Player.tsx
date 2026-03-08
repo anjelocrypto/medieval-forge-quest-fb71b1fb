@@ -16,6 +16,8 @@ import { SurvivalState, LootPickup } from '../types';
 import { EnemyData } from '../systems/EnemyData';
 import { PlacedStructure } from '../systems/BuildingData';
 import { HorseData, HORSE_SPEED, HORSE_RUN_SPEED, MOUNT_RANGE, DISMOUNT_OFFSET } from '../systems/HorseData';
+import { resolveCollision, rebuildObstacles } from '../systems/CollisionSystem';
+import { WorldResource } from '../systems/WorldResources';
 
 interface PlayerProps {
   onSurvivalUpdate: (updates: Partial<SurvivalState>) => void;
@@ -36,6 +38,7 @@ interface PlayerProps {
   onDismountHorse: () => void;
   mountedHorseId: string | null;
   onSetInteractionText: (text: string | null) => void;
+  resources: WorldResource[];
 }
 
 const _camForward = new THREE.Vector3();
@@ -49,16 +52,20 @@ const _toEnemy = new THREE.Vector3();
 const ACCEL_GROUND = 35;
 const ACCEL_GROUND_RUN = 40;
 const DECEL_GROUND = 18;
-const ACCEL_MOUNTED = 20;
-const DECEL_MOUNTED = 10;
+const ACCEL_MOUNTED = 14; // slower acceleration = heavier feel
+const DECEL_MOUNTED = 6; // slower decel = momentum
 const TURN_SPEED_FOOT = 12;
-const TURN_SPEED_MOUNTED = 6;
+const TURN_SPEED_MOUNTED = 3.5; // much wider turning arc
+const HORSE_TURN_SPEED_STANDING = 5; // faster turn when slow/standing
+const PLAYER_RADIUS = 0.4;
+const MOUNTED_RADIUS = 1.0; // larger collision footprint when riding
 
 export function Player({
   onSurvivalUpdate, survival, playerPositionRef, playerRotationRef,
   cameraAzimuthRef, enemies, onEnemyHit, onRespawn, buildMode,
   structures, lootPickups, onCollectLoot, onEatFood,
   horses, onMountHorse, onDismountHorse, mountedHorseId, onSetInteractionText,
+  resources,
 }: PlayerProps) {
   const groupRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Group>(null);
@@ -80,6 +87,8 @@ export function Player({
   const leanRef = useRef(0); // lateral lean
   const hipSwayRef = useRef(0);
   const idleShiftRef = useRef(0);
+  const collisionRebuildTimer = useRef(0);
+  const horseRotRef = useRef(0); // horse's own facing for smooth turning
   const isDead = survival.health <= 0;
   const isMounted = mountedHorseId !== null;
 
@@ -121,6 +130,13 @@ export function Player({
 
     if (comboWindowRef.current <= 0) comboRef.current = 0;
 
+    // Rebuild collision obstacles periodically
+    collisionRebuildTimer.current += dt;
+    if (collisionRebuildTimer.current > 0.5) {
+      collisionRebuildTimer.current = 0;
+      rebuildObstacles(resources, structures, horses, mountedHorseId);
+    }
+
     const input = getMovementInput();
     const azimuth = cameraAzimuthRef.current;
 
@@ -133,9 +149,11 @@ export function Player({
       if (isMounted) {
         if (input.interact) {
           onDismountHorse();
-          const angle = bodyRef.current.rotation.y;
-          pos.x += Math.cos(angle) * DISMOUNT_OFFSET;
-          pos.z -= Math.sin(angle) * DISMOUNT_OFFSET;
+          // Dismount to the left side of the horse
+          const angle = horseRotRef.current;
+          pos.x += Math.cos(angle + Math.PI * 0.5) * DISMOUNT_OFFSET;
+          pos.z -= Math.sin(angle + Math.PI * 0.5) * DISMOUNT_OFFSET;
+          pos.y = getTerrainHeight(pos.x, pos.z) + PLAYER_HEIGHT / 2;
         }
       } else {
         let nearHorse: HorseData | null = null;
@@ -151,15 +169,23 @@ export function Player({
           onSetInteractionText('🐴 Press E — Mount Horse');
           if (input.interact) {
             onMountHorse(nearHorse.id);
+            // Snap onto horse saddle position
             pos.x = nearHorse.position[0];
             pos.z = nearHorse.position[2];
-            pos.y = nearHorse.position[1] + 1.8;
+            pos.y = nearHorse.position[1] + 2.2; // saddle height
+            horseRotRef.current = nearHorse.rotation;
+            bodyRef.current.rotation.y = nearHorse.rotation;
+            playerRotationRef.current = nearHorse.rotation;
+            vel.set(0, 0, 0);
+            currentSpeedRef.current = 0;
+            // Rebuild obstacles immediately (exclude this horse)
+            rebuildObstacles(resources, structures, horses, nearHorse.id);
           }
         }
       }
     }
 
-    // === MOVEMENT WITH ACCELERATION ===
+    // === MOVEMENT ===
     _camForward.set(-Math.sin(azimuth), 0, -Math.cos(azimuth));
     _camRight.crossVectors(_up, _camForward).negate();
 
@@ -178,30 +204,58 @@ export function Player({
 
     const accel = isMounted ? ACCEL_MOUNTED : (canRun ? ACCEL_GROUND_RUN : ACCEL_GROUND);
     const decel = isMounted ? DECEL_MOUNTED : DECEL_GROUND;
-    const turnSpeed = isMounted ? TURN_SPEED_MOUNTED : TURN_SPEED_FOOT;
 
     if (isMoving) {
       _moveDir.normalize();
-      // Accelerate toward target speed
-      currentSpeedRef.current = THREE.MathUtils.lerp(
-        currentSpeedRef.current, targetSpeed, 1 - Math.exp(-accel * dt / targetSpeed)
-      );
-      const spd = currentSpeedRef.current;
-      vel.x = _moveDir.x * spd;
-      vel.z = _moveDir.z * spd;
 
-      // Smooth turning
-      const angle = Math.atan2(_moveDir.x, _moveDir.z);
-      targetRotRef.current = angle;
-      let rotDiff = angle - bodyRef.current.rotation.y;
-      // Wrap angle
-      while (rotDiff > Math.PI) rotDiff -= Math.PI * 2;
-      while (rotDiff < -Math.PI) rotDiff += Math.PI * 2;
-      bodyRef.current.rotation.y += rotDiff * Math.min(1, turnSpeed * dt);
-      playerRotationRef.current = bodyRef.current.rotation.y;
+      if (isMounted) {
+        // Horse steering: horse faces toward desired direction with speed-dependent turn rate
+        const wantAngle = Math.atan2(_moveDir.x, _moveDir.z);
+        let rotDiff = wantAngle - horseRotRef.current;
+        while (rotDiff > Math.PI) rotDiff -= Math.PI * 2;
+        while (rotDiff < -Math.PI) rotDiff += Math.PI * 2;
 
-      // Lateral lean from turning
-      leanRef.current = THREE.MathUtils.lerp(leanRef.current, -rotDiff * 0.4, dt * 6);
+        // Turn rate depends on speed — slower = tighter turns, faster = wider arcs
+        const speedFactor = currentSpeedRef.current / HORSE_RUN_SPEED;
+        const turnRate = THREE.MathUtils.lerp(HORSE_TURN_SPEED_STANDING, TURN_SPEED_MOUNTED, speedFactor);
+        horseRotRef.current += rotDiff * Math.min(1, turnRate * dt);
+        // Wrap
+        if (horseRotRef.current > Math.PI) horseRotRef.current -= Math.PI * 2;
+        if (horseRotRef.current < -Math.PI) horseRotRef.current += Math.PI * 2;
+
+        bodyRef.current.rotation.y = horseRotRef.current;
+        playerRotationRef.current = horseRotRef.current;
+
+        // Lean into turn
+        leanRef.current = THREE.MathUtils.lerp(leanRef.current, -rotDiff * 0.3 * speedFactor, dt * 5);
+
+        // Move in horse's facing direction (not input direction)
+        currentSpeedRef.current = THREE.MathUtils.lerp(
+          currentSpeedRef.current, targetSpeed, 1 - Math.exp(-accel * dt / targetSpeed)
+        );
+        const spd = currentSpeedRef.current;
+        vel.x = Math.sin(horseRotRef.current) * spd;
+        vel.z = Math.cos(horseRotRef.current) * spd;
+      } else {
+        // Foot movement — direct control
+        currentSpeedRef.current = THREE.MathUtils.lerp(
+          currentSpeedRef.current, targetSpeed, 1 - Math.exp(-accel * dt / targetSpeed)
+        );
+        const spd = currentSpeedRef.current;
+        vel.x = _moveDir.x * spd;
+        vel.z = _moveDir.z * spd;
+
+        // Smooth turning
+        const angle = Math.atan2(_moveDir.x, _moveDir.z);
+        targetRotRef.current = angle;
+        let rotDiff = angle - bodyRef.current.rotation.y;
+        while (rotDiff > Math.PI) rotDiff -= Math.PI * 2;
+        while (rotDiff < -Math.PI) rotDiff += Math.PI * 2;
+        bodyRef.current.rotation.y += rotDiff * Math.min(1, TURN_SPEED_FOOT * dt);
+        playerRotationRef.current = bodyRef.current.rotation.y;
+
+        leanRef.current = THREE.MathUtils.lerp(leanRef.current, -rotDiff * 0.4, dt * 6);
+      }
 
       const animSpeed = isMounted ? (canRun ? 20 : 13) : (canRun ? 16 : 10);
       animTimeRef.current += dt * animSpeed;
@@ -226,7 +280,7 @@ export function Player({
       leanRef.current = THREE.MathUtils.lerp(leanRef.current, 0, dt * 4);
     }
 
-    // Hip sway (subtle lateral weight shift while walking)
+    // Hip sway
     hipSwayRef.current = THREE.MathUtils.lerp(
       hipSwayRef.current,
       isMoving ? Math.sin(animTimeRef.current * 0.5) * 0.03 * moveSpeedRef.current : 0,
@@ -251,7 +305,6 @@ export function Player({
       comboRef.current = isCombo ? 0 : 1;
       comboWindowRef.current = isCombo ? 0 : 0.6;
 
-      // Lunge forward slightly
       const playerAngle = bodyRef.current.rotation.y;
       if (!isMoving) {
         vel.x += Math.sin(playerAngle) * 3;
@@ -276,7 +329,7 @@ export function Player({
       }
     }
 
-    // Gravity & position
+    // Gravity & position update
     if (!isMounted) {
       vel.y -= GRAVITY * dt;
     } else {
@@ -286,10 +339,23 @@ export function Player({
     pos.z += vel.z * dt;
     pos.y += vel.y * dt;
 
-    const heightOffset = isMounted ? 1.8 : PLAYER_HEIGHT / 2;
+    // === COLLISION RESOLUTION ===
+    const colRadius = isMounted ? MOUNTED_RADIUS : PLAYER_RADIUS;
+    const resolved = resolveCollision(pos.x, pos.z, colRadius);
+    // If collision pushed us, also zero out velocity in that direction
+    const pushX = resolved.x - pos.x;
+    const pushZ = resolved.z - pos.z;
+    if (Math.abs(pushX) > 0.001 || Math.abs(pushZ) > 0.001) {
+      pos.x = resolved.x;
+      pos.z = resolved.z;
+      // Cancel velocity component into obstacle
+      if (pushX * vel.x < 0) vel.x *= 0.1;
+      if (pushZ * vel.z < 0) vel.z *= 0.1;
+    }
+
+    const heightOffset = isMounted ? 2.2 : PLAYER_HEIGHT / 2;
     const terrainY = getTerrainHeight(pos.x, pos.z) + heightOffset;
     if (pos.y <= terrainY) {
-      // Landing impact
       if (wasInAirRef.current && vel.y < -3) {
         landingImpactRef.current = Math.min(1, Math.abs(vel.y) / 15);
       }
@@ -478,14 +544,14 @@ export function Player({
     );
   }
 
-  const playerY = isMounted ? 0.3 + riderBounce : bodyBob + idleBreath;
+  const playerY = isMounted ? 0.5 + riderBounce : bodyBob + idleBreath;
 
   return (
     <group ref={groupRef}>
       <group ref={bodyRef}>
         {/* ===== MOUNTED HORSE ===== */}
         {isMounted && (
-          <group position={[0, -1.8 + horseBodyBob, 0]}>
+          <group position={[0, -2.2 + horseBodyBob, 0]}>
             {/* Body */}
             <mesh position={[0, 1.1, 0]} castShadow>
               <boxGeometry args={[0.7, 0.65, 1.6]} />

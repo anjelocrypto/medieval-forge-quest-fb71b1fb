@@ -6,6 +6,7 @@ import { getTerrainHeight } from './Terrain';
 import { PlacedStructure, BuildableConfig, BuildableType, MIN_STRUCTURE_SPACING } from '../systems/BuildingData';
 import { ResourceInventory } from '../types';
 import { COLORS } from '../constants';
+import { isPlacementBlocked } from '../systems/CollisionSystem';
 
 interface Props {
   buildMode: boolean;
@@ -26,7 +27,7 @@ function canAfford(cost: Partial<ResourceInventory>, inv: ResourceInventory): bo
   return true;
 }
 
-function isValidPlacement(pos: [number, number, number], playerPos: THREE.Vector3, structures: PlacedStructure[]): { valid: boolean; reason?: string } {
+function isValidPlacement(pos: [number, number, number], playerPos: THREE.Vector3, structures: PlacedStructure[], buildSize: [number, number, number]): { valid: boolean; reason?: string } {
   const dx = pos[0] - playerPos.x, dz = pos[2] - playerPos.z;
   const dist = Math.sqrt(dx * dx + dz * dz);
   if (dist < 2) return { valid: false, reason: 'Too close' };
@@ -36,6 +37,9 @@ function isValidPlacement(pos: [number, number, number], playerPos: THREE.Vector
     const sdx = pos[0] - s.position[0], sdz = pos[2] - s.position[2];
     if (Math.sqrt(sdx * sdx + sdz * sdz) < MIN_STRUCTURE_SPACING) return { valid: false, reason: 'Too close to structure' };
   }
+  // Check collision with world objects (trees, rocks, POIs)
+  const buildRadius = Math.max(buildSize[0], buildSize[2]) / 2;
+  if (isPlacementBlocked(pos[0], pos[2], buildRadius)) return { valid: false, reason: 'Blocked' };
   return { valid: true };
 }
 
@@ -63,7 +67,7 @@ export function BuildingSystem({
     const placeZ = playerPos.z + Math.cos(rot) * 5;
     ghostPosRef.current = [placeX, getTerrainHeight(placeX, placeZ), placeZ];
 
-    const { valid, reason } = isValidPlacement(ghostPosRef.current, playerPos, structures);
+    const { valid, reason } = isValidPlacement(ghostPosRef.current, playerPos, structures, config.size);
     const affordable = canAfford(config.cost, inventory);
     validRef.current = valid && affordable;
 
