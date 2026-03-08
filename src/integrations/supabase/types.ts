@@ -14,13 +14,117 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      game_rooms: {
+        Row: {
+          created_at: string
+          current_player_count: number
+          host_display_name: string
+          host_player_id: string
+          id: string
+          last_heartbeat_at: string
+          max_players: number
+          room_code: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_player_count?: number
+          host_display_name?: string
+          host_player_id: string
+          id?: string
+          last_heartbeat_at?: string
+          max_players?: number
+          room_code: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_player_count?: number
+          host_display_name?: string
+          host_player_id?: string
+          id?: string
+          last_heartbeat_at?: string
+          max_players?: number
+          room_code?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      room_players: {
+        Row: {
+          display_name: string
+          id: string
+          is_connected: boolean
+          is_host: boolean
+          joined_at: string
+          last_seen_at: string
+          player_id: string
+          room_id: string
+        }
+        Insert: {
+          display_name?: string
+          id?: string
+          is_connected?: boolean
+          is_host?: boolean
+          joined_at?: string
+          last_seen_at?: string
+          player_id: string
+          room_id: string
+        }
+        Update: {
+          display_name?: string
+          id?: string
+          is_connected?: boolean
+          is_host?: boolean
+          joined_at?: string
+          last_seen_at?: string
+          player_id?: string
+          room_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_players_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "game_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_stale_rooms: { Args: never; Returns: undefined }
+      create_game_room: {
+        Args: {
+          _display_name: string
+          _max_players?: number
+          _player_id: string
+          _room_code: string
+        }
+        Returns: string
+      }
+      heartbeat_room_player: {
+        Args: { _player_id: string; _room_id: string }
+        Returns: undefined
+      }
+      join_game_room: {
+        Args: { _display_name: string; _player_id: string; _room_code: string }
+        Returns: string
+      }
+      leave_game_room: {
+        Args: { _player_id: string; _room_id: string }
+        Returns: undefined
+      }
+      refresh_game_room_state: {
+        Args: { _room_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
