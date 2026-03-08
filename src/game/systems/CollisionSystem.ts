@@ -272,31 +272,16 @@ function addFortCollision(s: SettlementDef, sx: number, sz: number) {
 }
 
 function addRuinsCollision(s: SettlementDef, sx: number, sz: number) {
-  // Altar platform — flat, box scale [8,0.6,8]. Use a low box, not a big circle.
-  // Players can walk onto it (it's only 0.6 high). Skip collision for the platform.
-  // Only block the altar stone on top: box scale [3,0.8,1.5]
+  // Altar stone on platform: box scale [3,0.8,1.5]
   boxObstacles.push({ cx: sx, cz: sz, halfW: 1.5, halfD: 0.75, rotation: 0, id: `${s.id}-altar` });
 
-  // Grand arch pillars — boxes scale [2,24,2] at [-5,0,0] and [2,20,2] at [5,0,0]
+  // Grand arch pillars
   circleObstacles.push({ x: sx - 5, z: sz, radius: 1, id: `${s.id}-arch-l` });
   circleObstacles.push({ x: sx + 5, z: sz, radius: 1, id: `${s.id}-arch-r` });
 
-  // Pillar ring — 10 pillars at radius 8, cylinder scale [0.45, h, 0.45]
   const rng = seededRng(9999);
-  for (let i = 0; i < 10; i++) {
-    const a = (i / 10) * Math.PI * 2;
-    rng(); // h consumed
-    circleObstacles.push({
-      x: sx + Math.cos(a) * 8, z: sz + Math.sin(a) * 8,
-      radius: 0.5, id: `${s.id}-pillar-${i}`,
-    });
-  }
 
-  // Ruined buildings — use same RNG as visual (seed 9999, but rng was already consumed for pillars)
-  // Actually the ruins visual uses rng for pillars AND for ruined buildings.
-  // The pillar loop consumed rng() once per pillar (for h). Then ruined buildings loop:
-  // 12 buildings, each: angle += rng()*0.3, r = 12+rng()*20, then hx/hz, hy, wallH=1+rng()*3, rot=rng()*PI*2, w=3+rng()*3, d=3+rng()*3
-  // That's 6 rng calls per building. Let me replicate:
+  // Ruined buildings FIRST (matches visual JSX render order)
   for (let i = 0; i < 12; i++) {
     const angle = (i / 12) * Math.PI * 2 + rng() * 0.3;
     const r = 12 + rng() * 20;
@@ -306,14 +291,23 @@ function addRuinsCollision(s: SettlementDef, sx: number, sz: number) {
     const rot = rng() * Math.PI * 2;
     const w = 3 + rng() * 3;
     const d = 3 + rng() * 3;
-    // Ruined buildings are partially collapsed (low walls), but still solid footprint
     boxObstacles.push({
       cx: sx + hx, cz: sz + hz, halfW: w / 2, halfD: d / 2,
       rotation: rot, id: `${s.id}-ruin-${i}`,
     });
   }
 
-  // Fallen column at [8, 0, -6] — cylinder on its side, radius 0.35, length 6
+  // Pillar ring SECOND — 10 pillars at radius 8
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2;
+    rng(); // h consumed
+    circleObstacles.push({
+      x: sx + Math.cos(a) * 8, z: sz + Math.sin(a) * 8,
+      radius: 0.5, id: `${s.id}-pillar-${i}`,
+    });
+  }
+
+  // Fallen column
   boxObstacles.push({
     cx: sx + 8, cz: sz - 6, halfW: 0.35, halfD: 3, rotation: 0.5, id: `${s.id}-fallen`,
   });

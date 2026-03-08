@@ -14,6 +14,7 @@ import { LootPickups } from './components/LootPickups';
 import { Horse } from './components/Horses';
 import { Settlements } from './components/Settlements';
 import { WorldPOIs } from './components/WorldPOIs';
+import { DebugCollision } from './components/DebugCollision';
 import { CameraController } from './systems/CameraController';
 import { InputFlusher } from './systems/InputFlusher';
 import { BuildModeController } from './systems/BuildModeController';
