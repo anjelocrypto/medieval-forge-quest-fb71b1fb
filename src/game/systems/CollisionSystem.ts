@@ -99,10 +99,10 @@ export function rebuildObstacles(
     }
   }
 
-  // Horses (unmounted ones are solid)
+  // Horse (unmounted is solid)
   for (const h of horses) {
     if (h.id === excludeHorseId) continue;
-    if (h.isMounted) continue;
+    if (h.state === 'mounted') continue;
     circleObstacles.push({
       x: h.position[0], z: h.position[2],
       radius: 0.8, id: h.id,

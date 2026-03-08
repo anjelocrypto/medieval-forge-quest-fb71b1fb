@@ -70,7 +70,7 @@ export function WorldObjects({
     if (!isMounted) {
       const px2 = playerPos.x, pz2 = playerPos.z;
       for (const h of horses) {
-        if (h.isMounted) continue;
+        if (h.state === 'mounted') continue;
         const dx = px2 - h.position[0], dz = pz2 - h.position[2];
         if (dx * dx + dz * dz < MOUNT_RANGE * MOUNT_RANGE) { horseNearby = true; break; }
       }
