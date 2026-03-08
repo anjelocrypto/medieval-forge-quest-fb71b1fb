@@ -105,6 +105,8 @@ export function Player({
   const landRecoveryRef = useRef(0);    // landing stiffness
   const prevMoveRef = useRef(0);        // previous frame move state for transition detection
   const turnDeltaRef = useRef(0);       // accumulated turn for animation
+  const horsePitchRef = useRef(0);      // slope pitch for mounted horse
+  const mountedDebugRef = useRef({ terrainY: 0, horseY: 0, riderY: 0, delta: 0, pitch: 0, pushX: 0, pushZ: 0 });
   const isDead = survival.health <= 0;
 
   useEffect(() => {
@@ -171,9 +173,19 @@ export function Player({
       if (input.interact) {
         onDismountHorse();
         const angle = horseRotRef.current;
-        pos.x += Math.cos(angle + Math.PI * 0.5) * DISMOUNT_OFFSET;
-        pos.z -= Math.sin(angle + Math.PI * 0.5) * DISMOUNT_OFFSET;
+        let dmX = pos.x + Math.cos(angle + Math.PI * 0.5) * DISMOUNT_OFFSET;
+        let dmZ = pos.z - Math.sin(angle + Math.PI * 0.5) * DISMOUNT_OFFSET;
+        // Safety: resolve collision at dismount position
+        const dmResolved = resolveCollision(dmX, dmZ, PLAYER_RADIUS);
+        dmX = dmResolved.x;
+        dmZ = dmResolved.z;
+        pos.x = dmX;
+        pos.z = dmZ;
         pos.y = getTerrainHeight(pos.x, pos.z) + PLAYER_HEIGHT / 2;
+        // Clear mounted physics
+        vel.set(0, 0, 0);
+        currentSpeedRef.current = 0;
+        horsePitchRef.current = 0;
       }
     } else {
       const hdx = pos.x - horse.position[0];
