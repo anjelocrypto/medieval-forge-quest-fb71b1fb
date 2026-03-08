@@ -243,7 +243,7 @@ export function Enemies({ enemies, playerPositionRef, onEnemiesUpdate, pendingPl
           return (
             <group key={e.id} position={[e.position[0], e.position[1] + bodyBob, e.position[2]]}>
               <group rotation={[0, faceAngle, 0]}>
-                <group rotation={[bodyLean - staggerRecoil, atkBodyTwist + shoulderTwist, 0]}>
+                <group rotation={[bodyLean - staggerRecoil, atkBodyTwist + shoulderTwist, chaseSway]}>
                   {/* Torso */}
                   <mesh geometry={boxGeo} scale={[0.65, 0.75, 0.35]} material={bodyMat} castShadow />
                   {/* Head */}
