@@ -381,7 +381,7 @@ export function Player({
     prevMoveRef.current = isMoving ? 1 : THREE.MathUtils.lerp(prevMoveRef.current, 0, dt * 4);
 
     // Hip sway — stronger at walk, subtler at run
-    const swayIntensity = ms > 0.7 ? 0.015 : 0.035;
+    const swayIntensity = moveSpeedRef.current > 0.7 ? 0.015 : 0.035;
     hipSwayRef.current = THREE.MathUtils.lerp(
       hipSwayRef.current,
       isMoving ? Math.sin(animTimeRef.current * 0.5) * swayIntensity * moveSpeedRef.current : 0,
