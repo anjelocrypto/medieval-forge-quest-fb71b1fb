@@ -123,9 +123,9 @@ export function Player({
       if (isMounted) onDismountHorse();
       const timer = setTimeout(() => {
         if (groupRef.current) {
-          const y = getTerrainHeight(0, 0) + PLAYER_HEIGHT / 2;
-          groupRef.current.position.set(0, y, 0);
-          playerPositionRef.current.set(0, y, 0);
+          const y = getTerrainHeight(0, 45) + PLAYER_HEIGHT / 2;
+          groupRef.current.position.set(0, y, 45);
+          playerPositionRef.current.set(0, y, 45);
           velocityRef.current.set(0, 0, 0);
         }
         onRespawn();
