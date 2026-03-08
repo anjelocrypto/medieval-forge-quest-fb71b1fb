@@ -24,8 +24,18 @@ import { generateWorldResources, WorldResource, generateLootDrop } from './syste
 import { generateEnemies, EnemyData } from './systems/EnemyData';
 import { initInput } from './systems/InputSystem';
 import { POIS, POI_ZONE_RADIUS } from './constants';
+// Multiplayer
+import { RemotePlayers } from './multiplayer/RemotePlayers';
+import { MultiplayerBroadcaster } from './multiplayer/MultiplayerBroadcaster';
+import { MultiplayerHUD } from './multiplayer/MultiplayerHUD';
+import { ChatPanel } from './multiplayer/ChatPanel';
 
-export function GameScene() {
+interface GameSceneProps {
+  multiplayer: ReturnType<typeof import('./multiplayer/useMultiplayer').useMultiplayer>;
+  onLeaveRoom: () => void;
+}
+
+export function GameScene({ multiplayer, onLeaveRoom }: GameSceneProps) {
   const {
     survival, updateSurvival, inventory, addResource, eatFood,
     interactionText, setInteractionText,
@@ -42,6 +52,7 @@ export function GameScene() {
   const [enemies, setEnemies] = useState<EnemyData[]>(() => generateEnemies());
   const [mapOpen, setMapOpen] = useState(false);
   const [debugMounted, setDebugMounted] = useState(false);
+  const [currentEmote, setCurrentEmote] = useState<string | null>(null);
   const playerPositionRef = useRef(new THREE.Vector3(0, 0, 0));
   const playerRotationRef = useRef(0);
   const cameraAzimuthRef = useRef(0);
@@ -49,6 +60,9 @@ export function GameScene() {
   const shakeResourceRef = useRef<string | null>(null);
   const highlightedResourceRef = useRef<string | null>(null);
   const mountedDebugRef = useRef({ terrainY: 0, horseY: 0, riderY: 0, delta: 0, pitch: 0, pushX: 0, pushZ: 0 });
+  const moveSpeedRef = useRef(0);
+  const isRunningRef = useRef(false);
+  const attackAnimRef = useRef(0);
 
   useEffect(() => { initInput(); }, []);
 
@@ -67,8 +81,6 @@ export function GameScene() {
   }, [applyPlayerDamage]);
 
   // Mounted horse sync — Player.tsx is sole movement authority.
-  // We sync horse state data from playerPositionRef for HUD/minimap only.
-  // Horse Y is derived from terrain at the player's resolved X/Z (not from playerPos.y).
   useEffect(() => {
     if (!isMounted) return;
     let raf: number;
@@ -103,7 +115,7 @@ export function GameScene() {
     return () => clearInterval(checkInterval);
   }, [enemies, progression.areasSecured, secureArea]);
 
-  // Map toggle via keyboard
+  // Map toggle + debug
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'KeyM') setMapOpen(prev => !prev);
@@ -113,9 +125,36 @@ export function GameScene() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // Handle multiplayer world events from remote players
+  useEffect(() => {
+    if (!multiplayer.connected) return;
+    const events = multiplayer.worldEvents;
+    if (events.length === 0) return;
+    const latest = events[events.length - 1];
+    // Apply remote world events
+    if (latest.playerId === multiplayer.playerId) return;
+
+    if (latest.type === 'resource_depleted') {
+      const id = latest.payload.resourceId as string;
+      setResources(prev => prev.map(r => r.id === id ? { ...r, depleted: true, health: 0 } : r));
+    }
+    if (latest.type === 'enemy_killed') {
+      const id = latest.payload.enemyId as string;
+      setEnemies(prev => prev.map(e => e.id === id ? { ...e, health: 0, state: 'dead' as const } : e));
+    }
+  }, [multiplayer.worldEvents, multiplayer.connected, multiplayer.playerId]);
+
   const handleDepleteResource = useCallback((id: string) => {
     setResources(prev => prev.map(r => r.id === id ? { ...r, depleted: true, health: 0 } : r));
-  }, []);
+    if (multiplayer.connected) {
+      multiplayer.broadcastWorldEvent({
+        type: 'resource_depleted',
+        payload: { resourceId: id },
+        playerId: multiplayer.playerId,
+        timestamp: Date.now(),
+      });
+    }
+  }, [multiplayer]);
 
   const handleHitResource = useCallback((id: string) => {
     setResources(prev => prev.map(r => r.id === id ? { ...r, health: r.health - 1 } : r));
@@ -129,6 +168,14 @@ export function GameScene() {
         const drops = generateLootDrop(e.position, e.type);
         if (drops.length > 0) addLootPickups(drops);
         recordEnemyKill(e.type);
+        if (multiplayer.connected) {
+          multiplayer.broadcastWorldEvent({
+            type: 'enemy_killed',
+            payload: { enemyId: id, killerName: multiplayer.displayName },
+            playerId: multiplayer.playerId,
+            timestamp: Date.now(),
+          });
+        }
       }
       return {
         ...e,
@@ -137,7 +184,7 @@ export function GameScene() {
         state: newHealth <= 0 ? 'dead' as const : e.state,
       };
     }));
-  }, [addLootPickups, recordEnemyKill]);
+  }, [addLootPickups, recordEnemyKill, multiplayer]);
 
   const handleRespawn = useCallback(() => {
     updateSurvival({ health: 100, stamina: 100, hunger: 80, temperature: 70 });
@@ -147,6 +194,8 @@ export function GameScene() {
   const handleEnemiesUpdate = useCallback((updated: EnemyData[]) => {
     setEnemies(updated);
   }, []);
+
+  const remotePlayerCount = multiplayer.remotePlayers.size;
 
   return (
     <div className="w-screen h-screen bg-background overflow-hidden cursor-crosshair">
@@ -170,6 +219,39 @@ export function GameScene() {
         mapOpen={mapOpen}
         onCloseMap={() => setMapOpen(false)}
       />
+
+      {/* Multiplayer HUD */}
+      <MultiplayerHUD
+        connected={multiplayer.connected}
+        roomId={multiplayer.roomId}
+        playerCount={1 + remotePlayerCount}
+        playerId={multiplayer.playerId}
+        mockMode={multiplayer.mockMode}
+      />
+
+      {/* Chat panel */}
+      {multiplayer.connected && (
+        <ChatPanel
+          messages={multiplayer.chatMessages}
+          onSendChat={multiplayer.sendChat}
+          onSendEmote={(emote) => {
+            multiplayer.sendEmote(emote);
+            setCurrentEmote(emote);
+            setTimeout(() => setCurrentEmote(null), 2000);
+          }}
+          displayName={multiplayer.displayName}
+        />
+      )}
+
+      {/* Leave button */}
+      {multiplayer.connected && (
+        <button onClick={onLeaveRoom}
+          className="fixed top-4 left-4 z-40 text-xs font-mono px-3 py-1 rounded"
+          style={{ background: 'rgba(0,0,0,0.6)', color: '#a88', border: '1px solid #533' }}>
+          ← Leave Room
+        </button>
+      )}
+
       <Canvas shadows camera={{ fov: 55, near: 0.5, far: 500, position: [0, 10, 15] }}
         style={{ width: '100%', height: '100%' }}>
         <InputFlusher />
@@ -242,8 +324,32 @@ export function GameScene() {
           availableBuildables={getAvailableBuildables()}
         />
         <DebugCollision playerPositionRef={playerPositionRef} isMounted={isMounted} />
+
+        {/* Remote players from multiplayer */}
+        <RemotePlayers remotePlayers={multiplayer.remotePlayers} />
+
+        {/* Multiplayer broadcaster — samples local state and pushes to network hook */}
+        {multiplayer.connected && (
+          <MultiplayerBroadcaster
+            playerId={multiplayer.playerId}
+            displayName={multiplayer.displayName}
+            playerPositionRef={playerPositionRef}
+            playerRotationRef={playerRotationRef}
+            survival={survival}
+            isMounted={isMounted}
+            horse={horse}
+            moveSpeed={moveSpeedRef.current}
+            isRunning={isRunningRef.current}
+            attackAnim={attackAnimRef.current}
+            buildMode={buildMode}
+            horsePitch={mountedDebugRef.current.pitch}
+            emote={currentEmote}
+            onUpdateLocalState={multiplayer.updateLocalState}
+          />
+        )}
       </Canvas>
-      {/* Mounted grounding debug overlay — toggle with F3 */}
+
+      {/* Mounted grounding debug overlay */}
       {debugMounted && isMounted && (
         <MountedDebugOverlay debugRef={mountedDebugRef} posRef={playerPositionRef} />
       )}
