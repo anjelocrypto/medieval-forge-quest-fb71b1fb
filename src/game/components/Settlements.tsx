@@ -189,10 +189,12 @@ function CapitalCity({ def }: { def: SettlementDef }) {
       <mesh position={[0, 25, 0]} geometry={GEO.box} scale={[0.1, 4, 0.1]} material={MAT.woodDark} castShadow />
       <mesh position={[0.5, 26, 0]} geometry={GEO.box} scale={[0.8, 1.2, 0.04]} material={MAT.banner} castShadow />
 
-      {/* Walls — square perimeter */}
+      {/* Walls — square perimeter with south gate gap */}
       <Wall from={[-35, 0, -35]} to={[35, 0, -35]} h={8} thickness={2.5} />
       <Wall from={[35, 0, -35]} to={[35, 0, 35]} h={8} thickness={2.5} />
-      <Wall from={[35, 0, 35]} to={[-35, 0, 35]} h={8} thickness={2.5} />
+      {/* South wall — split for gate opening (10-unit gap centered) */}
+      <Wall from={[35, 0, 35]} to={[5, 0, 35]} h={8} thickness={2.5} />
+      <Wall from={[-5, 0, 35]} to={[-35, 0, 35]} h={8} thickness={2.5} />
       <Wall from={[-35, 0, 35]} to={[-35, 0, -35]} h={8} thickness={2.5} />
 
       {/* Corner towers */}
