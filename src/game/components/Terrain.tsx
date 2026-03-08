@@ -37,12 +37,19 @@ export function getTerrainHeight(x: number, z: number): number {
   const distFromCenter = Math.sqrt(x * x + z * z);
   const flattenFactor = Math.max(0, 1 - distFromCenter / 40);
 
-  // Flatten around settlements
+  // Flatten around settlements — plateau function for proper building grounding
   let settleFlatten = 0;
   for (const s of SETTLEMENTS) {
     const sd = Math.sqrt((x - s.position[0]) ** 2 + (z - s.position[1]) ** 2);
-    const flatR = s.size === 'large' ? 40 : s.size === 'medium' ? 25 : 15;
-    if (sd < flatR) settleFlatten = Math.max(settleFlatten, (1 - sd / flatR) * 0.85);
+    // Radii sized to cover full settlement diagonal (walls + corners + margin)
+    const flatR = s.size === 'large' ? 65 : s.size === 'medium' ? 35 : 25;
+    if (sd < flatR) {
+      const t = sd / flatR;
+      // Plateau: terrain is ~97% flat within 85% of radius, then rapid linear falloff
+      // This ensures walls, towers, and corner structures all sit on level ground
+      const f = t < 0.85 ? 1.0 : Math.max(0, 1 - (t - 0.85) / 0.15);
+      settleFlatten = Math.max(settleFlatten, f * 0.97);
+    }
   }
 
   const baseHeight = (h1 + h2 + h3) * (1 - flattenFactor * 0.8);
