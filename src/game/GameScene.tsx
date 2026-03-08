@@ -12,6 +12,7 @@ import { Enemies } from './components/Enemies';
 import { AmbientEffects } from './components/AmbientEffects';
 import { BuildingSystem } from './components/BuildingSystem';
 import { LootPickups } from './components/LootPickups';
+import { Horses } from './components/Horses';
 import { CameraController } from './systems/CameraController';
 import { InputFlusher } from './systems/InputFlusher';
 import { BuildModeController } from './systems/BuildModeController';
@@ -32,6 +33,7 @@ export function GameScene() {
     progression, recordEnemyKill, secureArea,
     lootPickups, addLootPickups, collectLoot,
     notification, getAvailableBuildables,
+    horses, mountedHorseId, mountHorse, dismountHorse, updateHorsePosition,
   } = useGameState();
 
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
@@ -57,18 +59,32 @@ export function GameScene() {
     return () => cancelAnimationFrame(raf);
   }, [applyPlayerDamage]);
 
-  // Check if areas are secured (all enemies dead nearby)
+  // Update horse position when mounted
+  useEffect(() => {
+    if (!mountedHorseId) return;
+    let raf: number;
+    const sync = () => {
+      const pos = playerPositionRef.current;
+      updateHorsePosition(mountedHorseId, [pos.x, pos.y - 1.8, pos.z], playerRotationRef.current);
+      raf = requestAnimationFrame(sync);
+    };
+    raf = requestAnimationFrame(sync);
+    return () => cancelAnimationFrame(raf);
+  }, [mountedHorseId, updateHorsePosition]);
+
+  // Check if areas are secured
   useEffect(() => {
     const checkInterval = setInterval(() => {
       for (const [key, poi] of Object.entries(POIS)) {
         if (progression.areasSecured.includes(key)) continue;
+        if (key === 'village') continue;
         const nearbyEnemies = enemies.filter(e => {
           if (e.state === 'dead') return false;
           const dx = e.position[0] - poi.x;
           const dz = e.position[2] - poi.z;
           return dx * dx + dz * dz < POI_ZONE_RADIUS * POI_ZONE_RADIUS;
         });
-        if (nearbyEnemies.length === 0 && key !== 'village') {
+        if (nearbyEnemies.length === 0) {
           secureArea(key);
         }
       }
@@ -89,7 +105,6 @@ export function GameScene() {
       if (e.id !== id) return e;
       const newHealth = e.health - damage;
       if (newHealth <= 0) {
-        // Drop loot
         const drops = generateLootDrop(e.position, e.type);
         if (drops.length > 0) addLootPickups(drops);
         recordEnemyKill(e.type);
@@ -112,6 +127,8 @@ export function GameScene() {
     setEnemies(updated);
   }, []);
 
+  const isMounted = mountedHorseId !== null;
+
   return (
     <div className="w-screen h-screen bg-background overflow-hidden cursor-crosshair">
       <SurvivalHUD
@@ -125,6 +142,7 @@ export function GameScene() {
         progression={progression}
         notification={notification}
         availableBuildables={getAvailableBuildables()}
+        isMounted={isMounted}
       />
       <Canvas shadows camera={{ fov: 55, near: 0.5, far: 500, position: [0, 10, 15] }}
         style={{ width: '100%', height: '100%' }}>
@@ -141,7 +159,7 @@ export function GameScene() {
         <Water />
         <POIs />
         <AmbientEffects />
-        <CameraController targetRef={playerPositionRef} azimuthRef={cameraAzimuthRef} />
+        <CameraController targetRef={playerPositionRef} azimuthRef={cameraAzimuthRef} isMounted={isMounted} />
         <Player
           survival={survival}
           onSurvivalUpdate={updateSurvival}
@@ -156,6 +174,11 @@ export function GameScene() {
           lootPickups={lootPickups}
           onCollectLoot={collectLoot}
           onEatFood={eatFood}
+          horses={horses}
+          onMountHorse={mountHorse}
+          onDismountHorse={dismountHorse}
+          mountedHorseId={mountedHorseId}
+          onSetInteractionText={setInteractionText}
         />
         <WorldObjects
           resources={resources}
@@ -169,6 +192,7 @@ export function GameScene() {
           onEatFood={eatFood}
         />
         <LootPickups pickups={lootPickups} />
+        <Horses horses={horses} playerPositionRef={playerPositionRef} />
         <Enemies
           enemies={enemies}
           playerPositionRef={playerPositionRef}

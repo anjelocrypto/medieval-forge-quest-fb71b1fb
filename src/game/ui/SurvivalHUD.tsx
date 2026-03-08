@@ -13,6 +13,7 @@ interface HUDProps {
   progression: ProgressionState;
   notification: string | null;
   availableBuildables: BuildableConfig[];
+  isMounted?: boolean;
 }
 
 function StatBar({ label, value, max, color, warning }: {
@@ -34,6 +35,7 @@ function StatBar({ label, value, max, color, warning }: {
 export function SurvivalHUD({
   survival, inventory, interactionText, buildMode, selectedBuildIndex,
   buildFeedback, damageFlash, progression, notification, availableBuildables,
+  isMounted = false,
 }: HUDProps) {
   const lowHunger = survival.hunger < 20;
   const lowTemp = survival.temperature < 25;
@@ -74,6 +76,7 @@ export function SurvivalHUD({
           {lowHunger && <span className="text-xs px-1 rounded" style={{ background: 'rgba(200,100,0,0.3)' }}>🍖 Hungry</span>}
           {lowTemp && <span className="text-xs px-1 rounded" style={{ background: 'rgba(80,120,200,0.3)' }}>❄️ Cold</span>}
           {lowHealth && <span className="text-xs px-1 rounded" style={{ background: 'rgba(200,0,0,0.3)' }}>💔 Wounded</span>}
+          {isMounted && <span className="text-xs px-1 rounded" style={{ background: 'rgba(100,80,40,0.3)' }}>🐴 Mounted</span>}
         </div>
       </div>
 
@@ -161,12 +164,12 @@ export function SurvivalHUD({
         style={{ background: 'hsl(var(--hud-bg))' }}>
         <div><kbd className="font-mono text-foreground/70">WASD</kbd> Move</div>
         <div><kbd className="font-mono text-foreground/70">SHIFT</kbd> Run</div>
-        <div><kbd className="font-mono text-foreground/70">SPACE</kbd> Jump</div>
+        {!isMounted && <div><kbd className="font-mono text-foreground/70">SPACE</kbd> Jump</div>}
         <div><kbd className="font-mono text-foreground/70">MOUSE</kbd> Look</div>
-        <div><kbd className="font-mono text-foreground/70">CLICK</kbd> Attack</div>
-        <div><kbd className="font-mono text-foreground/70">E</kbd> Gather/Use</div>
+        {!isMounted && <div><kbd className="font-mono text-foreground/70">CLICK</kbd> Attack</div>}
+        <div><kbd className="font-mono text-foreground/70">E</kbd> {isMounted ? 'Dismount' : 'Interact'}</div>
         <div><kbd className="font-mono text-foreground/70">F</kbd> Eat Food</div>
-        <div><kbd className="font-mono text-foreground/70">B</kbd> Build</div>
+        {!isMounted && <div><kbd className="font-mono text-foreground/70">B</kbd> Build</div>}
         <div><kbd className="font-mono text-foreground/70">SCROLL</kbd> Zoom</div>
       </div>
 

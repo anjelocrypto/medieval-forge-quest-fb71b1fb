@@ -15,23 +15,23 @@ export const GRAVITY = 30;
 export const CAMERA_OFFSET = new THREE.Vector3(0, 6, 10);
 export const CAMERA_LERP_SPEED = 5;
 
-// Survival
+// Survival — balanced for pressure without tedium
 export const MAX_HEALTH = 100;
 export const MAX_STAMINA = 100;
 export const MAX_HUNGER = 100;
 export const MAX_TEMPERATURE = 100;
-export const HUNGER_DRAIN = 0.4; // per second — slightly faster for pressure
-export const STAMINA_DRAIN = 15;
-export const STAMINA_REGEN = 8;
-export const TEMPERATURE_DRAIN = 0.15; // base temp loss per second (frontier is cold)
-export const CAMPFIRE_WARMTH_RANGE = 12;
-export const CAMPFIRE_WARMTH_RATE = 8; // temp restore per second near fire
-export const SHELTER_EFFECT_RANGE = 8;
-export const SHELTER_HUNGER_REDUCTION = 0.5; // multiplier on hunger drain
-export const SHELTER_STAMINA_BONUS = 4; // extra regen per sec
-export const LOW_HUNGER_THRESHOLD = 20; // below this, stamina regen halved
-export const LOW_TEMP_THRESHOLD = 25; // below this, take cold damage
-export const COLD_DAMAGE_RATE = 3; // HP per second when freezing
+export const HUNGER_DRAIN = 0.3; // per second (was 0.4 — less punishing)
+export const STAMINA_DRAIN = 12; // while running (was 15)
+export const STAMINA_REGEN = 10; // per second (was 8 — faster recovery)
+export const TEMPERATURE_DRAIN = 0.12; // base temp loss per second (was 0.15)
+export const CAMPFIRE_WARMTH_RANGE = 14; // radius (was 12 — more useful)
+export const CAMPFIRE_WARMTH_RATE = 10; // temp restore per second near fire (was 8)
+export const SHELTER_EFFECT_RANGE = 10; // radius (was 8)
+export const SHELTER_HUNGER_REDUCTION = 0.4; // multiplier on hunger drain (was 0.5 — stronger)
+export const SHELTER_STAMINA_BONUS = 6; // extra regen per sec (was 4)
+export const LOW_HUNGER_THRESHOLD = 20;
+export const LOW_TEMP_THRESHOLD = 25;
+export const COLD_DAMAGE_RATE = 2; // HP per second when freezing (was 3 — less punishing)
 export const FOOD_HUNGER_RESTORE = 25;
 
 // Colors (medieval palette)
