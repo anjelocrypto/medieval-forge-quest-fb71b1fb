@@ -16,6 +16,8 @@ import { SurvivalState, LootPickup } from '../types';
 import { EnemyData } from '../systems/EnemyData';
 import { PlacedStructure } from '../systems/BuildingData';
 import { HorseData, HORSE_SPEED, HORSE_RUN_SPEED, MOUNT_RANGE, DISMOUNT_OFFSET } from '../systems/HorseData';
+import { resolveCollision, rebuildObstacles } from '../systems/CollisionSystem';
+import { WorldResource } from '../systems/WorldResources';
 
 interface PlayerProps {
   onSurvivalUpdate: (updates: Partial<SurvivalState>) => void;
@@ -36,6 +38,7 @@ interface PlayerProps {
   onDismountHorse: () => void;
   mountedHorseId: string | null;
   onSetInteractionText: (text: string | null) => void;
+  resources: WorldResource[];
 }
 
 const _camForward = new THREE.Vector3();
@@ -49,16 +52,20 @@ const _toEnemy = new THREE.Vector3();
 const ACCEL_GROUND = 35;
 const ACCEL_GROUND_RUN = 40;
 const DECEL_GROUND = 18;
-const ACCEL_MOUNTED = 20;
-const DECEL_MOUNTED = 10;
+const ACCEL_MOUNTED = 14; // slower acceleration = heavier feel
+const DECEL_MOUNTED = 6; // slower decel = momentum
 const TURN_SPEED_FOOT = 12;
-const TURN_SPEED_MOUNTED = 6;
+const TURN_SPEED_MOUNTED = 3.5; // much wider turning arc
+const HORSE_TURN_SPEED_STANDING = 5; // faster turn when slow/standing
+const PLAYER_RADIUS = 0.4;
+const MOUNTED_RADIUS = 1.0; // larger collision footprint when riding
 
 export function Player({
   onSurvivalUpdate, survival, playerPositionRef, playerRotationRef,
   cameraAzimuthRef, enemies, onEnemyHit, onRespawn, buildMode,
   structures, lootPickups, onCollectLoot, onEatFood,
   horses, onMountHorse, onDismountHorse, mountedHorseId, onSetInteractionText,
+  resources,
 }: PlayerProps) {
   const groupRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Group>(null);
@@ -80,6 +87,8 @@ export function Player({
   const leanRef = useRef(0); // lateral lean
   const hipSwayRef = useRef(0);
   const idleShiftRef = useRef(0);
+  const collisionRebuildTimer = useRef(0);
+  const horseRotRef = useRef(0); // horse's own facing for smooth turning
   const isDead = survival.health <= 0;
   const isMounted = mountedHorseId !== null;
 
