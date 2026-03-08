@@ -1,10 +1,10 @@
 import { useFrame } from '@react-three/fiber';
 import { flushInput } from './InputSystem';
 
-// Must be placed inside Canvas to flush input edge-triggers each frame
 export function InputFlusher() {
+  // Negative priority = runs LAST in the frame
   useFrame(() => {
     flushInput();
-  }, 999); // high priority = runs last
+  }, -999);
   return null;
 }

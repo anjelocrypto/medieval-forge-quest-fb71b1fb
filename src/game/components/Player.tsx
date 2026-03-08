@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { getTerrainHeight } from './Terrain';
-import { getMovementInput, wasMouseJustClicked } from '../systems/InputSystem';
+import { getMovementInput } from '../systems/InputSystem';
 import {
   PLAYER_SPEED, PLAYER_RUN_SPEED, PLAYER_JUMP_FORCE,
   PLAYER_HEIGHT, GRAVITY, STAMINA_DRAIN, STAMINA_REGEN, HUNGER_DRAIN,
@@ -20,11 +20,12 @@ interface PlayerProps {
   enemies: EnemyData[];
   onEnemyHit: (id: string, damage: number) => void;
   onRespawn: () => void;
+  buildMode: boolean;
 }
 
 export function Player({
   onSurvivalUpdate, survival, playerPositionRef, playerRotationRef,
-  cameraAzimuthRef, enemies, onEnemyHit, onRespawn,
+  cameraAzimuthRef, enemies, onEnemyHit, onRespawn, buildMode,
 }: PlayerProps) {
   const groupRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Group>(null);
@@ -32,7 +33,7 @@ export function Player({
   const isGroundedRef = useRef(true);
   const animTimeRef = useRef(0);
   const attackCooldownRef = useRef(0);
-  const attackAnimRef = useRef(0); // visual swing timer
+  const attackAnimRef = useRef(0);
   const isDead = survival.health <= 0;
 
   useEffect(() => {
@@ -43,7 +44,6 @@ export function Player({
     }
   }, []);
 
-  // Respawn on death
   useEffect(() => {
     if (isDead) {
       const timer = setTimeout(() => {
@@ -100,12 +100,11 @@ export function Player({
       isGroundedRef.current = false;
     }
 
-    // Attack
-    if (input.attack && attackCooldownRef.current <= 0) {
+    // Attack — only in explore mode, not build mode
+    if (!buildMode && input.attack && attackCooldownRef.current <= 0) {
       attackCooldownRef.current = PLAYER_ATTACK_COOLDOWN;
       attackAnimRef.current = 0.3;
 
-      // Hit detection — forward cone
       const playerAngle = bodyRef.current.rotation.y;
       const forward = new THREE.Vector3(Math.sin(playerAngle), 0, Math.cos(playerAngle));
 
@@ -115,11 +114,8 @@ export function Player({
         const dz = enemy.position[2] - pos.z;
         const dist = Math.sqrt(dx * dx + dz * dz);
         if (dist > PLAYER_ATTACK_RANGE) continue;
-
-        // Check angle
         const toEnemy = new THREE.Vector3(dx, 0, dz).normalize();
-        const dot = forward.dot(toEnemy);
-        if (dot > Math.cos(PLAYER_ATTACK_ARC)) {
+        if (forward.dot(toEnemy) > Math.cos(PLAYER_ATTACK_ARC)) {
           onEnemyHit(enemy.id, PLAYER_ATTACK_DAMAGE);
         }
       }
@@ -132,12 +128,10 @@ export function Player({
 
     const terrainY = getTerrainHeight(pos.x, pos.z) + PLAYER_HEIGHT / 2;
     if (pos.y <= terrainY) { pos.y = terrainY; vel.y = 0; isGroundedRef.current = true; }
-
     pos.x = THREE.MathUtils.clamp(pos.x, -230, 230);
     pos.z = THREE.MathUtils.clamp(pos.z, -230, 230);
     playerPositionRef.current.copy(pos);
 
-    // Survival
     const isMoving = moveDir.length() > 0;
     const newStamina = canRun && isMoving
       ? survival.stamina - STAMINA_DRAIN * dt
@@ -169,49 +163,40 @@ export function Player({
   return (
     <group ref={groupRef}>
       <group ref={bodyRef}>
-        {/* Torso */}
         <mesh position={[0, 0.1, 0]} castShadow>
           <boxGeometry args={[0.7, 0.9, 0.4]} />
           <meshLambertMaterial color="#5a3a1a" />
         </mesh>
-        {/* Head */}
         <mesh position={[0, 0.75, 0]} castShadow>
           <boxGeometry args={[0.4, 0.4, 0.4]} />
           <meshLambertMaterial color="#d4a574" />
         </mesh>
-        {/* Helmet */}
         <mesh position={[0, 0.9, 0]} castShadow>
           <boxGeometry args={[0.45, 0.2, 0.45]} />
           <meshLambertMaterial color="#6a6a6a" />
         </mesh>
-        {/* Left Arm */}
         <mesh position={[-0.5, 0.05, 0]} rotation={[armSwing, 0, 0]} castShadow>
           <boxGeometry args={[0.2, 0.7, 0.2]} />
           <meshLambertMaterial color="#5a3a1a" />
         </mesh>
-        {/* Right Arm + Sword */}
         <group position={[0.5, 0.05, 0]} rotation={[-armSwing + attackSwing, 0, 0]}>
           <mesh castShadow>
             <boxGeometry args={[0.2, 0.7, 0.2]} />
             <meshLambertMaterial color="#5a3a1a" />
           </mesh>
-          {/* Sword */}
           <mesh position={[0, -0.5, 0.15]} castShadow>
             <boxGeometry args={[0.06, 0.7, 0.04]} />
             <meshLambertMaterial color="#aaa" />
           </mesh>
-          {/* Hilt */}
           <mesh position={[0, -0.12, 0.15]} castShadow>
             <boxGeometry args={[0.15, 0.06, 0.06]} />
             <meshLambertMaterial color="#6b4f10" />
           </mesh>
         </group>
-        {/* Left Leg */}
         <mesh position={[-0.2, -0.65, 0]} rotation={[-armSwing, 0, 0]} castShadow>
           <boxGeometry args={[0.25, 0.6, 0.25]} />
           <meshLambertMaterial color="#3a2a0a" />
         </mesh>
-        {/* Right Leg */}
         <mesh position={[0.2, -0.65, 0]} rotation={[armSwing, 0, 0]} castShadow>
           <boxGeometry args={[0.25, 0.6, 0.25]} />
           <meshLambertMaterial color="#3a2a0a" />

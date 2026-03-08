@@ -10,8 +10,10 @@ import { Sky } from './components/Sky';
 import { WorldObjects } from './components/WorldObjects';
 import { Enemies } from './components/Enemies';
 import { AmbientEffects } from './components/AmbientEffects';
+import { BuildingSystem } from './components/BuildingSystem';
 import { CameraController } from './systems/CameraController';
 import { InputFlusher } from './systems/InputFlusher';
+import { BuildModeController } from './systems/BuildModeController';
 import { SurvivalHUD } from './ui/SurvivalHUD';
 import { useGameState } from './hooks/useGameState';
 import { generateWorldResources, WorldResource } from './systems/WorldResources';
@@ -22,6 +24,9 @@ export function GameScene() {
   const {
     survival, updateSurvival, inventory, addResource,
     interactionText, setInteractionText,
+    buildMode, toggleBuildMode, selectedBuildIndex, cycleBuild,
+    structures, placeStructure, buildFeedback, setBuildFeedback,
+    damageFlash, applyPlayerDamage,
   } = useGameState();
 
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
@@ -29,9 +34,24 @@ export function GameScene() {
   const playerPositionRef = useRef(new THREE.Vector3(0, 0, 0));
   const playerRotationRef = useRef(0);
   const cameraAzimuthRef = useRef(0);
+  const pendingPlayerDamageRef = useRef(0);
 
-  // Initialize input system once
   useEffect(() => { initInput(); }, []);
+
+  // Apply accumulated enemy damage each frame via RAF
+  useEffect(() => {
+    let raf: number;
+    const tick = () => {
+      if (pendingPlayerDamageRef.current > 0) {
+        const dmg = pendingPlayerDamageRef.current;
+        pendingPlayerDamageRef.current = 0;
+        applyPlayerDamage(dmg);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [applyPlayerDamage]);
 
   const handleDepleteResource = useCallback((id: string) => {
     setResources(prev => prev.map(r => r.id === id ? { ...r, depleted: true, health: 0 } : r));
@@ -45,16 +65,18 @@ export function GameScene() {
     setEnemies(prev => prev.map(e => {
       if (e.id !== id) return e;
       const newHealth = e.health - damage;
-      return { ...e, health: Math.max(0, newHealth), hitFlash: 0.2, state: newHealth <= 0 ? 'dead' as const : e.state };
+      return {
+        ...e,
+        health: Math.max(0, newHealth),
+        hitFlash: 0.25,
+        state: newHealth <= 0 ? 'dead' as const : e.state,
+      };
     }));
   }, []);
 
-  const handlePlayerDamage = useCallback((amount: number) => {
-    updateSurvival({ health: survival.health - amount });
-  }, [survival.health, updateSurvival]);
-
   const handleRespawn = useCallback(() => {
     updateSurvival({ health: 100, stamina: 100, hunger: 80, temperature: 70 });
+    pendingPlayerDamageRef.current = 0;
   }, [updateSurvival]);
 
   const handleEnemiesUpdate = useCallback((updated: EnemyData[]) => {
@@ -63,13 +85,24 @@ export function GameScene() {
 
   return (
     <div className="w-screen h-screen bg-background overflow-hidden cursor-crosshair">
-      <SurvivalHUD survival={survival} inventory={inventory} interactionText={interactionText} />
-      <Canvas
-        shadows
-        camera={{ fov: 55, near: 0.5, far: 500, position: [0, 10, 15] }}
-        style={{ width: '100%', height: '100%' }}
-      >
+      <SurvivalHUD
+        survival={survival}
+        inventory={inventory}
+        interactionText={interactionText}
+        buildMode={buildMode}
+        selectedBuildIndex={selectedBuildIndex}
+        buildFeedback={buildFeedback}
+        damageFlash={damageFlash}
+      />
+      <Canvas shadows camera={{ fov: 55, near: 0.5, far: 500, position: [0, 10, 15] }}
+        style={{ width: '100%', height: '100%' }}>
         <InputFlusher />
+        <BuildModeController
+          buildMode={buildMode}
+          onToggle={toggleBuildMode}
+          onCycle={cycleBuild}
+          onCancelBuild={toggleBuildMode}
+        />
         <Atmosphere />
         <Sky />
         <Terrain />
@@ -86,6 +119,7 @@ export function GameScene() {
           enemies={enemies}
           onEnemyHit={handleEnemyHit}
           onRespawn={handleRespawn}
+          buildMode={buildMode}
         />
         <WorldObjects
           resources={resources}
@@ -99,7 +133,17 @@ export function GameScene() {
           enemies={enemies}
           playerPositionRef={playerPositionRef}
           onEnemiesUpdate={handleEnemiesUpdate}
-          onPlayerDamage={handlePlayerDamage}
+          pendingPlayerDamageRef={pendingPlayerDamageRef}
+        />
+        <BuildingSystem
+          buildMode={buildMode}
+          selectedIndex={selectedBuildIndex}
+          playerPositionRef={playerPositionRef}
+          playerRotationRef={playerRotationRef}
+          structures={structures}
+          inventory={inventory}
+          onPlace={placeStructure}
+          onSetBuildFeedback={setBuildFeedback}
         />
       </Canvas>
     </div>

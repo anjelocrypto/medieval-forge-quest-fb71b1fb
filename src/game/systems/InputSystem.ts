@@ -1,15 +1,13 @@
 // Shared input state — singleton store readable from any component/system
-// No React context needed; direct mutable reads for game-loop performance
 
 const inputState = {
   keys: new Set<string>(),
   mouseButtons: new Set<number>(),
-  // Edge-triggered actions (consumed on read)
   _justPressed: new Set<string>(),
   _justClicked: new Set<number>(),
+  pointerJustLocked: false,
 };
 
-// Initialization (call once)
 let initialized = false;
 
 export function initInput() {
@@ -38,23 +36,31 @@ export function initInput() {
     inputState.mouseButtons.delete(e.button);
   });
 
-  // Clear state on blur to avoid stuck keys
+  // Track pointer lock to suppress attack on lock-acquisition click
+  document.addEventListener('pointerlockchange', () => {
+    if (document.pointerLockElement) {
+      inputState.pointerJustLocked = true;
+    }
+  });
+
   window.addEventListener('blur', () => {
     inputState.keys.clear();
     inputState.mouseButtons.clear();
   });
 }
 
-// Read helpers
 export function isKeyDown(code: string): boolean {
   return inputState.keys.has(code);
 }
 
+// These do NOT consume — they just check. flushInput clears at end of frame.
 export function wasKeyJustPressed(code: string): boolean {
   return inputState._justPressed.has(code);
 }
 
 export function wasMouseJustClicked(button: number): boolean {
+  // Suppress left-click attack on the frame pointer lock was acquired
+  if (button === 0 && inputState.pointerJustLocked) return false;
   return inputState._justClicked.has(button);
 }
 
@@ -62,21 +68,26 @@ export function isMouseDown(button: number): boolean {
   return inputState.mouseButtons.has(button);
 }
 
-// Call once per frame to clear edge-triggered state
 export function flushInput() {
   inputState._justPressed.clear();
   inputState._justClicked.clear();
+  inputState.pointerJustLocked = false;
 }
 
-// Movement helpers
 export function getMovementInput() {
-  const w = isKeyDown('KeyW') || isKeyDown('ArrowUp');
-  const s = isKeyDown('KeyS') || isKeyDown('ArrowDown');
-  const a = isKeyDown('KeyA') || isKeyDown('ArrowLeft');
-  const d = isKeyDown('KeyD') || isKeyDown('ArrowRight');
-  const run = isKeyDown('ShiftLeft') || isKeyDown('ShiftRight');
-  const jump = wasKeyJustPressed('Space');
-  const interact = wasKeyJustPressed('KeyE');
-  const attack = wasMouseJustClicked(0); // left click
-  return { w, s, a, d, run, jump, interact, attack };
+  return {
+    w: isKeyDown('KeyW') || isKeyDown('ArrowUp'),
+    s: isKeyDown('KeyS') || isKeyDown('ArrowDown'),
+    a: isKeyDown('KeyA') || isKeyDown('ArrowLeft'),
+    d: isKeyDown('KeyD') || isKeyDown('ArrowRight'),
+    run: isKeyDown('ShiftLeft') || isKeyDown('ShiftRight'),
+    jump: wasKeyJustPressed('Space'),
+    interact: wasKeyJustPressed('KeyE'),
+    attack: wasMouseJustClicked(0),
+    buildToggle: wasKeyJustPressed('KeyB'),
+    buildPlace: wasMouseJustClicked(0),
+    buildCancel: wasKeyJustPressed('Escape') || wasMouseJustClicked(2),
+    buildNext: wasKeyJustPressed('KeyQ'),
+    buildPrev: wasKeyJustPressed('KeyR'),
+  };
 }

@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { SurvivalState, ResourceInventory, GameMode } from '../types';
 import { MAX_HEALTH, MAX_STAMINA, MAX_HUNGER, MAX_TEMPERATURE } from '../constants';
+import { PlacedStructure, BUILDABLES } from '../systems/BuildingData';
 
 export function useGameState() {
   const [survival, setSurvival] = useState<SurvivalState>({
@@ -18,6 +19,11 @@ export function useGameState() {
 
   const [gameMode, setGameMode] = useState<GameMode>('explore');
   const [interactionText, setInteractionText] = useState<string | null>(null);
+  const [buildMode, setBuildMode] = useState(false);
+  const [selectedBuildIndex, setSelectedBuildIndex] = useState(0);
+  const [structures, setStructures] = useState<PlacedStructure[]>([]);
+  const [buildFeedback, setBuildFeedback] = useState<string | null>(null);
+  const [damageFlash, setDamageFlash] = useState(0);
 
   const updateSurvival = useCallback((updates: Partial<SurvivalState>) => {
     setSurvival(prev => ({
@@ -32,14 +38,52 @@ export function useGameState() {
     setInventory(prev => ({ ...prev, [type]: prev[type] + amount }));
   }, []);
 
+  const applyPlayerDamage = useCallback((amount: number) => {
+    setSurvival(prev => ({
+      ...prev,
+      health: Math.max(0, prev.health - amount),
+    }));
+    setDamageFlash(1);
+    setTimeout(() => setDamageFlash(0), 200);
+  }, []);
+
+  const toggleBuildMode = useCallback(() => {
+    setBuildMode(prev => !prev);
+    setBuildFeedback(null);
+  }, []);
+
+  const cycleBuild = useCallback((dir: number) => {
+    setSelectedBuildIndex(prev => {
+      const next = prev + dir;
+      if (next < 0) return BUILDABLES.length - 1;
+      if (next >= BUILDABLES.length) return 0;
+      return next;
+    });
+  }, []);
+
+  const placeStructure = useCallback((structure: PlacedStructure) => {
+    const config = BUILDABLES.find(b => b.type === structure.type);
+    if (!config) return;
+    // Deduct resources
+    setInventory(prev => {
+      const next = { ...prev };
+      for (const [key, val] of Object.entries(config.cost)) {
+        next[key as keyof ResourceInventory] -= val || 0;
+      }
+      return next;
+    });
+    setStructures(prev => [...prev, structure]);
+  }, []);
+
   return {
-    survival,
-    updateSurvival,
-    inventory,
-    addResource,
-    gameMode,
-    setGameMode,
-    interactionText,
-    setInteractionText,
+    survival, updateSurvival,
+    inventory, addResource,
+    interactionText, setInteractionText,
+    gameMode, setGameMode,
+    buildMode, toggleBuildMode,
+    selectedBuildIndex, cycleBuild,
+    structures, placeStructure,
+    buildFeedback, setBuildFeedback,
+    damageFlash, applyPlayerDamage,
   };
 }
