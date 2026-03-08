@@ -19,6 +19,16 @@ import { HorseData, HORSE_SPEED, HORSE_RUN_SPEED, MOUNT_RANGE, DISMOUNT_OFFSET }
 import { resolveCollision, rebuildObstacles } from '../systems/CollisionSystem';
 import { WorldResource, INTERACTION_RANGE, GATHER_COOLDOWN, TREE_WOOD_REWARD, ROCK_STONE_REWARD, BERRY_FOOD_REWARD, CRATE_REWARDS } from '../systems/WorldResources';
 
+export interface MountedDebugData {
+  terrainY: number;
+  horseY: number;
+  riderY: number;
+  delta: number;
+  pitch: number;
+  pushX: number;
+  pushZ: number;
+}
+
 interface PlayerProps {
   onSurvivalUpdate: (updates: Partial<SurvivalState>) => void;
   survival: SurvivalState;
@@ -46,6 +56,7 @@ interface PlayerProps {
   shakeResourceRef: React.MutableRefObject<string | null>;
   highlightedResourceRef: React.MutableRefObject<string | null>;
   resources: WorldResource[];
+  mountedDebugRef?: React.MutableRefObject<MountedDebugData>;
 }
 
 const _camForward = new THREE.Vector3();
@@ -76,7 +87,7 @@ export function Player({
   horse, isMounted, onMountHorse, onDismountHorse, onCallHorse, onSetInteractionText,
   onAddResource, onDepleteResource, onHitResource, inventory,
   shakeResourceRef, highlightedResourceRef,
-  resources,
+  resources, mountedDebugRef,
 }: PlayerProps) {
   const groupRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Group>(null);
@@ -105,6 +116,9 @@ export function Player({
   const landRecoveryRef = useRef(0);    // landing stiffness
   const prevMoveRef = useRef(0);        // previous frame move state for transition detection
   const turnDeltaRef = useRef(0);       // accumulated turn for animation
+  const horsePitchRef = useRef(0);      // slope pitch for mounted horse
+  const _internalDebugRef = useRef({ terrainY: 0, horseY: 0, riderY: 0, delta: 0, pitch: 0, pushX: 0, pushZ: 0 });
+  const debugRef = mountedDebugRef || _internalDebugRef;
   const isDead = survival.health <= 0;
 
   useEffect(() => {
@@ -171,9 +185,19 @@ export function Player({
       if (input.interact) {
         onDismountHorse();
         const angle = horseRotRef.current;
-        pos.x += Math.cos(angle + Math.PI * 0.5) * DISMOUNT_OFFSET;
-        pos.z -= Math.sin(angle + Math.PI * 0.5) * DISMOUNT_OFFSET;
+        let dmX = pos.x + Math.cos(angle + Math.PI * 0.5) * DISMOUNT_OFFSET;
+        let dmZ = pos.z - Math.sin(angle + Math.PI * 0.5) * DISMOUNT_OFFSET;
+        // Safety: resolve collision at dismount position
+        const dmResolved = resolveCollision(dmX, dmZ, PLAYER_RADIUS);
+        dmX = dmResolved.x;
+        dmZ = dmResolved.z;
+        pos.x = dmX;
+        pos.z = dmZ;
         pos.y = getTerrainHeight(pos.x, pos.z) + PLAYER_HEIGHT / 2;
+        // Clear mounted physics
+        vel.set(0, 0, 0);
+        currentSpeedRef.current = 0;
+        horsePitchRef.current = 0;
       }
     } else {
       const hdx = pos.x - horse.position[0];
@@ -488,6 +512,30 @@ export function Player({
     if (isMounted) {
       // MOUNTED: ALWAYS snap to terrain — no conditional, no drift, no float
       pos.y = terrainY;
+
+      // Slope pitch — sample terrain front/back along horse facing direction
+      const pitchSampleDist = 1.2; // half horse body length
+      const facingAngle = horseRotRef.current;
+      const frontX = pos.x + Math.sin(facingAngle) * pitchSampleDist;
+      const frontZ = pos.z + Math.cos(facingAngle) * pitchSampleDist;
+      const backX = pos.x - Math.sin(facingAngle) * pitchSampleDist;
+      const backZ = pos.z - Math.cos(facingAngle) * pitchSampleDist;
+      const frontY = getTerrainHeight(frontX, frontZ);
+      const backY = getTerrainHeight(backX, backZ);
+      const slopeAngle = Math.atan2(frontY - backY, pitchSampleDist * 2);
+      const clampedPitch = THREE.MathUtils.clamp(slopeAngle, -0.45, 0.45); // ~25° max
+      horsePitchRef.current = THREE.MathUtils.lerp(horsePitchRef.current, clampedPitch, dt * 8);
+
+      // Debug data
+      const rawTerrainY = getTerrainHeight(pos.x, pos.z);
+      debugRef.current = {
+        terrainY: rawTerrainY,
+        horseY: rawTerrainY,
+        riderY: pos.y,
+        delta: pos.y - (rawTerrainY + heightOffset),
+        pitch: horsePitchRef.current * (180 / Math.PI),
+        pushX, pushZ,
+      };
     } else {
       // On foot: standard conditional grounding with landing impact
       if (pos.y <= terrainY) {
@@ -502,6 +550,7 @@ export function Player({
       } else {
         wasInAirRef.current = true;
       }
+      horsePitchRef.current = THREE.MathUtils.lerp(horsePitchRef.current, 0, dt * 10);
     }
     pos.x = THREE.MathUtils.clamp(pos.x, -290, 290);
     pos.z = THREE.MathUtils.clamp(pos.z, -290, 290);
@@ -699,6 +748,9 @@ export function Player({
   const riderBounce = isMounted ? Math.abs(Math.sin(ht * 2 + 0.3)) * 0.08 * ms : 0;
   const riderSway = isMounted ? Math.sin(ht + 0.2) * 0.04 * ms : 0;
   const riderLean = isMounted ? lean * 0.6 : 0; // rider leans into turns
+  const horsePitch = horsePitchRef.current;
+  // Rider compensates on slopes — leans back uphill, forward downhill
+  const riderSlopeComp = isMounted ? -horsePitch * 0.35 : 0;
 
   if (isDead) {
     return (
@@ -720,7 +772,7 @@ export function Player({
       <group ref={bodyRef}>
         {/* ===== MOUNTED HORSE ===== */}
         {isMounted && (
-          <group position={[riderLean * 0.1, -2.2 + horseBodyBob, 0]}>
+          <group position={[riderLean * 0.1, -2.2 + horseBodyBob, 0]} rotation={[horsePitch, 0, 0]}>
             {/* Body */}
             <mesh position={[0, 1.1, 0]} castShadow>
               <boxGeometry args={[0.7, 0.65, 1.6]} />
@@ -807,7 +859,7 @@ export function Player({
         <group
           position={[hipSway + idleWeightShift, playerY, atkLunge]}
           rotation={[
-            bodyForwardLean + idleSway + airBodyCurl,
+            bodyForwardLean + idleSway + airBodyCurl + riderSlopeComp,
             torsoTwist + atkBodyTwist + (isMounted ? riderSway : 0) + idleHeadLook,
             lean + riderLean
           ]}

@@ -3,7 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Terrain, getTerrainHeight } from './components/Terrain';
 import { Water } from './components/Water';
-import { Player } from './components/Player';
+import { Player, MountedDebugData } from './components/Player';
 import { Atmosphere } from './components/Atmosphere';
 import { Sky } from './components/Sky';
 import { WorldObjects } from './components/WorldObjects';
@@ -41,12 +41,14 @@ export function GameScene() {
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
   const [enemies, setEnemies] = useState<EnemyData[]>(() => generateEnemies());
   const [mapOpen, setMapOpen] = useState(false);
+  const [debugMounted, setDebugMounted] = useState(false);
   const playerPositionRef = useRef(new THREE.Vector3(0, 0, 0));
   const playerRotationRef = useRef(0);
   const cameraAzimuthRef = useRef(0);
   const pendingPlayerDamageRef = useRef(0);
   const shakeResourceRef = useRef<string | null>(null);
   const highlightedResourceRef = useRef<string | null>(null);
+  const mountedDebugRef = useRef({ terrainY: 0, horseY: 0, riderY: 0, delta: 0, pitch: 0, pushX: 0, pushZ: 0 });
 
   useEffect(() => { initInput(); }, []);
 
@@ -105,6 +107,7 @@ export function GameScene() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'KeyM') setMapOpen(prev => !prev);
+      if (e.code === 'F3') { e.preventDefault(); setDebugMounted(prev => !prev); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -211,6 +214,7 @@ export function GameScene() {
           shakeResourceRef={shakeResourceRef}
           highlightedResourceRef={highlightedResourceRef}
           resources={resources}
+          mountedDebugRef={mountedDebugRef}
         />
         <WorldObjects
           resources={resources}
@@ -239,6 +243,49 @@ export function GameScene() {
         />
         <DebugCollision playerPositionRef={playerPositionRef} isMounted={isMounted} />
       </Canvas>
+      {/* Mounted grounding debug overlay — toggle with F3 */}
+      {debugMounted && isMounted && (
+        <MountedDebugOverlay debugRef={mountedDebugRef} posRef={playerPositionRef} />
+      )}
+    </div>
+  );
+}
+
+function MountedDebugOverlay({ debugRef, posRef }: {
+  debugRef: React.MutableRefObject<MountedDebugData>;
+  posRef: React.RefObject<THREE.Vector3>;
+}) {
+  const [data, setData] = useState<MountedDebugData & { x: number; z: number }>({
+    terrainY: 0, horseY: 0, riderY: 0, delta: 0, pitch: 0, pushX: 0, pushZ: 0, x: 0, z: 0,
+  });
+
+  useEffect(() => {
+    let raf: number;
+    const tick = () => {
+      const d = debugRef.current;
+      const p = posRef.current;
+      setData({ ...d, x: p ? p.x : 0, z: p ? p.z : 0 });
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [debugRef, posRef]);
+
+  const deltaColor = Math.abs(data.delta) < 0.01 ? '#0f0' : Math.abs(data.delta) < 0.1 ? '#ff0' : '#f00';
+
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none font-mono text-xs p-3 rounded-lg"
+      style={{ background: 'rgba(0,0,0,0.85)', color: '#0f0', border: '1px solid #333', minWidth: 320 }}>
+      <div className="font-bold text-white mb-1">🐴 MOUNTED DEBUG (F3 toggle)</div>
+      <div>Pos: X={data.x.toFixed(1)} Z={data.z.toFixed(1)}</div>
+      <div>TerrainY: {data.terrainY.toFixed(3)}</div>
+      <div>HorseY: {data.horseY.toFixed(3)}</div>
+      <div>RiderY: {data.riderY.toFixed(3)}</div>
+      <div style={{ color: deltaColor }}>
+        GroundDelta: {data.delta.toFixed(4)} {Math.abs(data.delta) < 0.01 ? '✅' : '⚠️'}
+      </div>
+      <div>SlopePitch: {data.pitch.toFixed(1)}°</div>
+      <div>ColPush: X={data.pushX.toFixed(3)} Z={data.pushZ.toFixed(3)}</div>
     </div>
   );
 }
