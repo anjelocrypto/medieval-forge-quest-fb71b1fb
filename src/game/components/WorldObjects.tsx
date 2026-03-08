@@ -127,6 +127,15 @@ export function WorldObjects({
         lastInteractIdRef.current = null;
         lastInteractTextRef.current = null;
       }
+    } else if (isMounted || horseNearby) {
+      // Horse has priority — clear any cached interaction target
+      if (lastInteractIdRef.current !== null) {
+        onSetInteraction(null);
+        lastInteractIdRef.current = null;
+        lastInteractTextRef.current = null;
+      }
+      nearestId = null;
+      nearestType = null;
     } else {
       nearestId = lastInteractIdRef.current;
       if (nearestId && !nearestId.startsWith('workbench')) {
