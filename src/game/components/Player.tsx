@@ -500,6 +500,30 @@ export function Player({
     if (isMounted) {
       // MOUNTED: ALWAYS snap to terrain — no conditional, no drift, no float
       pos.y = terrainY;
+
+      // Slope pitch — sample terrain front/back along horse facing direction
+      const pitchSampleDist = 1.2; // half horse body length
+      const facingAngle = horseRotRef.current;
+      const frontX = pos.x + Math.sin(facingAngle) * pitchSampleDist;
+      const frontZ = pos.z + Math.cos(facingAngle) * pitchSampleDist;
+      const backX = pos.x - Math.sin(facingAngle) * pitchSampleDist;
+      const backZ = pos.z - Math.cos(facingAngle) * pitchSampleDist;
+      const frontY = getTerrainHeight(frontX, frontZ);
+      const backY = getTerrainHeight(backX, backZ);
+      const slopeAngle = Math.atan2(frontY - backY, pitchSampleDist * 2);
+      const clampedPitch = THREE.MathUtils.clamp(slopeAngle, -0.45, 0.45); // ~25° max
+      horsePitchRef.current = THREE.MathUtils.lerp(horsePitchRef.current, clampedPitch, dt * 8);
+
+      // Debug data
+      const rawTerrainY = getTerrainHeight(pos.x, pos.z);
+      mountedDebugRef.current = {
+        terrainY: rawTerrainY,
+        horseY: rawTerrainY,
+        riderY: pos.y,
+        delta: pos.y - (rawTerrainY + heightOffset),
+        pitch: horsePitchRef.current * (180 / Math.PI),
+        pushX, pushZ,
+      };
     } else {
       // On foot: standard conditional grounding with landing impact
       if (pos.y <= terrainY) {
@@ -514,6 +538,7 @@ export function Player({
       } else {
         wasInAirRef.current = true;
       }
+      horsePitchRef.current = THREE.MathUtils.lerp(horsePitchRef.current, 0, dt * 10);
     }
     pos.x = THREE.MathUtils.clamp(pos.x, -290, 290);
     pos.z = THREE.MathUtils.clamp(pos.z, -290, 290);
