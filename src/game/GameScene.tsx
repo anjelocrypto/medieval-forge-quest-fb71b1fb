@@ -191,6 +191,8 @@ export function GameScene() {
           structures={structures}
           inventory={inventory}
           onEatFood={eatFood}
+          horses={horses}
+          isMounted={isMounted}
         />
         <LootPickups pickups={lootPickups} />
         <Horses horses={horses} playerPositionRef={playerPositionRef} />
