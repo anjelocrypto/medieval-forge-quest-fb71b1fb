@@ -12,12 +12,12 @@ import {
   POIS, POI_ZONE_RADIUS,
 } from '../constants';
 import { PLAYER_ATTACK_COOLDOWN, PLAYER_ATTACK_RANGE, PLAYER_ATTACK_DAMAGE, PLAYER_ATTACK_ARC } from '../systems/EnemyData';
-import { SurvivalState, LootPickup } from '../types';
+import { SurvivalState, LootPickup, ResourceInventory } from '../types';
 import { EnemyData } from '../systems/EnemyData';
 import { PlacedStructure } from '../systems/BuildingData';
 import { HorseData, HORSE_SPEED, HORSE_RUN_SPEED, MOUNT_RANGE, DISMOUNT_OFFSET } from '../systems/HorseData';
 import { resolveCollision, rebuildObstacles } from '../systems/CollisionSystem';
-import { WorldResource } from '../systems/WorldResources';
+import { WorldResource, INTERACTION_RANGE, GATHER_COOLDOWN, TREE_WOOD_REWARD, ROCK_STONE_REWARD, BERRY_FOOD_REWARD, CRATE_REWARDS } from '../systems/WorldResources';
 
 interface PlayerProps {
   onSurvivalUpdate: (updates: Partial<SurvivalState>) => void;
@@ -39,6 +39,12 @@ interface PlayerProps {
   onDismountHorse: () => void;
   onCallHorse: () => void;
   onSetInteractionText: (text: string | null) => void;
+  onAddResource: (type: keyof ResourceInventory, amount: number) => void;
+  onDepleteResource: (id: string) => void;
+  onHitResource: (id: string) => void;
+  inventory: ResourceInventory;
+  shakeResourceRef: React.MutableRefObject<string | null>;
+  highlightedResourceRef: React.MutableRefObject<string | null>;
   resources: WorldResource[];
 }
 
@@ -66,6 +72,8 @@ export function Player({
   cameraAzimuthRef, enemies, onEnemyHit, onRespawn, buildMode,
   structures, lootPickups, onCollectLoot, onEatFood,
   horse, isMounted, onMountHorse, onDismountHorse, onCallHorse, onSetInteractionText,
+  onAddResource, onDepleteResource, onHitResource, inventory,
+  shakeResourceRef, highlightedResourceRef,
   resources,
 }: PlayerProps) {
   const groupRef = useRef<THREE.Group>(null);
@@ -90,6 +98,7 @@ export function Player({
   const idleShiftRef = useRef(0);
   const collisionRebuildTimer = useRef(0);
   const horseRotRef = useRef(0); // horse's own facing for smooth turning
+  const gatherCooldownRef = useRef(0);
   const isDead = survival.health <= 0;
 
   useEffect(() => {
@@ -126,6 +135,7 @@ export function Player({
     attackAnimRef.current = Math.max(0, attackAnimRef.current - dt);
     comboWindowRef.current = Math.max(0, comboWindowRef.current - dt);
     landingImpactRef.current = Math.max(0, landingImpactRef.current - dt * 4);
+    gatherCooldownRef.current = Math.max(0, gatherCooldownRef.current - dt);
     idleShiftRef.current += dt;
 
     if (comboWindowRef.current <= 0) comboRef.current = 0;
@@ -145,38 +155,118 @@ export function Player({
     // Call horse with H
     if (input.callHorse) onCallHorse();
 
-    // === HORSE INTERACTION — checked EVERY frame ===
-    {
-      if (isMounted) {
-        onSetInteractionText('🐴 Press E — Dismount');
+    // === UNIFIED INTERACTION SYSTEM — Player is sole authority ===
+    if (isMounted) {
+      onSetInteractionText('🐴 Press E — Dismount');
+      highlightedResourceRef.current = null;
+      if (input.interact) {
+        onDismountHorse();
+        const angle = horseRotRef.current;
+        pos.x += Math.cos(angle + Math.PI * 0.5) * DISMOUNT_OFFSET;
+        pos.z -= Math.sin(angle + Math.PI * 0.5) * DISMOUNT_OFFSET;
+        pos.y = getTerrainHeight(pos.x, pos.z) + PLAYER_HEIGHT / 2;
+      }
+    } else {
+      const hdx = pos.x - horse.position[0];
+      const hdz = pos.z - horse.position[2];
+      const horseDist = Math.sqrt(hdx * hdx + hdz * hdz);
+      const horseInRange = horseDist < MOUNT_RANGE && horse.state !== 'mounted';
+
+      if (horseInRange) {
+        onSetInteractionText('🐴 Press E — Mount Horse');
+        highlightedResourceRef.current = null;
         if (input.interact) {
-          onDismountHorse();
-          const angle = horseRotRef.current;
-          pos.x += Math.cos(angle + Math.PI * 0.5) * DISMOUNT_OFFSET;
-          pos.z -= Math.sin(angle + Math.PI * 0.5) * DISMOUNT_OFFSET;
-          pos.y = getTerrainHeight(pos.x, pos.z) + PLAYER_HEIGHT / 2;
+          onMountHorse();
+          pos.x = horse.position[0];
+          pos.z = horse.position[2];
+          pos.y = horse.position[1] + 2.2;
+          horseRotRef.current = horse.rotation;
+          bodyRef.current.rotation.y = horse.rotation;
+          playerRotationRef.current = horse.rotation;
+          vel.set(0, 0, 0);
+          currentSpeedRef.current = 0;
+          rebuildObstacles(resources, structures, [horse], horse.id);
+        }
+      } else if (!buildMode) {
+        // Resource / workbench interaction
+        let nearestRes: WorldResource | null = null;
+        let nearestDist = INTERACTION_RANGE;
+        let nearestType: string | null = null;
+        let nearestId: string | null = null;
+
+        for (let i = 0; i < resources.length; i++) {
+          const res = resources[i];
+          if (res.depleted || !res.gatherable) continue;
+          const rdx = pos.x - res.position[0];
+          const rdz = pos.z - res.position[2];
+          const rDistSq = rdx * rdx + rdz * rdz;
+          if (rDistSq < nearestDist * nearestDist) {
+            nearestDist = Math.sqrt(rDistSq);
+            nearestRes = res;
+            nearestType = res.type;
+            nearestId = res.id;
+          }
+        }
+
+        for (const s of structures) {
+          if (s.type !== 'workbench') continue;
+          const wdx = pos.x - s.position[0];
+          const wdz = pos.z - s.position[2];
+          const wDistSq = wdx * wdx + wdz * wdz;
+          if (wDistSq < INTERACTION_RANGE * INTERACTION_RANGE) {
+            const wDist = Math.sqrt(wDistSq);
+            if (wDist < nearestDist) {
+              nearestDist = wDist;
+              nearestRes = null;
+              nearestType = 'workbench';
+              nearestId = 'workbench-' + s.id;
+            }
+          }
+        }
+
+        highlightedResourceRef.current = nearestId;
+
+        if (nearestType) {
+          let text = '';
+          if (nearestType === 'tree') text = `🪓 Press E — Chop Tree (${nearestRes!.health}/${nearestRes!.maxHealth})`;
+          else if (nearestType === 'rock') text = `⛏ Press E — Mine Rock (${nearestRes!.health}/${nearestRes!.maxHealth})`;
+          else if (nearestType === 'berry_bush') text = `🫐 Press E — Pick Berries (${nearestRes!.health}/${nearestRes!.maxHealth})`;
+          else if (nearestType === 'crate') text = `📦 Press E — Break Crate (${nearestRes!.health}/${nearestRes!.maxHealth})`;
+          else if (nearestType === 'workbench') text = `🔨 Press E — Craft Food (5 Wood → 2 Food) [Wood: ${inventory.wood}]`;
+          onSetInteractionText(text);
+
+          if (input.interact && gatherCooldownRef.current <= 0) {
+            gatherCooldownRef.current = GATHER_COOLDOWN;
+            if (nearestType === 'workbench' && inventory.wood >= 5) {
+              onAddResource('wood', -5);
+              onAddResource('food', 2);
+            } else if (nearestRes) {
+              shakeResourceRef.current = nearestRes.id;
+              if (nearestRes.health <= 1) {
+                onDepleteResource(nearestRes.id);
+                if (nearestRes.type === 'tree') onAddResource('wood', TREE_WOOD_REWARD);
+                else if (nearestRes.type === 'rock') onAddResource('stone', ROCK_STONE_REWARD);
+                else if (nearestRes.type === 'berry_bush') onAddResource('food', BERRY_FOOD_REWARD);
+                else if (nearestRes.type === 'crate') {
+                  onAddResource('wood', CRATE_REWARDS.wood);
+                  onAddResource('stone', CRATE_REWARDS.stone);
+                  onAddResource('food', CRATE_REWARDS.food);
+                }
+              } else {
+                onHitResource(nearestRes.id);
+                if (nearestRes.type === 'tree') onAddResource('wood', 1);
+                else if (nearestRes.type === 'rock') onAddResource('stone', 1);
+                else if (nearestRes.type === 'berry_bush') onAddResource('food', 1);
+                else if (nearestRes.type === 'crate') onAddResource('wood', 1);
+              }
+            }
+          }
+        } else {
+          onSetInteractionText(null);
         }
       } else {
-        // Check if horse is in mount range
-        const dx = pos.x - horse.position[0];
-        const dz = pos.z - horse.position[2];
-        const d = Math.sqrt(dx * dx + dz * dz);
-        if (d < MOUNT_RANGE && horse.state !== 'mounted') {
-          onSetInteractionText('🐴 Press E — Mount Horse');
-          if (input.interact) {
-            onMountHorse();
-            pos.x = horse.position[0];
-            pos.z = horse.position[2];
-            pos.y = horse.position[1] + 2.2;
-            horseRotRef.current = horse.rotation;
-            bodyRef.current.rotation.y = horse.rotation;
-            playerRotationRef.current = horse.rotation;
-            vel.set(0, 0, 0);
-            currentSpeedRef.current = 0;
-            rebuildObstacles(resources, structures, [horse], horse.id);
-          }
-          (input as any)._horseClaimed = true;
-        }
+        highlightedResourceRef.current = null;
+        onSetInteractionText(null);
       }
     }
 

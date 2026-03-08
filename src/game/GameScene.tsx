@@ -42,6 +42,8 @@ export function GameScene() {
   const playerRotationRef = useRef(0);
   const cameraAzimuthRef = useRef(0);
   const pendingPlayerDamageRef = useRef(0);
+  const shakeResourceRef = useRef<string | null>(null);
+  const highlightedResourceRef = useRef<string | null>(null);
 
   useEffect(() => { initInput(); }, []);
 
@@ -130,9 +132,6 @@ export function GameScene() {
     setEnemies(updated);
   }, []);
 
-  // Wrap horse as single-element array for collision system compatibility
-  const horsesArray = [horse];
-
   return (
     <div className="w-screen h-screen bg-background overflow-hidden cursor-crosshair">
       <SurvivalHUD
@@ -184,23 +183,22 @@ export function GameScene() {
           onDismountHorse={dismountHorse}
           onCallHorse={callHorse}
           onSetInteractionText={setInteractionText}
+          onAddResource={addResource}
+          onDepleteResource={handleDepleteResource}
+          onHitResource={handleHitResource}
+          inventory={inventory}
+          shakeResourceRef={shakeResourceRef}
+          highlightedResourceRef={highlightedResourceRef}
           resources={resources}
         />
         <WorldObjects
           resources={resources}
           playerPositionRef={playerPositionRef}
-          onSetInteraction={setInteractionText}
-          onAddResource={addResource}
-          onDepleteResource={handleDepleteResource}
-          onHitResource={handleHitResource}
-          structures={structures}
-          inventory={inventory}
-          onEatFood={eatFood}
-          horse={horse}
-          isMounted={isMounted}
+          shakeResourceRef={shakeResourceRef}
+          highlightedResourceRef={highlightedResourceRef}
         />
         <LootPickups pickups={lootPickups} />
-        <Horse horse={horse} playerPositionRef={playerPositionRef} onUpdateHorse={updateHorse} />
+        <Horse horse={horse} playerPositionRef={playerPositionRef} onUpdateHorse={updateHorse} isMounted={isMounted} />
         <Enemies
           enemies={enemies}
           playerPositionRef={playerPositionRef}

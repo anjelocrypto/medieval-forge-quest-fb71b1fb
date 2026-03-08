@@ -9,7 +9,9 @@ interface Props {
   horse: HorseData;
   playerPositionRef: React.RefObject<THREE.Vector3>;
   onUpdateHorse: (updates: Partial<HorseData>) => void;
+  isMounted: boolean;
 }
+
 
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 const bodyMat = new THREE.MeshLambertMaterial({ color: '#6a4a2a' });
@@ -19,7 +21,7 @@ const hoofMat = new THREE.MeshLambertMaterial({ color: '#1a1a1a' });
 const eyeMat = new THREE.MeshBasicMaterial({ color: '#111' });
 const saddleMat = new THREE.MeshLambertMaterial({ color: '#5a2010' });
 
-export function Horse({ horse, playerPositionRef, onUpdateHorse }: Props) {
+export function Horse({ horse, playerPositionRef, onUpdateHorse, isMounted }: Props) {
   const animRef = useRef(0);
   const moveSpeedRef = useRef(0);
   const rotRef = useRef(horse.rotation);
@@ -29,7 +31,7 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse }: Props) {
     animRef.current += dt;
 
     // Don't process movement if mounted (player controls it)
-    if (horse.state === 'mounted') return;
+    if (horse.state === 'mounted' || isMounted) return;
 
     const playerPos = playerPositionRef.current;
     if (!playerPos) return;
@@ -87,7 +89,7 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse }: Props) {
   });
 
   // Don't render if mounted (player renders the horse body)
-  if (horse.state === 'mounted') return null;
+  if (horse.state === 'mounted' || isMounted) return null;
 
   // Cull if far from player
   const playerPos = playerPositionRef.current;
