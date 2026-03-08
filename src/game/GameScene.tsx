@@ -1,40 +1,37 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Terrain } from './components/Terrain';
 import { Water } from './components/Water';
-import { Trees } from './components/Trees';
-import { Rocks } from './components/Rocks';
 import { POIs } from './components/POIs';
 import { Player } from './components/Player';
 import { Atmosphere } from './components/Atmosphere';
 import { Sky } from './components/Sky';
-import { Gatherables } from './components/Gatherables';
+import { WorldObjects } from './components/WorldObjects';
+import { Enemies } from './components/Enemies';
 import { AmbientEffects } from './components/AmbientEffects';
 import { CameraController } from './systems/CameraController';
+import { InputFlusher } from './systems/InputFlusher';
 import { SurvivalHUD } from './ui/SurvivalHUD';
 import { useGameState } from './hooks/useGameState';
-import { generateGatherables, GatherableResource } from './systems/GatherableData';
-import { ResourceInventory } from './types';
+import { generateWorldResources, WorldResource } from './systems/WorldResources';
+import { generateEnemies, EnemyData } from './systems/EnemyData';
+import { initInput } from './systems/InputSystem';
 
 export function GameScene() {
   const {
-    survival,
-    updateSurvival,
-    inventory,
-    addResource,
-    interactionText,
-    setInteractionText,
+    survival, updateSurvival, inventory, addResource,
+    interactionText, setInteractionText,
   } = useGameState();
 
-  const [resources, setResources] = useState<GatherableResource[]>(() => generateGatherables());
+  const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
+  const [enemies, setEnemies] = useState<EnemyData[]>(() => generateEnemies());
   const playerPositionRef = useRef(new THREE.Vector3(0, 0, 0));
+  const playerRotationRef = useRef(0);
   const cameraAzimuthRef = useRef(0);
 
-  // Hack to pass keys ref from player to gatherables
-  const keysRef = useRef<Set<string>>(new Set());
-  // We'll use a ref bridge from the Player component
-  const keysRefBridge = useRef<React.RefObject<Set<string>> | null>(null);
+  // Initialize input system once
+  useEffect(() => { initInput(); }, []);
 
   const handleDepleteResource = useCallback((id: string) => {
     setResources(prev => prev.map(r => r.id === id ? { ...r, depleted: true, health: 0 } : r));
@@ -42,6 +39,26 @@ export function GameScene() {
 
   const handleHitResource = useCallback((id: string) => {
     setResources(prev => prev.map(r => r.id === id ? { ...r, health: r.health - 1 } : r));
+  }, []);
+
+  const handleEnemyHit = useCallback((id: string, damage: number) => {
+    setEnemies(prev => prev.map(e => {
+      if (e.id !== id) return e;
+      const newHealth = e.health - damage;
+      return { ...e, health: Math.max(0, newHealth), hitFlash: 0.2, state: newHealth <= 0 ? 'dead' as const : e.state };
+    }));
+  }, []);
+
+  const handlePlayerDamage = useCallback((amount: number) => {
+    updateSurvival({ health: survival.health - amount });
+  }, [survival.health, updateSurvival]);
+
+  const handleRespawn = useCallback(() => {
+    updateSurvival({ health: 100, stamina: 100, hunger: 80, temperature: 70 });
+  }, [updateSurvival]);
+
+  const handleEnemiesUpdate = useCallback((updated: EnemyData[]) => {
+    setEnemies(updated);
   }, []);
 
   return (
@@ -52,12 +69,11 @@ export function GameScene() {
         camera={{ fov: 55, near: 0.5, far: 500, position: [0, 10, 15] }}
         style={{ width: '100%', height: '100%' }}
       >
+        <InputFlusher />
         <Atmosphere />
         <Sky />
         <Terrain />
         <Water />
-        <Trees />
-        <Rocks />
         <POIs />
         <AmbientEffects />
         <CameraController targetRef={playerPositionRef} azimuthRef={cameraAzimuthRef} />
@@ -65,9 +81,13 @@ export function GameScene() {
           survival={survival}
           onSurvivalUpdate={updateSurvival}
           playerPositionRef={playerPositionRef}
+          playerRotationRef={playerRotationRef}
           cameraAzimuthRef={cameraAzimuthRef}
+          enemies={enemies}
+          onEnemyHit={handleEnemyHit}
+          onRespawn={handleRespawn}
         />
-        <GatherablesScene
+        <WorldObjects
           resources={resources}
           playerPositionRef={playerPositionRef}
           onSetInteraction={setInteractionText}
@@ -75,41 +95,13 @@ export function GameScene() {
           onDepleteResource={handleDepleteResource}
           onHitResource={handleHitResource}
         />
+        <Enemies
+          enemies={enemies}
+          playerPositionRef={playerPositionRef}
+          onEnemiesUpdate={handleEnemiesUpdate}
+          onPlayerDamage={handlePlayerDamage}
+        />
       </Canvas>
     </div>
-  );
-}
-
-// Wrapper to get keyboard ref inside canvas
-function GatherablesScene({
-  resources,
-  playerPositionRef,
-  onSetInteraction,
-  onAddResource,
-  onDepleteResource,
-  onHitResource,
-}: {
-  resources: GatherableResource[];
-  playerPositionRef: React.RefObject<THREE.Vector3>;
-  onSetInteraction: (t: string | null) => void;
-  onAddResource: (type: keyof ResourceInventory, amount: number) => void;
-  onDepleteResource: (id: string) => void;
-  onHitResource: (id: string) => void;
-}) {
-  // Access the keyboard ref from the playerPositionRef bridge
-  const keysRef = (playerPositionRef as any).keysRef as React.RefObject<Set<string>> | undefined;
-  // Fallback empty set ref
-  const fallbackRef = useRef(new Set<string>());
-
-  return (
-    <Gatherables
-      resources={resources}
-      playerPositionRef={playerPositionRef}
-      onSetInteraction={onSetInteraction}
-      onAddResource={onAddResource}
-      onDepleteResource={onDepleteResource}
-      onHitResource={onHitResource}
-      keysRef={keysRef || fallbackRef}
-    />
   );
 }
