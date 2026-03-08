@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { GameScene } from '../game/GameScene';
 import { LobbyScreen } from '../game/multiplayer/LobbyScreen';
 import { useMultiplayer } from '../game/multiplayer/useMultiplayer';
@@ -9,10 +9,21 @@ const Index = () => {
   const [appMode, setAppMode] = useState<AppMode>('lobby');
   const multiplayer = useMultiplayer();
 
-  const handleJoinRoom = useCallback(async (roomId: string, playerName: string) => {
-    await multiplayer.joinRoom(roomId, playerName);
+  // Auto-reconnect: if multiplayer reconnects, go to game
+  const prevConnected = multiplayer.connected;
+  if (prevConnected && appMode === 'lobby' && multiplayer.connectionStatus === 'connected') {
     setAppMode('game');
-  }, [multiplayer.joinRoom]);
+  }
+
+  const handleCreateRoom = useCallback(async (playerName: string) => {
+    await multiplayer.createAndJoinRoom(playerName);
+    setAppMode('game');
+  }, [multiplayer.createAndJoinRoom]);
+
+  const handleJoinByCode = useCallback(async (code: string, playerName: string) => {
+    await multiplayer.joinRoomByCode(code, playerName);
+    setAppMode('game');
+  }, [multiplayer.joinRoomByCode]);
 
   const handleSinglePlayer = useCallback(() => {
     setAppMode('game');
@@ -31,9 +42,11 @@ const Index = () => {
   if (appMode === 'lobby') {
     return (
       <LobbyScreen
-        onJoinRoom={handleJoinRoom}
+        onCreateRoom={handleCreateRoom}
+        onJoinByCode={handleJoinByCode}
         onSinglePlayer={handleSinglePlayer}
         onMockMode={handleMockMode}
+        isReconnecting={multiplayer.connectionStatus === 'reconnecting'}
       />
     );
   }
