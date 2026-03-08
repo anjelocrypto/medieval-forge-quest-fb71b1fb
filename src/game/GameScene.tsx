@@ -179,6 +179,7 @@ export function GameScene() {
           onDismountHorse={dismountHorse}
           mountedHorseId={mountedHorseId}
           onSetInteractionText={setInteractionText}
+          resources={resources}
         />
         <WorldObjects
           resources={resources}
