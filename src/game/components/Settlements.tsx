@@ -787,6 +787,43 @@ function FarmingVillage({ def }: { def: SettlementDef }) {
         scale={[1.6, 0.4, 0.7]} material={MAT.woodDark} castShadow />
 
       <Barrels pos={[-4, 0, 6]} count={3} />
+
+      {/* === VILLAGE LIFE PROPS === */}
+      {/* Clothesline */}
+      <group position={[-10, 0, 8]}>
+        <mesh position={[0, 1, 0]} geometry={GEO.box}
+          scale={[0.08, 2, 0.08]} material={MAT.timber} castShadow />
+        <mesh position={[3, 1, 0]} geometry={GEO.box}
+          scale={[0.08, 2, 0.08]} material={MAT.timber} castShadow />
+        <mesh position={[1.5, 1.9, 0]} geometry={GEO.box}
+          scale={[3.2, 0.02, 0.02]} material={MAT.rope} />
+        {[0.5, 1.5, 2.5].map((cx, i) => (
+          <mesh key={`cl${i}`} position={[cx, 1.5, 0.02]} geometry={GEO.box}
+            scale={[0.4, 0.5, 0.02]} material={i % 2 === 0 ? MAT.cloth : MAT.plaster} castShadow />
+        ))}
+      </group>
+
+      {/* Water trough */}
+      <group position={[20, 0, 8]}>
+        <mesh position={[0, 0.25, 0]} geometry={GEO.box}
+          scale={[1.5, 0.5, 0.5]} material={MAT.woodDark} castShadow />
+        <mesh position={[0, 0.3, 0]} geometry={GEO.box}
+          scale={[1.3, 0.25, 0.3]} material={MAT.water} />
+      </group>
+
+      {/* Chicken coop / small shed */}
+      <group position={[14, 0, -10]}>
+        <mesh position={[0, 0.4, 0]} geometry={GEO.box}
+          scale={[1.5, 0.8, 1]} material={MAT.woodWeathered} castShadow />
+        <mesh position={[0, 0.95, 0]} geometry={GEO.cone4}
+          scale={[1.1, 0.5, 0.8]} material={MAT.roofThatch} castShadow />
+      </group>
+
+      {/* More hay bales scattered */}
+      <mesh position={[-8, 0.25, -6]} geometry={GEO.cyl8}
+        scale={[0.5, 0.5, 0.5]} material={MAT.hay} castShadow />
+      <mesh position={[12, 0.25, 10]} geometry={GEO.cyl8}
+        scale={[0.4, 0.5, 0.4]} material={MAT.hay} castShadow />
     </group>
   );
 }
@@ -1370,6 +1407,45 @@ function MountainMonastery({ def }: { def: SettlementDef }) {
         <mesh key={`path${i}`} position={[0, 0.04, 14 + i * 2.5]}
           geometry={GEO.box} scale={[2.5, 0.08, 2]} material={MAT.cobble} />
       ))}
+
+      {/* === SACRED ATMOSPHERE === */}
+      {/* Prayer candles near chapel entrance */}
+      <group position={[-1.5, 0, 7]}>
+        {[0, 0.15, 0.3, -0.15, -0.3].map((cx, i) => (
+          <group key={`candle${i}`} position={[cx, 0, i * 0.12]}>
+            <mesh position={[0, 0.15, 0]} geometry={GEO.box}
+              scale={[0.04, 0.3, 0.04]} material={MAT.cloth} />
+            <mesh position={[0, 0.32, 0]} geometry={GEO.box}
+              scale={[0.02, 0.04, 0.02]} material={MAT.fire} />
+          </group>
+        ))}
+        <mesh position={[0, 0.02, 0]} geometry={GEO.box}
+          scale={[0.8, 0.04, 0.4]} material={MAT.stoneDark} />
+      </group>
+
+      {/* Meditation stones in garden */}
+      <group position={[8, 0, 8]}>
+        {[[-1, 0], [0, -1], [1, 0], [0, 1]].map(([sx, sz], i) => (
+          <mesh key={`med${i}`} position={[sx, 0.15, sz]} geometry={GEO.box}
+            scale={[0.5, 0.3, 0.5]} material={MAT.stoneWarm} castShadow />
+        ))}
+      </group>
+
+      {/* Stained glass glow inside rose window */}
+      <mesh position={[0, 5.5, 6.5]} geometry={GEO.cyl8}
+        scale={[0.9, 0.08, 0.9]} material={MAT.stainedGlass} />
+
+      {/* Bell in tower */}
+      <mesh position={[0, 12.5, -11]} geometry={GEO.cone8}
+        scale={[0.4, 0.5, 0.4]} material={MAT.goldTrim} castShadow />
+
+      {/* Scripture lectern near entrance */}
+      <group position={[2, 0, 12]}>
+        <mesh position={[0, 0.5, 0]} geometry={GEO.box}
+          scale={[0.1, 1, 0.1]} material={MAT.timber} castShadow />
+        <mesh position={[0, 1, 0]} rotation={[0.3, 0, 0]} geometry={GEO.box}
+          scale={[0.4, 0.02, 0.3]} material={MAT.woodDark} castShadow />
+      </group>
     </group>
   );
 }
@@ -1400,6 +1476,21 @@ function SmallVillage({ def }: { def: SettlementDef }) {
       {/* Fence around a small garden */}
       <Fence from={[6, 0, 3]} to={[10, 0, 3]} />
       <Fence from={[10, 0, 3]} to={[10, 0, 7]} />
+
+      {/* Domestic props */}
+      <mesh position={[-5, 0.2, -4]} geometry={GEO.box}
+        scale={[1, 0.4, 0.5]} material={MAT.timber} castShadow />
+      <mesh position={[6, 0.25, 5]} geometry={GEO.cyl8}
+        scale={[0.5, 0.5, 0.5]} material={MAT.hay} castShadow />
+      {/* Lantern post */}
+      <group position={[1, 0, 3]}>
+        <mesh position={[0, 1.2, 0]} geometry={GEO.box}
+          scale={[0.06, 2.4, 0.06]} material={MAT.iron} castShadow />
+        <mesh position={[0, 2.3, 0]} geometry={GEO.box}
+          scale={[0.12, 0.18, 0.12]} material={MAT.iron} castShadow />
+        <mesh position={[0, 2.3, 0]} geometry={GEO.box}
+          scale={[0.05, 0.08, 0.05]} material={MAT.lantern} />
+      </group>
     </group>
   );
 }
