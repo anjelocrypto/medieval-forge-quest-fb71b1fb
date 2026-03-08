@@ -847,7 +847,7 @@ export function Player({
         <group
           position={[hipSway + idleWeightShift, playerY, atkLunge]}
           rotation={[
-            bodyForwardLean + idleSway + airBodyCurl,
+            bodyForwardLean + idleSway + airBodyCurl + riderSlopeComp,
             torsoTwist + atkBodyTwist + (isMounted ? riderSway : 0) + idleHeadLook,
             lean + riderLean
           ]}
