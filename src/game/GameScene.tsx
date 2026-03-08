@@ -11,22 +11,27 @@ import { WorldObjects } from './components/WorldObjects';
 import { Enemies } from './components/Enemies';
 import { AmbientEffects } from './components/AmbientEffects';
 import { BuildingSystem } from './components/BuildingSystem';
+import { LootPickups } from './components/LootPickups';
 import { CameraController } from './systems/CameraController';
 import { InputFlusher } from './systems/InputFlusher';
 import { BuildModeController } from './systems/BuildModeController';
 import { SurvivalHUD } from './ui/SurvivalHUD';
 import { useGameState } from './hooks/useGameState';
-import { generateWorldResources, WorldResource } from './systems/WorldResources';
+import { generateWorldResources, WorldResource, generateLootDrop } from './systems/WorldResources';
 import { generateEnemies, EnemyData } from './systems/EnemyData';
 import { initInput } from './systems/InputSystem';
+import { POIS, POI_ZONE_RADIUS } from './constants';
 
 export function GameScene() {
   const {
-    survival, updateSurvival, inventory, addResource,
+    survival, updateSurvival, inventory, addResource, eatFood,
     interactionText, setInteractionText,
     buildMode, toggleBuildMode, selectedBuildIndex, cycleBuild,
     structures, placeStructure, buildFeedback, setBuildFeedback,
     damageFlash, applyPlayerDamage,
+    progression, recordEnemyKill, secureArea,
+    lootPickups, addLootPickups, collectLoot,
+    notification, getAvailableBuildables,
   } = useGameState();
 
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
@@ -38,7 +43,6 @@ export function GameScene() {
 
   useEffect(() => { initInput(); }, []);
 
-  // Apply accumulated enemy damage each frame via RAF
   useEffect(() => {
     let raf: number;
     const tick = () => {
@@ -53,6 +57,25 @@ export function GameScene() {
     return () => cancelAnimationFrame(raf);
   }, [applyPlayerDamage]);
 
+  // Check if areas are secured (all enemies dead nearby)
+  useEffect(() => {
+    const checkInterval = setInterval(() => {
+      for (const [key, poi] of Object.entries(POIS)) {
+        if (progression.areasSecured.includes(key)) continue;
+        const nearbyEnemies = enemies.filter(e => {
+          if (e.state === 'dead') return false;
+          const dx = e.position[0] - poi.x;
+          const dz = e.position[2] - poi.z;
+          return dx * dx + dz * dz < POI_ZONE_RADIUS * POI_ZONE_RADIUS;
+        });
+        if (nearbyEnemies.length === 0 && key !== 'village') {
+          secureArea(key);
+        }
+      }
+    }, 2000);
+    return () => clearInterval(checkInterval);
+  }, [enemies, progression.areasSecured, secureArea]);
+
   const handleDepleteResource = useCallback((id: string) => {
     setResources(prev => prev.map(r => r.id === id ? { ...r, depleted: true, health: 0 } : r));
   }, []);
@@ -65,6 +88,12 @@ export function GameScene() {
     setEnemies(prev => prev.map(e => {
       if (e.id !== id) return e;
       const newHealth = e.health - damage;
+      if (newHealth <= 0) {
+        // Drop loot
+        const drops = generateLootDrop(e.position, e.type);
+        if (drops.length > 0) addLootPickups(drops);
+        recordEnemyKill(e.type);
+      }
       return {
         ...e,
         health: Math.max(0, newHealth),
@@ -72,7 +101,7 @@ export function GameScene() {
         state: newHealth <= 0 ? 'dead' as const : e.state,
       };
     }));
-  }, []);
+  }, [addLootPickups, recordEnemyKill]);
 
   const handleRespawn = useCallback(() => {
     updateSurvival({ health: 100, stamina: 100, hunger: 80, temperature: 70 });
@@ -93,6 +122,9 @@ export function GameScene() {
         selectedBuildIndex={selectedBuildIndex}
         buildFeedback={buildFeedback}
         damageFlash={damageFlash}
+        progression={progression}
+        notification={notification}
+        availableBuildables={getAvailableBuildables()}
       />
       <Canvas shadows camera={{ fov: 55, near: 0.5, far: 500, position: [0, 10, 15] }}
         style={{ width: '100%', height: '100%' }}>
@@ -120,6 +152,10 @@ export function GameScene() {
           onEnemyHit={handleEnemyHit}
           onRespawn={handleRespawn}
           buildMode={buildMode}
+          structures={structures}
+          lootPickups={lootPickups}
+          onCollectLoot={collectLoot}
+          onEatFood={eatFood}
         />
         <WorldObjects
           resources={resources}
@@ -128,7 +164,11 @@ export function GameScene() {
           onAddResource={addResource}
           onDepleteResource={handleDepleteResource}
           onHitResource={handleHitResource}
+          structures={structures}
+          inventory={inventory}
+          onEatFood={eatFood}
         />
+        <LootPickups pickups={lootPickups} />
         <Enemies
           enemies={enemies}
           playerPositionRef={playerPositionRef}
@@ -144,6 +184,7 @@ export function GameScene() {
           inventory={inventory}
           onPlace={placeStructure}
           onSetBuildFeedback={setBuildFeedback}
+          availableBuildables={getAvailableBuildables()}
         />
       </Canvas>
     </div>

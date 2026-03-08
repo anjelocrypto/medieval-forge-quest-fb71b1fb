@@ -20,9 +20,19 @@ export const MAX_HEALTH = 100;
 export const MAX_STAMINA = 100;
 export const MAX_HUNGER = 100;
 export const MAX_TEMPERATURE = 100;
-export const HUNGER_DRAIN = 0.3; // per second
-export const STAMINA_DRAIN = 15; // per second while running
-export const STAMINA_REGEN = 8; // per second while not running
+export const HUNGER_DRAIN = 0.4; // per second — slightly faster for pressure
+export const STAMINA_DRAIN = 15;
+export const STAMINA_REGEN = 8;
+export const TEMPERATURE_DRAIN = 0.15; // base temp loss per second (frontier is cold)
+export const CAMPFIRE_WARMTH_RANGE = 12;
+export const CAMPFIRE_WARMTH_RATE = 8; // temp restore per second near fire
+export const SHELTER_EFFECT_RANGE = 8;
+export const SHELTER_HUNGER_REDUCTION = 0.5; // multiplier on hunger drain
+export const SHELTER_STAMINA_BONUS = 4; // extra regen per sec
+export const LOW_HUNGER_THRESHOLD = 20; // below this, stamina regen halved
+export const LOW_TEMP_THRESHOLD = 25; // below this, take cold damage
+export const COLD_DAMAGE_RATE = 3; // HP per second when freezing
+export const FOOD_HUNGER_RESTORE = 25;
 
 // Colors (medieval palette)
 export const COLORS = {
@@ -45,11 +55,18 @@ export const COLORS = {
   sky: '#6b8fa3',
 };
 
-// POI positions
+// POI positions with gameplay metadata
 export const POIS = {
-  castle: { x: 80, z: -80, label: 'Castle Ruins' },
-  village: { x: -60, z: -50, label: 'Village' },
-  ruins: { x: 50, z: 70, label: 'Ancient Ruins' },
-  forest: { x: -80, z: 60, label: 'Dark Forest' },
-  camp: { x: 0, z: -100, label: 'Bandit Camp' },
+  castle: { x: 80, z: -80, label: 'Castle Ruins', danger: 3, tempMod: -0.3, resourceBonus: 2.0 },
+  village: { x: -60, z: -50, label: 'Village', danger: 0, tempMod: 0.1, resourceBonus: 1.0 },
+  ruins: { x: 50, z: 70, label: 'Ancient Ruins', danger: 2, tempMod: -0.5, resourceBonus: 1.5 },
+  forest: { x: -80, z: 60, label: 'Dark Forest', danger: 2, tempMod: -0.2, resourceBonus: 1.3 },
+  camp: { x: 0, z: -100, label: 'Bandit Camp', danger: 2, tempMod: 0, resourceBonus: 1.5 },
 };
+
+// Zone influence radius
+export const POI_ZONE_RADIUS = 40;
+
+// Progression thresholds
+export const TIER2_KILLS_REQUIRED = 5;
+export const TIER2_STRUCTURES_REQUIRED = 3;

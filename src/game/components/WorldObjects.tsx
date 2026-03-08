@@ -2,9 +2,13 @@ import { useMemo, useRef, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { COLORS } from '../constants';
-import { WorldResource, INTERACTION_RANGE, GATHER_COOLDOWN, TREE_WOOD_REWARD, ROCK_STONE_REWARD } from '../systems/WorldResources';
+import {
+  WorldResource, INTERACTION_RANGE, GATHER_COOLDOWN,
+  TREE_WOOD_REWARD, ROCK_STONE_REWARD, BERRY_FOOD_REWARD, CRATE_REWARDS,
+} from '../systems/WorldResources';
 import { getMovementInput } from '../systems/InputSystem';
-import { ResourceInventory } from '../types';
+import { ResourceInventory, LootPickup } from '../types';
+import { PlacedStructure } from '../systems/BuildingData';
 
 interface Props {
   resources: WorldResource[];
@@ -13,13 +17,17 @@ interface Props {
   onAddResource: (type: keyof ResourceInventory, amount: number) => void;
   onDepleteResource: (id: string) => void;
   onHitResource: (id: string) => void;
+  structures: PlacedStructure[];
+  inventory: ResourceInventory;
+  onEatFood: () => void;
 }
 
-// Shared geometries & materials — created once
 const trunkGeo = new THREE.CylinderGeometry(0.15, 0.25, 1, 5);
 const coneGeo = new THREE.ConeGeometry(1, 1, 5);
 const dodecGeo = new THREE.DodecahedronGeometry(1, 1);
 const rockGeo = new THREE.DodecahedronGeometry(1, 0);
+const sphereGeo = new THREE.SphereGeometry(1, 6, 6);
+const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 
 const trunkMat = new THREE.MeshLambertMaterial({ color: COLORS.woodDark });
 const leavesMat = new THREE.MeshLambertMaterial({ color: COLORS.leaves });
@@ -28,10 +36,15 @@ const stoneMat = new THREE.MeshLambertMaterial({ color: COLORS.stone });
 const stoneDarkMat = new THREE.MeshLambertMaterial({ color: COLORS.stoneDark });
 const highlightMat = new THREE.MeshBasicMaterial({ color: '#ffcc44', transparent: true, opacity: 0.4 });
 const highlightGeo = new THREE.RingGeometry(1.5, 1.8, 12);
+const berryLeafMat = new THREE.MeshLambertMaterial({ color: '#2a6a20' });
+const berryMat = new THREE.MeshLambertMaterial({ color: '#cc3344' });
+const crateMat = new THREE.MeshLambertMaterial({ color: '#6b4f10' });
+const crateBandMat = new THREE.MeshLambertMaterial({ color: '#4a3a20' });
 
 export function WorldObjects({
   resources, playerPositionRef, onSetInteraction,
   onAddResource, onDepleteResource, onHitResource,
+  structures, inventory, onEatFood,
 }: Props) {
   const cooldownRef = useRef(0);
   const lastInteractIdRef = useRef<string | null>(null);
@@ -46,16 +59,18 @@ export function WorldObjects({
     const playerPos = playerPositionRef.current;
     if (!playerPos) return;
 
-    // Only check interactions every 3 frames
     frameSkipRef.current++;
     const checkInteraction = frameSkipRef.current % 3 === 0;
 
     let nearestId: string | null = null;
     let nearestRes: WorldResource | null = null;
+    let nearestType: string | null = null;
 
     if (checkInteraction) {
       let nearestDist = INTERACTION_RANGE;
       const px = playerPos.x, pz = playerPos.z;
+
+      // Check world resources
       for (let i = 0; i < resources.length; i++) {
         const res = resources[i];
         if (res.depleted || !res.gatherable) continue;
@@ -66,12 +81,32 @@ export function WorldObjects({
           nearestDist = Math.sqrt(distSq);
           nearestRes = res;
           nearestId = res.id;
+          nearestType = res.type;
         }
       }
 
-      if (nearestRes) {
-        const label = nearestRes.type === 'tree' ? '🪓 Press E — Chop Tree' : '⛏ Press E — Mine Rock';
-        const text = `${label} (${nearestRes.health}/${nearestRes.maxHealth})`;
+      // Check workbench interaction
+      for (const s of structures) {
+        if (s.type !== 'workbench') continue;
+        const dx = px - s.position[0];
+        const dz = pz - s.position[2];
+        const distSq = dx * dx + dz * dz;
+        if (distSq < INTERACTION_RANGE * INTERACTION_RANGE && Math.sqrt(distSq) < nearestDist) {
+          nearestDist = Math.sqrt(distSq);
+          nearestId = 'workbench-' + s.id;
+          nearestRes = null;
+          nearestType = 'workbench';
+        }
+      }
+
+      if (nearestType) {
+        let text = '';
+        if (nearestType === 'tree') text = `🪓 Press E — Chop Tree (${nearestRes!.health}/${nearestRes!.maxHealth})`;
+        else if (nearestType === 'rock') text = `⛏ Press E — Mine Rock (${nearestRes!.health}/${nearestRes!.maxHealth})`;
+        else if (nearestType === 'berry_bush') text = `🫐 Press E — Pick Berries (${nearestRes!.health}/${nearestRes!.maxHealth})`;
+        else if (nearestType === 'crate') text = `📦 Press E — Break Crate (${nearestRes!.health}/${nearestRes!.maxHealth})`;
+        else if (nearestType === 'workbench') text = `🔨 Press E — Craft Food (5 Wood → 2 Food) [Wood: ${inventory.wood}]`;
+
         if (text !== lastInteractTextRef.current) {
           lastInteractTextRef.current = text;
           onSetInteraction(text);
@@ -84,22 +119,41 @@ export function WorldObjects({
       }
     } else {
       nearestId = lastInteractIdRef.current;
-      if (nearestId) {
+      if (nearestId && !nearestId.startsWith('workbench')) {
         nearestRes = resources.find(r => r.id === nearestId) || null;
+        nearestType = nearestRes?.type || null;
+      } else if (nearestId?.startsWith('workbench')) {
+        nearestType = 'workbench';
       }
     }
 
     const { interact } = getMovementInput();
-    if (interact && nearestRes && cooldownRef.current <= 0) {
-      cooldownRef.current = GATHER_COOLDOWN;
-      shakesRef.current.set(nearestRes.id, { timer: 0.3 });
-      if (nearestRes.health <= 1) {
-        onDepleteResource(nearestRes.id);
-        onAddResource(nearestRes.type === 'tree' ? 'wood' : 'stone',
-          nearestRes.type === 'tree' ? TREE_WOOD_REWARD : ROCK_STONE_REWARD);
-      } else {
-        onHitResource(nearestRes.id);
-        onAddResource(nearestRes.type === 'tree' ? 'wood' : 'stone', 1);
+    if (interact && cooldownRef.current <= 0) {
+      if (nearestType === 'workbench' && inventory.wood >= 5) {
+        cooldownRef.current = GATHER_COOLDOWN;
+        onAddResource('wood', -5);
+        onAddResource('food', 2);
+      } else if (nearestRes) {
+        cooldownRef.current = GATHER_COOLDOWN;
+        shakesRef.current.set(nearestRes.id, { timer: 0.3 });
+
+        if (nearestRes.health <= 1) {
+          onDepleteResource(nearestRes.id);
+          if (nearestRes.type === 'tree') onAddResource('wood', TREE_WOOD_REWARD);
+          else if (nearestRes.type === 'rock') onAddResource('stone', ROCK_STONE_REWARD);
+          else if (nearestRes.type === 'berry_bush') onAddResource('food', BERRY_FOOD_REWARD);
+          else if (nearestRes.type === 'crate') {
+            onAddResource('wood', CRATE_REWARDS.wood);
+            onAddResource('stone', CRATE_REWARDS.stone);
+            onAddResource('food', CRATE_REWARDS.food);
+          }
+        } else {
+          onHitResource(nearestRes.id);
+          if (nearestRes.type === 'tree') onAddResource('wood', 1);
+          else if (nearestRes.type === 'rock') onAddResource('stone', 1);
+          else if (nearestRes.type === 'berry_bush') onAddResource('food', 1);
+          else if (nearestRes.type === 'crate') onAddResource('wood', 1);
+        }
       }
     }
 
@@ -109,11 +163,9 @@ export function WorldObjects({
       const group = groupRefs.current.get(id);
       if (group) {
         if (state.timer > 0) {
-          const intensity = state.timer * 10;
-          group.rotation.z = Math.sin(Date.now() * 0.05) * 0.05 * intensity;
+          group.rotation.z = Math.sin(Date.now() * 0.05) * 0.05 * state.timer * 10;
         } else {
           group.rotation.z = 0;
-          group.rotation.x = 0;
           shakesRef.current.delete(id);
         }
       }
@@ -125,21 +177,16 @@ export function WorldObjects({
     else groupRefs.current.delete(id);
   }, []);
 
-  // Distance-based culling: only render objects within render distance
-  // We use a memoized render that checks distance lazily
   const playerPos = playerPositionRef.current;
 
   return (
     <group>
       {resources.map(res => {
         if (res.depleted) return null;
-
-        // Distance culling — skip rendering objects far from player
         if (playerPos) {
           const dx = playerPos.x - res.position[0];
           const dz = playerPos.z - res.position[2];
           const distSq = dx * dx + dz * dz;
-          // Decorative: cull at 100, gatherable: cull at 150
           const cullDist = res.gatherable ? 150 : 100;
           if (distSq > cullDist * cullDist) return null;
         }
@@ -151,22 +198,44 @@ export function WorldObjects({
           const cR = res.crownRadius * (res.gatherable ? (res.health / res.maxHealth * 0.4 + 0.6) : 1);
           return (
             <group key={res.id} ref={el => setRef(res.id, el)} position={res.position} scale={res.scale}>
-              <mesh position={[0, tH / 2, 0]} castShadow geometry={trunkGeo}
-                scale={[1, tH, 1]} material={trunkMat} />
+              <mesh position={[0, tH / 2, 0]} castShadow geometry={trunkGeo} scale={[1, tH, 1]} material={trunkMat} />
               {res.variant === 1 ? (
                 <>
-                  <mesh position={[0, tH + 1.5, 0]} castShadow geometry={coneGeo}
-                    scale={[cR, 3, cR]} material={leavesDarkMat} />
-                  <mesh position={[0, tH + 2.6, 0]} castShadow geometry={coneGeo}
-                    scale={[cR * 0.7, 2.2, cR * 0.7]} material={leavesMat} />
+                  <mesh position={[0, tH + 1.5, 0]} castShadow geometry={coneGeo} scale={[cR, 3, cR]} material={leavesDarkMat} />
+                  <mesh position={[0, tH + 2.6, 0]} castShadow geometry={coneGeo} scale={[cR * 0.7, 2.2, cR * 0.7]} material={leavesMat} />
                 </>
               ) : (
-                <mesh position={[0, tH + cR * 0.6, 0]} castShadow geometry={dodecGeo}
-                  scale={[cR, cR, cR]} material={leavesMat} />
+                <mesh position={[0, tH + cR * 0.6, 0]} castShadow geometry={dodecGeo} scale={[cR, cR, cR]} material={leavesMat} />
               )}
               {isHighlighted && (
-                <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}
-                  geometry={highlightGeo} material={highlightMat} />
+                <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} geometry={highlightGeo} material={highlightMat} />
+              )}
+            </group>
+          );
+        }
+
+        if (res.type === 'berry_bush') {
+          return (
+            <group key={res.id} ref={el => setRef(res.id, el)} position={res.position} scale={res.scale}>
+              <mesh position={[0, 0.4, 0]} castShadow geometry={dodecGeo} scale={[0.8, 0.6, 0.8]} material={berryLeafMat} />
+              {/* Berries */}
+              {res.health > 0 && [[-0.3, 0.5, 0.2], [0.2, 0.45, -0.25], [0.1, 0.55, 0.3], [-0.15, 0.35, -0.2]].map(([bx, by, bz], i) => (
+                <mesh key={i} position={[bx, by, bz]} geometry={sphereGeo} scale={[0.06, 0.06, 0.06]} material={berryMat} />
+              ))}
+              {isHighlighted && (
+                <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} geometry={highlightGeo} material={highlightMat} />
+              )}
+            </group>
+          );
+        }
+
+        if (res.type === 'crate') {
+          return (
+            <group key={res.id} ref={el => setRef(res.id, el)} position={res.position} scale={res.scale}>
+              <mesh position={[0, 0.4, 0]} castShadow geometry={boxGeo} scale={[0.7, 0.7, 0.7]} material={crateMat} />
+              <mesh position={[0, 0.4, 0]} castShadow geometry={boxGeo} scale={[0.75, 0.1, 0.75]} material={crateBandMat} />
+              {isHighlighted && (
+                <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} geometry={highlightGeo} material={highlightMat} />
               )}
             </group>
           );
@@ -175,13 +244,10 @@ export function WorldObjects({
         // Rock
         const rockScale = res.scale * (res.gatherable ? (res.health / res.maxHealth * 0.4 + 0.6) : 1);
         return (
-          <group key={res.id} ref={el => setRef(res.id, el)}
-            position={res.position} scale={rockScale}>
-            <mesh castShadow geometry={rockGeo}
-              material={res.variant === 0 ? stoneMat : stoneDarkMat} />
+          <group key={res.id} ref={el => setRef(res.id, el)} position={res.position} scale={rockScale}>
+            <mesh castShadow geometry={rockGeo} material={res.variant === 0 ? stoneMat : stoneDarkMat} />
             {isHighlighted && (
-              <mesh position={[0, -0.3, 0]} rotation={[-Math.PI / 2, 0, 0]}
-                geometry={highlightGeo} material={highlightMat} />
+              <mesh position={[0, -0.3, 0]} rotation={[-Math.PI / 2, 0, 0]} geometry={highlightGeo} material={highlightMat} />
             )}
           </group>
         );

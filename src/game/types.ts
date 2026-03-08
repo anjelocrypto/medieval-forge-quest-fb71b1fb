@@ -42,9 +42,36 @@ export interface Enemy {
 
 export interface PlacedBuilding {
   id: string;
-  type: 'campfire' | 'wall' | 'shelter' | 'fence';
+  type: string;
   position: [number, number, number];
   rotation: number;
 }
 
 export type GameMode = 'explore' | 'combat' | 'build';
+
+// Loot pickup in world
+export interface LootPickup {
+  id: string;
+  type: 'wood' | 'stone' | 'food' | 'loot_crate';
+  position: [number, number, number];
+  amount: number;
+  collected: boolean;
+}
+
+// Progression tracking
+export interface ProgressionState {
+  enemiesKilled: number;
+  structuresBuilt: number;
+  areasSecured: string[]; // POI ids that are "cleared"
+  tier: number; // 1 = basic, 2 = advanced
+  totalWoodGathered: number;
+  totalStoneGathered: number;
+}
+
+// Zone effect on player
+export interface ZoneEffect {
+  name: string;
+  tempModifier: number; // per second change to temperature
+  dangerLevel: number; // 0-3
+  resourceBonus: number; // multiplier
+}

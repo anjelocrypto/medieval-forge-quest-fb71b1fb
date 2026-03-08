@@ -1,5 +1,4 @@
-// Shared input state — singleton store readable from any component/system
-
+// Shared input state — singleton store
 const inputState = {
   keys: new Set<string>(),
   mouseButtons: new Set<number>(),
@@ -15,58 +14,28 @@ export function initInput() {
   initialized = true;
 
   window.addEventListener('keydown', (e) => {
-    if (!inputState.keys.has(e.code)) {
-      inputState._justPressed.add(e.code);
-    }
+    if (!inputState.keys.has(e.code)) inputState._justPressed.add(e.code);
     inputState.keys.add(e.code);
   });
-
-  window.addEventListener('keyup', (e) => {
-    inputState.keys.delete(e.code);
-  });
-
+  window.addEventListener('keyup', (e) => { inputState.keys.delete(e.code); });
   window.addEventListener('mousedown', (e) => {
-    if (!inputState.mouseButtons.has(e.button)) {
-      inputState._justClicked.add(e.button);
-    }
+    if (!inputState.mouseButtons.has(e.button)) inputState._justClicked.add(e.button);
     inputState.mouseButtons.add(e.button);
   });
-
-  window.addEventListener('mouseup', (e) => {
-    inputState.mouseButtons.delete(e.button);
-  });
-
-  // Track pointer lock to suppress attack on lock-acquisition click
+  window.addEventListener('mouseup', (e) => { inputState.mouseButtons.delete(e.button); });
   document.addEventListener('pointerlockchange', () => {
-    if (document.pointerLockElement) {
-      inputState.pointerJustLocked = true;
-    }
+    if (document.pointerLockElement) inputState.pointerJustLocked = true;
   });
-
-  window.addEventListener('blur', () => {
-    inputState.keys.clear();
-    inputState.mouseButtons.clear();
-  });
+  window.addEventListener('blur', () => { inputState.keys.clear(); inputState.mouseButtons.clear(); });
 }
 
-export function isKeyDown(code: string): boolean {
-  return inputState.keys.has(code);
-}
-
-// These do NOT consume — they just check. flushInput clears at end of frame.
-export function wasKeyJustPressed(code: string): boolean {
-  return inputState._justPressed.has(code);
-}
-
+export function isKeyDown(code: string): boolean { return inputState.keys.has(code); }
+export function wasKeyJustPressed(code: string): boolean { return inputState._justPressed.has(code); }
 export function wasMouseJustClicked(button: number): boolean {
-  // Suppress left-click attack on the frame pointer lock was acquired
   if (button === 0 && inputState.pointerJustLocked) return false;
   return inputState._justClicked.has(button);
 }
-
-export function isMouseDown(button: number): boolean {
-  return inputState.mouseButtons.has(button);
-}
+export function isMouseDown(button: number): boolean { return inputState.mouseButtons.has(button); }
 
 export function flushInput() {
   inputState._justPressed.clear();
@@ -84,6 +53,7 @@ export function getMovementInput() {
     jump: wasKeyJustPressed('Space'),
     interact: wasKeyJustPressed('KeyE'),
     attack: wasMouseJustClicked(0),
+    eat: wasKeyJustPressed('KeyF'),
     buildToggle: wasKeyJustPressed('KeyB'),
     buildPlace: wasMouseJustClicked(0),
     buildCancel: wasKeyJustPressed('Escape') || wasMouseJustClicked(2),

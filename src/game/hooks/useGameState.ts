@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
-import { SurvivalState, ResourceInventory, GameMode } from '../types';
-import { MAX_HEALTH, MAX_STAMINA, MAX_HUNGER, MAX_TEMPERATURE } from '../constants';
-import { PlacedStructure, BUILDABLES } from '../systems/BuildingData';
+import { SurvivalState, ResourceInventory, GameMode, ProgressionState, LootPickup } from '../types';
+import { MAX_HEALTH, MAX_STAMINA, MAX_HUNGER, MAX_TEMPERATURE, TIER2_KILLS_REQUIRED, TIER2_STRUCTURES_REQUIRED } from '../constants';
+import { PlacedStructure, BUILDABLES, BuildableConfig } from '../systems/BuildingData';
 
 export function useGameState() {
   const [survival, setSurvival] = useState<SurvivalState>({
@@ -11,12 +11,7 @@ export function useGameState() {
     temperature: MAX_TEMPERATURE * 0.7,
   });
 
-  const [inventory, setInventory] = useState<ResourceInventory>({
-    wood: 0,
-    stone: 0,
-    food: 0,
-  });
-
+  const [inventory, setInventory] = useState<ResourceInventory>({ wood: 0, stone: 0, food: 0 });
   const [gameMode, setGameMode] = useState<GameMode>('explore');
   const [interactionText, setInteractionText] = useState<string | null>(null);
   const [buildMode, setBuildMode] = useState(false);
@@ -24,6 +19,24 @@ export function useGameState() {
   const [structures, setStructures] = useState<PlacedStructure[]>([]);
   const [buildFeedback, setBuildFeedback] = useState<string | null>(null);
   const [damageFlash, setDamageFlash] = useState(0);
+  const [lootPickups, setLootPickups] = useState<LootPickup[]>([]);
+  const [notification, setNotification] = useState<string | null>(null);
+  const notifTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [progression, setProgression] = useState<ProgressionState>({
+    enemiesKilled: 0,
+    structuresBuilt: 0,
+    areasSecured: [],
+    tier: 1,
+    totalWoodGathered: 0,
+    totalStoneGathered: 0,
+  });
+
+  const showNotification = useCallback((msg: string) => {
+    setNotification(msg);
+    if (notifTimerRef.current) clearTimeout(notifTimerRef.current);
+    notifTimerRef.current = setTimeout(() => setNotification(null), 3000);
+  }, []);
 
   const updateSurvival = useCallback((updates: Partial<SurvivalState>) => {
     setSurvival(prev => ({
@@ -36,16 +49,64 @@ export function useGameState() {
 
   const addResource = useCallback((type: keyof ResourceInventory, amount: number) => {
     setInventory(prev => ({ ...prev, [type]: prev[type] + amount }));
+    if (type === 'wood' || type === 'stone') {
+      setProgression(prev => ({
+        ...prev,
+        totalWoodGathered: prev.totalWoodGathered + (type === 'wood' ? amount : 0),
+        totalStoneGathered: prev.totalStoneGathered + (type === 'stone' ? amount : 0),
+      }));
+    }
   }, []);
 
   const applyPlayerDamage = useCallback((amount: number) => {
-    setSurvival(prev => ({
-      ...prev,
-      health: Math.max(0, prev.health - amount),
-    }));
+    setSurvival(prev => ({ ...prev, health: Math.max(0, prev.health - amount) }));
     setDamageFlash(1);
     setTimeout(() => setDamageFlash(0), 200);
   }, []);
+
+  const recordEnemyKill = useCallback((enemyType: string) => {
+    setProgression(prev => {
+      const newKills = prev.enemiesKilled + 1;
+      const newTier = (newKills >= TIER2_KILLS_REQUIRED && prev.structuresBuilt >= TIER2_STRUCTURES_REQUIRED) ? 2 : prev.tier;
+      if (newTier > prev.tier) {
+        showNotification('⬆️ TIER 2 UNLOCKED — New structures available!');
+      }
+      return { ...prev, enemiesKilled: newKills, tier: newTier };
+    });
+  }, [showNotification]);
+
+  const secureArea = useCallback((poiKey: string) => {
+    setProgression(prev => {
+      if (prev.areasSecured.includes(poiKey)) return prev;
+      showNotification(`🏴 Area Secured: ${poiKey.charAt(0).toUpperCase() + poiKey.slice(1)}`);
+      return { ...prev, areasSecured: [...prev.areasSecured, poiKey] };
+    });
+  }, [showNotification]);
+
+  const addLootPickups = useCallback((pickups: LootPickup[]) => {
+    setLootPickups(prev => [...prev, ...pickups]);
+  }, []);
+
+  const collectLoot = useCallback((id: string) => {
+    setLootPickups(prev => {
+      const pickup = prev.find(p => p.id === id);
+      if (!pickup || pickup.collected) return prev;
+      setInventory(inv => ({ ...inv, [pickup.type]: (inv[pickup.type as keyof ResourceInventory] || 0) + pickup.amount }));
+      return prev.map(p => p.id === id ? { ...p, collected: true } : p);
+    });
+  }, []);
+
+  const eatFood = useCallback(() => {
+    setInventory(prev => {
+      if (prev.food <= 0) return prev;
+      setSurvival(s => ({
+        ...s,
+        hunger: Math.min(MAX_HUNGER, s.hunger + 25),
+      }));
+      showNotification('🍖 Ate food — hunger restored');
+      return { ...prev, food: prev.food - 1 };
+    });
+  }, [showNotification]);
 
   const toggleBuildMode = useCallback(() => {
     setBuildMode(prev => !prev);
@@ -54,17 +115,21 @@ export function useGameState() {
 
   const cycleBuild = useCallback((dir: number) => {
     setSelectedBuildIndex(prev => {
+      const availableCount = BUILDABLES.filter(b => b.tier <= progression.tier).length;
       const next = prev + dir;
-      if (next < 0) return BUILDABLES.length - 1;
-      if (next >= BUILDABLES.length) return 0;
+      if (next < 0) return availableCount - 1;
+      if (next >= availableCount) return 0;
       return next;
     });
-  }, []);
+  }, [progression.tier]);
+
+  const getAvailableBuildables = useCallback((): BuildableConfig[] => {
+    return BUILDABLES.filter(b => b.tier <= progression.tier);
+  }, [progression.tier]);
 
   const placeStructure = useCallback((structure: PlacedStructure) => {
     const config = BUILDABLES.find(b => b.type === structure.type);
     if (!config) return;
-    // Deduct resources
     setInventory(prev => {
       const next = { ...prev };
       for (const [key, val] of Object.entries(config.cost)) {
@@ -73,11 +138,20 @@ export function useGameState() {
       return next;
     });
     setStructures(prev => [...prev, structure]);
-  }, []);
+    setProgression(prev => {
+      const newBuilt = prev.structuresBuilt + 1;
+      const newTier = (prev.enemiesKilled >= TIER2_KILLS_REQUIRED && newBuilt >= TIER2_STRUCTURES_REQUIRED) ? 2 : prev.tier;
+      if (newTier > prev.tier) {
+        showNotification('⬆️ TIER 2 UNLOCKED — New structures available!');
+      }
+      return { ...prev, structuresBuilt: newBuilt, tier: newTier };
+    });
+    showNotification(`🔨 Built ${config.label}`);
+  }, [showNotification]);
 
   return {
     survival, updateSurvival,
-    inventory, addResource,
+    inventory, addResource, eatFood,
     interactionText, setInteractionText,
     gameMode, setGameMode,
     buildMode, toggleBuildMode,
@@ -85,5 +159,9 @@ export function useGameState() {
     structures, placeStructure,
     buildFeedback, setBuildFeedback,
     damageFlash, applyPlayerDamage,
+    progression, recordEnemyKill, secureArea,
+    lootPickups, addLootPickups, collectLoot,
+    notification,
+    getAvailableBuildables,
   };
 }
