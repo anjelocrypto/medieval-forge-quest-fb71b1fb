@@ -214,26 +214,27 @@ function Wall({ from, to, h, thickness, battlements, mat }: {
 }
 
 /** Gatehouse — two towers connected by arch */
-function Gatehouse({ pos, rot, w, h: height }: {
-  pos: [number, number, number]; rot: number; w?: number; h?: number;
+function Gatehouse({ pos, rot, w, h: height, towerR }: {
+  pos: [number, number, number]; rot: number; w?: number; h?: number; towerR?: number;
 }) {
   const gw = w || 5;
   const gh = height || 10;
+  const tr = towerR || 1.5;
   return (
     <group position={pos} rotation={[0, rot, 0]}>
-      {/* Two flanking towers */}
-      <Tower pos={[-gw / 2, 0, 0]} h={gh + 2} r={2.5} roofStyle="cone" />
-      <Tower pos={[gw / 2, 0, 0]} h={gh + 2} r={2.5} roofStyle="cone" />
+      {/* Two flanking towers — radius matched to collision */}
+      <Tower pos={[-gw / 2, 0, 0]} h={gh + 2} r={tr} roofStyle="cone" />
+      <Tower pos={[gw / 2, 0, 0]} h={gh + 2} r={tr} roofStyle="cone" />
       {/* Connecting arch */}
       <mesh position={[0, gh - 1, 0]} geometry={GEO.box}
-        scale={[gw + 2, 2.5, 3]} material={MAT.stone} castShadow />
+        scale={[gw + 1, 2.5, 3]} material={MAT.stone} castShadow />
       {/* Archway (dark opening) */}
       <mesh position={[0, gh / 2 - 1.5, 0]} geometry={GEO.box}
-        scale={[gw - 1.5, gh - 3, 3.5]} material={MAT.dark} />
+        scale={[gw - tr * 2, gh - 3, 3.5]} material={MAT.dark} />
       {/* Portcullis grooves */}
-      <mesh position={[-gw / 2 + 1.2, gh / 2, 0]} geometry={GEO.box}
+      <mesh position={[-gw / 2 + tr * 0.6, gh / 2, 0]} geometry={GEO.box}
         scale={[0.15, gh - 2, 0.15]} material={MAT.iron} />
-      <mesh position={[gw / 2 - 1.2, gh / 2, 0]} geometry={GEO.box}
+      <mesh position={[gw / 2 - tr * 0.6, gh / 2, 0]} geometry={GEO.box}
         scale={[0.15, gh - 2, 0.15]} material={MAT.iron} />
     </group>
   );
@@ -541,12 +542,12 @@ function CapitalCity({ def }: { def: SettlementDef }) {
       {/* === WALLS — with battlements === */}
       <Wall from={[-38, 0, -38]} to={[38, 0, -38]} h={8} thickness={2.5} battlements />
       <Wall from={[38, 0, -38]} to={[38, 0, 38]} h={8} thickness={2.5} battlements />
-      <Wall from={[38, 0, 38]} to={[6, 0, 38]} h={8} thickness={2.5} battlements />
-      <Wall from={[-6, 0, 38]} to={[-38, 0, 38]} h={8} thickness={2.5} battlements />
+      <Wall from={[38, 0, 38]} to={[5.5, 0, 38]} h={8} thickness={2.5} battlements />
+      <Wall from={[-5.5, 0, 38]} to={[-38, 0, 38]} h={8} thickness={2.5} battlements />
       <Wall from={[-38, 0, 38]} to={[-38, 0, -38]} h={8} thickness={2.5} battlements />
 
-      {/* === GATEHOUSE === */}
-      <Gatehouse pos={[0, 0, 38]} rot={0} w={6} h={11} />
+      {/* === GATEHOUSE — towers r=1.5 at ±4, visual gap=5, collision gap=5 === */}
+      <Gatehouse pos={[0, 0, 38]} rot={0} w={8} h={11} towerR={1.5} />
 
       {/* === CORNER TOWERS — varied heights === */}
       <Tower pos={[-38, 0, -38]} h={14} r={3.2} roofStyle="cone" />
@@ -738,8 +739,8 @@ function MilitaryFort({ def }: { def: SettlementDef }) {
       {/* Stone wall perimeter — square fort */}
       <Wall from={[-20, 0, -20]} to={[20, 0, -20]} h={5} thickness={1.8} battlements />
       <Wall from={[20, 0, -20]} to={[20, 0, 20]} h={5} thickness={1.8} battlements />
-      <Wall from={[20, 0, 20]} to={[4, 0, 20]} h={5} thickness={1.8} battlements />
-      <Wall from={[-4, 0, 20]} to={[-20, 0, 20]} h={5} thickness={1.8} battlements />
+      <Wall from={[20, 0, 20]} to={[5, 0, 20]} h={5} thickness={1.8} battlements />
+      <Wall from={[-5, 0, 20]} to={[-20, 0, 20]} h={5} thickness={1.8} battlements />
       <Wall from={[-20, 0, 20]} to={[-20, 0, -20]} h={5} thickness={1.8} battlements />
 
       {/* Corner towers */}
@@ -748,8 +749,8 @@ function MilitaryFort({ def }: { def: SettlementDef }) {
       <Tower pos={[20, 0, 20]} h={9} r={2.2} roofStyle="flat" />
       <Tower pos={[-20, 0, 20]} h={9} r={2.2} roofStyle="flat" />
 
-      {/* Gate */}
-      <Gatehouse pos={[0, 0, 20]} rot={0} w={5} h={8} />
+      {/* Gate — towers r=1.5 at ±3.5, visual gap=4, collision gap=4 */}
+      <Gatehouse pos={[0, 0, 20]} rot={0} w={7} h={8} towerR={1.5} />
 
       {/* Command building */}
       <House pos={[0, 0, -8]} rot={0} w={8} d={7} h={4} style="stone" chimney />
