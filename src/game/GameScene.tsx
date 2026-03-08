@@ -65,7 +65,7 @@ export function GameScene() {
     let raf: number;
     const sync = () => {
       const pos = playerPositionRef.current;
-      updateHorsePosition(mountedHorseId, [pos.x, pos.y - 1.8, pos.z], playerRotationRef.current);
+      updateHorsePosition(mountedHorseId, [pos.x, pos.y - 2.2, pos.z], playerRotationRef.current);
       raf = requestAnimationFrame(sync);
     };
     raf = requestAnimationFrame(sync);
