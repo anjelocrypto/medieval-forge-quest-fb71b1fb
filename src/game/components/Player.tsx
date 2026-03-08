@@ -558,19 +558,49 @@ export function Player({
   const attacking = attackT > 0;
   const inAir = wasInAirRef.current;
   const landImpact = landingImpactRef.current;
+  const landRecovery = landRecoveryRef.current;
   const lean = leanRef.current;
   const hipSway = hipSwayRef.current;
-  const isComboSwing = comboRef.current === 0 && attacking; // second swing
+  const turnDelta = turnDeltaRef.current;
+  const isComboSwing = comboRef.current === 0 && attacking;
+  const jumpSquat = jumpSquatRef.current > 0 ? 1 : 0;
 
-  // Locomotion
-  const legSwing = Math.sin(t) * 0.7 * ms;
-  const legSwingBack = Math.sin(t + Math.PI) * 0.7 * ms;
-  const armSwing = Math.sin(t + 0.3) * 0.55 * ms;
-  const armSwingBack = Math.sin(t + Math.PI + 0.3) * 0.55 * ms;
-  const bodyBob = Math.abs(Math.sin(t * 2)) * 0.08 * ms - landImpact * 0.15;
-  const bodyForwardLean = ms * 0.06 + (ms > 0.8 ? 0.04 : 0); // lean forward when running
-  const shoulderRoll = Math.sin(t) * 0.04 * ms; // subtle shoulder twist
-  const torsoTwist = Math.sin(t) * 0.06 * ms; // upper body counter-rotation
+  // Locomotion — distinct walk vs run gaits
+  const isRunning = ms > 0.7;
+  const walkCycle = Math.sin(t);
+  const runCycle = Math.sin(t * 1.1); // slightly faster cadence for run
+  const gaitBlend = THREE.MathUtils.smoothstep(ms, 0.3, 0.8);
+
+  // Leg swing — walk is longer stride, run is higher knee lift
+  const walkLeg = walkCycle * 0.6;
+  const runLeg = runCycle * 0.85;
+  const legSwing = THREE.MathUtils.lerp(walkLeg, runLeg, gaitBlend) * ms;
+  const legSwingBack = THREE.MathUtils.lerp(
+    Math.sin(t + Math.PI) * 0.6,
+    Math.sin(t * 1.1 + Math.PI) * 0.85,
+    gaitBlend
+  ) * ms;
+
+  // Arms — counter-swing with phase offset
+  const armSwing = THREE.MathUtils.lerp(
+    Math.sin(t + 0.3) * 0.4,
+    Math.sin(t * 1.1 + 0.3) * 0.65,
+    gaitBlend
+  ) * ms;
+  const armSwingBack = THREE.MathUtils.lerp(
+    Math.sin(t + Math.PI + 0.3) * 0.4,
+    Math.sin(t * 1.1 + Math.PI + 0.3) * 0.65,
+    gaitBlend
+  ) * ms;
+
+  // Body dynamics
+  const bodyBob = Math.abs(Math.sin(t * 2)) * (isRunning ? 0.12 : 0.06) * ms
+    - landImpact * 0.2
+    - landRecovery * 0.1
+    - jumpSquat * 0.08;
+  const bodyForwardLean = ms * 0.05 + (isRunning ? 0.08 : 0) + jumpSquat * 0.12 + landRecovery * 0.06;
+  const shoulderRoll = Math.sin(t) * (isRunning ? 0.06 : 0.03) * ms;
+  const torsoTwist = Math.sin(t) * (isRunning ? 0.08 : 0.05) * ms + turnDelta * 0.15;
 
   // Attack animation — multi-phase with wind-up
   let atkSwingR = 0, atkSwingL = 0, atkBodyTwist = 0, atkLunge = 0;
@@ -579,68 +609,70 @@ export function Player({
     const phase = 1 - attackT / duration;
 
     if (isComboSwing) {
-      // Second swing — backhand from left
       if (phase < 0.15) {
-        // Wind-up
         atkSwingR = 0.3 * (phase / 0.15);
-        atkSwingL = -0.8 * (phase / 0.15);
-        atkBodyTwist = 0.2 * (phase / 0.15);
+        atkSwingL = -1.0 * (phase / 0.15);
+        atkBodyTwist = 0.25 * (phase / 0.15);
       } else if (phase < 0.4) {
-        // Strike
         const sp = (phase - 0.15) / 0.25;
         atkSwingR = 0.3 - sp * 0.3;
-        atkSwingL = -0.8 + sp * 2.2;
-        atkBodyTwist = 0.2 - sp * 0.5;
-        atkLunge = sp * 0.15;
-      } else {
-        // Recovery
-        const rp = (phase - 0.4) / 0.6;
-        atkSwingL = 1.4 * (1 - rp);
-        atkBodyTwist = -0.3 * (1 - rp);
-      }
-    } else {
-      // First swing — overhead/diagonal from right
-      if (phase < 0.2) {
-        // Wind-up: raise sword
-        const wp = phase / 0.2;
-        atkSwingR = -1.2 * wp;
-        atkBodyTwist = -0.15 * wp;
-      } else if (phase < 0.45) {
-        // Strike: swing down
-        const sp = (phase - 0.2) / 0.25;
-        atkSwingR = -1.2 + sp * 2.8;
-        atkBodyTwist = -0.15 + sp * 0.4;
+        atkSwingL = -1.0 + sp * 2.6;
+        atkBodyTwist = 0.25 - sp * 0.6;
         atkLunge = sp * 0.2;
       } else {
-        // Recovery
+        const rp = (phase - 0.4) / 0.6;
+        const ease = 1 - (1 - rp) * (1 - rp); // ease-out
+        atkSwingL = 1.6 * (1 - ease);
+        atkBodyTwist = -0.35 * (1 - ease);
+      }
+    } else {
+      if (phase < 0.2) {
+        const wp = phase / 0.2;
+        atkSwingR = -1.4 * wp;
+        atkBodyTwist = -0.2 * wp;
+      } else if (phase < 0.45) {
+        const sp = (phase - 0.2) / 0.25;
+        atkSwingR = -1.4 + sp * 3.2;
+        atkBodyTwist = -0.2 + sp * 0.5;
+        atkLunge = sp * 0.25;
+      } else {
         const rp = (phase - 0.45) / 0.55;
-        atkSwingR = 1.6 * (1 - rp * rp);
-        atkBodyTwist = 0.25 * (1 - rp);
-        atkLunge = 0.2 * (1 - rp);
+        const ease = 1 - (1 - rp) * (1 - rp);
+        atkSwingR = 1.8 * (1 - ease);
+        atkBodyTwist = 0.3 * (1 - ease);
+        atkLunge = 0.25 * (1 - ease);
       }
     }
   }
 
-  // Idle animation — weight shifting and breathing
+  // Idle animation — breathing, weight shifting, subtle life
   const idleT = idleShiftRef.current;
-  const idleBreath = ms < 0.1 ? Math.sin(idleT * 1.8) * 0.012 : 0;
-  const idleWeightShift = ms < 0.1 ? Math.sin(idleT * 0.4) * 0.02 : 0;
-  const idleSway = ms < 0.1 ? Math.sin(idleT * 0.7) * 0.015 : 0;
+  const idleBlend = 1 - THREE.MathUtils.smoothstep(ms, 0, 0.15); // fade out as movement starts
+  const idleBreath = idleBlend * Math.sin(idleT * 1.5) * 0.015;
+  const idleWeightShift = idleBlend * Math.sin(idleT * 0.35) * 0.025;
+  const idleSway = idleBlend * Math.sin(idleT * 0.6) * 0.02;
+  const idleHeadLook = idleBlend * Math.sin(idleT * 0.25) * 0.04;
 
-  // In-air pose
-  const airLegSpread = inAir ? 0.15 : 0;
-  const airArmRaise = inAir ? -0.3 : 0;
+  // In-air pose — dynamic
+  const airT = inAir ? 1 : 0;
+  const airLegSpread = airT * 0.2;
+  const airArmRaise = airT * -0.4;
+  const airBodyCurl = airT * -0.05; // slight forward curl
 
-  // Horse animation
-  const horseLegFL = isMounted ? Math.sin(t) * 0.5 * ms : 0;
-  const horseLegFR = isMounted ? Math.sin(t + Math.PI * 0.5) * 0.5 * ms : 0;
-  const horseLegBL = isMounted ? Math.sin(t + Math.PI) * 0.5 * ms : 0;
-  const horseLegBR = isMounted ? Math.sin(t + Math.PI * 1.5) * 0.5 * ms : 0;
-  const horseBodyBob = isMounted ? Math.abs(Math.sin(t * 2)) * 0.1 * ms : 0;
-  const horseNeckBob = isMounted ? Math.sin(t * 2 + 0.5) * 0.08 * ms : 0;
-  const horseHeadNod = isMounted ? Math.sin(t * 2 + 1) * 0.05 * ms : 0;
-  const riderBounce = isMounted ? Math.abs(Math.sin(t * 2)) * 0.06 * ms : 0;
-  const riderSway = isMounted ? Math.sin(t) * 0.03 * ms : 0;
+  // Horse animation — gallop rhythm
+  const horseGaitFreq = ms > 0.7 ? 1.15 : 1; // gallop has different rhythm
+  const ht = t * horseGaitFreq;
+  const horseLegFL = isMounted ? Math.sin(ht) * 0.55 * ms : 0;
+  const horseLegFR = isMounted ? Math.sin(ht + Math.PI * 0.5) * 0.55 * ms : 0;
+  const horseLegBL = isMounted ? Math.sin(ht + Math.PI) * 0.6 * ms : 0;
+  const horseLegBR = isMounted ? Math.sin(ht + Math.PI * 1.5) * 0.6 * ms : 0;
+  const horseBodyBob = isMounted ? Math.abs(Math.sin(ht * 2)) * 0.12 * ms : 0;
+  const horseNeckBob = isMounted ? Math.sin(ht * 2 + 0.5) * 0.1 * ms : 0;
+  const horseHeadNod = isMounted ? Math.sin(ht * 2 + 1) * 0.06 * ms : 0;
+  // Rider syncs with horse bounce but slightly delayed (body absorbs)
+  const riderBounce = isMounted ? Math.abs(Math.sin(ht * 2 + 0.3)) * 0.08 * ms : 0;
+  const riderSway = isMounted ? Math.sin(ht + 0.2) * 0.04 * ms : 0;
+  const riderLean = isMounted ? lean * 0.6 : 0; // rider leans into turns
 
   if (isDead) {
     return (
