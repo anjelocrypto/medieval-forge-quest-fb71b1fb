@@ -20,8 +20,9 @@ export const HORSE_APPROACH_STOP_DIST = 3.5;
 export const HORSE_WAIT_RANGE = 8; // stays within this range of player
 
 export function createPlayerHorse(): HorseData {
-  const sx = 12;
-  const sz = 8;
+  // Spawn near the south gate of Ironhold, not inside the keep
+  const sx = 3;
+  const sz = 48;
   return {
     id: 'player-horse',
     position: [sx, getTerrainHeight(sx, sz), sz],

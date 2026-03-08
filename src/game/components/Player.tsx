@@ -109,9 +109,12 @@ export function Player({
 
   useEffect(() => {
     if (groupRef.current) {
-      const startY = getTerrainHeight(0, 0) + PLAYER_HEIGHT / 2;
-      groupRef.current.position.set(0, startY, 0);
-      playerPositionRef.current.set(0, startY, 0);
+      // Spawn near the south gate of Ironhold, not inside the keep
+      const spawnX = 0;
+      const spawnZ = 45;
+      const startY = getTerrainHeight(spawnX, spawnZ) + PLAYER_HEIGHT / 2;
+      groupRef.current.position.set(spawnX, startY, spawnZ);
+      playerPositionRef.current.set(spawnX, startY, spawnZ);
     }
   }, []);
 
