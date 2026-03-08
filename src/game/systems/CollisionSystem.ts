@@ -99,11 +99,12 @@ function addCapitalCollision(s: SettlementDef, sx: number, sz: number) {
   // Chapel at [-15, 0, -8]: box [5,7,8]
   boxObstacles.push({ cx: sx - 15, cz: sz - 8, halfW: 2.5, halfD: 4, rotation: 0, id: `${s.id}-chapel` });
 
-  // Walls at ±38 (matches new layout)
+  // Walls at ±38 (matches visual layout)
   boxObstacles.push({ cx: sx, cz: sz - 38, halfW: 38, halfD: 1.25, rotation: 0, id: `${s.id}-wall-n` });
   boxObstacles.push({ cx: sx + 38, cz: sz, halfW: 1.25, halfD: 38, rotation: 0, id: `${s.id}-wall-e` });
-  boxObstacles.push({ cx: sx - 22, cz: sz + 38, halfW: 16, halfD: 1.25, rotation: 0, id: `${s.id}-wall-s-l` });
-  boxObstacles.push({ cx: sx + 22, cz: sz + 38, halfW: 16, halfD: 1.25, rotation: 0, id: `${s.id}-wall-s-r` });
+  // South wall segments: gap from -5.5 to +5.5 for gatehouse w=8
+  boxObstacles.push({ cx: sx - 21.75, cz: sz + 38, halfW: 16.25, halfD: 1.25, rotation: 0, id: `${s.id}-wall-s-l` });
+  boxObstacles.push({ cx: sx + 21.75, cz: sz + 38, halfW: 16.25, halfD: 1.25, rotation: 0, id: `${s.id}-wall-s-r` });
   boxObstacles.push({ cx: sx - 38, cz: sz, halfW: 1.25, halfD: 38, rotation: 0, id: `${s.id}-wall-w` });
 
   // Corner towers r=3.2 at ±38
@@ -114,10 +115,9 @@ function addCapitalCollision(s: SettlementDef, sx: number, sz: number) {
   for (const [tx, tz] of [[0, -38], [38, 0], [-38, 0]]) {
     circleObstacles.push({ x: sx + tx, z: sz + tz, radius: 2.5, id: `${s.id}-midtower-${tx}-${tz}` });
   }
-  // Gatehouse towers at [±3, 38] — reduced radius to allow passage through archway
-  // Visual archway opening is ~4.5 wide; collision gap = (3-1.0)*2 = 4.0 wide
-  circleObstacles.push({ x: sx - 3, z: sz + 38, radius: 1.0, id: `${s.id}-gate-l` });
-  circleObstacles.push({ x: sx + 3, z: sz + 38, radius: 1.0, id: `${s.id}-gate-r` });
+  // Gatehouse towers at [±4, 38] r=1.5 — matches visual tower r=1.5, gap=5 units
+  circleObstacles.push({ x: sx - 4, z: sz + 38, radius: 1.5, id: `${s.id}-gate-l` });
+  circleObstacles.push({ x: sx + 4, z: sz + 38, radius: 1.5, id: `${s.id}-gate-r` });
 
   // Barracks at [22, 0, -15]
   boxObstacles.push({ cx: sx + 22, cz: sz - 15, halfW: 3.5, halfD: 2.5, rotation: 0, id: `${s.id}-barracks` });
@@ -222,17 +222,18 @@ function addFortCollision(s: SettlementDef, sx: number, sz: number) {
   // Stone walls at ±20
   boxObstacles.push({ cx: sx, cz: sz - 20, halfW: 20, halfD: 0.9, rotation: 0, id: `${s.id}-wall-n` });
   boxObstacles.push({ cx: sx + 20, cz: sz, halfW: 0.9, halfD: 20, rotation: 0, id: `${s.id}-wall-e` });
-  boxObstacles.push({ cx: sx - 12, cz: sz + 20, halfW: 8, halfD: 0.9, rotation: 0, id: `${s.id}-wall-s-l` });
-  boxObstacles.push({ cx: sx + 12, cz: sz + 20, halfW: 8, halfD: 0.9, rotation: 0, id: `${s.id}-wall-s-r` });
+  // South wall segments: gap from -5 to +5 for gatehouse w=7
+  boxObstacles.push({ cx: sx - 12.5, cz: sz + 20, halfW: 7.5, halfD: 0.9, rotation: 0, id: `${s.id}-wall-s-l` });
+  boxObstacles.push({ cx: sx + 12.5, cz: sz + 20, halfW: 7.5, halfD: 0.9, rotation: 0, id: `${s.id}-wall-s-r` });
   boxObstacles.push({ cx: sx - 20, cz: sz, halfW: 0.9, halfD: 20, rotation: 0, id: `${s.id}-wall-w` });
 
   // Corner towers r=2.2
   for (const [tx, tz] of [[-20, -20], [20, -20], [20, 20], [-20, 20]]) {
     circleObstacles.push({ x: sx + tx, z: sz + tz, radius: 2.2, id: `${s.id}-tower-${tx}-${tz}` });
   }
-  // Gatehouse towers — reduced radius for passage (visual archway is passable)
-  circleObstacles.push({ x: sx - 2.5, z: sz + 20, radius: 1.0, id: `${s.id}-gate-l` });
-  circleObstacles.push({ x: sx + 2.5, z: sz + 20, radius: 1.0, id: `${s.id}-gate-r` });
+  // Gatehouse towers at [±3.5, 20] r=1.5 — matches visual tower r=1.5, gap=4 units
+  circleObstacles.push({ x: sx - 3.5, z: sz + 20, radius: 1.5, id: `${s.id}-gate-l` });
+  circleObstacles.push({ x: sx + 3.5, z: sz + 20, radius: 1.5, id: `${s.id}-gate-r` });
 
   // Command building w=8 d=7 at [0,0,-8]
   boxObstacles.push({ cx: sx, cz: sz - 8, halfW: 4, halfD: 3.5, rotation: 0, id: `${s.id}-cmd` });

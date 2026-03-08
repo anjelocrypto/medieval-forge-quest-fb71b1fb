@@ -24,9 +24,9 @@ const markerGeo = new THREE.CylinderGeometry(0.3, 0.3, 6, 6);
 // Spawn and gate coordinates
 const SPAWN_POS: [number, number] = [0, 45];
 const GATE_MARKERS: [number, number][] = [
-  [0, 38],     // Capital south gate
-  [185, -155 + 20],  // Fort south gate (fort at 185,-155, gate at z+20)
-  [155, 195 + 14],   // Monastery south gate (monastery at 155,195, gate at z+14)
+  [0, 38],     // Capital south gate (gatehouse w=8, towers at ±4)
+  [185, -155 + 20],  // Fort south gate (gatehouse w=7, towers at ±3.5)
+  [155, 195 + 14],   // Monastery south gate (wall gap ±3, no gatehouse)
 ];
 
 export function DebugCollision({ playerPositionRef, isMounted = false, playerRadius = 0.4 }: {
