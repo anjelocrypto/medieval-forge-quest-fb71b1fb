@@ -8,35 +8,43 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 30 15% 10%;
+    --foreground: 40 30% 90%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 30 15% 14%;
+    --card-foreground: 40 30% 90%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 30 15% 14%;
+    --popover-foreground: 40 30% 90%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 35 70% 50%;
+    --primary-foreground: 30 15% 10%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 120 25% 30%;
+    --secondary-foreground: 40 30% 90%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 30 10% 20%;
+    --muted-foreground: 30 15% 55%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 0 65% 45%;
+    --accent-foreground: 40 30% 90%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 40 30% 90%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 30 15% 25%;
+    --input: 30 15% 25%;
+    --ring: 35 70% 50%;
 
     --radius: 0.5rem;
+
+    /* Game-specific tokens */
+    --health: 0 70% 45%;
+    --stamina: 45 80% 50%;
+    --hunger: 25 70% 45%;
+    --temperature: 200 70% 50%;
+    --hud-bg: 0 0% 0% / 0.6;
+    --hud-border: 40 30% 40% / 0.5;
 
     --sidebar-background: 0 0% 98%;
 
