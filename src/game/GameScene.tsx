@@ -247,8 +247,8 @@ export function GameScene({ multiplayer, onLeaveRoom }: GameSceneProps) {
 
       {/* Multiplayer HUD */}
       <MultiplayerHUD
-        connected={multiplayer.connected}
-        roomId={multiplayer.roomId}
+        connectionStatus={multiplayer.connectionStatus}
+        roomCode={multiplayer.roomCode}
         playerCount={1 + remotePlayerCount}
         playerId={multiplayer.playerId}
         mockMode={multiplayer.mockMode}
