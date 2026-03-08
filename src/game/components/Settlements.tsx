@@ -467,11 +467,14 @@ function CapitalCity({ def }: { def: SettlementDef }) {
     for (let i = 0; i < 14; i++) {
       const angle = (i / 14) * Math.PI * 2;
       const r = 20 + rng() * 10;
+      const rot = angle + Math.PI + (rng() - 0.5) * 0.4;
+      const w = 4 + rng() * 2.5, d = 4.5 + rng() * 2.5, h = 3 + rng() * 1.5;
+      // Always consume 2 rng() calls for style to keep RNG sync with collision
+      const s1 = rng(), s2 = rng();
+      const style: 'stone' | 'plaster' | 'halftimber' = s1 > 0.5 ? 'stone' : (s2 > 0.3 ? 'halftimber' : 'plaster');
       arr.push({
         pos: [Math.cos(angle) * r, Math.sin(angle) * r],
-        rot: angle + Math.PI + (rng() - 0.5) * 0.4,
-        w: 4 + rng() * 2.5, d: 4.5 + rng() * 2.5, h: 3 + rng() * 1.5,
-        style: rng() > 0.5 ? 'stone' : (rng() > 0.3 ? 'halftimber' : 'plaster'),
+        rot, w, d, h, style,
         chimney: rng() > 0.5, shed: rng() > 0.6,
       });
     }
@@ -479,10 +482,13 @@ function CapitalCity({ def }: { def: SettlementDef }) {
     for (let i = 0; i < 6; i++) {
       const angle = (i / 6) * Math.PI * 2 + 0.3;
       const r = 10 + rng() * 4;
+      const w = 3.5 + rng() * 1.5, d = 4 + rng() * 1.5;
+      const h = 3.5 + rng() * 1;
+      // No rng() for style (hardcoded 'stone'), no shed
       arr.push({
         pos: [Math.cos(angle) * r, Math.sin(angle) * r],
-        rot: angle + Math.PI, w: 3.5 + rng() * 1.5, d: 4 + rng() * 1.5,
-        h: 3.5 + rng() * 1, style: 'stone', chimney: rng() > 0.4, shed: false,
+        rot: angle + Math.PI, w, d, h, style: 'stone',
+        chimney: rng() > 0.4, shed: false,
       });
     }
     return arr;
