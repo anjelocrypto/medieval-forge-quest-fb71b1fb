@@ -46,6 +46,7 @@ export function GameScene({ multiplayer, onLeaveRoom }: GameSceneProps) {
     lootPickups, addLootPickups, collectLoot,
     notification, getAvailableBuildables,
     horse, isMounted, mountHorse, dismountHorse, callHorse, updateHorse,
+    addRemoteStructure,
   } = useGameState();
 
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
@@ -146,12 +147,9 @@ export function GameScene({ multiplayer, onLeaveRoom }: GameSceneProps) {
         setEnemies(prev => prev.map(e => e.id === id ? { ...e, health: 0, state: 'dead' as const } : e));
       }
       if (ev.type === 'building_placed') {
-        const structure = ev.payload.structure as PlacedStructure;
+        const structure = ev.payload.structure as Record<string, unknown>;
         if (structure) {
-          setStructures(prev => {
-            if (prev.some(s => s.id === structure.id)) return prev;
-            return [...prev, structure];
-          });
+          addRemoteStructure(structure as any);
         }
       }
     }
