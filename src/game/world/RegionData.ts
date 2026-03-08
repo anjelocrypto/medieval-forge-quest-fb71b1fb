@@ -36,7 +36,8 @@ export interface SmallPOIDef {
   position: [number, number];
   type: 'shrine' | 'wagon' | 'bridge' | 'graveyard' | 'hunter_camp' | 'ruined_house'
     | 'watchtower' | 'cave' | 'watchpost' | 'inn' | 'clearing' | 'stone_circle'
-    | 'pond' | 'burned_village' | 'supply_depot' | 'crossroads';
+    | 'pond' | 'burned_village' | 'supply_depot' | 'crossroads'
+    | 'milestone' | 'lantern_post' | 'roadside_cross' | 'abandoned_camp' | 'gallows';
 }
 
 export interface RoadSegment {
@@ -158,19 +159,24 @@ export const SETTLEMENTS: SettlementDef[] = [
 // ========== ROAD NETWORK ==========
 export const ROADS: RoadSegment[] = [
   // Main roads from Ironhold
-  { from: [0, 0], to: [-155, -125], width: 3.5 },      // Ironhold → Greenmeadow
-  { from: [0, 0], to: [185, -155], width: 3.0 },        // Ironhold → Blackthorn
-  { from: [0, 0], to: [5, -205], width: 2.5 },           // Ironhold → Ravenwatch
-  { from: [0, 0], to: [-185, 135], width: 2.5 },         // Ironhold → Ashwood
-  { from: [0, 0], to: [195, 95], width: 2.5 },           // Ironhold → Old Veyra
+  { from: [0, 38], to: [0, 55], width: 4.0 },             // Capital gate approach
+  { from: [0, 55], to: [-155, -125], width: 3.5 },         // Ironhold → Greenmeadow
+  { from: [0, 55], to: [185, -135], width: 3.0 },          // Ironhold → Blackthorn (via south gate)
+  { from: [185, -135], to: [185, -155], width: 3.0 },      // approach fort gate
+  { from: [0, 55], to: [5, -205], width: 2.5 },            // Ironhold → Ravenwatch
+  { from: [0, 55], to: [-185, 135], width: 2.5 },          // Ironhold → Ashwood
+  { from: [0, 55], to: [195, 95], width: 2.5 },            // Ironhold → Old Veyra
   // Secondary roads
-  { from: [185, -155], to: [195, 95], width: 2.0 },      // Blackthorn → Old Veyra
-  { from: [195, 95], to: [155, 195], width: 2.0 },       // Old Veyra → Frostmere
-  { from: [-155, -125], to: [-110, -80], width: 2.0 },   // Greenmeadow → Millbrook
-  { from: [-110, -80], to: [0, 0], width: 2.0 },         // Millbrook → Ironhold
-  { from: [5, -205], to: [185, -155], width: 1.8 },      // Ravenwatch → Blackthorn
-  { from: [-185, 135], to: [155, 195], width: 1.5 },     // Ashwood → Frostmere (mountain trail)
-  { from: [160, 50], to: [195, 95], width: 1.5 },        // Ashen Hollow → Old Veyra
+  { from: [185, -155], to: [195, 95], width: 2.0 },        // Blackthorn → Old Veyra
+  { from: [195, 95], to: [155, 209], width: 2.0 },         // Old Veyra → Frostmere (approach monastery gate)
+  { from: [-155, -125], to: [-110, -80], width: 2.0 },     // Greenmeadow → Millbrook
+  { from: [-110, -80], to: [0, 55], width: 2.0 },          // Millbrook → Ironhold
+  { from: [5, -205], to: [185, -155], width: 1.8 },        // Ravenwatch → Blackthorn
+  { from: [-185, 135], to: [155, 195], width: 1.5 },       // Ashwood → Frostmere (mountain trail)
+  { from: [160, 50], to: [195, 95], width: 1.5 },          // Ashen Hollow → Old Veyra
+  // Ring road segments
+  { from: [-155, -125], to: [5, -205], width: 1.5 },       // Greenmeadow → Ravenwatch
+  { from: [-185, 135], to: [-155, -125], width: 1.5 },     // Ashwood → Greenmeadow (long trail)
 ];
 
 // ========== SMALL POIS ==========
@@ -203,6 +209,21 @@ export const SMALL_POIS: SmallPOIDef[] = [
   { id: 'sp18', name: 'Signal Tower', position: [-60, 170], type: 'watchtower' },
   { id: 'sp19', name: 'Hidden Shrine', position: [50, -170], type: 'shrine' },
   { id: 'sp20', name: 'Trader Camp', position: [-130, -30], type: 'hunter_camp' },
+  // Road milestones and atmosphere
+  { id: 'sp21', name: 'First Milestone', position: [-25, -15], type: 'milestone' },
+  { id: 'sp22', name: 'Second Milestone', position: [-80, -60], type: 'milestone' },
+  { id: 'sp23', name: 'Gate Lantern', position: [3, 50], type: 'lantern_post' },
+  { id: 'sp24', name: 'Gate Lantern', position: [-3, 50], type: 'lantern_post' },
+  { id: 'sp25', name: 'Frontier Cross', position: [140, -120], type: 'roadside_cross' },
+  { id: 'sp26', name: 'Roadside Camp', position: [95, 15], type: 'abandoned_camp' },
+  { id: 'sp27', name: 'Ravenwatch Gallows', position: [20, -180], type: 'gallows' },
+  { id: 'sp28', name: 'Road Lantern', position: [-35, -45], type: 'lantern_post' },
+  { id: 'sp29', name: 'Road Lantern', position: [45, -40], type: 'lantern_post' },
+  { id: 'sp30', name: 'Third Milestone', position: [50, -90], type: 'milestone' },
+  { id: 'sp31', name: 'Mountain Cross', position: [155, 160], type: 'roadside_cross' },
+  { id: 'sp32', name: 'Forest Shrine', position: [-140, 110], type: 'shrine' },
+  { id: 'sp33', name: 'Trail Marker', position: [-170, 60], type: 'milestone' },
+  { id: 'sp34', name: 'Abandoned Campsite', position: [-100, 30], type: 'abandoned_camp' },
 ];
 
 // ========== LANDMARK DEFINITIONS ==========
