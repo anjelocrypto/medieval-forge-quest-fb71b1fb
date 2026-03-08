@@ -1,9 +1,9 @@
 import { useFrame } from '@react-three/fiber';
-import { useRef } from 'react';
 import * as THREE from 'three';
-import { NetworkPlayerState, BROADCAST_RATE_MS } from './types';
+import { NetworkPlayerState } from './types';
 import { SurvivalState } from '../types';
 import { HorseData } from '../systems/HorseData';
+import { MountedDebugData } from '../components/Player';
 
 interface Props {
   playerId: string;
@@ -13,11 +13,12 @@ interface Props {
   survival: SurvivalState;
   isMounted: boolean;
   horse: HorseData;
-  moveSpeed: number;
-  isRunning: boolean;
-  attackAnim: number;
+  // Refs for frame-rate-sensitive values (read inside useFrame)
+  moveSpeedRef: React.RefObject<number>;
+  isRunningRef: React.RefObject<boolean>;
+  attackAnimRef: React.RefObject<number>;
+  mountedDebugRef: React.RefObject<MountedDebugData>;
   buildMode: boolean;
-  horsePitch: number;
   emote: string | null;
   onUpdateLocalState: (state: NetworkPlayerState) => void;
 }
@@ -29,8 +30,8 @@ interface Props {
  */
 export function MultiplayerBroadcaster({
   playerId, displayName, playerPositionRef, playerRotationRef,
-  survival, isMounted, horse, moveSpeed, isRunning, attackAnim,
-  buildMode, horsePitch, emote, onUpdateLocalState,
+  survival, isMounted, horse, moveSpeedRef, isRunningRef, attackAnimRef,
+  mountedDebugRef, buildMode, emote, onUpdateLocalState,
 }: Props) {
 
   useFrame(() => {
@@ -43,17 +44,17 @@ export function MultiplayerBroadcaster({
       displayName,
       position: [pos.x, pos.y, pos.z],
       rotation: rot ?? 0,
-      moveSpeed,
-      isRunning,
+      moveSpeed: moveSpeedRef.current ?? 0,
+      isRunning: isRunningRef.current ?? false,
       isMounted,
       health: survival.health,
       maxHealth: 100,
       stamina: survival.stamina,
       hunger: survival.hunger,
       temperature: survival.temperature,
-      attackAnim,
+      attackAnim: attackAnimRef.current ?? 0,
       buildMode,
-      horsePitch,
+      horsePitch: mountedDebugRef.current?.pitch ?? 0,
       horsePosition: horse.position,
       horseRotation: horse.rotation,
       horseState: horse.state,

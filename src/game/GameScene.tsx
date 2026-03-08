@@ -366,11 +366,11 @@ export function GameScene({ multiplayer, onLeaveRoom }: GameSceneProps) {
             survival={survival}
             isMounted={isMounted}
             horse={horse}
-            moveSpeed={moveSpeedRef.current}
-            isRunning={isRunningRef.current}
-            attackAnim={attackAnimRef.current}
+            moveSpeedRef={moveSpeedRef}
+            isRunningRef={isRunningRef}
+            attackAnimRef={attackAnimRef}
+            mountedDebugRef={mountedDebugRef}
             buildMode={buildMode}
-            horsePitch={mountedDebugRef.current.pitch}
             emote={currentEmote}
             onUpdateLocalState={multiplayer.updateLocalState}
           />
