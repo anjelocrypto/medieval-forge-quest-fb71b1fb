@@ -1,10 +1,22 @@
 // Shared input state — singleton store
+// Uses double-buffering: events accumulate into "next" sets during the frame,
+// then flushInput() swaps them into the "current" readable sets at frame start.
+// This guarantees all useFrame consumers see the same consistent snapshot
+// regardless of execution order.
+
 const inputState = {
   keys: new Set<string>(),
   mouseButtons: new Set<number>(),
+
+  // Readable this frame (filled by previous flush swap)
   _justPressed: new Set<string>(),
   _justClicked: new Set<number>(),
   pointerJustLocked: false,
+
+  // Accumulating for next frame (filled by DOM events between frames)
+  _justPressedNext: new Set<string>(),
+  _justClickedNext: new Set<number>(),
+  pointerJustLockedNext: false,
 };
 
 let initialized = false;
@@ -14,33 +26,73 @@ export function initInput() {
   initialized = true;
 
   window.addEventListener('keydown', (e) => {
-    if (!inputState.keys.has(e.code)) inputState._justPressed.add(e.code);
+    if (!inputState.keys.has(e.code)) {
+      inputState._justPressedNext.add(e.code);
+    }
     inputState.keys.add(e.code);
   });
-  window.addEventListener('keyup', (e) => { inputState.keys.delete(e.code); });
+  window.addEventListener('keyup', (e) => {
+    inputState.keys.delete(e.code);
+  });
   window.addEventListener('mousedown', (e) => {
-    if (!inputState.mouseButtons.has(e.button)) inputState._justClicked.add(e.button);
+    if (!inputState.mouseButtons.has(e.button)) {
+      inputState._justClickedNext.add(e.button);
+    }
     inputState.mouseButtons.add(e.button);
   });
-  window.addEventListener('mouseup', (e) => { inputState.mouseButtons.delete(e.button); });
-  document.addEventListener('pointerlockchange', () => {
-    if (document.pointerLockElement) inputState.pointerJustLocked = true;
+  window.addEventListener('mouseup', (e) => {
+    inputState.mouseButtons.delete(e.button);
   });
-  window.addEventListener('blur', () => { inputState.keys.clear(); inputState.mouseButtons.clear(); });
+  document.addEventListener('pointerlockchange', () => {
+    if (document.pointerLockElement) {
+      inputState.pointerJustLockedNext = true;
+    }
+  });
+  window.addEventListener('blur', () => {
+    inputState.keys.clear();
+    inputState.mouseButtons.clear();
+    inputState._justPressedNext.clear();
+    inputState._justClickedNext.clear();
+  });
 }
 
-export function isKeyDown(code: string): boolean { return inputState.keys.has(code); }
-export function wasKeyJustPressed(code: string): boolean { return inputState._justPressed.has(code); }
+export function isKeyDown(code: string): boolean {
+  return inputState.keys.has(code);
+}
+
+export function wasKeyJustPressed(code: string): boolean {
+  return inputState._justPressed.has(code);
+}
+
 export function wasMouseJustClicked(button: number): boolean {
   if (button === 0 && inputState.pointerJustLocked) return false;
   return inputState._justClicked.has(button);
 }
-export function isMouseDown(button: number): boolean { return inputState.mouseButtons.has(button); }
 
+export function isMouseDown(button: number): boolean {
+  return inputState.mouseButtons.has(button);
+}
+
+/**
+ * Swap buffers: promote "next" events into "current" readable sets.
+ * Must be called once per frame BEFORE any consumers read input.
+ * With double-buffering, it doesn't matter if this runs first or last —
+ * the pattern is: flush (swap) → all consumers read → DOM events accumulate into "next".
+ */
 export function flushInput() {
-  inputState._justPressed.clear();
-  inputState._justClicked.clear();
-  inputState.pointerJustLocked = false;
+  // Swap: next becomes current, clear next for new accumulation
+  const tmpKeys = inputState._justPressed;
+  inputState._justPressed = inputState._justPressedNext;
+  inputState._justPressedNext = tmpKeys;
+  tmpKeys.clear();
+
+  const tmpClicks = inputState._justClicked;
+  inputState._justClicked = inputState._justClickedNext;
+  inputState._justClickedNext = tmpClicks;
+  tmpClicks.clear();
+
+  inputState.pointerJustLocked = inputState.pointerJustLockedNext;
+  inputState.pointerJustLockedNext = false;
 }
 
 export function getMovementInput() {
