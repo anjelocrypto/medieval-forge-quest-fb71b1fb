@@ -21,7 +21,7 @@ interface Props {
   structures: PlacedStructure[];
   inventory: ResourceInventory;
   onEatFood: () => void;
-  horses: HorseData[];
+  horse: HorseData;
   isMounted: boolean;
 }
 
