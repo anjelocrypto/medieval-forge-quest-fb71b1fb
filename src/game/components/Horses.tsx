@@ -134,7 +134,7 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse, isMounted }: Pr
 
   return (
     <group position={[horse.position[0], horse.position[1], horse.position[2]]}
-      rotation={[0, rotRef.current, 0]}>
+      rotation={[0, rotRef.current, bodyRock]}>
       {/* Body with breathing */}
       <mesh position={[weightShift, 1.1 + breath + bodyBob, 0]} geometry={boxGeo}
         scale={[0.7, 0.65, 1.6]} material={bodyMat} castShadow />
