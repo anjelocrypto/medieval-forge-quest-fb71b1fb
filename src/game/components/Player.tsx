@@ -19,6 +19,16 @@ import { HorseData, HORSE_SPEED, HORSE_RUN_SPEED, MOUNT_RANGE, DISMOUNT_OFFSET }
 import { resolveCollision, rebuildObstacles } from '../systems/CollisionSystem';
 import { WorldResource, INTERACTION_RANGE, GATHER_COOLDOWN, TREE_WOOD_REWARD, ROCK_STONE_REWARD, BERRY_FOOD_REWARD, CRATE_REWARDS } from '../systems/WorldResources';
 
+export interface MountedDebugData {
+  terrainY: number;
+  horseY: number;
+  riderY: number;
+  delta: number;
+  pitch: number;
+  pushX: number;
+  pushZ: number;
+}
+
 interface PlayerProps {
   onSurvivalUpdate: (updates: Partial<SurvivalState>) => void;
   survival: SurvivalState;
@@ -46,6 +56,7 @@ interface PlayerProps {
   shakeResourceRef: React.MutableRefObject<string | null>;
   highlightedResourceRef: React.MutableRefObject<string | null>;
   resources: WorldResource[];
+  mountedDebugRef?: React.MutableRefObject<MountedDebugData>;
 }
 
 const _camForward = new THREE.Vector3();
