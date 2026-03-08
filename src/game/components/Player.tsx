@@ -403,7 +403,6 @@ export function Player({
         wasInAirRef.current = true;
       }
     }
-    }
 
     // === COMBO ATTACK SYSTEM ===
     if (!isMounted && !buildMode && input.attack && attackCooldownRef.current <= 0) {
