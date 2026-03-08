@@ -1,11 +1,14 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { HorseData } from '../systems/HorseData';
+import { HorseData, HORSE_APPROACH_SPEED, HORSE_APPROACH_STOP_DIST } from '../systems/HorseData';
+import { getTerrainHeight } from './Terrain';
+import { resolveCollision } from '../systems/CollisionSystem';
 
 interface Props {
-  horses: HorseData[];
+  horse: HorseData;
   playerPositionRef: React.RefObject<THREE.Vector3>;
+  onUpdateHorse: (updates: Partial<HorseData>) => void;
 }
 
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
@@ -16,101 +19,164 @@ const hoofMat = new THREE.MeshLambertMaterial({ color: '#1a1a1a' });
 const eyeMat = new THREE.MeshBasicMaterial({ color: '#111' });
 const saddleMat = new THREE.MeshLambertMaterial({ color: '#5a2010' });
 
-export function Horses({ horses, playerPositionRef }: Props) {
+export function Horse({ horse, playerPositionRef, onUpdateHorse }: Props) {
   const animRef = useRef(0);
+  const moveSpeedRef = useRef(0);
+  const rotRef = useRef(horse.rotation);
 
   useFrame((_, delta) => {
-    animRef.current += delta;
+    const dt = Math.min(delta, 0.05);
+    animRef.current += dt;
+
+    // Don't process movement if mounted (player controls it)
+    if (horse.state === 'mounted') return;
+
+    const playerPos = playerPositionRef.current;
+    if (!playerPos) return;
+
+    const dx = playerPos.x - horse.position[0];
+    const dz = playerPos.z - horse.position[2];
+    const dist = Math.sqrt(dx * dx + dz * dz);
+
+    if (horse.state === 'called' || horse.state === 'approaching') {
+      // Move toward player
+      if (dist > HORSE_APPROACH_STOP_DIST) {
+        const wantAngle = Math.atan2(dx, dz);
+        let rotDiff = wantAngle - rotRef.current;
+        while (rotDiff > Math.PI) rotDiff -= Math.PI * 2;
+        while (rotDiff < -Math.PI) rotDiff += Math.PI * 2;
+        rotRef.current += rotDiff * Math.min(1, 4 * dt);
+
+        // Accelerate
+        const targetSpeed = dist > 15 ? HORSE_APPROACH_SPEED : HORSE_APPROACH_SPEED * 0.6;
+        moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, targetSpeed, dt * 3);
+
+        const spd = moveSpeedRef.current;
+        let nx = horse.position[0] + Math.sin(rotRef.current) * spd * dt;
+        let nz = horse.position[2] + Math.cos(rotRef.current) * spd * dt;
+
+        // Collision
+        const resolved = resolveCollision(nx, nz, 0.8);
+        nx = resolved.x;
+        nz = resolved.z;
+
+        const ny = getTerrainHeight(nx, nz);
+
+        onUpdateHorse({
+          position: [nx, ny, nz],
+          rotation: rotRef.current,
+          state: 'approaching',
+        });
+
+        animRef.current += dt * moveSpeedRef.current * 0.8;
+      } else {
+        // Arrived — switch to waiting
+        moveSpeedRef.current = 0;
+        onUpdateHorse({ state: 'waiting' });
+      }
+    } else if (horse.state === 'waiting') {
+      // If player walks far away, go idle
+      if (dist > 50) {
+        onUpdateHorse({ state: 'idle' });
+      }
+      moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, 0, dt * 5);
+    } else {
+      // idle
+      moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, 0, dt * 5);
+    }
   });
 
+  // Don't render if mounted (player renders the horse body)
+  if (horse.state === 'mounted') return null;
+
+  // Cull if far from player
   const playerPos = playerPositionRef.current;
+  if (playerPos) {
+    const dx = playerPos.x - horse.position[0];
+    const dz = playerPos.z - horse.position[2];
+    if (dx * dx + dz * dz > 200 * 200) return null;
+  }
+
   const t = animRef.current;
+  const ms = moveSpeedRef.current / HORSE_APPROACH_SPEED; // 0-1 normalized
+
+  // Idle animation
+  const breath = Math.sin(t * 1.2) * 0.025;
+  const headNod = Math.sin(t * 0.6) * 0.06;
+  const tailSwish = Math.sin(t * 1.8) * 0.35;
+  const earFlick = Math.sin(t * 2.5) > 0.8 ? 0.1 : 0;
+  const weightShift = Math.sin(t * 0.3) * 0.01;
+
+  // Locomotion
+  const legFL = Math.sin(t) * 0.5 * ms;
+  const legFR = Math.sin(t + Math.PI * 0.5) * 0.5 * ms;
+  const legBL = Math.sin(t + Math.PI) * 0.5 * ms;
+  const legBR = Math.sin(t + Math.PI * 1.5) * 0.5 * ms;
+  const bodyBob = Math.abs(Math.sin(t * 2)) * 0.08 * ms;
+  const neckMotion = Math.sin(t * 2 + 0.5) * 0.06 * ms;
 
   return (
-    <group>
-      {horses.map(h => {
-        if (h.isMounted) return null;
-        if (playerPos) {
-          const dx = playerPos.x - h.position[0];
-          const dz = playerPos.z - h.position[2];
-          if (dx * dx + dz * dz > 150 * 150) return null;
-        }
+    <group position={[horse.position[0], horse.position[1], horse.position[2]]}
+      rotation={[0, rotRef.current, 0]}>
+      {/* Body with breathing */}
+      <mesh position={[weightShift, 1.1 + breath + bodyBob, 0]} geometry={boxGeo}
+        scale={[0.7, 0.65, 1.6]} material={bodyMat} castShadow />
+      <mesh position={[weightShift, 1.15 + breath + bodyBob, 0.6]} geometry={boxGeo}
+        scale={[0.6, 0.55, 0.4]} material={bodyMat} castShadow />
+      <mesh position={[weightShift, 1.05 + breath + bodyBob, -0.65]} geometry={boxGeo}
+        scale={[0.55, 0.5, 0.35]} material={bodyMat} castShadow />
 
-        // Rich idle animation
-        const breath = Math.sin(t * 1.2 + h.position[0]) * 0.025;
-        const headNod = Math.sin(t * 0.6 + h.position[0] * 0.5) * 0.06;
-        const tailSwish = Math.sin(t * 1.8 + h.position[0]) * 0.35;
-        const earFlick = Math.sin(t * 2.5 + h.position[2]) > 0.8 ? 0.1 : 0;
-        const weightShift = Math.sin(t * 0.3) * 0.01;
-        // Occasional leg lift
-        const legLift = Math.sin(t * 0.4 + 2) > 0.95 ? Math.sin(t * 3) * 0.15 : 0;
+      {/* Neck */}
+      <group position={[0, 1.55 + breath + bodyBob + neckMotion, 0.8]} rotation={[0.5 + headNod * 0.3, 0, 0]}>
+        <mesh geometry={boxGeo} scale={[0.35, 0.7, 0.35]} material={bodyMat} castShadow />
+      </group>
+      {/* Head */}
+      <group position={[0, 1.85 + breath + bodyBob + neckMotion, 1.15 + headNod * 0.2]}>
+        <mesh geometry={boxGeo} scale={[0.3, 0.28, 0.45]} material={bodyMat} castShadow />
+        <mesh position={[0, -0.08, 0.25]} geometry={boxGeo}
+          scale={[0.22, 0.18, 0.25]} material={bodyDarkMat} castShadow />
+        <mesh position={[-0.14, 0.04, 0.08]} geometry={boxGeo}
+          scale={[0.04, 0.06, 0.04]} material={eyeMat} />
+        <mesh position={[0.14, 0.04, 0.08]} geometry={boxGeo}
+          scale={[0.04, 0.06, 0.04]} material={eyeMat} />
+        {/* Ears */}
+        <mesh position={[-0.08, 0.2, 0]} rotation={[earFlick, 0, -0.1]} geometry={boxGeo}
+          scale={[0.06, 0.14, 0.06]} material={bodyDarkMat} castShadow />
+        <mesh position={[0.08, 0.2, 0]} rotation={[-earFlick * 0.5, 0, 0.1]} geometry={boxGeo}
+          scale={[0.06, 0.14, 0.06]} material={bodyDarkMat} castShadow />
+      </group>
+      {/* Mane */}
+      <mesh position={[0, 1.65 + breath, 0.65]} rotation={[0.4, 0, 0]}
+        geometry={boxGeo} scale={[0.08, 0.5, 0.3]} material={maneMat} castShadow />
+      {/* Saddle */}
+      <mesh position={[0, 1.5 + breath + bodyBob, 0.05]} geometry={boxGeo}
+        scale={[0.55, 0.12, 0.5]} material={saddleMat} castShadow />
+      <mesh position={[0, 1.55 + breath + bodyBob, -0.2]} geometry={boxGeo}
+        scale={[0.3, 0.2, 0.1]} material={saddleMat} castShadow />
 
-        return (
-          <group key={h.id} position={[h.position[0], h.position[1], h.position[2]]}
-            rotation={[0, h.rotation, 0]}>
-            {/* Body with breathing */}
-            <mesh position={[weightShift, 1.1 + breath, 0]} geometry={boxGeo}
-              scale={[0.7, 0.65, 1.6]} material={bodyMat} castShadow />
-            <mesh position={[weightShift, 1.15 + breath, 0.6]} geometry={boxGeo}
-              scale={[0.6, 0.55, 0.4]} material={bodyMat} castShadow />
-            <mesh position={[weightShift, 1.05 + breath, -0.65]} geometry={boxGeo}
-              scale={[0.55, 0.5, 0.35]} material={bodyMat} castShadow />
+      {/* Legs */}
+      {([
+        [-0.22, 0.5, legFL],
+        [0.22, 0.5, legFR],
+        [-0.22, -0.5, legBL],
+        [0.22, -0.5, legBR],
+      ] as [number, number, number][]).map(([lx, lz, anim], i) => (
+        <group key={i} position={[lx, 0, lz]} rotation={[anim, 0, 0]}>
+          <mesh position={[0, 0.55, 0]} geometry={boxGeo}
+            scale={[0.16, 0.7, 0.16]} material={bodyMat} castShadow />
+          <mesh position={[0, 0.12, 0]} geometry={boxGeo}
+            scale={[0.14, 0.35, 0.14]} material={bodyDarkMat} castShadow />
+          <mesh position={[0, -0.02, 0]} geometry={boxGeo}
+            scale={[0.15, 0.08, 0.18]} material={hoofMat} castShadow />
+        </group>
+      ))}
 
-            {/* Neck with gentle motion */}
-            <group position={[0, 1.55 + breath, 0.8]} rotation={[0.5 + headNod * 0.3, 0, 0]}>
-              <mesh geometry={boxGeo} scale={[0.35, 0.7, 0.35]} material={bodyMat} castShadow />
-            </group>
-            {/* Head with nodding */}
-            <group position={[0, 1.85 + breath + headNod * 0.3, 1.15 + headNod * 0.2]}>
-              <mesh geometry={boxGeo} scale={[0.3, 0.28, 0.45]} material={bodyMat} castShadow />
-              <mesh position={[0, -0.08, 0.25]} geometry={boxGeo}
-                scale={[0.22, 0.18, 0.25]} material={bodyDarkMat} castShadow />
-              <mesh position={[-0.14, 0.04, 0.08]} geometry={boxGeo}
-                scale={[0.04, 0.06, 0.04]} material={eyeMat} />
-              <mesh position={[0.14, 0.04, 0.08]} geometry={boxGeo}
-                scale={[0.04, 0.06, 0.04]} material={eyeMat} />
-              {/* Ears with flick */}
-              <mesh position={[-0.08, 0.2, 0]} rotation={[earFlick, 0, -0.1]} geometry={boxGeo}
-                scale={[0.06, 0.14, 0.06]} material={bodyDarkMat} castShadow />
-              <mesh position={[0.08, 0.2, 0]} rotation={[-earFlick * 0.5, 0, 0.1]} geometry={boxGeo}
-                scale={[0.06, 0.14, 0.06]} material={bodyDarkMat} castShadow />
-            </group>
-            {/* Mane */}
-            <mesh position={[0, 1.65 + breath, 0.65]} rotation={[0.4, 0, 0]}
-              geometry={boxGeo} scale={[0.08, 0.5, 0.3]} material={maneMat} castShadow />
-            {/* Saddle */}
-            <mesh position={[0, 1.5 + breath, 0.05]} geometry={boxGeo}
-              scale={[0.55, 0.12, 0.5]} material={saddleMat} castShadow />
-            <mesh position={[0, 1.55 + breath, -0.2]} geometry={boxGeo}
-              scale={[0.3, 0.2, 0.1]} material={saddleMat} castShadow />
-
-            {/* Legs — with occasional weight shift */}
-            {([
-              [-0.22, 0.5, 0],
-              [0.22, 0.5, 0],
-              [-0.22, -0.5, legLift],
-              [0.22, -0.5, 0],
-            ] as [number, number, number][]).map(([lx, lz, lift], i) => (
-              <group key={i} position={[lx, 0, lz]} rotation={[lift, 0, 0]}>
-                <mesh position={[0, 0.55, 0]} geometry={boxGeo}
-                  scale={[0.16, 0.7, 0.16]} material={bodyMat} castShadow />
-                <mesh position={[0, 0.12, 0]} geometry={boxGeo}
-                  scale={[0.14, 0.35, 0.14]} material={bodyDarkMat} castShadow />
-                <mesh position={[0, -0.02, 0]} geometry={boxGeo}
-                  scale={[0.15, 0.08, 0.18]} material={hoofMat} castShadow />
-              </group>
-            ))}
-
-            {/* Tail with swish */}
-            <group position={[0, 1.0, -0.95]} rotation={[tailSwish - 0.3, Math.sin(t * 0.9) * 0.12, 0]}>
-              <mesh geometry={boxGeo} scale={[0.06, 0.5, 0.06]} material={maneMat} castShadow />
-              {/* Tail tuft */}
-              <mesh position={[0, -0.28, 0]} geometry={boxGeo}
-                scale={[0.08, 0.15, 0.08]} material={maneMat} castShadow />
-            </group>
-          </group>
-        );
-      })}
+      {/* Tail */}
+      <group position={[0, 1.0, -0.95]} rotation={[tailSwish - 0.3, Math.sin(t * 0.9) * 0.12, 0]}>
+        <mesh geometry={boxGeo} scale={[0.06, 0.5, 0.06]} material={maneMat} castShadow />
+        <mesh position={[0, -0.28, 0]} geometry={boxGeo}
+          scale={[0.08, 0.15, 0.08]} material={maneMat} castShadow />
+      </group>
     </group>
   );
 }
