@@ -467,7 +467,8 @@ export function Player({
     const terrainY = getTerrainHeight(pos.x, pos.z) + heightOffset;
     if (pos.y <= terrainY) {
       if (wasInAirRef.current && vel.y < -3) {
-        landingImpactRef.current = Math.min(1, Math.abs(vel.y) / 15);
+        landingImpactRef.current = Math.min(1, Math.abs(vel.y) / 12);
+        landRecoveryRef.current = 1; // trigger recovery animation
       }
       pos.y = terrainY;
       vel.y = 0;
