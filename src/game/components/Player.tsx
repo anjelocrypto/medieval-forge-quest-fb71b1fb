@@ -736,6 +736,9 @@ export function Player({
   const riderBounce = isMounted ? Math.abs(Math.sin(ht * 2 + 0.3)) * 0.08 * ms : 0;
   const riderSway = isMounted ? Math.sin(ht + 0.2) * 0.04 * ms : 0;
   const riderLean = isMounted ? lean * 0.6 : 0; // rider leans into turns
+  const horsePitch = horsePitchRef.current;
+  // Rider compensates on slopes — leans back uphill, forward downhill
+  const riderSlopeComp = isMounted ? -horsePitch * 0.35 : 0;
 
   if (isDead) {
     return (
