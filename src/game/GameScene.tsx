@@ -3,7 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Terrain, getTerrainHeight } from './components/Terrain';
 import { Water } from './components/Water';
-import { Player } from './components/Player';
+import { Player, MountedDebugData } from './components/Player';
 import { Atmosphere } from './components/Atmosphere';
 import { Sky } from './components/Sky';
 import { WorldObjects } from './components/WorldObjects';
