@@ -138,7 +138,7 @@ function addCapitalCollision(s: SettlementDef, sx: number, sz: number) {
 
 function addCapitalHouseCollision(sx: number, sz: number, sid: string) {
   const rng = seededRng(7777);
-  // Outer ring — 14 houses
+  // Outer ring — 14 houses (RNG calls must match Settlements.tsx CapitalCity exactly)
   for (let i = 0; i < 14; i++) {
     const angle = (i / 14) * Math.PI * 2;
     const r = 20 + rng() * 10;
@@ -148,12 +148,13 @@ function addCapitalHouseCollision(sx: number, sz: number, sid: string) {
     const w = 4 + rng() * 2.5;
     const d = 4.5 + rng() * 2.5;
     rng(); // h
-    rng(); // style
+    rng(); // style s1
+    rng(); // style s2 — always 2 calls to match visual
     rng(); // chimney
     rng(); // shed
     boxObstacles.push({ cx: sx + hx, cz: sz + hz, halfW: w / 2, halfD: d / 2, rotation: rot, id: `${sid}-house-o${i}` });
   }
-  // Inner ring — 6 houses
+  // Inner ring — 6 houses (style hardcoded 'stone' — no rng call for style)
   for (let i = 0; i < 6; i++) {
     const angle = (i / 6) * Math.PI * 2 + 0.3;
     const r = 10 + rng() * 4;
@@ -163,7 +164,7 @@ function addCapitalHouseCollision(sx: number, sz: number, sid: string) {
     const w = 3.5 + rng() * 1.5;
     const d = 4 + rng() * 1.5;
     rng(); // h
-    rng(); // style (not used, hardcoded 'stone')
+    // No rng() for style — matches visual which hardcodes 'stone'
     rng(); // chimney
     // shed is false, no rng call
     boxObstacles.push({ cx: sx + hx, cz: sz + hz, halfW: w / 2, halfD: d / 2, rotation: rot, id: `${sid}-house-i${i}` });
