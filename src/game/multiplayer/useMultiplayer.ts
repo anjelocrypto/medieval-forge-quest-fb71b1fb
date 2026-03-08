@@ -257,6 +257,7 @@ export function useMultiplayer() {
   }, []);
 
   // Mock mode — spawn fake remote players for testing
+  const mockIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const enableMockMode = useCallback(() => {
     setMockMode(true);
     setConnected(true);
@@ -296,7 +297,8 @@ export function useMultiplayer() {
     setRemotePlayers(mockPlayers);
 
     // Animate mock players
-    const animInterval = setInterval(() => {
+    if (mockIntervalRef.current) clearInterval(mockIntervalRef.current);
+    mockIntervalRef.current = setInterval(() => {
       const now = Date.now();
       setRemotePlayers(prev => {
         const next = new Map(prev);
@@ -321,8 +323,6 @@ export function useMultiplayer() {
         return next;
       });
     }, BROADCAST_RATE_MS);
-
-    return () => clearInterval(animInterval);
   }, []);
 
   // Cleanup on unmount

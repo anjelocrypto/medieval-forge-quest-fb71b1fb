@@ -75,7 +75,12 @@ export function ChatPanel({ messages, onSendChat, onSendEmote, displayName }: Pr
             ref={inputRef}
             value={input}
             onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') { handleSend(); } }}
+            onKeyDown={e => {
+              e.stopPropagation();
+              if (e.key === 'Enter') { handleSend(); }
+              if (e.key === 'Escape') { setOpen(false); setShowEmotes(false); }
+            }}
+            onKeyUp={e => e.stopPropagation()}
             placeholder="Type a message..."
             className="flex-1 text-xs px-2 py-1 rounded font-mono outline-none"
             style={{ background: 'rgba(0,0,0,0.7)', color: '#fff', border: '1px solid #444' }}

@@ -126,22 +126,36 @@ export function GameScene({ multiplayer, onLeaveRoom }: GameSceneProps) {
   }, []);
 
   // Handle multiplayer world events from remote players
+  const processedEventCountRef = useRef(0);
   useEffect(() => {
     if (!multiplayer.connected) return;
     const events = multiplayer.worldEvents;
-    if (events.length === 0) return;
-    const latest = events[events.length - 1];
-    // Apply remote world events
-    if (latest.playerId === multiplayer.playerId) return;
+    const startIdx = processedEventCountRef.current;
+    if (events.length <= startIdx) return;
+    
+    for (let i = startIdx; i < events.length; i++) {
+      const ev = events[i];
+      if (ev.playerId === multiplayer.playerId) continue;
 
-    if (latest.type === 'resource_depleted') {
-      const id = latest.payload.resourceId as string;
-      setResources(prev => prev.map(r => r.id === id ? { ...r, depleted: true, health: 0 } : r));
+      if (ev.type === 'resource_depleted') {
+        const id = ev.payload.resourceId as string;
+        setResources(prev => prev.map(r => r.id === id ? { ...r, depleted: true, health: 0 } : r));
+      }
+      if (ev.type === 'enemy_killed') {
+        const id = ev.payload.enemyId as string;
+        setEnemies(prev => prev.map(e => e.id === id ? { ...e, health: 0, state: 'dead' as const } : e));
+      }
+      if (ev.type === 'building_placed') {
+        const structure = ev.payload.structure as PlacedStructure;
+        if (structure) {
+          setStructures(prev => {
+            if (prev.some(s => s.id === structure.id)) return prev;
+            return [...prev, structure];
+          });
+        }
+      }
     }
-    if (latest.type === 'enemy_killed') {
-      const id = latest.payload.enemyId as string;
-      setEnemies(prev => prev.map(e => e.id === id ? { ...e, health: 0, state: 'dead' as const } : e));
-    }
+    processedEventCountRef.current = events.length;
   }, [multiplayer.worldEvents, multiplayer.connected, multiplayer.playerId]);
 
   const handleDepleteResource = useCallback((id: string) => {
@@ -297,6 +311,9 @@ export function GameScene({ multiplayer, onLeaveRoom }: GameSceneProps) {
           highlightedResourceRef={highlightedResourceRef}
           resources={resources}
           mountedDebugRef={mountedDebugRef}
+          externalMoveSpeedRef={moveSpeedRef}
+          externalIsRunningRef={isRunningRef}
+          externalAttackAnimRef={attackAnimRef}
         />
         <WorldObjects
           resources={resources}
