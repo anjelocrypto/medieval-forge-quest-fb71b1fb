@@ -345,44 +345,64 @@ export function Player({
         bodyRef.current.rotation.y += rotDiff * Math.min(1, TURN_SPEED_FOOT * dt);
         playerRotationRef.current = bodyRef.current.rotation.y;
 
-        leanRef.current = THREE.MathUtils.lerp(leanRef.current, -rotDiff * 0.4, dt * 6);
+        // Track turn delta for animation
+        turnDeltaRef.current = THREE.MathUtils.lerp(turnDeltaRef.current, rotDiff, dt * 8);
+        leanRef.current = THREE.MathUtils.lerp(leanRef.current, -rotDiff * 0.5, dt * 8);
       }
 
-      const animSpeed = isMounted ? (canRun ? 20 : 13) : (canRun ? 16 : 10);
+      const animSpeed = isMounted ? (canRun ? 22 : 14) : (canRun ? 18 : 11);
       animTimeRef.current += dt * animSpeed;
+      // Smooth move blend with distinct walk/run states
+      const targetMs = canRun ? 1 : 0.5;
       moveSpeedRef.current = THREE.MathUtils.lerp(
-        moveSpeedRef.current, canRun ? 1 : 0.55, dt * 6
+        moveSpeedRef.current, targetMs, dt * 8
       );
     } else {
-      // Decelerate
+      // Decelerate — exponential decay for weighty feel
       const curSpeed = Math.sqrt(vel.x * vel.x + vel.z * vel.z);
-      if (curSpeed > 0.1) {
-        const newSpeed = Math.max(0, curSpeed - decel * dt);
-        const ratio = newSpeed / curSpeed;
-        vel.x *= ratio;
-        vel.z *= ratio;
-        currentSpeedRef.current = newSpeed;
+      if (curSpeed > 0.05) {
+        const decay = Math.exp(-decel * dt);
+        vel.x *= decay;
+        vel.z *= decay;
+        currentSpeedRef.current = curSpeed * decay;
+        // Keep anim ticking during decel for natural stop
+        animTimeRef.current += dt * (isMounted ? 8 : 6) * (currentSpeedRef.current / (isMounted ? HORSE_SPEED : PLAYER_SPEED));
       } else {
         vel.x = 0;
         vel.z = 0;
         currentSpeedRef.current = 0;
       }
-      moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, 0, dt * 5);
-      leanRef.current = THREE.MathUtils.lerp(leanRef.current, 0, dt * 4);
+      moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, 0, dt * 6);
+      leanRef.current = THREE.MathUtils.lerp(leanRef.current, 0, dt * 6);
+      turnDeltaRef.current = THREE.MathUtils.lerp(turnDeltaRef.current, 0, dt * 5);
     }
 
-    // Hip sway
+    // Detect move state transitions
+    prevMoveRef.current = isMoving ? 1 : THREE.MathUtils.lerp(prevMoveRef.current, 0, dt * 4);
+
+    // Hip sway — stronger at walk, subtler at run
+    const swayIntensity = ms > 0.7 ? 0.015 : 0.035;
     hipSwayRef.current = THREE.MathUtils.lerp(
       hipSwayRef.current,
-      isMoving ? Math.sin(animTimeRef.current * 0.5) * 0.03 * moveSpeedRef.current : 0,
-      dt * 8
+      isMoving ? Math.sin(animTimeRef.current * 0.5) * swayIntensity * moveSpeedRef.current : 0,
+      dt * 10
     );
 
-    // Jump
+    // Landing recovery
+    landRecoveryRef.current = Math.max(0, landRecoveryRef.current - dt / LAND_RECOVERY_TIME);
+
+    // Jump — with brief squat anticipation
     if (!isMounted && input.jump && isGroundedRef.current) {
-      vel.y = PLAYER_JUMP_FORCE;
-      isGroundedRef.current = false;
-      wasInAirRef.current = true;
+      jumpSquatRef.current = JUMP_SQUAT_TIME;
+    }
+    if (jumpSquatRef.current > 0) {
+      jumpSquatRef.current -= dt;
+      if (jumpSquatRef.current <= 0) {
+        vel.y = PLAYER_JUMP_FORCE;
+        isGroundedRef.current = false;
+        wasInAirRef.current = true;
+      }
+    }
     }
 
     // === COMBO ATTACK SYSTEM ===
