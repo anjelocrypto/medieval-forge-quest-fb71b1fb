@@ -190,10 +190,10 @@ function CapitalCity({ def }: { def: SettlementDef }) {
       <mesh position={[0.5, 26, 0]} geometry={GEO.box} scale={[0.8, 1.2, 0.04]} material={MAT.banner} castShadow />
 
       {/* Walls — square perimeter */}
-      <Wall from={[-35, y, -35]} to={[35, y, -35]} h={8} thickness={2.5} />
-      <Wall from={[35, y, -35]} to={[35, y, 35]} h={8} thickness={2.5} />
-      <Wall from={[35, y, 35]} to={[-35, y, 35]} h={8} thickness={2.5} />
-      <Wall from={[-35, y, 35]} to={[-35, y, -35]} h={8} thickness={2.5} />
+      <Wall from={[-35, 0, -35]} to={[35, 0, -35]} h={8} thickness={2.5} />
+      <Wall from={[35, 0, -35]} to={[35, 0, 35]} h={8} thickness={2.5} />
+      <Wall from={[35, 0, 35]} to={[-35, 0, 35]} h={8} thickness={2.5} />
+      <Wall from={[-35, 0, 35]} to={[-35, 0, -35]} h={8} thickness={2.5} />
 
       {/* Corner towers */}
       {[[-35, -35], [35, -35], [35, 35], [-35, 35]].map(([tx, tz], i) => (
@@ -473,9 +473,9 @@ function MountainMonastery({ def }: { def: SettlementDef }) {
       <House pos={[-8, 0, 4]} rot={0} w={4} d={5} h={3} style="stone" />
 
       {/* Low stone wall */}
-      <Wall from={[-12, y, -10]} to={[12, y, -10]} h={2.5} thickness={1.5} />
-      <Wall from={[-12, y, -10]} to={[-12, y, 10]} h={2.5} thickness={1.5} />
-      <Wall from={[12, y, -10]} to={[12, y, 10]} h={2.5} thickness={1.5} />
+      <Wall from={[-12, 0, -10]} to={[12, 0, -10]} h={2.5} thickness={1.5} />
+      <Wall from={[-12, 0, -10]} to={[-12, 0, 10]} h={2.5} thickness={1.5} />
+      <Wall from={[12, 0, -10]} to={[12, 0, 10]} h={2.5} thickness={1.5} />
 
       {/* Courtyard */}
       <mesh position={[0, 0.05, 5]} geometry={GEO.box} scale={[10, 0.1, 8]} material={MAT.stoneDark} />
