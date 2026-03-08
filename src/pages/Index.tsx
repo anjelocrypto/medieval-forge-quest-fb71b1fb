@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { GameScene } from '../game/GameScene';
 import { LobbyScreen } from '../game/multiplayer/LobbyScreen';
 import { useMultiplayer } from '../game/multiplayer/useMultiplayer';
@@ -9,11 +9,12 @@ const Index = () => {
   const [appMode, setAppMode] = useState<AppMode>('lobby');
   const multiplayer = useMultiplayer();
 
-  // Auto-reconnect: if multiplayer reconnects, go to game
-  const prevConnected = multiplayer.connected;
-  if (prevConnected && appMode === 'lobby' && multiplayer.connectionStatus === 'connected') {
-    setAppMode('game');
-  }
+  // Auto-reconnect: if multiplayer reconnects successfully, switch to game
+  useEffect(() => {
+    if (multiplayer.connected && appMode === 'lobby') {
+      setAppMode('game');
+    }
+  }, [multiplayer.connected, appMode]);
 
   const handleCreateRoom = useCallback(async (playerName: string) => {
     await multiplayer.createAndJoinRoom(playerName);
