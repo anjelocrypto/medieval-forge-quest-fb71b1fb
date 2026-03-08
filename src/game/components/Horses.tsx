@@ -47,11 +47,22 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse, isMounted }: Pr
         let rotDiff = wantAngle - rotRef.current;
         while (rotDiff > Math.PI) rotDiff -= Math.PI * 2;
         while (rotDiff < -Math.PI) rotDiff += Math.PI * 2;
-        rotRef.current += rotDiff * Math.min(1, 4 * dt);
+        // Speed-dependent turning — faster approach = wider arc
+        const turnRate = dist > 10 ? 3 : 5;
+        rotRef.current += rotDiff * Math.min(1, turnRate * dt);
 
-        // Accelerate
-        const targetSpeed = dist > 15 ? HORSE_APPROACH_SPEED : HORSE_APPROACH_SPEED * 0.6;
-        moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, targetSpeed, dt * 3);
+        // Smooth speed with distance-based deceleration curve
+        let targetSpeed: number;
+        if (dist > 20) {
+          targetSpeed = HORSE_APPROACH_SPEED; // full speed far away
+        } else if (dist > 8) {
+          targetSpeed = HORSE_APPROACH_SPEED * 0.7; // slow down approaching
+        } else {
+          // Smooth deceleration — ease into stop
+          const stopFactor = (dist - HORSE_APPROACH_STOP_DIST) / (8 - HORSE_APPROACH_STOP_DIST);
+          targetSpeed = HORSE_APPROACH_SPEED * 0.4 * Math.max(0.15, stopFactor);
+        }
+        moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, targetSpeed, dt * 4);
 
         const spd = moveSpeedRef.current;
         let nx = horse.position[0] + Math.sin(rotRef.current) * spd * dt;
@@ -72,19 +83,22 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse, isMounted }: Pr
 
         animRef.current += dt * moveSpeedRef.current * 0.8;
       } else {
-        // Arrived — switch to waiting
-        moveSpeedRef.current = 0;
-        onUpdateHorse({ state: 'waiting' });
+        // Arrived — gentle final stop
+        moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, 0, dt * 8);
+        if (moveSpeedRef.current < 0.1) {
+          moveSpeedRef.current = 0;
+          onUpdateHorse({ state: 'waiting' });
+        }
       }
     } else if (horse.state === 'waiting') {
       // If player walks far away, go idle
       if (dist > 50) {
         onUpdateHorse({ state: 'idle' });
       }
-      moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, 0, dt * 5);
+      moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, 0, dt * 6);
     } else {
-      // idle
-      moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, 0, dt * 5);
+      // idle — gentle breathing deceleration
+      moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, 0, dt * 6);
     }
   });
 
