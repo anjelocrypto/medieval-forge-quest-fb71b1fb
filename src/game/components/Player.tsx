@@ -142,20 +142,19 @@ export function Player({
 
     if (input.eat && !isMounted) onEatFood();
 
-    // Mount/dismount
-    horseCheckRef.current += dt;
-    if (horseCheckRef.current > 0.15) {
-      horseCheckRef.current = 0;
+    // === HORSE INTERACTION — checked EVERY frame (input.interact is single-frame) ===
+    {
       if (isMounted) {
+        onSetInteractionText('🐴 Press E — Dismount');
         if (input.interact) {
           onDismountHorse();
-          // Dismount to the left side of the horse
           const angle = horseRotRef.current;
           pos.x += Math.cos(angle + Math.PI * 0.5) * DISMOUNT_OFFSET;
           pos.z -= Math.sin(angle + Math.PI * 0.5) * DISMOUNT_OFFSET;
           pos.y = getTerrainHeight(pos.x, pos.z) + PLAYER_HEIGHT / 2;
         }
       } else {
+        // Find nearest horse
         let nearHorse: HorseData | null = null;
         let nearHorseDist = MOUNT_RANGE;
         for (const h of horses) {
@@ -166,21 +165,22 @@ export function Player({
           if (d < nearHorseDist) { nearHorseDist = d; nearHorse = h; }
         }
         if (nearHorse) {
+          // Horse takes priority over all other interactions
           onSetInteractionText('🐴 Press E — Mount Horse');
           if (input.interact) {
             onMountHorse(nearHorse.id);
-            // Snap onto horse saddle position
             pos.x = nearHorse.position[0];
             pos.z = nearHorse.position[2];
-            pos.y = nearHorse.position[1] + 2.2; // saddle height
+            pos.y = nearHorse.position[1] + 2.2;
             horseRotRef.current = nearHorse.rotation;
             bodyRef.current.rotation.y = nearHorse.rotation;
             playerRotationRef.current = nearHorse.rotation;
             vel.set(0, 0, 0);
             currentSpeedRef.current = 0;
-            // Rebuild obstacles immediately (exclude this horse)
             rebuildObstacles(resources, structures, horses, nearHorse.id);
           }
+          // Mark that horse has claimed the interaction this frame
+          (input as any)._horseClaimed = true;
         }
       }
     }
