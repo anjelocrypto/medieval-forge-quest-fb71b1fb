@@ -205,6 +205,7 @@ export function useMultiplayer() {
   const leaveRoom = useCallback(async () => {
     if (broadcastTimerRef.current) { clearInterval(broadcastTimerRef.current); broadcastTimerRef.current = null; }
     if (staleCleanupRef.current) { clearInterval(staleCleanupRef.current); staleCleanupRef.current = null; }
+    if (mockIntervalRef.current) { clearInterval(mockIntervalRef.current); mockIntervalRef.current = null; }
     if (channelRef.current) {
       await channelRef.current.unsubscribe();
       channelRef.current = null;
@@ -212,6 +213,7 @@ export function useMultiplayer() {
     setConnected(false);
     setRoomId(null);
     setRemotePlayers(new Map());
+    setMockMode(false);
   }, []);
 
   // Broadcast local player state (called every frame, throttled by timer)
@@ -330,6 +332,7 @@ export function useMultiplayer() {
     return () => {
       if (broadcastTimerRef.current) clearInterval(broadcastTimerRef.current);
       if (staleCleanupRef.current) clearInterval(staleCleanupRef.current);
+      if (mockIntervalRef.current) clearInterval(mockIntervalRef.current);
       if (channelRef.current) channelRef.current.unsubscribe();
     };
   }, []);
