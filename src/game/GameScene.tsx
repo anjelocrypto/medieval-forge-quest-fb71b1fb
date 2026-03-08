@@ -41,12 +41,14 @@ export function GameScene() {
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
   const [enemies, setEnemies] = useState<EnemyData[]>(() => generateEnemies());
   const [mapOpen, setMapOpen] = useState(false);
+  const [debugMounted, setDebugMounted] = useState(false);
   const playerPositionRef = useRef(new THREE.Vector3(0, 0, 0));
   const playerRotationRef = useRef(0);
   const cameraAzimuthRef = useRef(0);
   const pendingPlayerDamageRef = useRef(0);
   const shakeResourceRef = useRef<string | null>(null);
   const highlightedResourceRef = useRef<string | null>(null);
+  const mountedDebugRef = useRef({ terrainY: 0, horseY: 0, riderY: 0, delta: 0, pitch: 0, pushX: 0, pushZ: 0 });
 
   useEffect(() => { initInput(); }, []);
 
