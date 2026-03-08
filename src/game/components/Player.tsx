@@ -87,7 +87,7 @@ export function Player({
   horse, isMounted, onMountHorse, onDismountHorse, onCallHorse, onSetInteractionText,
   onAddResource, onDepleteResource, onHitResource, inventory,
   shakeResourceRef, highlightedResourceRef,
-  resources,
+  resources, mountedDebugRef,
 }: PlayerProps) {
   const groupRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Group>(null);
