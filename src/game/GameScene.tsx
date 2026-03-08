@@ -207,6 +207,19 @@ export function GameScene({ multiplayer, onLeaveRoom }: GameSceneProps) {
     setEnemies(updated);
   }, []);
 
+  // Wrap placeStructure to broadcast building placement
+  const handlePlaceStructure = useCallback((structure: any) => {
+    placeStructure(structure);
+    if (multiplayer.connected) {
+      multiplayer.broadcastWorldEvent({
+        type: 'building_placed',
+        payload: { structure },
+        playerId: multiplayer.playerId,
+        timestamp: Date.now(),
+      });
+    }
+  }, [placeStructure, multiplayer]);
+
   const remotePlayerCount = multiplayer.remotePlayers.size;
 
   return (
@@ -334,7 +347,7 @@ export function GameScene({ multiplayer, onLeaveRoom }: GameSceneProps) {
           playerRotationRef={playerRotationRef}
           structures={structures}
           inventory={inventory}
-          onPlace={placeStructure}
+          onPlace={handlePlaceStructure}
           onSetBuildFeedback={setBuildFeedback}
           availableBuildables={getAvailableBuildables()}
         />
