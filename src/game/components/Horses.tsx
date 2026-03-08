@@ -114,14 +114,15 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse, isMounted }: Pr
   }
 
   const t = animRef.current;
-  const ms = moveSpeedRef.current / HORSE_APPROACH_SPEED; // 0-1 normalized
+  const ms = Math.min(1, moveSpeedRef.current / HORSE_APPROACH_SPEED);
 
-  // Idle animation
-  const breath = Math.sin(t * 1.2) * 0.025;
-  const headNod = Math.sin(t * 0.6) * 0.06;
-  const tailSwish = Math.sin(t * 1.8) * 0.35;
-  const earFlick = Math.sin(t * 2.5) > 0.8 ? 0.1 : 0;
-  const weightShift = Math.sin(t * 0.3) * 0.01;
+  // Idle animation — more organic, varied timing
+  const breath = Math.sin(t * 1.2) * 0.03 + Math.sin(t * 2.1) * 0.008;
+  const headNod = Math.sin(t * 0.5) * 0.08 + Math.sin(t * 1.3) * 0.02;
+  const tailSwish = Math.sin(t * 1.6) * 0.4 + Math.sin(t * 3.1) * 0.1;
+  const earFlick = Math.sin(t * 2.5) > 0.85 ? 0.12 : (Math.sin(t * 1.7) > 0.9 ? -0.06 : 0);
+  const weightShift = Math.sin(t * 0.25) * 0.015;
+  const bodyRock = Math.sin(t * 0.4) * 0.008 * (1 - ms); // gentle side-to-side when idle
 
   // Locomotion
   const legFL = Math.sin(t) * 0.5 * ms;
