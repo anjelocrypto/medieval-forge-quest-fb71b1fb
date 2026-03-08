@@ -33,10 +33,11 @@ interface PlayerProps {
   lootPickups: LootPickup[];
   onCollectLoot: (id: string) => void;
   onEatFood: () => void;
-  horses: HorseData[];
-  onMountHorse: (id: string) => void;
+  horse: HorseData;
+  isMounted: boolean;
+  onMountHorse: () => void;
   onDismountHorse: () => void;
-  mountedHorseId: string | null;
+  onCallHorse: () => void;
   onSetInteractionText: (text: string | null) => void;
   resources: WorldResource[];
 }
@@ -64,7 +65,7 @@ export function Player({
   onSurvivalUpdate, survival, playerPositionRef, playerRotationRef,
   cameraAzimuthRef, enemies, onEnemyHit, onRespawn, buildMode,
   structures, lootPickups, onCollectLoot, onEatFood,
-  horses, onMountHorse, onDismountHorse, mountedHorseId, onSetInteractionText,
+  horse, isMounted, onMountHorse, onDismountHorse, onCallHorse, onSetInteractionText,
   resources,
 }: PlayerProps) {
   const groupRef = useRef<THREE.Group>(null);
