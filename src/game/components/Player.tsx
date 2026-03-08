@@ -55,17 +55,19 @@ const _up = new THREE.Vector3(0, 1, 0);
 const _forward = new THREE.Vector3();
 const _toEnemy = new THREE.Vector3();
 
-// Movement feel constants
-const ACCEL_GROUND = 35;
-const ACCEL_GROUND_RUN = 40;
-const DECEL_GROUND = 18;
-const ACCEL_MOUNTED = 14; // slower acceleration = heavier feel
-const DECEL_MOUNTED = 6; // slower decel = momentum
-const TURN_SPEED_FOOT = 12;
-const TURN_SPEED_MOUNTED = 3.5; // much wider turning arc
-const HORSE_TURN_SPEED_STANDING = 5; // faster turn when slow/standing
+// Movement feel constants — tuned for game-quality responsiveness
+const ACCEL_GROUND = 45;           // snappy walk start
+const ACCEL_GROUND_RUN = 50;       // quick sprint transition
+const DECEL_GROUND = 28;           // firm stop (less floaty)
+const ACCEL_MOUNTED = 12;          // heavy horse acceleration
+const DECEL_MOUNTED = 5;           // momentum-heavy braking
+const TURN_SPEED_FOOT = 14;        // responsive turning
+const TURN_SPEED_MOUNTED = 3.0;    // wide gallop arcs
+const HORSE_TURN_SPEED_STANDING = 6; // tight turns at low speed
 const PLAYER_RADIUS = 0.4;
-const MOUNTED_RADIUS = 1.0; // larger collision footprint when riding
+const MOUNTED_RADIUS = 1.0;
+const JUMP_SQUAT_TIME = 0.06;      // brief anticipation before jump
+const LAND_RECOVERY_TIME = 0.15;   // landing stiffness duration
 
 export function Player({
   onSurvivalUpdate, survival, playerPositionRef, playerRotationRef,
@@ -99,6 +101,10 @@ export function Player({
   const collisionRebuildTimer = useRef(0);
   const horseRotRef = useRef(0); // horse's own facing for smooth turning
   const gatherCooldownRef = useRef(0);
+  const jumpSquatRef = useRef(0);       // jump anticipation timer
+  const landRecoveryRef = useRef(0);    // landing stiffness
+  const prevMoveRef = useRef(0);        // previous frame move state for transition detection
+  const turnDeltaRef = useRef(0);       // accumulated turn for animation
   const isDead = survival.health <= 0;
 
   useEffect(() => {
