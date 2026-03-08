@@ -629,6 +629,11 @@ export function Player({
         health: survival.health + healthChange,
       });
     }
+
+    // Sync external refs for multiplayer broadcaster
+    if (externalMoveSpeedRef) externalMoveSpeedRef.current = moveSpeedRef.current;
+    if (externalIsRunningRef) externalIsRunningRef.current = isMoving && canRun;
+    if (externalAttackAnimRef) externalAttackAnimRef.current = attackAnimRef.current;
   });
 
   // === RICH PROCEDURAL ANIMATION ===
