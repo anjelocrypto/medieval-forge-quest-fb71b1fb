@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
-import { Terrain } from './components/Terrain';
+import { Terrain, getTerrainHeight } from './components/Terrain';
 import { Water } from './components/Water';
 import { Player } from './components/Player';
 import { Atmosphere } from './components/Atmosphere';
