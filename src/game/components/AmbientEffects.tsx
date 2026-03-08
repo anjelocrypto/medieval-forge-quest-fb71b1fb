@@ -74,9 +74,9 @@ function Fireflies() {
         arr[i * 3 + 1] = 0.3 + Math.random() * 2.5;
         arr[i * 3 + 2] = 20 + (Math.random() - 0.5) * 20;
       } else {
-        arr[i * 3] = POIS.ruins.x + (Math.random() - 0.5) * 18;
+        arr[i * 3] = 195 + (Math.random() - 0.5) * 18;
         arr[i * 3 + 1] = 0.5 + Math.random() * 3;
-        arr[i * 3 + 2] = POIS.ruins.z + (Math.random() - 0.5) * 18;
+        arr[i * 3 + 2] = 95 + (Math.random() - 0.5) * 18;
       }
     }
     return arr;
