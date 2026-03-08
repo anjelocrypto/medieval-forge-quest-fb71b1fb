@@ -233,6 +233,7 @@ export function GameScene() {
           onSetBuildFeedback={setBuildFeedback}
           availableBuildables={getAvailableBuildables()}
         />
+        <DebugCollision playerPositionRef={playerPositionRef} />
       </Canvas>
     </div>
   );
