@@ -12,6 +12,13 @@ interface Props {
   playerPositionRef: React.RefObject<THREE.Vector3>;
 }
 
+/** Terrain Y offset for a local position within a settlement group.
+ * settleCx/Cz = world center of settlement, settleY = settlement group Y.
+ * Returns the local Y offset needed to place an element at terrain height. */
+function tY(localX: number, localZ: number, cx: number, cz: number, baseY: number): number {
+  return getTerrainHeight(cx + localX, cz + localZ) - baseY;
+}
+
 // ========== ENHANCED BUILDING PRIMITIVES ==========
 
 /** Medieval house with foundation, half-timber, roof overhang, door frame, windows */
