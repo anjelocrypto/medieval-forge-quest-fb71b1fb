@@ -361,6 +361,84 @@ function SmallPOIRenderer({ poi, playerPos }: { poi: SmallPOIDef; playerPos: THR
             scale={[0.5, 0.2, 0.5]} material={MAT.cobble} castShadow />
         </group>
       );
+    case 'milestone':
+      return (
+        <group position={[px, y, pz]}>
+          <mesh position={[0, 0.5, 0]} geometry={GEO.box}
+            scale={[0.4, 1, 0.25]} material={MAT.stoneWarm} castShadow />
+          <mesh position={[0, 1.1, 0]} geometry={GEO.cone4}
+            scale={[0.25, 0.3, 0.18]} material={MAT.stone} castShadow />
+          <mesh position={[0, 0.5, 0.13]} geometry={GEO.box}
+            scale={[0.25, 0.3, 0.02]} material={MAT.chalk} />
+        </group>
+      );
+    case 'lantern_post':
+      return (
+        <group position={[px, y, pz]}>
+          <mesh position={[0, 1.5, 0]} geometry={GEO.box}
+            scale={[0.1, 3, 0.1]} material={MAT.iron} castShadow />
+          <mesh position={[0.3, 2.8, 0]} geometry={GEO.box}
+            scale={[0.5, 0.08, 0.08]} material={MAT.iron} castShadow />
+          <mesh position={[0.5, 2.55, 0]} geometry={GEO.box}
+            scale={[0.2, 0.3, 0.2]} material={MAT.iron} castShadow />
+          <mesh position={[0.5, 2.55, 0]} geometry={GEO.box}
+            scale={[0.08, 0.12, 0.08]} material={MAT.lantern} />
+        </group>
+      );
+    case 'roadside_cross':
+      return (
+        <group position={[px, y, pz]}>
+          <mesh position={[0, 0.15, 0]} geometry={GEO.box}
+            scale={[1.2, 0.3, 1.2]} material={MAT.cobble} castShadow />
+          <mesh position={[0, 1.8, 0]} geometry={GEO.box}
+            scale={[0.15, 3, 0.15]} material={MAT.stoneWarm} castShadow />
+          <mesh position={[0, 2.8, 0]} geometry={GEO.box}
+            scale={[0.8, 0.12, 0.12]} material={MAT.stoneWarm} castShadow />
+          <mesh position={[0.3, 0.35, 0.5]} geometry={GEO.box}
+            scale={[0.06, 0.15, 0.06]} material={MAT.cloth} />
+          <mesh position={[0.3, 0.45, 0.5]} geometry={GEO.box}
+            scale={[0.03, 0.04, 0.03]} material={MAT.fire} />
+        </group>
+      );
+    case 'abandoned_camp':
+      return (
+        <group position={[px, y, pz]}>
+          {/* Collapsed tent */}
+          <mesh position={[0, 0.3, 0]} rotation={[0.15, 0.3, 0.1]} geometry={GEO.box}
+            scale={[2, 0.04, 1.5]} material={MAT.tentDark} castShadow />
+          <mesh position={[0.5, 0.5, 0]} geometry={GEO.box}
+            scale={[0.08, 1, 0.08]} material={MAT.timber} castShadow />
+          {/* Cold fire ring */}
+          {[0, 1, 2, 3, 4, 5].map(i => {
+            const a = (i / 6) * Math.PI * 2;
+            return <mesh key={i} position={[Math.cos(a) * 0.4 - 1.5, 0.06, Math.sin(a) * 0.4]}
+              geometry={GEO.box} scale={[0.15, 0.1, 0.15]} material={MAT.stoneDark} castShadow />;
+          })}
+          <mesh position={[-1.5, 0.08, 0]} geometry={GEO.box}
+            scale={[0.3, 0.04, 0.3]} material={MAT.charred} />
+          {/* Discarded items */}
+          <mesh position={[1.5, 0.1, 0.8]} geometry={GEO.cyl8}
+            scale={[0.15, 0.3, 0.15]} material={MAT.barrel} castShadow />
+        </group>
+      );
+    case 'gallows':
+      return (
+        <group position={[px, y, pz]}>
+          <mesh position={[0, 0.15, 0]} geometry={GEO.box}
+            scale={[3, 0.3, 3]} material={MAT.woodDark} castShadow />
+          <mesh position={[0, 2.5, 0]} geometry={GEO.box}
+            scale={[0.2, 5, 0.2]} material={MAT.timber} castShadow />
+          <mesh position={[1, 4.8, 0]} geometry={GEO.box}
+            scale={[2, 0.15, 0.15]} material={MAT.timber} castShadow />
+          <mesh position={[1.5, 4, 0]} geometry={GEO.box}
+            scale={[0.02, 0.8, 0.02]} material={MAT.rope} />
+          {/* Warning sign */}
+          <mesh position={[-1.5, 1.5, 0]} geometry={GEO.box}
+            scale={[0.08, 3, 0.08]} material={MAT.timber} castShadow />
+          <mesh position={[-1.5, 2.8, 0]} geometry={GEO.box}
+            scale={[0.6, 0.4, 0.04]} material={MAT.woodDark} castShadow />
+        </group>
+      );
     default:
       return null;
   }

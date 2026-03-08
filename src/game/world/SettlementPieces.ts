@@ -15,6 +15,7 @@ export const GEO = {
   cone8: new THREE.ConeGeometry(1, 1, 8),
   cone12: new THREE.ConeGeometry(1, 1, 12),
   plane: new THREE.PlaneGeometry(1, 1),
+  sphere8: new THREE.SphereGeometry(1, 8, 6),
   // Tapered tower (wider base)
   towerGeo: new THREE.CylinderGeometry(0.85, 1, 1, 8),
 };
@@ -77,6 +78,16 @@ export const MAT = {
   bone: new THREE.MeshLambertMaterial({ color: '#d0c8b0' }),
   herb: new THREE.MeshLambertMaterial({ color: '#4a7a3a' }),
   grave: new THREE.MeshLambertMaterial({ color: '#5a5a50' }),
+  // Atmosphere & accent
+  lantern: new THREE.MeshBasicMaterial({ color: '#ffaa40' }),
+  goldTrim: new THREE.MeshLambertMaterial({ color: '#b8962a' }),
+  stainedGlass: new THREE.MeshBasicMaterial({ color: '#3a6a8a', transparent: true, opacity: 0.6 }),
+  dirt: new THREE.MeshLambertMaterial({ color: '#5a4a30' }),
+  charred: new THREE.MeshLambertMaterial({ color: '#2a2018' }),
+  ironRusty: new THREE.MeshLambertMaterial({ color: '#5a3a2a' }),
+  rope: new THREE.MeshLambertMaterial({ color: '#7a6a4a' }),
+  bloodStain: new THREE.MeshLambertMaterial({ color: '#4a1a10' }),
+  chalk: new THREE.MeshLambertMaterial({ color: '#c8c0a8' }),
 };
 
 // Seeded random for deterministic generation
