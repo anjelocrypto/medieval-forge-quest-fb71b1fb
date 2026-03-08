@@ -12,7 +12,7 @@ export interface EnemyData {
   patrolRadius: number;
   patrolAngle: number;
   attackCooldown: number;
-  hitFlash: number; // countdown for visual hit flash
+  hitFlash: number;
   damage: number;
   speed: number;
   detectRange: number;
@@ -47,7 +47,7 @@ export function generateEnemies(): EnemyData[] {
         patrolAngle: Math.random() * Math.PI * 2,
         attackCooldown: 0,
         hitFlash: 0,
-        damage: type === 'bandit' ? 8 : 12,
+        damage: type === 'bandit' ? 6 : 8,  // Balanced: was 8/12
         speed: type === 'bandit' ? 4 : 6,
         detectRange: type === 'bandit' ? 15 : 12,
         attackRange: type === 'bandit' ? 2.5 : 2,
@@ -71,7 +71,7 @@ export function generateEnemies(): EnemyData[] {
 
 export const PLAYER_ATTACK_DAMAGE = 15;
 export const PLAYER_ATTACK_RANGE = 3;
-export const PLAYER_ATTACK_COOLDOWN = 0.6; // seconds
-export const PLAYER_ATTACK_ARC = Math.PI * 0.6; // forward cone half-angle
-export const ENEMY_ATTACK_COOLDOWN = 1.2;
-export const ENEMY_DESPAWN_TIME = 3; // seconds after death
+export const PLAYER_ATTACK_COOLDOWN = 0.5; // Slightly faster attacks (was 0.6)
+export const PLAYER_ATTACK_ARC = Math.PI * 0.6;
+export const ENEMY_ATTACK_COOLDOWN = 1.5; // Enemies attack slower (was 1.2)
+export const ENEMY_DESPAWN_TIME = 3;

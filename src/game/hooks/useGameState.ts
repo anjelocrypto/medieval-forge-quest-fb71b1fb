@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { SurvivalState, ResourceInventory, GameMode, ProgressionState, LootPickup } from '../types';
 import { MAX_HEALTH, MAX_STAMINA, MAX_HUNGER, MAX_TEMPERATURE, TIER2_KILLS_REQUIRED, TIER2_STRUCTURES_REQUIRED } from '../constants';
 import { PlacedStructure, BUILDABLES, BuildableConfig } from '../systems/BuildingData';
+import { HorseData, generateHorses } from '../systems/HorseData';
 
 export function useGameState() {
   const [survival, setSurvival] = useState<SurvivalState>({
@@ -22,6 +23,10 @@ export function useGameState() {
   const [lootPickups, setLootPickups] = useState<LootPickup[]>([]);
   const [notification, setNotification] = useState<string | null>(null);
   const notifTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Horse state
+  const [horses, setHorses] = useState<HorseData[]>(() => generateHorses());
+  const [mountedHorseId, setMountedHorseId] = useState<string | null>(null);
 
   const [progression, setProgression] = useState<ProgressionState>({
     enemiesKilled: 0,
@@ -48,8 +53,8 @@ export function useGameState() {
   }, []);
 
   const addResource = useCallback((type: keyof ResourceInventory, amount: number) => {
-    setInventory(prev => ({ ...prev, [type]: prev[type] + amount }));
-    if (type === 'wood' || type === 'stone') {
+    setInventory(prev => ({ ...prev, [type]: Math.max(0, prev[type] + amount) }));
+    if (amount > 0 && (type === 'wood' || type === 'stone')) {
       setProgression(prev => ({
         ...prev,
         totalWoodGathered: prev.totalWoodGathered + (type === 'wood' ? amount : 0),
@@ -92,9 +97,10 @@ export function useGameState() {
       const pickup = prev.find(p => p.id === id);
       if (!pickup || pickup.collected) return prev;
       setInventory(inv => ({ ...inv, [pickup.type]: (inv[pickup.type as keyof ResourceInventory] || 0) + pickup.amount }));
+      showNotification(`+${pickup.amount} ${pickup.type}`);
       return prev.map(p => p.id === id ? { ...p, collected: true } : p);
     });
-  }, []);
+  }, [showNotification]);
 
   const eatFood = useCallback(() => {
     setInventory(prev => {
@@ -102,6 +108,7 @@ export function useGameState() {
       setSurvival(s => ({
         ...s,
         hunger: Math.min(MAX_HUNGER, s.hunger + 25),
+        health: Math.min(MAX_HEALTH, s.health + 5), // Small heal from eating
       }));
       showNotification('🍖 Ate food — hunger restored');
       return { ...prev, food: prev.food - 1 };
@@ -149,6 +156,30 @@ export function useGameState() {
     showNotification(`🔨 Built ${config.label}`);
   }, [showNotification]);
 
+  // Horse actions
+  const mountHorse = useCallback((horseId: string) => {
+    setMountedHorseId(horseId);
+    setHorses(prev => prev.map(h => h.id === horseId ? { ...h, isMounted: true } : h));
+    showNotification('🐴 Mounted horse — press E to dismount');
+    // Exit build mode when mounting
+    setBuildMode(false);
+  }, [showNotification]);
+
+  const dismountHorse = useCallback(() => {
+    setMountedHorseId(prev => {
+      if (prev) {
+        setHorses(hs => hs.map(h => h.id === prev ? { ...h, isMounted: false } : h));
+      }
+      return null;
+    });
+    showNotification('🐴 Dismounted');
+  }, [showNotification]);
+
+  // Update horse position when mounted (called from Player)
+  const updateHorsePosition = useCallback((horseId: string, pos: [number, number, number], rotation: number) => {
+    setHorses(prev => prev.map(h => h.id === horseId ? { ...h, position: pos, rotation } : h));
+  }, []);
+
   return {
     survival, updateSurvival,
     inventory, addResource, eatFood,
@@ -163,5 +194,8 @@ export function useGameState() {
     lootPickups, addLootPickups, collectLoot,
     notification,
     getAvailableBuildables,
+    // Horse
+    horses, mountedHorseId,
+    mountHorse, dismountHorse, updateHorsePosition,
   };
 }

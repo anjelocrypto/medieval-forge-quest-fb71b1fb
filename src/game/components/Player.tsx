@@ -8,13 +8,14 @@ import {
   PLAYER_HEIGHT, GRAVITY, STAMINA_DRAIN, STAMINA_REGEN, HUNGER_DRAIN,
   TEMPERATURE_DRAIN, CAMPFIRE_WARMTH_RANGE, CAMPFIRE_WARMTH_RATE,
   SHELTER_EFFECT_RANGE, SHELTER_HUNGER_REDUCTION, SHELTER_STAMINA_BONUS,
-  LOW_HUNGER_THRESHOLD, LOW_TEMP_THRESHOLD, COLD_DAMAGE_RATE, FOOD_HUNGER_RESTORE,
+  LOW_HUNGER_THRESHOLD, LOW_TEMP_THRESHOLD, COLD_DAMAGE_RATE,
   POIS, POI_ZONE_RADIUS,
 } from '../constants';
 import { PLAYER_ATTACK_COOLDOWN, PLAYER_ATTACK_RANGE, PLAYER_ATTACK_DAMAGE, PLAYER_ATTACK_ARC } from '../systems/EnemyData';
 import { SurvivalState, LootPickup } from '../types';
 import { EnemyData } from '../systems/EnemyData';
 import { PlacedStructure } from '../systems/BuildingData';
+import { HorseData, HORSE_SPEED, HORSE_RUN_SPEED, MOUNT_RANGE, DISMOUNT_OFFSET } from '../systems/HorseData';
 
 interface PlayerProps {
   onSurvivalUpdate: (updates: Partial<SurvivalState>) => void;
@@ -30,6 +31,11 @@ interface PlayerProps {
   lootPickups: LootPickup[];
   onCollectLoot: (id: string) => void;
   onEatFood: () => void;
+  horses: HorseData[];
+  onMountHorse: (id: string) => void;
+  onDismountHorse: () => void;
+  mountedHorseId: string | null;
+  onSetInteractionText: (text: string | null) => void;
 }
 
 const _camForward = new THREE.Vector3();
@@ -43,6 +49,7 @@ export function Player({
   onSurvivalUpdate, survival, playerPositionRef, playerRotationRef,
   cameraAzimuthRef, enemies, onEnemyHit, onRespawn, buildMode,
   structures, lootPickups, onCollectLoot, onEatFood,
+  horses, onMountHorse, onDismountHorse, mountedHorseId, onSetInteractionText,
 }: PlayerProps) {
   const groupRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Group>(null);
@@ -54,7 +61,9 @@ export function Player({
   const moveSpeedRef = useRef(0);
   const survivalAccumRef = useRef(0);
   const lootCheckRef = useRef(0);
+  const horseCheckRef = useRef(0);
   const isDead = survival.health <= 0;
+  const isMounted = mountedHorseId !== null;
 
   useEffect(() => {
     if (groupRef.current) {
@@ -66,6 +75,7 @@ export function Player({
 
   useEffect(() => {
     if (isDead) {
+      if (isMounted) onDismountHorse();
       const timer = setTimeout(() => {
         if (groupRef.current) {
           const y = getTerrainHeight(0, 0) + PLAYER_HEIGHT / 2;
@@ -91,11 +101,53 @@ export function Player({
     const input = getMovementInput();
     const azimuth = cameraAzimuthRef.current;
 
-    // Eat food with F key
-    if (input.eat) {
+    // Eat food with F key (only when not near a horse to mount)
+    if (input.eat && !isMounted) {
       onEatFood();
     }
 
+    // Mount/dismount logic
+    horseCheckRef.current += dt;
+    if (horseCheckRef.current > 0.15) {
+      horseCheckRef.current = 0;
+
+      if (isMounted) {
+        // Show dismount prompt
+        if (input.interact) {
+          onDismountHorse();
+          // Move player to side of horse
+          const angle = bodyRef.current.rotation.y;
+          pos.x += Math.cos(angle) * DISMOUNT_OFFSET;
+          pos.z -= Math.sin(angle) * DISMOUNT_OFFSET;
+        }
+      } else {
+        // Check for nearby horses
+        let nearHorse: HorseData | null = null;
+        let nearHorseDist = MOUNT_RANGE;
+        for (const h of horses) {
+          if (h.isMounted) continue;
+          const dx = pos.x - h.position[0];
+          const dz = pos.z - h.position[2];
+          const d = Math.sqrt(dx * dx + dz * dz);
+          if (d < nearHorseDist) {
+            nearHorseDist = d;
+            nearHorse = h;
+          }
+        }
+        if (nearHorse) {
+          onSetInteractionText('🐴 Press E — Mount Horse');
+          if (input.interact) {
+            onMountHorse(nearHorse.id);
+            // Snap player to horse position
+            pos.x = nearHorse.position[0];
+            pos.z = nearHorse.position[2];
+            pos.y = nearHorse.position[1] + 1.8;
+          }
+        }
+      }
+    }
+
+    // Movement
     _camForward.set(-Math.sin(azimuth), 0, -Math.cos(azimuth));
     _camRight.crossVectors(_up, _camForward).negate();
 
@@ -106,7 +158,17 @@ export function Player({
     if (input.d) _moveDir.sub(_camRight);
 
     const canRun = input.run && survival.stamina > 0;
-    const speed = canRun ? PLAYER_RUN_SPEED : PLAYER_SPEED;
+
+    // Speed depends on mounted state
+    let baseSpeed: number, runSpeed: number;
+    if (isMounted) {
+      baseSpeed = HORSE_SPEED;
+      runSpeed = HORSE_RUN_SPEED;
+    } else {
+      baseSpeed = PLAYER_SPEED;
+      runSpeed = PLAYER_RUN_SPEED;
+    }
+    const speed = canRun ? runSpeed : baseSpeed;
     const isMoving = _moveDir.lengthSq() > 0.001;
 
     if (isMoving) {
@@ -116,7 +178,8 @@ export function Player({
       const angle = Math.atan2(_moveDir.x, _moveDir.z);
       bodyRef.current.rotation.y = THREE.MathUtils.lerp(bodyRef.current.rotation.y, angle, dt * 10);
       playerRotationRef.current = bodyRef.current.rotation.y;
-      animTimeRef.current += dt * (canRun ? 14 : 9);
+      const animSpeed = isMounted ? (canRun ? 18 : 12) : (canRun ? 14 : 9);
+      animTimeRef.current += dt * animSpeed;
       moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, canRun ? 1 : 0.6, dt * 8);
     } else {
       vel.x *= 0.8;
@@ -124,13 +187,14 @@ export function Player({
       moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, 0, dt * 6);
     }
 
-    if (input.jump && isGroundedRef.current) {
+    // Jump (not while mounted)
+    if (!isMounted && input.jump && isGroundedRef.current) {
       vel.y = PLAYER_JUMP_FORCE;
       isGroundedRef.current = false;
     }
 
-    // Attack
-    if (!buildMode && input.attack && attackCooldownRef.current <= 0) {
+    // Attack (not while mounted, not in build mode)
+    if (!isMounted && !buildMode && input.attack && attackCooldownRef.current <= 0) {
       attackCooldownRef.current = PLAYER_ATTACK_COOLDOWN;
       attackAnimRef.current = 0.35;
 
@@ -153,38 +217,44 @@ export function Player({
       }
     }
 
-    vel.y -= GRAVITY * dt;
+    if (!isMounted) {
+      vel.y -= GRAVITY * dt;
+    } else {
+      vel.y = 0; // No vertical velocity while mounted
+    }
     pos.x += vel.x * dt;
     pos.z += vel.z * dt;
     pos.y += vel.y * dt;
 
-    const terrainY = getTerrainHeight(pos.x, pos.z) + PLAYER_HEIGHT / 2;
+    const heightOffset = isMounted ? 1.8 : PLAYER_HEIGHT / 2;
+    const terrainY = getTerrainHeight(pos.x, pos.z) + heightOffset;
     if (pos.y <= terrainY) { pos.y = terrainY; vel.y = 0; isGroundedRef.current = true; }
     pos.x = THREE.MathUtils.clamp(pos.x, -230, 230);
     pos.z = THREE.MathUtils.clamp(pos.z, -230, 230);
     playerPositionRef.current.copy(pos);
 
-    // Auto-collect nearby loot pickups
-    lootCheckRef.current += dt;
-    if (lootCheckRef.current > 0.2) {
-      lootCheckRef.current = 0;
-      for (const loot of lootPickups) {
-        if (loot.collected) continue;
-        const dx = pos.x - loot.position[0];
-        const dz = pos.z - loot.position[2];
-        if (dx * dx + dz * dz < 4) {
-          onCollectLoot(loot.id);
+    // Auto-collect nearby loot pickups (not while mounted for balance)
+    if (!isMounted) {
+      lootCheckRef.current += dt;
+      if (lootCheckRef.current > 0.2) {
+        lootCheckRef.current = 0;
+        for (const loot of lootPickups) {
+          if (loot.collected) continue;
+          const dx = pos.x - loot.position[0];
+          const dz = pos.z - loot.position[2];
+          if (dx * dx + dz * dz < 4) {
+            onCollectLoot(loot.id);
+          }
         }
       }
     }
 
-    // Survival updates — enriched with structure effects
+    // Survival updates
     survivalAccumRef.current += dt;
     if (survivalAccumRef.current >= 0.1) {
       const elapsed = survivalAccumRef.current;
       survivalAccumRef.current = 0;
 
-      // Check nearby structures
       let nearCampfire = false;
       let nearShelter = false;
       let nearBedroll = false;
@@ -197,7 +267,6 @@ export function Player({
         if (s.type === 'bedroll' && sdist < 4 * 4) nearBedroll = true;
       }
 
-      // Check zone effects
       let zoneTempMod = 0;
       for (const poi of Object.values(POIS)) {
         const pdx = pos.x - poi.x;
@@ -207,32 +276,31 @@ export function Player({
         }
       }
 
-      // Temperature
       let tempChange = -TEMPERATURE_DRAIN * elapsed + zoneTempMod * elapsed;
       if (nearCampfire) tempChange += CAMPFIRE_WARMTH_RATE * elapsed;
 
-      // Hunger
       let hungerDrain = HUNGER_DRAIN * elapsed;
       if (nearShelter) hungerDrain *= SHELTER_HUNGER_REDUCTION;
+      // Mounted travel is less tiring
+      if (isMounted) hungerDrain *= 0.7;
 
-      // Stamina
       let staminaChange: number;
       if (canRun && isMoving) {
-        staminaChange = -STAMINA_DRAIN * elapsed;
+        // Mounted running costs less stamina
+        staminaChange = -(isMounted ? STAMINA_DRAIN * 0.4 : STAMINA_DRAIN) * elapsed;
       } else {
         let regenRate = STAMINA_REGEN;
-        if (survival.hunger < LOW_HUNGER_THRESHOLD) regenRate *= 0.5; // hungry = slow regen
+        if (survival.hunger < LOW_HUNGER_THRESHOLD) regenRate *= 0.5;
         if (nearShelter) regenRate += SHELTER_STAMINA_BONUS;
-        if (nearBedroll && !isMoving) regenRate += 12; // fast regen when resting at bedroll
+        if (nearBedroll && !isMoving) regenRate += 12;
         staminaChange = regenRate * elapsed;
       }
 
-      // Health
       let healthChange = 0;
-      if (survival.hunger <= 0) healthChange -= 2 * elapsed; // starving
-      if (survival.temperature < LOW_TEMP_THRESHOLD) healthChange -= COLD_DAMAGE_RATE * elapsed; // freezing
-      if (nearCampfire) healthChange += 1 * elapsed; // slow heal near fire
-      if (nearShelter && survival.hunger > 30) healthChange += 0.5 * elapsed; // slow heal in shelter if fed
+      if (survival.hunger <= 0) healthChange -= 2 * elapsed;
+      if (survival.temperature < LOW_TEMP_THRESHOLD) healthChange -= COLD_DAMAGE_RATE * elapsed;
+      if (nearCampfire) healthChange += 1.5 * elapsed;
+      if (nearShelter && survival.hunger > 30) healthChange += 0.8 * elapsed;
 
       onSurvivalUpdate({
         stamina: survival.stamina + staminaChange,
@@ -243,7 +311,7 @@ export function Player({
     }
   });
 
-  // Animation
+  // Animation values
   const t = animTimeRef.current;
   const ms = moveSpeedRef.current;
   const attackT = attackAnimRef.current;
@@ -257,6 +325,10 @@ export function Player({
   const atkSwing = attacking ? (atkPhase < 0.3 ? -0.5 * (atkPhase / 0.3) : -0.5 + (atkPhase - 0.3) * 3.5) : 0;
   const atkBodyTwist = attacking ? Math.sin(atkPhase * Math.PI) * 0.15 : 0;
   const idleBob = ms < 0.1 ? Math.sin(Date.now() * 0.002) * 0.015 : 0;
+
+  // Mounted horse animation
+  const horseLegAnim = isMounted ? Math.sin(t) * 0.4 * ms : 0;
+  const horseBodyBob = isMounted ? Math.abs(Math.sin(t * 2)) * 0.08 * ms : 0;
 
   if (isDead) {
     return (
@@ -274,7 +346,81 @@ export function Player({
   return (
     <group ref={groupRef}>
       <group ref={bodyRef}>
-        <group position={[0, bodyBob + idleBob, 0]} rotation={[bodyTilt, atkBodyTwist, 0]}>
+        {/* Horse mesh when mounted */}
+        {isMounted && (
+          <group position={[0, -1.8 + horseBodyBob, 0]}>
+            {/* Horse body */}
+            <mesh position={[0, 1.1, 0]} castShadow>
+              <boxGeometry args={[0.7, 0.65, 1.6]} />
+              <meshLambertMaterial color="#6a4a2a" />
+            </mesh>
+            <mesh position={[0, 1.15, 0.6]} castShadow>
+              <boxGeometry args={[0.6, 0.55, 0.4]} />
+              <meshLambertMaterial color="#6a4a2a" />
+            </mesh>
+            <mesh position={[0, 1.05, -0.65]} castShadow>
+              <boxGeometry args={[0.55, 0.5, 0.35]} />
+              <meshLambertMaterial color="#6a4a2a" />
+            </mesh>
+            {/* Neck */}
+            <mesh position={[0, 1.55, 0.8]} rotation={[0.5, 0, 0]} castShadow>
+              <boxGeometry args={[0.35, 0.7, 0.35]} />
+              <meshLambertMaterial color="#6a4a2a" />
+            </mesh>
+            {/* Head */}
+            <mesh position={[0, 1.85, 1.15]} castShadow>
+              <boxGeometry args={[0.3, 0.28, 0.45]} />
+              <meshLambertMaterial color="#6a4a2a" />
+            </mesh>
+            <mesh position={[0, 1.77, 1.4]} castShadow>
+              <boxGeometry args={[0.22, 0.18, 0.25]} />
+              <meshLambertMaterial color="#4a3218" />
+            </mesh>
+            {/* Mane */}
+            <mesh position={[0, 1.65, 0.65]} rotation={[0.4, 0, 0]} castShadow>
+              <boxGeometry args={[0.08, 0.5, 0.3]} />
+              <meshLambertMaterial color="#2a1a08" />
+            </mesh>
+            {/* Saddle */}
+            <mesh position={[0, 1.5, 0.05]} castShadow>
+              <boxGeometry args={[0.55, 0.12, 0.5]} />
+              <meshLambertMaterial color="#5a2010" />
+            </mesh>
+            {/* Legs with animation */}
+            {[
+              [-0.22, 0.5, horseLegAnim],
+              [0.22, 0.5, -horseLegAnim],
+              [-0.22, -0.5, -horseLegAnim],
+              [0.22, -0.5, horseLegAnim],
+            ].map(([lx, lz, anim], i) => (
+              <group key={i} position={[lx, 0.55, lz]} rotation={[anim, 0, 0]}>
+                <mesh position={[0, 0, 0]} castShadow>
+                  <boxGeometry args={[0.16, 0.7, 0.16]} />
+                  <meshLambertMaterial color="#6a4a2a" />
+                </mesh>
+                <mesh position={[0, -0.43, 0]} castShadow>
+                  <boxGeometry args={[0.14, 0.35, 0.14]} />
+                  <meshLambertMaterial color="#4a3218" />
+                </mesh>
+                <mesh position={[0, -0.58, 0]} castShadow>
+                  <boxGeometry args={[0.15, 0.08, 0.18]} />
+                  <meshLambertMaterial color="#1a1a1a" />
+                </mesh>
+              </group>
+            ))}
+            {/* Tail */}
+            <group position={[0, 1.0, -0.95]} rotation={[Math.sin(t * 1.5) * 0.3 - 0.3, 0, 0]}>
+              <mesh castShadow>
+                <boxGeometry args={[0.06, 0.5, 0.06]} />
+                <meshLambertMaterial color="#2a1a08" />
+              </mesh>
+            </group>
+          </group>
+        )}
+
+        {/* Player character — raised when mounted */}
+        <group position={[0, (isMounted ? 0.3 : 0) + bodyBob + idleBob, 0]} rotation={[bodyTilt, atkBodyTwist, 0]}>
+          {/* Torso */}
           <mesh position={[0, -0.05, 0]} castShadow>
             <boxGeometry args={[0.75, 0.5, 0.4]} />
             <meshLambertMaterial color="#555555" />
@@ -287,6 +433,7 @@ export function Player({
             <boxGeometry args={[0.82, 0.1, 0.44]} />
             <meshLambertMaterial color="#3a2810" />
           </mesh>
+          {/* Pauldrons */}
           <mesh position={[-0.48, 0.42, 0]} castShadow>
             <boxGeometry args={[0.22, 0.18, 0.35]} />
             <meshLambertMaterial color="#6a6a72" />
@@ -295,6 +442,7 @@ export function Player({
             <boxGeometry args={[0.22, 0.18, 0.35]} />
             <meshLambertMaterial color="#6a6a72" />
           </mesh>
+          {/* Head + helmet */}
           <group position={[0, 0.75, 0]}>
             <mesh position={[0, 0.08, 0]} castShadow>
               <boxGeometry args={[0.38, 0.4, 0.38]} />
@@ -313,7 +461,8 @@ export function Player({
               <meshLambertMaterial color="#1a1a1a" />
             </mesh>
           </group>
-          <group position={[-0.52, 0.15, 0]} rotation={[armSwing, 0, 0]}>
+          {/* Left arm */}
+          <group position={[-0.52, 0.15, 0]} rotation={[isMounted ? -0.3 : armSwing, 0, 0]}>
             <mesh position={[0, -0.15, 0]} castShadow>
               <boxGeometry args={[0.2, 0.6, 0.22]} />
               <meshLambertMaterial color="#555555" />
@@ -323,7 +472,8 @@ export function Player({
               <meshLambertMaterial color="#4a3010" />
             </mesh>
           </group>
-          <group position={[0.52, 0.15, 0]} rotation={[-armSwing + atkSwing, 0, 0]}>
+          {/* Right arm + sword */}
+          <group position={[0.52, 0.15, 0]} rotation={[isMounted ? -0.3 : (-armSwing + atkSwing), 0, 0]}>
             <mesh position={[0, -0.15, 0]} castShadow>
               <boxGeometry args={[0.2, 0.6, 0.22]} />
               <meshLambertMaterial color="#555555" />
@@ -339,26 +489,55 @@ export function Player({
               </mesh>
             </group>
           </group>
-          <group position={[-0.18, -0.5, 0]} rotation={[-legSwing, 0, 0]}>
-            <mesh position={[0, -0.2, 0]} castShadow>
-              <boxGeometry args={[0.24, 0.55, 0.24]} />
-              <meshLambertMaterial color="#3a3030" />
-            </mesh>
-            <mesh position={[0, -0.5, 0]} castShadow>
-              <boxGeometry args={[0.22, 0.15, 0.26]} />
-              <meshLambertMaterial color="#4a3520" />
-            </mesh>
-          </group>
-          <group position={[0.18, -0.5, 0]} rotation={[legSwing, 0, 0]}>
-            <mesh position={[0, -0.2, 0]} castShadow>
-              <boxGeometry args={[0.24, 0.55, 0.24]} />
-              <meshLambertMaterial color="#3a3030" />
-            </mesh>
-            <mesh position={[0, -0.5, 0]} castShadow>
-              <boxGeometry args={[0.22, 0.15, 0.26]} />
-              <meshLambertMaterial color="#4a3520" />
-            </mesh>
-          </group>
+          {/* Legs — spread when mounted */}
+          {isMounted ? (
+            <>
+              <group position={[-0.25, -0.5, 0]} rotation={[0, 0, 0.3]}>
+                <mesh position={[0, -0.2, 0]} castShadow>
+                  <boxGeometry args={[0.24, 0.55, 0.24]} />
+                  <meshLambertMaterial color="#3a3030" />
+                </mesh>
+                <mesh position={[0, -0.5, 0]} castShadow>
+                  <boxGeometry args={[0.22, 0.15, 0.26]} />
+                  <meshLambertMaterial color="#4a3520" />
+                </mesh>
+              </group>
+              <group position={[0.25, -0.5, 0]} rotation={[0, 0, -0.3]}>
+                <mesh position={[0, -0.2, 0]} castShadow>
+                  <boxGeometry args={[0.24, 0.55, 0.24]} />
+                  <meshLambertMaterial color="#3a3030" />
+                </mesh>
+                <mesh position={[0, -0.5, 0]} castShadow>
+                  <boxGeometry args={[0.22, 0.15, 0.26]} />
+                  <meshLambertMaterial color="#4a3520" />
+                </mesh>
+              </group>
+            </>
+          ) : (
+            <>
+              <group position={[-0.18, -0.5, 0]} rotation={[-legSwing, 0, 0]}>
+                <mesh position={[0, -0.2, 0]} castShadow>
+                  <boxGeometry args={[0.24, 0.55, 0.24]} />
+                  <meshLambertMaterial color="#3a3030" />
+                </mesh>
+                <mesh position={[0, -0.5, 0]} castShadow>
+                  <boxGeometry args={[0.22, 0.15, 0.26]} />
+                  <meshLambertMaterial color="#4a3520" />
+                </mesh>
+              </group>
+              <group position={[0.18, -0.5, 0]} rotation={[legSwing, 0, 0]}>
+                <mesh position={[0, -0.2, 0]} castShadow>
+                  <boxGeometry args={[0.24, 0.55, 0.24]} />
+                  <meshLambertMaterial color="#3a3030" />
+                </mesh>
+                <mesh position={[0, -0.5, 0]} castShadow>
+                  <boxGeometry args={[0.22, 0.15, 0.26]} />
+                  <meshLambertMaterial color="#4a3520" />
+                </mesh>
+              </group>
+            </>
+          )}
+          {/* Cape */}
           <mesh position={[0, 0.1, -0.24]} castShadow>
             <boxGeometry args={[0.65, 0.9, 0.04]} />
             <meshLambertMaterial color="#2a1a0a" />

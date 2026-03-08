@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { HORSE_CAMERA_DISTANCE_BONUS, HORSE_CAMERA_HEIGHT_BONUS } from './HorseData';
 
 const ORBIT_DISTANCE = 12;
 const MIN_DISTANCE = 6;
@@ -12,15 +13,15 @@ const ZOOM_SENSITIVITY = 0.5;
 const CAMERA_LERP = 6;
 const CAMERA_HEIGHT_OFFSET = 2;
 
-// Pre-allocated
 const _targetPos = new THREE.Vector3();
 
 interface CameraControllerProps {
   targetRef: React.RefObject<THREE.Vector3>;
   azimuthRef: React.MutableRefObject<number>;
+  isMounted?: boolean;
 }
 
-export function CameraController({ targetRef, azimuthRef }: CameraControllerProps) {
+export function CameraController({ targetRef, azimuthRef, isMounted = false }: CameraControllerProps) {
   const { camera, gl } = useThree();
   const polarRef = useRef(0.7);
   const distanceRef = useRef(ORBIT_DISTANCE);
@@ -74,19 +75,21 @@ export function CameraController({ targetRef, azimuthRef }: CameraControllerProp
     if (!target) return;
     const dt = Math.min(delta, 0.05);
 
-    const dist = distanceRef.current;
+    const distBonus = isMounted ? HORSE_CAMERA_DISTANCE_BONUS : 0;
+    const heightBonus = isMounted ? HORSE_CAMERA_HEIGHT_BONUS : 0;
+    const dist = distanceRef.current + distBonus;
     const azimuth = azimuthRef.current;
     const polar = polarRef.current;
     const sinPolar = Math.sin(polar);
 
     _targetPos.set(
       target.x + dist * sinPolar * Math.sin(azimuth),
-      target.y + dist * Math.cos(polar) + CAMERA_HEIGHT_OFFSET,
+      target.y + dist * Math.cos(polar) + CAMERA_HEIGHT_OFFSET + heightBonus,
       target.z + dist * sinPolar * Math.cos(azimuth),
     );
 
     camera.position.lerp(_targetPos, CAMERA_LERP * dt);
-    camera.lookAt(target.x, target.y + 1.2, target.z);
+    camera.lookAt(target.x, target.y + 1.2 + heightBonus * 0.3, target.z);
   });
 
   return null;
