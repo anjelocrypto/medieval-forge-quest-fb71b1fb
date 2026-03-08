@@ -617,6 +617,12 @@ function CapitalCity({ def }: { def: SettlementDef }) {
       <Brazier pos={[-6, 0, 36]} />
       <Barrels pos={[-18, 0, 8]} count={3} />
 
+      {/* Gate approach road */}
+      {[0, 1, 2, 3].map(i => (
+        <mesh key={`groad${i}`} position={[0, 0.04, 38 + 2 + i * 2.5]}
+          geometry={GEO.box} scale={[4, 0.08, 2]} material={MAT.cobble} />
+      ))}
+
       {/* Smithy area */}
       <group position={[-22, 0, 10]}>
         <mesh position={[0, 1, 0]} geometry={GEO.box}
@@ -779,7 +785,7 @@ function MilitaryFort({ def }: { def: SettlementDef }) {
       {/* Supply area */}
       <Crates pos={[14, 0, 10]} count={4} />
       <Barrels pos={[16, 0, 8]} count={3} />
-      <Crates pos={[-14, 0, 10]} count={3} />
+      <Crates pos={[-14, 0, 15]} count={3} />
 
       {/* Campfires */}
       <Campfire pos={[-5, 0, 10]} />
@@ -788,6 +794,12 @@ function MilitaryFort({ def }: { def: SettlementDef }) {
       {/* Banners */}
       <Banner pos={[2, 0, 20]} />
       <Banner pos={[-2, 0, 20]} color={MAT.bannerBlue} />
+
+      {/* Gate approach road */}
+      {[0, 1, 2].map(i => (
+        <mesh key={`froad${i}`} position={[0, 0.04, 20 + 2 + i * 2.5]}
+          geometry={GEO.box} scale={[3.5, 0.08, 2]} material={MAT.cobble} />
+      ))}
 
       {/* Stables */}
       <group position={[-14, 0, 10]}>
