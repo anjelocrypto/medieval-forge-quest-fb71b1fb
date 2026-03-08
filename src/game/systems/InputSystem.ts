@@ -59,5 +59,6 @@ export function getMovementInput() {
     buildCancel: wasKeyJustPressed('Escape') || wasMouseJustClicked(2),
     buildNext: wasKeyJustPressed('KeyQ'),
     buildPrev: wasKeyJustPressed('KeyR'),
+    callHorse: wasKeyJustPressed('KeyH'),
   };
 }
