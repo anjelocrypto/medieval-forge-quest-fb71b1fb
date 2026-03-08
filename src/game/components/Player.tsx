@@ -188,12 +188,19 @@ export function Player({
           onMountHorse();
           pos.x = horse.position[0];
           pos.z = horse.position[2];
-          pos.y = horse.position[1] + 2.2;
+          // Snap to terrain-derived height immediately
+          pos.y = getTerrainHeight(pos.x, pos.z) + 2.2;
           horseRotRef.current = horse.rotation;
           bodyRef.current.rotation.y = horse.rotation;
           playerRotationRef.current = horse.rotation;
+          // Clear ALL physics state
           vel.set(0, 0, 0);
           currentSpeedRef.current = 0;
+          isGroundedRef.current = true;
+          wasInAirRef.current = false;
+          jumpSquatRef.current = 0;
+          landingImpactRef.current = 0;
+          landRecoveryRef.current = 0;
           rebuildObstacles(resources, structures, [horse], horse.id);
         }
       } else if (!buildMode) {
