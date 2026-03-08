@@ -193,10 +193,11 @@ export function Enemies({ enemies, playerPositionRef, onEnemiesUpdate, pendingPl
           // Death tumble
           const deathRoll = Math.min(timer * 4, Math.PI / 2);
           const deathSlide = Math.min(timer * 2, 1);
+          const deathDrop = e.type === 'wolf' ? 0.15 : 0.3;
           return (
-            <group key={e.id} position={[e.position[0], e.position[1] - 0.3 - deathSlide * 0.3, e.position[2]]}>
+            <group key={e.id} position={[e.position[0], e.position[1] - deathDrop - deathSlide * 0.3, e.position[2]]}>
               <mesh rotation={[deathRoll, 0, deathRoll * 0.3]} geometry={boxGeo}
-                scale={[0.6, 0.8, 0.3]} material={deadMat} />
+                scale={e.type === 'wolf' ? [0.4, 0.35, 0.8] : [0.6, 0.8, 0.3]} material={deadMat} />
             </group>
           );
         }
