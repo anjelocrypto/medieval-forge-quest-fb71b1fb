@@ -57,6 +57,10 @@ interface PlayerProps {
   highlightedResourceRef: React.MutableRefObject<string | null>;
   resources: WorldResource[];
   mountedDebugRef?: React.MutableRefObject<MountedDebugData>;
+  // Multiplayer: external refs for broadcasting live animation state
+  externalMoveSpeedRef?: React.MutableRefObject<number>;
+  externalIsRunningRef?: React.MutableRefObject<boolean>;
+  externalAttackAnimRef?: React.MutableRefObject<number>;
 }
 
 const _camForward = new THREE.Vector3();
@@ -88,6 +92,7 @@ export function Player({
   onAddResource, onDepleteResource, onHitResource, inventory,
   shakeResourceRef, highlightedResourceRef,
   resources, mountedDebugRef,
+  externalMoveSpeedRef, externalIsRunningRef, externalAttackAnimRef,
 }: PlayerProps) {
   const groupRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Group>(null);
@@ -624,6 +629,11 @@ export function Player({
         health: survival.health + healthChange,
       });
     }
+
+    // Sync external refs for multiplayer broadcaster
+    if (externalMoveSpeedRef) externalMoveSpeedRef.current = moveSpeedRef.current;
+    if (externalIsRunningRef) externalIsRunningRef.current = isMoving && canRun;
+    if (externalAttackAnimRef) externalAttackAnimRef.current = attackAnimRef.current;
   });
 
   // === RICH PROCEDURAL ANIMATION ===

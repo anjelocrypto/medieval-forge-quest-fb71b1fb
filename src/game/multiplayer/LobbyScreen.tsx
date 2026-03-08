@@ -155,7 +155,7 @@ export function LobbyScreen({ onJoinRoom, onSinglePlayer, onMockMode }: Props) {
         )}
 
         <p className="text-center text-xs mt-4" style={{ color: '#555' }}>
-          Max {MAX_PLAYERS_PER_ROOM} players per world • Supabase Realtime
+          Max {MAX_PLAYERS_PER_ROOM} players per world
         </p>
       </div>
     </div>

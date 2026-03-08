@@ -205,6 +205,7 @@ export function useMultiplayer() {
   const leaveRoom = useCallback(async () => {
     if (broadcastTimerRef.current) { clearInterval(broadcastTimerRef.current); broadcastTimerRef.current = null; }
     if (staleCleanupRef.current) { clearInterval(staleCleanupRef.current); staleCleanupRef.current = null; }
+    if (mockIntervalRef.current) { clearInterval(mockIntervalRef.current); mockIntervalRef.current = null; }
     if (channelRef.current) {
       await channelRef.current.unsubscribe();
       channelRef.current = null;
@@ -212,6 +213,7 @@ export function useMultiplayer() {
     setConnected(false);
     setRoomId(null);
     setRemotePlayers(new Map());
+    setMockMode(false);
   }, []);
 
   // Broadcast local player state (called every frame, throttled by timer)
@@ -257,6 +259,7 @@ export function useMultiplayer() {
   }, []);
 
   // Mock mode — spawn fake remote players for testing
+  const mockIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const enableMockMode = useCallback(() => {
     setMockMode(true);
     setConnected(true);
@@ -296,7 +299,8 @@ export function useMultiplayer() {
     setRemotePlayers(mockPlayers);
 
     // Animate mock players
-    const animInterval = setInterval(() => {
+    if (mockIntervalRef.current) clearInterval(mockIntervalRef.current);
+    mockIntervalRef.current = setInterval(() => {
       const now = Date.now();
       setRemotePlayers(prev => {
         const next = new Map(prev);
@@ -321,8 +325,6 @@ export function useMultiplayer() {
         return next;
       });
     }, BROADCAST_RATE_MS);
-
-    return () => clearInterval(animInterval);
   }, []);
 
   // Cleanup on unmount
@@ -330,6 +332,7 @@ export function useMultiplayer() {
     return () => {
       if (broadcastTimerRef.current) clearInterval(broadcastTimerRef.current);
       if (staleCleanupRef.current) clearInterval(staleCleanupRef.current);
+      if (mockIntervalRef.current) clearInterval(mockIntervalRef.current);
       if (channelRef.current) channelRef.current.unsubscribe();
     };
   }, []);

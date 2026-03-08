@@ -1,5 +1,3 @@
-import { InterpolatedPlayer } from './types';
-
 interface Props {
   connected: boolean;
   roomId: string | null;

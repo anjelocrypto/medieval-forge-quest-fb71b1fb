@@ -46,6 +46,7 @@ export function GameScene({ multiplayer, onLeaveRoom }: GameSceneProps) {
     lootPickups, addLootPickups, collectLoot,
     notification, getAvailableBuildables,
     horse, isMounted, mountHorse, dismountHorse, callHorse, updateHorse,
+    addRemoteStructure,
   } = useGameState();
 
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
@@ -126,22 +127,33 @@ export function GameScene({ multiplayer, onLeaveRoom }: GameSceneProps) {
   }, []);
 
   // Handle multiplayer world events from remote players
+  const processedEventCountRef = useRef(0);
   useEffect(() => {
     if (!multiplayer.connected) return;
     const events = multiplayer.worldEvents;
-    if (events.length === 0) return;
-    const latest = events[events.length - 1];
-    // Apply remote world events
-    if (latest.playerId === multiplayer.playerId) return;
+    const startIdx = processedEventCountRef.current;
+    if (events.length <= startIdx) return;
+    
+    for (let i = startIdx; i < events.length; i++) {
+      const ev = events[i];
+      if (ev.playerId === multiplayer.playerId) continue;
 
-    if (latest.type === 'resource_depleted') {
-      const id = latest.payload.resourceId as string;
-      setResources(prev => prev.map(r => r.id === id ? { ...r, depleted: true, health: 0 } : r));
+      if (ev.type === 'resource_depleted') {
+        const id = ev.payload.resourceId as string;
+        setResources(prev => prev.map(r => r.id === id ? { ...r, depleted: true, health: 0 } : r));
+      }
+      if (ev.type === 'enemy_killed') {
+        const id = ev.payload.enemyId as string;
+        setEnemies(prev => prev.map(e => e.id === id ? { ...e, health: 0, state: 'dead' as const } : e));
+      }
+      if (ev.type === 'building_placed') {
+        const structure = ev.payload.structure as Record<string, unknown>;
+        if (structure) {
+          addRemoteStructure(structure as any);
+        }
+      }
     }
-    if (latest.type === 'enemy_killed') {
-      const id = latest.payload.enemyId as string;
-      setEnemies(prev => prev.map(e => e.id === id ? { ...e, health: 0, state: 'dead' as const } : e));
-    }
+    processedEventCountRef.current = events.length;
   }, [multiplayer.worldEvents, multiplayer.connected, multiplayer.playerId]);
 
   const handleDepleteResource = useCallback((id: string) => {
@@ -194,6 +206,19 @@ export function GameScene({ multiplayer, onLeaveRoom }: GameSceneProps) {
   const handleEnemiesUpdate = useCallback((updated: EnemyData[]) => {
     setEnemies(updated);
   }, []);
+
+  // Wrap placeStructure to broadcast building placement
+  const handlePlaceStructure = useCallback((structure: any) => {
+    placeStructure(structure);
+    if (multiplayer.connected) {
+      multiplayer.broadcastWorldEvent({
+        type: 'building_placed',
+        payload: { structure },
+        playerId: multiplayer.playerId,
+        timestamp: Date.now(),
+      });
+    }
+  }, [placeStructure, multiplayer]);
 
   const remotePlayerCount = multiplayer.remotePlayers.size;
 
@@ -297,6 +322,9 @@ export function GameScene({ multiplayer, onLeaveRoom }: GameSceneProps) {
           highlightedResourceRef={highlightedResourceRef}
           resources={resources}
           mountedDebugRef={mountedDebugRef}
+          externalMoveSpeedRef={moveSpeedRef}
+          externalIsRunningRef={isRunningRef}
+          externalAttackAnimRef={attackAnimRef}
         />
         <WorldObjects
           resources={resources}
@@ -319,7 +347,7 @@ export function GameScene({ multiplayer, onLeaveRoom }: GameSceneProps) {
           playerRotationRef={playerRotationRef}
           structures={structures}
           inventory={inventory}
-          onPlace={placeStructure}
+          onPlace={handlePlaceStructure}
           onSetBuildFeedback={setBuildFeedback}
           availableBuildables={getAvailableBuildables()}
         />
