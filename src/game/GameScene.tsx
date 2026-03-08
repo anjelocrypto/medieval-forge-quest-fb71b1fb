@@ -172,7 +172,7 @@ export function GameScene() {
           onCycle={cycleBuild}
           onCancelBuild={toggleBuildMode}
         />
-        <Atmosphere />
+        <Atmosphere playerPositionRef={playerPositionRef} />
         <Sky />
         <Terrain />
         <Water />
