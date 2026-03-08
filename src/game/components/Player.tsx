@@ -117,7 +117,8 @@ export function Player({
   const prevMoveRef = useRef(0);        // previous frame move state for transition detection
   const turnDeltaRef = useRef(0);       // accumulated turn for animation
   const horsePitchRef = useRef(0);      // slope pitch for mounted horse
-  const mountedDebugRef = useRef({ terrainY: 0, horseY: 0, riderY: 0, delta: 0, pitch: 0, pushX: 0, pushZ: 0 });
+  const _internalDebugRef = useRef({ terrainY: 0, horseY: 0, riderY: 0, delta: 0, pitch: 0, pushX: 0, pushZ: 0 });
+  const debugRef = mountedDebugRef || _internalDebugRef;
   const isDead = survival.health <= 0;
 
   useEffect(() => {
