@@ -47,11 +47,22 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse, isMounted }: Pr
         let rotDiff = wantAngle - rotRef.current;
         while (rotDiff > Math.PI) rotDiff -= Math.PI * 2;
         while (rotDiff < -Math.PI) rotDiff += Math.PI * 2;
-        rotRef.current += rotDiff * Math.min(1, 4 * dt);
+        // Speed-dependent turning — faster approach = wider arc
+        const turnRate = dist > 10 ? 3 : 5;
+        rotRef.current += rotDiff * Math.min(1, turnRate * dt);
 
-        // Accelerate
-        const targetSpeed = dist > 15 ? HORSE_APPROACH_SPEED : HORSE_APPROACH_SPEED * 0.6;
-        moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, targetSpeed, dt * 3);
+        // Smooth speed with distance-based deceleration curve
+        let targetSpeed: number;
+        if (dist > 20) {
+          targetSpeed = HORSE_APPROACH_SPEED; // full speed far away
+        } else if (dist > 8) {
+          targetSpeed = HORSE_APPROACH_SPEED * 0.7; // slow down approaching
+        } else {
+          // Smooth deceleration — ease into stop
+          const stopFactor = (dist - HORSE_APPROACH_STOP_DIST) / (8 - HORSE_APPROACH_STOP_DIST);
+          targetSpeed = HORSE_APPROACH_SPEED * 0.4 * Math.max(0.15, stopFactor);
+        }
+        moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, targetSpeed, dt * 4);
 
         const spd = moveSpeedRef.current;
         let nx = horse.position[0] + Math.sin(rotRef.current) * spd * dt;
@@ -72,19 +83,22 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse, isMounted }: Pr
 
         animRef.current += dt * moveSpeedRef.current * 0.8;
       } else {
-        // Arrived — switch to waiting
-        moveSpeedRef.current = 0;
-        onUpdateHorse({ state: 'waiting' });
+        // Arrived — gentle final stop
+        moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, 0, dt * 8);
+        if (moveSpeedRef.current < 0.1) {
+          moveSpeedRef.current = 0;
+          onUpdateHorse({ state: 'waiting' });
+        }
       }
     } else if (horse.state === 'waiting') {
       // If player walks far away, go idle
       if (dist > 50) {
         onUpdateHorse({ state: 'idle' });
       }
-      moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, 0, dt * 5);
+      moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, 0, dt * 6);
     } else {
-      // idle
-      moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, 0, dt * 5);
+      // idle — gentle breathing deceleration
+      moveSpeedRef.current = THREE.MathUtils.lerp(moveSpeedRef.current, 0, dt * 6);
     }
   });
 
@@ -100,14 +114,15 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse, isMounted }: Pr
   }
 
   const t = animRef.current;
-  const ms = moveSpeedRef.current / HORSE_APPROACH_SPEED; // 0-1 normalized
+  const ms = Math.min(1, moveSpeedRef.current / HORSE_APPROACH_SPEED);
 
-  // Idle animation
-  const breath = Math.sin(t * 1.2) * 0.025;
-  const headNod = Math.sin(t * 0.6) * 0.06;
-  const tailSwish = Math.sin(t * 1.8) * 0.35;
-  const earFlick = Math.sin(t * 2.5) > 0.8 ? 0.1 : 0;
-  const weightShift = Math.sin(t * 0.3) * 0.01;
+  // Idle animation — more organic, varied timing
+  const breath = Math.sin(t * 1.2) * 0.03 + Math.sin(t * 2.1) * 0.008;
+  const headNod = Math.sin(t * 0.5) * 0.08 + Math.sin(t * 1.3) * 0.02;
+  const tailSwish = Math.sin(t * 1.6) * 0.4 + Math.sin(t * 3.1) * 0.1;
+  const earFlick = Math.sin(t * 2.5) > 0.85 ? 0.12 : (Math.sin(t * 1.7) > 0.9 ? -0.06 : 0);
+  const weightShift = Math.sin(t * 0.25) * 0.015;
+  const bodyRock = Math.sin(t * 0.4) * 0.008 * (1 - ms); // gentle side-to-side when idle
 
   // Locomotion
   const legFL = Math.sin(t) * 0.5 * ms;
@@ -119,7 +134,7 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse, isMounted }: Pr
 
   return (
     <group position={[horse.position[0], horse.position[1], horse.position[2]]}
-      rotation={[0, rotRef.current, 0]}>
+      rotation={[0, rotRef.current, bodyRock]}>
       {/* Body with breathing */}
       <mesh position={[weightShift, 1.1 + breath + bodyBob, 0]} geometry={boxGeo}
         scale={[0.7, 0.65, 1.6]} material={bodyMat} castShadow />

@@ -215,24 +215,27 @@ export function Enemies({ enemies, playerPositionRef, onEnemiesUpdate, pendingPl
         const isChasing = e.state === 'chase';
         const ms = isMoving ? (isChasing ? 1 : 0.4) : 0;
 
-        // Richer locomotion
-        const legAnim = Math.sin(animT) * 0.6 * ms;
-        const legAnimOff = Math.sin(animT + Math.PI) * 0.6 * ms;
-        const armAnim = Math.sin(animT + 0.3) * 0.45 * ms;
-        const armAnimOff = Math.sin(animT + Math.PI + 0.3) * 0.45 * ms;
-        const bodyBob = Math.abs(Math.sin(animT * 2)) * 0.05 * ms;
-        const bodyLean = ms * 0.05 * (isChasing ? 1.5 : 1); // lean forward when chasing
-        const shoulderTwist = Math.sin(animT) * 0.04 * ms;
+        // Richer locomotion — distinct walk/chase gaits
+        const chaseIntensity = isChasing ? 1.2 : 1;
+        const legAnim = Math.sin(animT) * 0.7 * ms * chaseIntensity;
+        const legAnimOff = Math.sin(animT + Math.PI) * 0.7 * ms * chaseIntensity;
+        const armAnim = Math.sin(animT + 0.3) * 0.5 * ms * chaseIntensity;
+        const armAnimOff = Math.sin(animT + Math.PI + 0.3) * 0.5 * ms * chaseIntensity;
+        const bodyBob = Math.abs(Math.sin(animT * 2)) * 0.06 * ms * chaseIntensity;
+        const bodyLean = isChasing ? 0.12 : ms * 0.05; // aggressive lean when chasing
+        const shoulderTwist = Math.sin(animT) * 0.05 * ms;
+        const chaseSway = isChasing ? Math.sin(animT * 0.7) * 0.03 : 0; // lateral aggression
 
-        // Attack with wind-up telegraph
+        // Attack with stronger wind-up telegraph
         const windupTime = atkWindupMap.current.get(e.id) || 0;
         const isWindingUp = e.state === 'attack' && e.attackCooldown <= 0 && windupTime > 0;
         const windupPhase = Math.min(windupTime / 0.3, 1);
         const atkStrikeAnim = e.state === 'attack' && e.attackCooldown > ENEMY_ATTACK_COOLDOWN * 0.7;
         const atkAnim = isWindingUp
-          ? -1.2 * windupPhase // Raise weapon
-          : (atkStrikeAnim ? 1.5 : 0); // Swing down
-        const atkBodyTwist = isWindingUp ? -0.15 * windupPhase : (atkStrikeAnim ? 0.2 : 0);
+          ? -1.5 * windupPhase // Stronger raise
+          : (atkStrikeAnim ? 1.8 : 0); // Harder swing
+        const atkBodyTwist = isWindingUp ? -0.2 * windupPhase : (atkStrikeAnim ? 0.3 : 0);
+        const atkLunge = atkStrikeAnim ? 0.1 : 0;
 
         const bodyMat = flash ? hitMat : (isBandit ? banditBodyMat : wolfBodyMat);
 
@@ -240,7 +243,7 @@ export function Enemies({ enemies, playerPositionRef, onEnemiesUpdate, pendingPl
           return (
             <group key={e.id} position={[e.position[0], e.position[1] + bodyBob, e.position[2]]}>
               <group rotation={[0, faceAngle, 0]}>
-                <group rotation={[bodyLean - staggerRecoil, atkBodyTwist + shoulderTwist, 0]}>
+                <group rotation={[bodyLean - staggerRecoil, atkBodyTwist + shoulderTwist, chaseSway]}>
                   {/* Torso */}
                   <mesh geometry={boxGeo} scale={[0.65, 0.75, 0.35]} material={bodyMat} castShadow />
                   {/* Head */}
