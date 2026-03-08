@@ -41,7 +41,7 @@ export function Enemies({ enemies, playerPositionRef, onEnemiesUpdate, onPlayerD
       let newAngle = e.patrolAngle;
 
       // State transitions
-      if (distToPlayer < e.attackRange && e.state !== 'dead') {
+      if (distToPlayer < e.attackRange) {
         newState = 'attack';
       } else if (distToPlayer < e.detectRange) {
         newState = 'chase';
