@@ -3,27 +3,33 @@ import { COLORS } from '../constants';
 export function Atmosphere() {
   return (
     <>
-      {/* Main directional light (sun) */}
+      {/* Main directional light (sun) — warm golden hour */}
       <directionalLight
-        position={[100, 80, 60]}
-        intensity={1.2}
+        position={[120, 60, 80]}
+        intensity={1.4}
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-camera-far={300}
-        shadow-camera-left={-100}
-        shadow-camera-right={100}
-        shadow-camera-top={100}
-        shadow-camera-bottom={-100}
-        color="#ffe4b0"
+        shadow-camera-left={-120}
+        shadow-camera-right={120}
+        shadow-camera-top={120}
+        shadow-camera-bottom={-120}
+        color="#ffe0a0"
       />
-      {/* Ambient fill */}
-      <ambientLight intensity={0.35} color="#8ba8c4" />
+      {/* Secondary fill light — cool blue from opposite */}
+      <directionalLight
+        position={[-80, 40, -60]}
+        intensity={0.25}
+        color="#8ab0d0"
+      />
+      {/* Ambient fill — slightly warm */}
+      <ambientLight intensity={0.3} color="#9aabbf" />
       {/* Hemisphere light for sky/ground color bleed */}
       <hemisphereLight
-        args={[COLORS.sky, COLORS.grass, 0.3]}
+        args={['#7a98b8', '#4a6a3a', 0.35]}
       />
-      {/* Fog for atmosphere and draw distance */}
-      <fog attach="fog" args={[COLORS.fog, 80, 250]} />
+      {/* Fog for atmosphere and depth */}
+      <fog attach="fog" args={['#8a9a80', 60, 220]} />
     </>
   );
 }
