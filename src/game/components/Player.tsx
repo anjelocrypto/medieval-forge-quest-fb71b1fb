@@ -477,8 +477,8 @@ export function Player({
     } else {
       wasInAirRef.current = true;
     }
-    pos.x = THREE.MathUtils.clamp(pos.x, -230, 230);
-    pos.z = THREE.MathUtils.clamp(pos.z, -230, 230);
+    pos.x = THREE.MathUtils.clamp(pos.x, -290, 290);
+    pos.z = THREE.MathUtils.clamp(pos.z, -290, 290);
     playerPositionRef.current.copy(pos);
 
     // Loot collection
