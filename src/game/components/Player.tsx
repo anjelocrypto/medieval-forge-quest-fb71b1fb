@@ -694,7 +694,7 @@ export function Player({
       <group ref={bodyRef}>
         {/* ===== MOUNTED HORSE ===== */}
         {isMounted && (
-          <group position={[0, -2.2 + horseBodyBob, 0]}>
+          <group position={[riderLean * 0.1, -2.2 + horseBodyBob, 0]}>
             {/* Body */}
             <mesh position={[0, 1.1, 0]} castShadow>
               <boxGeometry args={[0.7, 0.65, 1.6]} />
