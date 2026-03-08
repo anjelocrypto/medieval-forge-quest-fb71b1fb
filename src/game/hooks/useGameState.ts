@@ -156,6 +156,14 @@ export function useGameState() {
     showNotification(`🔨 Built ${config.label}`);
   }, [showNotification]);
 
+  // Add structure from remote player (no cost deduction)
+  const addRemoteStructure = useCallback((structure: PlacedStructure) => {
+    setStructures(prev => {
+      if (prev.some(s => s.id === structure.id)) return prev;
+      return [...prev, structure];
+    });
+  }, []);
+
   // Horse actions
   const mountHorse = useCallback(() => {
     setIsMounted(true);
@@ -204,5 +212,6 @@ export function useGameState() {
     // Horse — single companion
     horse, isMounted,
     mountHorse, dismountHorse, callHorse, updateHorse,
+    addRemoteStructure,
   };
 }
