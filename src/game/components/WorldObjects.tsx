@@ -65,11 +65,22 @@ export function WorldObjects({
     frameSkipRef.current++;
     const checkInteraction = frameSkipRef.current % 3 === 0;
 
+    // If mounted or a horse is nearby (higher priority), skip resource interaction
+    let horseNearby = false;
+    if (!isMounted) {
+      const px2 = playerPos.x, pz2 = playerPos.z;
+      for (const h of horses) {
+        if (h.isMounted) continue;
+        const dx = px2 - h.position[0], dz = pz2 - h.position[2];
+        if (dx * dx + dz * dz < MOUNT_RANGE * MOUNT_RANGE) { horseNearby = true; break; }
+      }
+    }
+
     let nearestId: string | null = null;
     let nearestRes: WorldResource | null = null;
     let nearestType: string | null = null;
 
-    if (checkInteraction) {
+    if (checkInteraction && !isMounted && !horseNearby) {
       let nearestDist = INTERACTION_RANGE;
       const px = playerPos.x, pz = playerPos.z;
 
