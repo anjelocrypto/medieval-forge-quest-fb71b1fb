@@ -64,13 +64,17 @@ export function GameScene() {
     return () => cancelAnimationFrame(raf);
   }, [applyPlayerDamage]);
 
+  // Mounted horse sync — Player.tsx is sole movement authority.
+  // We sync horse state data from playerPositionRef for HUD/minimap only.
+  // Horse Y is derived from terrain at the player's resolved X/Z (not from playerPos.y).
   useEffect(() => {
     if (!isMounted) return;
     let raf: number;
     const sync = () => {
       const pos = playerPositionRef.current;
+      const horseY = getTerrainHeight(pos.x, pos.z);
       updateHorse({
-        position: [pos.x, pos.y - 2.2, pos.z],
+        position: [pos.x, horseY, pos.z],
         rotation: playerRotationRef.current,
       });
       raf = requestAnimationFrame(sync);

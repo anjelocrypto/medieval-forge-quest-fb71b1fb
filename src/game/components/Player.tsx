@@ -442,43 +442,59 @@ export function Player({
       }
     }
 
-    // Gravity & position update
-    if (!isMounted) {
-      vel.y -= GRAVITY * dt;
-    } else {
+    // === GRAVITY & VERTICAL PHYSICS ===
+    if (isMounted) {
+      // MOUNTED: zero all vertical physics — Y is strictly terrain-derived
       vel.y = 0;
+      isGroundedRef.current = true;
+      wasInAirRef.current = false;
+      jumpSquatRef.current = 0;
+      landingImpactRef.current = 0;
+      landRecoveryRef.current = 0;
+    } else {
+      vel.y -= GRAVITY * dt;
     }
+
+    // Apply horizontal movement
     pos.x += vel.x * dt;
     pos.z += vel.z * dt;
-    pos.y += vel.y * dt;
+    if (!isMounted) {
+      pos.y += vel.y * dt;
+    }
 
     // === COLLISION RESOLUTION ===
     const colRadius = isMounted ? MOUNTED_RADIUS : PLAYER_RADIUS;
     const resolved = resolveCollision(pos.x, pos.z, colRadius);
-    // If collision pushed us, also zero out velocity in that direction
     const pushX = resolved.x - pos.x;
     const pushZ = resolved.z - pos.z;
     if (Math.abs(pushX) > 0.001 || Math.abs(pushZ) > 0.001) {
       pos.x = resolved.x;
       pos.z = resolved.z;
-      // Cancel velocity component into obstacle
       if (pushX * vel.x < 0) vel.x *= 0.1;
       if (pushZ * vel.z < 0) vel.z *= 0.1;
     }
 
+    // === GROUNDING — terrain height at FINAL resolved X/Z ===
     const heightOffset = isMounted ? 2.2 : PLAYER_HEIGHT / 2;
     const terrainY = getTerrainHeight(pos.x, pos.z) + heightOffset;
-    if (pos.y <= terrainY) {
-      if (wasInAirRef.current && vel.y < -3) {
-        landingImpactRef.current = Math.min(1, Math.abs(vel.y) / 12);
-        landRecoveryRef.current = 1; // trigger recovery animation
-      }
+
+    if (isMounted) {
+      // MOUNTED: ALWAYS snap to terrain — no conditional, no drift, no float
       pos.y = terrainY;
-      vel.y = 0;
-      isGroundedRef.current = true;
-      wasInAirRef.current = false;
     } else {
-      wasInAirRef.current = true;
+      // On foot: standard conditional grounding with landing impact
+      if (pos.y <= terrainY) {
+        if (wasInAirRef.current && vel.y < -3) {
+          landingImpactRef.current = Math.min(1, Math.abs(vel.y) / 12);
+          landRecoveryRef.current = 1;
+        }
+        pos.y = terrainY;
+        vel.y = 0;
+        isGroundedRef.current = true;
+        wasInAirRef.current = false;
+      } else {
+        wasInAirRef.current = true;
+      }
     }
     pos.x = THREE.MathUtils.clamp(pos.x, -290, 290);
     pos.z = THREE.MathUtils.clamp(pos.z, -290, 290);
