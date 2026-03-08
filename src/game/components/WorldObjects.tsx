@@ -47,7 +47,7 @@ const crateBandMat = new THREE.MeshLambertMaterial({ color: '#4a3a20' });
 export function WorldObjects({
   resources, playerPositionRef, onSetInteraction,
   onAddResource, onDepleteResource, onHitResource,
-  structures, inventory, onEatFood, horses, isMounted,
+  structures, inventory, onEatFood, horse, isMounted,
 }: Props) {
   const cooldownRef = useRef(0);
   const lastInteractIdRef = useRef<string | null>(null);
@@ -65,15 +65,11 @@ export function WorldObjects({
     frameSkipRef.current++;
     const checkInteraction = frameSkipRef.current % 3 === 0;
 
-    // If mounted or a horse is nearby (higher priority), skip resource interaction
+    // If mounted or horse is nearby (higher priority), skip resource interaction
     let horseNearby = false;
-    if (!isMounted) {
-      const px2 = playerPos.x, pz2 = playerPos.z;
-      for (const h of horses) {
-        if (h.state === 'mounted') continue;
-        const dx = px2 - h.position[0], dz = pz2 - h.position[2];
-        if (dx * dx + dz * dz < MOUNT_RANGE * MOUNT_RANGE) { horseNearby = true; break; }
-      }
+    if (!isMounted && horse.state !== 'mounted') {
+      const dx = playerPos.x - horse.position[0], dz = playerPos.z - horse.position[2];
+      if (dx * dx + dz * dz < MOUNT_RANGE * MOUNT_RANGE) { horseNearby = true; }
     }
 
     let nearestId: string | null = null;
