@@ -1,6 +1,7 @@
 import { SurvivalState, ResourceInventory, ProgressionState } from '../types';
 import { BuildableConfig } from '../systems/BuildingData';
 import { TIER2_KILLS_REQUIRED, TIER2_STRUCTURES_REQUIRED } from '../constants';
+import { Minimap } from './Minimap';
 
 interface HUDProps {
   survival: SurvivalState;
@@ -14,6 +15,13 @@ interface HUDProps {
   notification: string | null;
   availableBuildables: BuildableConfig[];
   isMounted?: boolean;
+  playerX: number;
+  playerZ: number;
+  playerRotation: number;
+  horseX: number;
+  horseZ: number;
+  mapOpen: boolean;
+  onCloseMap: () => void;
 }
 
 function StatBar({ label, value, max, color, warning }: {
@@ -35,7 +43,8 @@ function StatBar({ label, value, max, color, warning }: {
 export function SurvivalHUD({
   survival, inventory, interactionText, buildMode, selectedBuildIndex,
   buildFeedback, damageFlash, progression, notification, availableBuildables,
-  isMounted = false,
+  isMounted = false, playerX, playerZ, playerRotation, horseX, horseZ,
+  mapOpen, onCloseMap,
 }: HUDProps) {
   const lowHunger = survival.hunger < 20;
   const lowTemp = survival.temperature < 25;
@@ -63,6 +72,13 @@ export function SurvivalHUD({
         </div>
       )}
 
+      {/* Minimap & Full Map */}
+      <Minimap
+        playerX={playerX} playerZ={playerZ} playerRotation={playerRotation}
+        horseX={horseX} horseZ={horseZ} isMounted={isMounted}
+        mapOpen={mapOpen} onCloseMap={onCloseMap}
+      />
+
       {/* Survival bars */}
       <div className="absolute bottom-6 left-6 flex flex-col gap-1.5 p-3 rounded-lg"
         style={{ background: 'hsl(var(--hud-bg))', border: '1px solid hsl(var(--hud-border))' }}>
@@ -71,7 +87,6 @@ export function SurvivalHUD({
         <StatBar label="FD" value={survival.hunger} max={100} color="hsl(var(--hunger))" warning={lowHunger} />
         <StatBar label="TMP" value={survival.temperature} max={100} color="hsl(var(--temperature))" warning={lowTemp} />
 
-        {/* Status effects */}
         <div className="flex gap-1 mt-1">
           {lowHunger && <span className="text-xs px-1 rounded" style={{ background: 'rgba(200,100,0,0.3)' }}>🍖 Hungry</span>}
           {lowTemp && <span className="text-xs px-1 rounded" style={{ background: 'rgba(80,120,200,0.3)' }}>❄️ Cold</span>}
@@ -80,7 +95,7 @@ export function SurvivalHUD({
         </div>
       </div>
 
-      {/* Inventory + food hint */}
+      {/* Inventory */}
       <div className="absolute bottom-6 right-6 flex flex-col items-end gap-2">
         <div className="flex gap-3 p-3 rounded-lg"
           style={{ background: 'hsl(var(--hud-bg))', border: '1px solid hsl(var(--hud-border))' }}>
@@ -171,6 +186,7 @@ export function SurvivalHUD({
         <div><kbd className="font-mono text-foreground/70">F</kbd> Eat Food</div>
         {!isMounted && <div><kbd className="font-mono text-foreground/70">B</kbd> Build</div>}
         {!isMounted && <div><kbd className="font-mono text-foreground/70">H</kbd> Call Horse</div>}
+        <div><kbd className="font-mono text-foreground/70">M</kbd> Map</div>
         <div><kbd className="font-mono text-foreground/70">SCROLL</kbd> Zoom</div>
       </div>
 

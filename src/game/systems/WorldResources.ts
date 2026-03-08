@@ -1,5 +1,6 @@
 import { getTerrainHeight } from '../components/Terrain';
-import { WORLD_SIZE, POIS } from '../constants';
+import { WORLD_SIZE } from '../constants';
+import { REGIONS, SETTLEMENTS, SMALL_POIS } from '../world/RegionData';
 import { LootPickup } from '../types';
 
 export interface WorldResource {
@@ -22,9 +23,9 @@ function seededRandom(seed: number) {
   return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
 }
 
-function isNearPOI(x: number, z: number, minDist: number): boolean {
-  for (const poi of Object.values(POIS)) {
-    const d = Math.sqrt((x - poi.x) ** 2 + (z - poi.z) ** 2);
+function isNearSettlement(x: number, z: number, minDist: number): boolean {
+  for (const s of SETTLEMENTS) {
+    const d = Math.sqrt((x - s.position[0]) ** 2 + (z - s.position[1]) ** 2);
     if (d < minDist) return true;
   }
   return false;
@@ -33,27 +34,29 @@ function isNearPOI(x: number, z: number, minDist: number): boolean {
 export function generateWorldResources(): WorldResource[] {
   const resources: WorldResource[] = [];
   const rand = seededRandom(12345);
+  const half = WORLD_SIZE / 2;
 
-  // TREES
-  for (let i = 0; i < 350; i++) {
-    const x = (rand() - 0.5) * WORLD_SIZE * 0.9;
-    const z = (rand() - 0.5) * WORLD_SIZE * 0.9;
+  // TREES — more in Ashwood, scattered elsewhere
+  for (let i = 0; i < 600; i++) {
+    const x = (rand() - 0.5) * WORLD_SIZE * 0.92;
+    const z = (rand() - 0.5) * WORLD_SIZE * 0.92;
     const y = getTerrainHeight(x, z);
     if (y < 0) continue;
 
-    const distToForest = Math.sqrt((x + 80) ** 2 + (z - 60) ** 2);
-    const inForest = distToForest < 60;
-    if (!inForest && rand() > 0.4) continue;
-
     const distCenter = Math.sqrt(x * x + z * z);
-    if (distCenter < 12) continue;
-    if (isNearPOI(x, z, 8)) continue;
+    if (distCenter < 15) continue;
+    if (isNearSettlement(x, z, 10)) continue;
+
+    // Dense in Ashwood
+    const ashDist = Math.sqrt((x + 190) ** 2 + (z - 140) ** 2);
+    const inAshwood = ashDist < 75;
+    if (!inAshwood && rand() > 0.45) continue;
 
     const scale = 0.8 + rand() * 0.6;
     const variant = rand() > 0.5 ? 0 : 1;
     const trunkHeight = 2 + rand() * 2;
     const crownRadius = 1.5 + rand() * 1.5;
-    const gatherable = distCenter < 160 && rand() > 0.35;
+    const gatherable = rand() > 0.3;
 
     resources.push({
       id: `tree-${i}`, type: 'tree',
@@ -62,16 +65,16 @@ export function generateWorldResources(): WorldResource[] {
     });
   }
 
-  // ROCKS
-  for (let i = 0; i < 150; i++) {
-    const x = (rand() - 0.5) * WORLD_SIZE * 0.85;
-    const z = (rand() - 0.5) * WORLD_SIZE * 0.85;
+  // ROCKS — more in Frostmere and Blackthorn
+  for (let i = 0; i < 250; i++) {
+    const x = (rand() - 0.5) * WORLD_SIZE * 0.9;
+    const z = (rand() - 0.5) * WORLD_SIZE * 0.9;
     const y = getTerrainHeight(x, z);
     if (y < -0.3) continue;
+    if (isNearSettlement(x, z, 8)) continue;
 
-    const distCenter = Math.sqrt(x * x + z * z);
     const scale = 0.3 + rand() * 1.5;
-    const gatherable = distCenter < 160 && scale > 0.5 && rand() > 0.3;
+    const gatherable = scale > 0.5 && rand() > 0.3;
 
     resources.push({
       id: `rock-${i}`, type: 'rock',
@@ -81,11 +84,13 @@ export function generateWorldResources(): WorldResource[] {
     });
   }
 
-  // BERRY BUSHES — near village and forest edges
+  // BERRY BUSHES — near villages and forest edges
   const berrySpots = [
-    { cx: POIS.village.x, cz: POIS.village.z, count: 5, spread: 25 },
-    { cx: POIS.forest.x + 30, cz: POIS.forest.z - 20, count: 4, spread: 20 },
+    { cx: -155, cz: -125, count: 6, spread: 30 },
+    { cx: -110, cz: -80, count: 4, spread: 20 },
+    { cx: -160, cz: 120, count: 4, spread: 25 },
     { cx: 20, cz: -20, count: 3, spread: 30 },
+    { cx: 0, cz: 0, count: 3, spread: 35 },
   ];
   let berryId = 0;
   for (const spot of berrySpots) {
@@ -105,11 +110,13 @@ export function generateWorldResources(): WorldResource[] {
     }
   }
 
-  // LOOTABLE CRATES — near camps and ruins
+  // LOOTABLE CRATES — near camps, ruins, forts
   const crateSpots = [
-    { cx: POIS.camp.x, cz: POIS.camp.z, count: 3, spread: 10 },
-    { cx: POIS.ruins.x, cz: POIS.ruins.z, count: 2, spread: 15 },
-    { cx: POIS.castle.x, cz: POIS.castle.z, count: 3, spread: 18 },
+    { cx: 5, cz: -205, count: 4, spread: 12 },
+    { cx: 195, cz: 95, count: 4, spread: 18 },
+    { cx: 185, cz: -155, count: 3, spread: 15 },
+    { cx: 160, cz: 50, count: 2, spread: 10 },
+    { cx: 0, cz: 0, count: 2, spread: 30 },
   ];
   let crateId = 0;
   for (const spot of crateSpots) {
@@ -132,7 +139,6 @@ export function generateWorldResources(): WorldResource[] {
   return resources;
 }
 
-// Generate enemy loot drops
 export function generateLootDrop(pos: [number, number, number], enemyType: string): LootPickup[] {
   const drops: LootPickup[] = [];
   const id = `loot-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;

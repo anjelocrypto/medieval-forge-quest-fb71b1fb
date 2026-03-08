@@ -1,7 +1,8 @@
 import * as THREE from 'three';
+import { buildPOISCompat } from './world/RegionData';
 
-// World
-export const WORLD_SIZE = 500;
+// World — expanded
+export const WORLD_SIZE = 600;
 export const HALF_WORLD = WORLD_SIZE / 2;
 
 // Player
@@ -15,23 +16,23 @@ export const GRAVITY = 30;
 export const CAMERA_OFFSET = new THREE.Vector3(0, 6, 10);
 export const CAMERA_LERP_SPEED = 5;
 
-// Survival — balanced for pressure without tedium
+// Survival
 export const MAX_HEALTH = 100;
 export const MAX_STAMINA = 100;
 export const MAX_HUNGER = 100;
 export const MAX_TEMPERATURE = 100;
-export const HUNGER_DRAIN = 0.3; // per second (was 0.4 — less punishing)
-export const STAMINA_DRAIN = 12; // while running (was 15)
-export const STAMINA_REGEN = 10; // per second (was 8 — faster recovery)
-export const TEMPERATURE_DRAIN = 0.12; // base temp loss per second (was 0.15)
-export const CAMPFIRE_WARMTH_RANGE = 14; // radius (was 12 — more useful)
-export const CAMPFIRE_WARMTH_RATE = 10; // temp restore per second near fire (was 8)
-export const SHELTER_EFFECT_RANGE = 10; // radius (was 8)
-export const SHELTER_HUNGER_REDUCTION = 0.4; // multiplier on hunger drain (was 0.5 — stronger)
-export const SHELTER_STAMINA_BONUS = 6; // extra regen per sec (was 4)
+export const HUNGER_DRAIN = 0.3;
+export const STAMINA_DRAIN = 12;
+export const STAMINA_REGEN = 10;
+export const TEMPERATURE_DRAIN = 0.12;
+export const CAMPFIRE_WARMTH_RANGE = 14;
+export const CAMPFIRE_WARMTH_RATE = 10;
+export const SHELTER_EFFECT_RANGE = 10;
+export const SHELTER_HUNGER_REDUCTION = 0.4;
+export const SHELTER_STAMINA_BONUS = 6;
 export const LOW_HUNGER_THRESHOLD = 20;
 export const LOW_TEMP_THRESHOLD = 25;
-export const COLD_DAMAGE_RATE = 2; // HP per second when freezing (was 3 — less punishing)
+export const COLD_DAMAGE_RATE = 2;
 export const FOOD_HUNGER_RESTORE = 25;
 
 // Colors (medieval palette)
@@ -55,17 +56,11 @@ export const COLORS = {
   sky: '#6b8fa3',
 };
 
-// POI positions with gameplay metadata
-export const POIS = {
-  castle: { x: 80, z: -80, label: 'Castle Ruins', danger: 3, tempMod: -0.3, resourceBonus: 2.0 },
-  village: { x: -60, z: -50, label: 'Village', danger: 0, tempMod: 0.1, resourceBonus: 1.0 },
-  ruins: { x: 50, z: 70, label: 'Ancient Ruins', danger: 2, tempMod: -0.5, resourceBonus: 1.5 },
-  forest: { x: -80, z: 60, label: 'Dark Forest', danger: 2, tempMod: -0.2, resourceBonus: 1.3 },
-  camp: { x: 0, z: -100, label: 'Bandit Camp', danger: 2, tempMod: 0, resourceBonus: 1.5 },
-};
+// POI positions — generated from world data
+export const POIS = buildPOISCompat();
 
 // Zone influence radius
-export const POI_ZONE_RADIUS = 40;
+export const POI_ZONE_RADIUS = 45;
 
 // Progression thresholds
 export const TIER2_KILLS_REQUIRED = 5;

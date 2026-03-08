@@ -3,7 +3,6 @@ import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Terrain } from './components/Terrain';
 import { Water } from './components/Water';
-import { POIs } from './components/POIs';
 import { Player } from './components/Player';
 import { Atmosphere } from './components/Atmosphere';
 import { Sky } from './components/Sky';
@@ -13,6 +12,8 @@ import { AmbientEffects } from './components/AmbientEffects';
 import { BuildingSystem } from './components/BuildingSystem';
 import { LootPickups } from './components/LootPickups';
 import { Horse } from './components/Horses';
+import { Settlements } from './components/Settlements';
+import { WorldPOIs } from './components/WorldPOIs';
 import { CameraController } from './systems/CameraController';
 import { InputFlusher } from './systems/InputFlusher';
 import { BuildModeController } from './systems/BuildModeController';
@@ -38,6 +39,7 @@ export function GameScene() {
 
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
   const [enemies, setEnemies] = useState<EnemyData[]>(() => generateEnemies());
+  const [mapOpen, setMapOpen] = useState(false);
   const playerPositionRef = useRef(new THREE.Vector3(0, 0, 0));
   const playerRotationRef = useRef(0);
   const cameraAzimuthRef = useRef(0);
@@ -61,7 +63,6 @@ export function GameScene() {
     return () => cancelAnimationFrame(raf);
   }, [applyPlayerDamage]);
 
-  // Sync horse position when mounted
   useEffect(() => {
     if (!isMounted) return;
     let raf: number;
@@ -77,12 +78,10 @@ export function GameScene() {
     return () => cancelAnimationFrame(raf);
   }, [isMounted, updateHorse]);
 
-  // Check if areas are secured
   useEffect(() => {
     const checkInterval = setInterval(() => {
       for (const [key, poi] of Object.entries(POIS)) {
         if (progression.areasSecured.includes(key)) continue;
-        if (key === 'village') continue;
         const nearbyEnemies = enemies.filter(e => {
           if (e.state === 'dead') return false;
           const dx = e.position[0] - poi.x;
@@ -96,6 +95,15 @@ export function GameScene() {
     }, 2000);
     return () => clearInterval(checkInterval);
   }, [enemies, progression.areasSecured, secureArea]);
+
+  // Map toggle via keyboard
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === 'KeyM') setMapOpen(prev => !prev);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const handleDepleteResource = useCallback((id: string) => {
     setResources(prev => prev.map(r => r.id === id ? { ...r, depleted: true, health: 0 } : r));
@@ -146,6 +154,13 @@ export function GameScene() {
         notification={notification}
         availableBuildables={getAvailableBuildables()}
         isMounted={isMounted}
+        playerX={playerPositionRef.current.x}
+        playerZ={playerPositionRef.current.z}
+        playerRotation={playerRotationRef.current}
+        horseX={horse.position[0]}
+        horseZ={horse.position[2]}
+        mapOpen={mapOpen}
+        onCloseMap={() => setMapOpen(false)}
       />
       <Canvas shadows camera={{ fov: 55, near: 0.5, far: 500, position: [0, 10, 15] }}
         style={{ width: '100%', height: '100%' }}>
@@ -160,7 +175,8 @@ export function GameScene() {
         <Sky />
         <Terrain />
         <Water />
-        <POIs />
+        <Settlements playerPositionRef={playerPositionRef} />
+        <WorldPOIs playerPositionRef={playerPositionRef} />
         <AmbientEffects />
         <CameraController targetRef={playerPositionRef} azimuthRef={cameraAzimuthRef} isMounted={isMounted} />
         <Player

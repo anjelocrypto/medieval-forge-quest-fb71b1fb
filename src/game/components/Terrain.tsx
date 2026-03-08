@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
-import { WORLD_SIZE, COLORS, POIS } from '../constants';
+import { WORLD_SIZE, COLORS } from '../constants';
+import { ROADS, REGIONS, SETTLEMENTS } from '../world/RegionData';
 
 function noise2D(x: number, z: number, scale: number = 1, seed: number = 0): number {
   const nx = (x + seed) * scale;
@@ -8,6 +9,24 @@ function noise2D(x: number, z: number, scale: number = 1, seed: number = 0): num
   return (Math.sin(nx * 1.7 + nz * 3.1) * 0.5 +
           Math.sin(nx * 0.8 - nz * 1.3) * 0.3 +
           Math.cos(nx * 2.1 + nz * 0.7) * 0.2);
+}
+
+// Regional height modifiers
+function getRegionalHeight(x: number, z: number): number {
+  let mod = 0;
+  // Frostmere highlands — elevated terrain SE
+  const frostDist = Math.sqrt((x - 160) ** 2 + (z - 200) ** 2);
+  if (frostDist < 100) mod += (1 - frostDist / 100) * 12;
+
+  // Ashwood slight elevation
+  const ashDist = Math.sqrt((x + 190) ** 2 + (z - 140) ** 2);
+  if (ashDist < 80) mod += (1 - ashDist / 80) * 3;
+
+  // Greenmeadow — flatten for farmland
+  const greenDist = Math.sqrt((x + 160) ** 2 + (z + 130) ** 2);
+  if (greenDist < 70) mod -= (1 - greenDist / 70) * 4;
+
+  return mod;
 }
 
 export function getTerrainHeight(x: number, z: number): number {
@@ -18,26 +37,30 @@ export function getTerrainHeight(x: number, z: number): number {
   const distFromCenter = Math.sqrt(x * x + z * z);
   const flattenFactor = Math.max(0, 1 - distFromCenter / 40);
 
-  const height = (h1 + h2 + h3) * (1 - flattenFactor * 0.8);
+  // Flatten around settlements
+  let settleFlatten = 0;
+  for (const s of SETTLEMENTS) {
+    const sd = Math.sqrt((x - s.position[0]) ** 2 + (z - s.position[1]) ** 2);
+    const flatR = s.size === 'large' ? 40 : s.size === 'medium' ? 25 : 15;
+    if (sd < flatR) settleFlatten = Math.max(settleFlatten, (1 - sd / flatR) * 0.85);
+  }
+
+  const baseHeight = (h1 + h2 + h3) * (1 - flattenFactor * 0.8);
+  const regional = getRegionalHeight(x, z);
+  const height = (baseHeight + regional) * (1 - settleFlatten) + regional * settleFlatten * 0.3;
   return Math.max(-1, height);
 }
 
-// Pre-computed POI array for road calculation
-const poiArr = Object.values(POIS);
-const roadConnections = [[0, 1], [1, 2], [0, 3], [1, 3], [0, 4]];
-
 function getRoadFactor(x: number, z: number): number {
   let best = 0;
-  for (let c = 0; c < roadConnections.length; c++) {
-    const [a, b] = roadConnections[c];
-    const pa = poiArr[a], pb = poiArr[b];
-    if (!pa || !pb) continue;
-    const dx = pb.x - pa.x, dz = pb.z - pa.z;
+  for (const road of ROADS) {
+    const dx = road.to[0] - road.from[0], dz = road.to[1] - road.from[1];
     const len2 = dx * dx + dz * dz;
-    const t = Math.max(0, Math.min(1, ((x - pa.x) * dx + (z - pa.z) * dz) / len2));
-    const px = pa.x + t * dx, pz = pa.z + t * dz;
+    if (len2 < 1) continue;
+    const t = Math.max(0, Math.min(1, ((x - road.from[0]) * dx + (z - road.from[1]) * dz) / len2));
+    const px = road.from[0] + t * dx, pz = road.from[1] + t * dz;
     const dist = Math.sqrt((x - px) ** 2 + (z - pz) ** 2);
-    const width = 2.5 + noise2D(px, pz, 0.05, 500);
+    const width = road.width + noise2D(px, pz, 0.05, 500) * 0.5;
     const factor = Math.max(0, 1 - dist / width);
     if (factor > best) best = factor;
   }
@@ -46,7 +69,7 @@ function getRoadFactor(x: number, z: number): number {
 
 export function Terrain() {
   const geometry = useMemo(() => {
-    const segments = 128;
+    const segments = 180;
     const geo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, segments, segments);
     geo.rotateX(-Math.PI / 2);
 
@@ -59,8 +82,7 @@ export function Terrain() {
     const sandColor = new THREE.Color(COLORS.sand);
     const stoneColor = new THREE.Color(COLORS.stone);
     const forestFloor = new THREE.Color('#3a5a2a');
-    const villageGround = new THREE.Color('#7a6a4a');
-    const ruinsGround = new THREE.Color('#5a5040');
+    const snowColor = new THREE.Color('#c8d0d8');
     const tmpColor = new THREE.Color();
 
     for (let i = 0; i < positions.count; i++) {
@@ -73,25 +95,34 @@ export function Terrain() {
         tmpColor.copy(sandColor);
       } else if (y < 2) {
         tmpColor.copy(grassColor);
-
-        const distToForest = Math.sqrt((x - POIS.forest.x) ** 2 + (z - POIS.forest.z) ** 2);
-        if (distToForest < 50) {
-          tmpColor.lerp(forestFloor, Math.max(0, 1 - distToForest / 50) * 0.6);
-        }
-
-        const roadFactor = getRoadFactor(x, z);
-        if (roadFactor > 0.1) {
-          tmpColor.lerp(roadColor, roadFactor * 0.8);
-        }
-
-        const distVillage = Math.sqrt((x - POIS.village.x) ** 2 + (z - POIS.village.z) ** 2);
-        if (distVillage < 20) {
-          tmpColor.lerp(villageGround, Math.max(0, 1 - distVillage / 20) * 0.5);
-        }
       } else if (y < 8) {
         tmpColor.lerpColors(grassColor, grassDarkColor, (y - 2) / 6);
+      } else if (y < 15) {
+        tmpColor.lerpColors(grassDarkColor, stoneColor, (y - 8) / 7);
       } else {
-        tmpColor.lerpColors(grassDarkColor, stoneColor, Math.min(1, (y - 8) / 7));
+        tmpColor.lerpColors(stoneColor, snowColor, Math.min(1, (y - 15) / 5));
+      }
+
+      // Ashwood dark forest floor
+      const ashDist = Math.sqrt((x + 190) ** 2 + (z - 140) ** 2);
+      if (ashDist < 80 && y > -0.3) {
+        tmpColor.lerp(forestFloor, Math.max(0, 1 - ashDist / 80) * 0.6);
+      }
+
+      // Road overlay
+      const roadFactor = getRoadFactor(x, z);
+      if (roadFactor > 0.1) {
+        tmpColor.lerp(roadColor, roadFactor * 0.8);
+      }
+
+      // Settlement ground
+      for (const s of SETTLEMENTS) {
+        const sd = Math.sqrt((x - s.position[0]) ** 2 + (z - s.position[1]) ** 2);
+        const gR = s.size === 'large' ? 35 : s.size === 'medium' ? 20 : 12;
+        if (sd < gR) {
+          const villageGround = new THREE.Color(s.type === 'capital' ? '#7a7060' : s.type === 'village' ? '#7a6a4a' : '#6a6050');
+          tmpColor.lerp(villageGround, Math.max(0, 1 - sd / gR) * 0.5);
+        }
       }
 
       const variation = noise2D(x, z, 0.1, 300) * 0.04;
