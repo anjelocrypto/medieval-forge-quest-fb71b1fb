@@ -114,9 +114,9 @@ function addCapitalCollision(s: SettlementDef, sx: number, sz: number) {
   for (const [tx, tz] of [[0, -38], [38, 0], [-38, 0]]) {
     circleObstacles.push({ x: sx + tx, z: sz + tz, radius: 2.5, id: `${s.id}-midtower-${tx}-${tz}` });
   }
-  // Gatehouse towers at [±3, 38] r=2.5
-  circleObstacles.push({ x: sx - 3, z: sz + 38, radius: 2.5, id: `${s.id}-gate-l` });
-  circleObstacles.push({ x: sx + 3, z: sz + 38, radius: 2.5, id: `${s.id}-gate-r` });
+  // Gatehouse towers at [±5, 38] r=2.0 — positioned to leave wide passage
+  circleObstacles.push({ x: sx - 5, z: sz + 38, radius: 2.0, id: `${s.id}-gate-l` });
+  circleObstacles.push({ x: sx + 5, z: sz + 38, radius: 2.0, id: `${s.id}-gate-r` });
 
   // Barracks at [22, 0, -15]
   boxObstacles.push({ cx: sx + 22, cz: sz - 15, halfW: 3.5, halfD: 2.5, rotation: 0, id: `${s.id}-barracks` });
@@ -228,9 +228,9 @@ function addFortCollision(s: SettlementDef, sx: number, sz: number) {
   for (const [tx, tz] of [[-20, -20], [20, -20], [20, 20], [-20, 20]]) {
     circleObstacles.push({ x: sx + tx, z: sz + tz, radius: 2.2, id: `${s.id}-tower-${tx}-${tz}` });
   }
-  // Gatehouse towers
-  circleObstacles.push({ x: sx - 2.5, z: sz + 20, radius: 2.5, id: `${s.id}-gate-l` });
-  circleObstacles.push({ x: sx + 2.5, z: sz + 20, radius: 2.5, id: `${s.id}-gate-r` });
+  // Gatehouse towers — positioned to leave passage clear
+  circleObstacles.push({ x: sx - 3.5, z: sz + 20, radius: 1.5, id: `${s.id}-gate-l` });
+  circleObstacles.push({ x: sx + 3.5, z: sz + 20, radius: 1.5, id: `${s.id}-gate-r` });
 
   // Command building w=8 d=7 at [0,0,-8]
   boxObstacles.push({ cx: sx, cz: sz - 8, halfW: 4, halfD: 3.5, rotation: 0, id: `${s.id}-cmd` });
