@@ -67,7 +67,7 @@ export function BuildingSystem({
     const placeZ = playerPos.z + Math.cos(rot) * 5;
     ghostPosRef.current = [placeX, getTerrainHeight(placeX, placeZ), placeZ];
 
-    const { valid, reason } = isValidPlacement(ghostPosRef.current, playerPos, structures);
+    const { valid, reason } = isValidPlacement(ghostPosRef.current, playerPos, structures, config.size);
     const affordable = canAfford(config.cost, inventory);
     validRef.current = valid && affordable;
 
