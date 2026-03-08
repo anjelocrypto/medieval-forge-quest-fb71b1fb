@@ -170,7 +170,7 @@ export function useMultiplayer() {
       }]);
     });
 
-    await channel.subscribe(async (status) => {
+    await channel.subscribe(async (status, err) => {
       if (status === 'SUBSCRIBED') {
         await channel.track({ playerId, displayName: playerName, joinedAt: Date.now() });
         setConnectionStatus('connected');
@@ -186,6 +186,9 @@ export function useMultiplayer() {
           timestamp: Date.now(),
           type: 'system',
         }]);
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        console.warn('Channel error/closed:', status, err);
+        setConnectionStatus('disconnected');
       }
     });
 
