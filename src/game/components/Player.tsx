@@ -33,10 +33,11 @@ interface PlayerProps {
   lootPickups: LootPickup[];
   onCollectLoot: (id: string) => void;
   onEatFood: () => void;
-  horses: HorseData[];
-  onMountHorse: (id: string) => void;
+  horse: HorseData;
+  isMounted: boolean;
+  onMountHorse: () => void;
   onDismountHorse: () => void;
-  mountedHorseId: string | null;
+  onCallHorse: () => void;
   onSetInteractionText: (text: string | null) => void;
   resources: WorldResource[];
 }
@@ -64,7 +65,7 @@ export function Player({
   onSurvivalUpdate, survival, playerPositionRef, playerRotationRef,
   cameraAzimuthRef, enemies, onEnemyHit, onRespawn, buildMode,
   structures, lootPickups, onCollectLoot, onEatFood,
-  horses, onMountHorse, onDismountHorse, mountedHorseId, onSetInteractionText,
+  horse, isMounted, onMountHorse, onDismountHorse, onCallHorse, onSetInteractionText,
   resources,
 }: PlayerProps) {
   const groupRef = useRef<THREE.Group>(null);
@@ -90,7 +91,6 @@ export function Player({
   const collisionRebuildTimer = useRef(0);
   const horseRotRef = useRef(0); // horse's own facing for smooth turning
   const isDead = survival.health <= 0;
-  const isMounted = mountedHorseId !== null;
 
   useEffect(() => {
     if (groupRef.current) {
@@ -134,7 +134,7 @@ export function Player({
     collisionRebuildTimer.current += dt;
     if (collisionRebuildTimer.current > 0.5) {
       collisionRebuildTimer.current = 0;
-      rebuildObstacles(resources, structures, horses, mountedHorseId);
+      rebuildObstacles(resources, structures, [horse], isMounted ? horse.id : null);
     }
 
     const input = getMovementInput();
@@ -142,7 +142,10 @@ export function Player({
 
     if (input.eat && !isMounted) onEatFood();
 
-    // === HORSE INTERACTION — checked EVERY frame (input.interact is single-frame) ===
+    // Call horse with H
+    if (input.callHorse) onCallHorse();
+
+    // === HORSE INTERACTION — checked EVERY frame ===
     {
       if (isMounted) {
         onSetInteractionText('🐴 Press E — Dismount');
@@ -154,32 +157,24 @@ export function Player({
           pos.y = getTerrainHeight(pos.x, pos.z) + PLAYER_HEIGHT / 2;
         }
       } else {
-        // Find nearest horse
-        let nearHorse: HorseData | null = null;
-        let nearHorseDist = MOUNT_RANGE;
-        for (const h of horses) {
-          if (h.isMounted) continue;
-          const dx = pos.x - h.position[0];
-          const dz = pos.z - h.position[2];
-          const d = Math.sqrt(dx * dx + dz * dz);
-          if (d < nearHorseDist) { nearHorseDist = d; nearHorse = h; }
-        }
-        if (nearHorse) {
-          // Horse takes priority over all other interactions
+        // Check if horse is in mount range
+        const dx = pos.x - horse.position[0];
+        const dz = pos.z - horse.position[2];
+        const d = Math.sqrt(dx * dx + dz * dz);
+        if (d < MOUNT_RANGE && horse.state !== 'mounted') {
           onSetInteractionText('🐴 Press E — Mount Horse');
           if (input.interact) {
-            onMountHorse(nearHorse.id);
-            pos.x = nearHorse.position[0];
-            pos.z = nearHorse.position[2];
-            pos.y = nearHorse.position[1] + 2.2;
-            horseRotRef.current = nearHorse.rotation;
-            bodyRef.current.rotation.y = nearHorse.rotation;
-            playerRotationRef.current = nearHorse.rotation;
+            onMountHorse();
+            pos.x = horse.position[0];
+            pos.z = horse.position[2];
+            pos.y = horse.position[1] + 2.2;
+            horseRotRef.current = horse.rotation;
+            bodyRef.current.rotation.y = horse.rotation;
+            playerRotationRef.current = horse.rotation;
             vel.set(0, 0, 0);
             currentSpeedRef.current = 0;
-            rebuildObstacles(resources, structures, horses, nearHorse.id);
+            rebuildObstacles(resources, structures, [horse], horse.id);
           }
-          // Mark that horse has claimed the interaction this frame
           (input as any)._horseClaimed = true;
         }
       }

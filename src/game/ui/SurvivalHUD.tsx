@@ -170,6 +170,7 @@ export function SurvivalHUD({
         <div><kbd className="font-mono text-foreground/70">E</kbd> {isMounted ? 'Dismount' : 'Interact'}</div>
         <div><kbd className="font-mono text-foreground/70">F</kbd> Eat Food</div>
         {!isMounted && <div><kbd className="font-mono text-foreground/70">B</kbd> Build</div>}
+        {!isMounted && <div><kbd className="font-mono text-foreground/70">H</kbd> Call Horse</div>}
         <div><kbd className="font-mono text-foreground/70">SCROLL</kbd> Zoom</div>
       </div>
 
