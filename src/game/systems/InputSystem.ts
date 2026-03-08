@@ -112,5 +112,6 @@ export function getMovementInput() {
     buildNext: wasKeyJustPressed('KeyQ'),
     buildPrev: wasKeyJustPressed('KeyR'),
     callHorse: wasKeyJustPressed('KeyH'),
+    toggleMap: wasKeyJustPressed('KeyM'),
   };
 }
