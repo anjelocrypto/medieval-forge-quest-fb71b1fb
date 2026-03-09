@@ -5,6 +5,20 @@ import { RIVERS, LAKES } from '../world/WaterData';
 import { BRIDGES } from '../world/BridgeData';
 import { LootPickup } from '../types';
 
+// Lazy-imported to avoid circular deps — wilderness buildings list for tree exclusion
+let _wildernessBuildings: { x: number; z: number; w: number; d: number }[] | null = null;
+function getWildernessBuildings() {
+  if (!_wildernessBuildings) {
+    try {
+      // Import at generation time
+      const mod = require('../components/WildernessStructures');
+      _wildernessBuildings = mod.WILDERNESS_BUILDINGS || [];
+    } catch {
+      _wildernessBuildings = [];
+    }
+  }
+  return _wildernessBuildings;
+}
 export interface WorldResource {
   id: string;
   type: 'tree' | 'rock' | 'berry_bush' | 'crate';
@@ -335,8 +349,12 @@ function seededRandom(seed: number) {
 
 function isNearSettlement(x: number, z: number, minDist: number): boolean {
   for (const s of SETTLEMENTS) {
+    // Size-aware exclusion: large kingdoms have walls at ±45, need 70+ buffer
+    // Medium settlements need ~40, small ~25
+    const sizeBuffer = s.size === 'large' ? 70 : s.size === 'medium' ? 40 : 25;
+    const effectiveDist = Math.max(minDist, sizeBuffer);
     const d = Math.sqrt((x - s.position[0]) ** 2 + (z - s.position[1]) ** 2);
-    if (d < minDist) return true;
+    if (d < effectiveDist) return true;
   }
   return false;
 }
@@ -365,17 +383,15 @@ function isNearPOI(x: number, z: number, minDist: number): boolean {
 }
 
 function isInWater(x: number, z: number): boolean {
-  // Check lakes
   for (const lake of LAKES) {
     const cos = Math.cos(-lake.rotation);
     const sin = Math.sin(-lake.rotation);
     const lx = cos * (x - lake.position[0]) + sin * (z - lake.position[2]);
     const lz = -sin * (x - lake.position[0]) + cos * (z - lake.position[2]);
-    const nx = lx / (lake.radiusX + 3); // 3-unit buffer
-    const nz = lz / (lake.radiusZ + 3);
+    const nx = lx / (lake.radiusX + 4);
+    const nz = lz / (lake.radiusZ + 4);
     if (nx * nx + nz * nz <= 1) return true;
   }
-  // Check rivers
   for (const river of RIVERS) {
     const pts = river.points;
     for (let i = 0; i < pts.length - 1; i++) {
@@ -387,7 +403,7 @@ function isInWater(x: number, z: number): boolean {
       const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / len2));
       const px = ax + t * dx, pz = az + t * dz;
       const dist = Math.sqrt((x - px) ** 2 + (z - pz) ** 2);
-      if (dist < river.width / 2 + 3) return true; // 3-unit buffer
+      if (dist < river.width / 2 + 4) return true;
     }
   }
   return false;
@@ -399,11 +415,31 @@ function isOnBridge(x: number, z: number): boolean {
     const sin = Math.sin(-bridge.rotation);
     const lx = cos * (x - bridge.position[0]) + sin * (z - bridge.position[2]);
     const lz = -sin * (x - bridge.position[0]) + cos * (z - bridge.position[2]);
-    if (Math.abs(lx) <= bridge.width / 2 + 3 && Math.abs(lz) <= bridge.length / 2 + 3) {
+    if (Math.abs(lx) <= bridge.width / 2 + 4 && Math.abs(lz) <= bridge.length / 2 + 5) {
       return true;
     }
   }
   return false;
+}
+
+function isNearWildernessBuilding(x: number, z: number, minDist: number): boolean {
+  const buildings = getWildernessBuildings();
+  for (const b of buildings) {
+    const d = Math.sqrt((x - b.x) ** 2 + (z - b.z) ** 2);
+    if (d < minDist + Math.max(b.w, b.d)) return true;
+  }
+  return false;
+}
+
+// Check if position is in a region that should be mostly barren
+function getRegionScatterSuppress(x: number, z: number): number {
+  // Darkhollow — desolate wasteland, suppress random scatter
+  const darkDist = Math.sqrt((x - 550) ** 2 + (z + 400) ** 2);
+  if (darkDist < 120) return 0.5;
+  // Stonepeak high altitude — suppress scatter above snowline
+  const stoneDist = Math.sqrt((x + 400) ** 2 + (z - 500) ** 2);
+  if (stoneDist < 100) return 0.6;
+  return 1.0;
 }
 
 function getForestDensityAt(x: number, z: number): { density: number; type: ForestZone['type'] } {
@@ -411,7 +447,6 @@ function getForestDensityAt(x: number, z: number): { density: number; type: Fore
   for (const zone of FOREST_ZONES) {
     const d = Math.sqrt((x - zone.cx) ** 2 + (z - zone.cz) ** 2);
     if (d < zone.radius) {
-      // Smooth falloff from center to edge
       const factor = 1 - (d / zone.radius) ** 0.7;
       const effectiveDensity = zone.density * factor;
       if (effectiveDensity > best.density) {
@@ -443,24 +478,27 @@ export function generateWorldResources(): WorldResource[] {
   const half = WORLD_SIZE / 2;
 
   // ========== TREES ==========
-  // 5x density increase — 40k attempts across 1800x1800 world
+  // 5x density via 40k attempts + ~160 forest zones across 1800x1800 world
   const treeAttempts = 40000;
   for (let i = 0; i < treeAttempts; i++) {
     const x = (rand() - 0.5) * WORLD_SIZE * 0.97;
     const z = (rand() - 0.5) * WORLD_SIZE * 0.97;
     const y = getTerrainHeight(x, z);
     
-    // Skip water and steep underwater
+    // Skip water
     if (y < -0.3) continue;
+    
+    // Skip above snowline — trees don't grow on mountaintops
+    if (y > 16) continue;
     
     // Skip too close to center (capital area)
     const distCenter = Math.sqrt(x * x + z * z);
     if (distCenter < 50) continue;
     
-    // Skip near settlements — large kingdoms need bigger buffer
+    // Skip near settlements (size-aware exclusion)
     if (isNearSettlement(x, z, 60)) continue;
     
-    // Skip on roads (wider buffer for readability)
+    // Skip on roads
     if (isNearRoad(x, z, 6)) continue;
     
     // Skip near POIs
@@ -470,15 +508,19 @@ export function generateWorldResources(): WorldResource[] {
     if (isInWater(x, z)) continue;
     if (isOnBridge(x, z)) continue;
     
+    // Skip near wilderness buildings (cottages, camps, etc.)
+    if (isNearWildernessBuilding(x, z, 4)) continue;
+    
     // Get local forest density
     const forest = getForestDensityAt(x, z);
     
     // Base spawn chance depends on density
     let spawnChance = forest.density * 0.35;
     
-    // Minimum scatter in wilderness (not near settlements)
-    if (distCenter > 60) {
-      spawnChance = Math.max(spawnChance, 0.04);
+    // Minimum scatter in wilderness — suppressed in barren regions
+    if (distCenter > 60 && forest.density < 0.1) {
+      const suppress = getRegionScatterSuppress(x, z);
+      spawnChance = Math.max(spawnChance, 0.03 * suppress);
     }
     
     if (rand() > spawnChance) continue;
@@ -489,12 +531,17 @@ export function generateWorldResources(): WorldResource[] {
     
     if (forest.type === 'dense') {
       scale = 0.9 + rand() * 0.8;
-      variant = rand() > 0.3 ? 1 : 0; // More conifers in dense
+      variant = rand() > 0.3 ? 1 : 0;
     } else if (forest.type === 'light') {
       scale = 0.8 + rand() * 0.5;
     } else if (forest.type === 'grove') {
       scale = 0.6 + rand() * 0.4;
-      variant = 0; // More deciduous in groves
+      variant = 0;
+    }
+    
+    // Scale down trees at high altitude (stunted mountain trees)
+    if (y > 10) {
+      scale *= Math.max(0.5, 1 - (y - 10) / 12);
     }
     
     const trunkHeight = 2 + rand() * 2.5;
