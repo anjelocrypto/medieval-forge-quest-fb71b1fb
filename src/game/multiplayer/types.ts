@@ -40,15 +40,6 @@ export interface WorldEvent {
   timestamp: number;
 }
 
-export interface RoomInfo {
-  id: string;
-  name: string;
-  hostId: string;
-  playerCount: number;
-  maxPlayers: number;
-  createdAt: number;
-}
-
 export interface InterpolatedPlayer {
   playerId: string;
   displayName: string;
@@ -80,7 +71,6 @@ export interface InterpolatedPlayer {
 
 export const BROADCAST_RATE_MS = 50; // 20 Hz state broadcast
 export const INTERPOLATION_DELAY_MS = 100; // smoothing buffer
-export const MAX_PLAYERS_PER_ROOM = 12;
 export const STALE_PLAYER_TIMEOUT_MS = 8000;
 
 export const EMOTES: Record<string, string> = {
