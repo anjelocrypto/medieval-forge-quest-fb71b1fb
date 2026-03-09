@@ -25,7 +25,8 @@ export interface SettlementDef {
   name: string;
   regionId: string;
   position: [number, number]; // [x, z]
-  type: 'capital' | 'village' | 'fort' | 'ruins' | 'bandit_camp' | 'outpost' | 'monastery';
+  type: 'capital' | 'village' | 'fort' | 'ruins' | 'bandit_camp' | 'outpost' | 'monastery'
+    | 'fortified_city' | 'river_town' | 'mountain_hold' | 'frontier_camp' | 'trade_city';
   size: 'large' | 'medium' | 'small';
   description: string;
 }
@@ -97,6 +98,64 @@ export const REGIONS: RegionDef[] = [
     description: 'Cold highlands with vistas and rare stone',
     color: '#8a8a9a', enemyTypes: ['wolf', 'bandit'], enemyCount: 4, enemySpread: 30,
   },
+  // === EXPANDED REGIONS (3x world) ===
+  {
+    id: 'thornwall', name: 'Thornwall Reaches',
+    center: [-500, -450], radius: 90,
+    danger: 2, tempMod: -0.2, resourceBonus: 1.5, resourceFocus: 'stone',
+    description: 'Fortified stone frontier stronghold',
+    color: '#5a5a6a', enemyTypes: ['bandit'], enemyCount: 6, enemySpread: 40,
+  },
+  {
+    id: 'rivermoor', name: 'Rivermoor Wetlands',
+    center: [450, 350], radius: 85,
+    danger: 1, tempMod: 0.1, resourceBonus: 1.3, resourceFocus: 'food',
+    description: 'Lush riverside kingdom with docks and canals',
+    color: '#3a6a4a', enemyTypes: ['wolf'], enemyCount: 4, enemySpread: 35,
+  },
+  {
+    id: 'stonepeak', name: 'Stonepeak Highlands',
+    center: [-400, 500], radius: 80,
+    danger: 2, tempMod: -0.6, resourceBonus: 1.6, resourceFocus: 'stone',
+    description: 'Mountain kingdom carved into the highlands',
+    color: '#7a7a8a', enemyTypes: ['wolf', 'bandit'], enemyCount: 5, enemySpread: 35,
+  },
+  {
+    id: 'darkhollow', name: 'Darkhollow Wastes',
+    center: [550, -400], radius: 80,
+    danger: 3, tempMod: -0.3, resourceBonus: 1.8, resourceFocus: 'mixed',
+    description: 'Desolate frontier of ruins and survivors',
+    color: '#4a3a2a', enemyTypes: ['bandit', 'wolf'], enemyCount: 8, enemySpread: 35,
+  },
+  {
+    id: 'goldenvale', name: 'Goldenvale Plains',
+    center: [-550, 100], radius: 90,
+    danger: 1, tempMod: 0.15, resourceBonus: 1.4, resourceFocus: 'food',
+    description: 'Prosperous trade kingdom of merchants',
+    color: '#8a9a4a', enemyTypes: ['bandit'], enemyCount: 3, enemySpread: 40,
+  },
+  // Transition regions
+  {
+    id: 'western_marches', name: 'Western Marches',
+    center: [-350, -200], radius: 70,
+    danger: 1, tempMod: 0, resourceBonus: 1.1, resourceFocus: 'mixed',
+    description: 'Rolling hills between heartland and frontier',
+    color: '#6a7a4a', enemyTypes: ['wolf'], enemyCount: 3, enemySpread: 30,
+  },
+  {
+    id: 'eastern_wilds', name: 'Eastern Wilds',
+    center: [400, -100], radius: 70,
+    danger: 2, tempMod: -0.1, resourceBonus: 1.2, resourceFocus: 'wood',
+    description: 'Wild borderlands between kingdoms',
+    color: '#4a5a3a', enemyTypes: ['wolf', 'bandit'], enemyCount: 4, enemySpread: 30,
+  },
+  {
+    id: 'northern_reach', name: 'Northern Reach',
+    center: [0, 500], radius: 80,
+    danger: 1, tempMod: -0.4, resourceBonus: 1.3, resourceFocus: 'stone',
+    description: 'Cold northern wilderness',
+    color: '#6a6a7a', enemyTypes: ['wolf'], enemyCount: 4, enemySpread: 40,
+  },
 ];
 
 // ========== SETTLEMENTS ==========
@@ -153,6 +212,58 @@ export const SETTLEMENTS: SettlementDef[] = [
     id: 'millbrook', name: 'Millbrook', regionId: 'greenmeadow',
     position: [-110, -80], type: 'village', size: 'small',
     description: 'Small hamlet with a grain mill',
+  },
+  // === 5 NEW KINGDOMS ===
+  {
+    id: 'thornwall_city', name: 'Thornwall', regionId: 'thornwall',
+    position: [-500, -450], type: 'fortified_city', size: 'large',
+    description: 'Fortified stone city on the frontier',
+  },
+  {
+    id: 'rivermoor_city', name: 'Rivermoor', regionId: 'rivermoor',
+    position: [450, 350], type: 'river_town', size: 'large',
+    description: 'River kingdom with docks and bridges',
+  },
+  {
+    id: 'stonepeak_hold', name: 'Stonepeak', regionId: 'stonepeak',
+    position: [-400, 500], type: 'mountain_hold', size: 'large',
+    description: 'Mountain fortress carved into the highlands',
+  },
+  {
+    id: 'darkhollow_camp', name: 'Darkhollow', regionId: 'darkhollow',
+    position: [550, -400], type: 'frontier_camp', size: 'large',
+    description: 'Ruined-but-inhabited frontier settlement',
+  },
+  {
+    id: 'goldenvale_city', name: 'Goldenvale', regionId: 'goldenvale',
+    position: [-550, 100], type: 'trade_city', size: 'large',
+    description: 'Prosperous trading city',
+  },
+  // Supporting settlements near new kingdoms
+  {
+    id: 'thornwall_outpost', name: 'Thornwatch', regionId: 'thornwall',
+    position: [-440, -400], type: 'outpost', size: 'small',
+    description: 'Border watch near Thornwall',
+  },
+  {
+    id: 'rivermoor_village', name: 'Reed Village', regionId: 'rivermoor',
+    position: [400, 300], type: 'village', size: 'small',
+    description: 'Fishing village near Rivermoor',
+  },
+  {
+    id: 'stonepeak_outpost', name: 'High Watch', regionId: 'stonepeak',
+    position: [-350, 450], type: 'outpost', size: 'small',
+    description: 'Mountain lookout post',
+  },
+  {
+    id: 'darkhollow_ruins', name: 'Ashkeep', regionId: 'darkhollow',
+    position: [500, -350], type: 'ruins', size: 'medium',
+    description: 'Ancient fortress ruins repurposed by scavengers',
+  },
+  {
+    id: 'goldenvale_village', name: 'Harvest Hill', regionId: 'goldenvale',
+    position: [-500, 150], type: 'village', size: 'small',
+    description: 'Farming hamlet supplying Goldenvale',
   },
 ];
 
