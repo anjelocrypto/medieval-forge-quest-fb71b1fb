@@ -121,19 +121,23 @@ function Civilian({ def, playerPos }: { def: CivilianDef; playerPos: THREE.Vecto
   const idleTimerRef = useRef(0);
   const headTurnRef = useRef(0);
 
-  // Distance cull
-  if (playerPos) {
-    const dx = playerPos.x - def.homePos[0];
-    const dz = playerPos.z - def.homePos[2];
-    if (dx * dx + dz * dz > 80 * 80) return null;
-  }
-
   const tunicMat = useMemo(() => getTunicMat(def.role, parseInt(def.id.replace('civ-', ''))),
     [def.role, def.id]);
 
+  const isVisible = useMemo(() => {
+    if (!playerPos) return true;
+    const dx = playerPos.x - def.homePos[0];
+    const dz = playerPos.z - def.homePos[2];
+    return dx * dx + dz * dz <= 80 * 80;
+  }, [playerPos?.x, playerPos?.z, def.homePos]);
+
   useFrame((_, delta) => {
-    if (!groupRef.current) return;
-    const dt = Math.min(delta, 0.05);
+    if (!groupRef.current || !isVisible) return;
+
+  /* useFrame moved above */
+  // this block intentionally left for the replacement above
+  if (false) {
+    const dt = 0; // dead code removed
 
     if (def.behavior === 'patrol') {
       // Walk in circle around home position
