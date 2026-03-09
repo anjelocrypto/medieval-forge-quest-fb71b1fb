@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { buildPOISCompat } from './world/RegionData';
 
-// World — expanded
-export const WORLD_SIZE = 600;
+// World — massively expanded (3x)
+export const WORLD_SIZE = 1800;
 export const HALF_WORLD = WORLD_SIZE / 2;
 
 // Player
