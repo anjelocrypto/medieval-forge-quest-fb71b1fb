@@ -32,10 +32,10 @@ import { ChatPanel } from './multiplayer/ChatPanel';
 
 interface GameSceneProps {
   multiplayer: ReturnType<typeof import('./multiplayer/useMultiplayer').useMultiplayer>;
-  onLeaveRoom: () => void;
+  onLeaveWorld: () => void;
 }
 
-export function GameScene({ multiplayer, onLeaveRoom }: GameSceneProps) {
+export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
   const {
     survival, updateSurvival, inventory, addResource, eatFood,
     interactionText, setInteractionText,
@@ -248,10 +248,8 @@ export function GameScene({ multiplayer, onLeaveRoom }: GameSceneProps) {
       {/* Multiplayer HUD */}
       <MultiplayerHUD
         connectionStatus={multiplayer.connectionStatus}
-        roomCode={multiplayer.roomCode}
         playerCount={1 + remotePlayerCount}
         playerId={multiplayer.playerId}
-        mockMode={multiplayer.mockMode}
       />
 
       {/* Chat panel */}
@@ -270,10 +268,10 @@ export function GameScene({ multiplayer, onLeaveRoom }: GameSceneProps) {
 
       {/* Leave button */}
       {multiplayer.connected && (
-        <button onClick={onLeaveRoom}
+        <button onClick={onLeaveWorld}
           className="fixed top-4 left-4 z-40 text-xs font-mono px-3 py-1 rounded"
           style={{ background: 'rgba(0,0,0,0.6)', color: '#a88', border: '1px solid #533' }}>
-          ← Leave Room
+          ← Leave World
         </button>
       )}
 

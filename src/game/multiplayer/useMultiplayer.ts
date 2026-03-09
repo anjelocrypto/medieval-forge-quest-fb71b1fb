@@ -5,14 +5,10 @@ import {
   NetworkPlayerState, InterpolatedPlayer, ChatMessage, WorldEvent,
   BROADCAST_RATE_MS, STALE_PLAYER_TIMEOUT_MS,
 } from './types';
-import {
-  createRoom as apiCreateRoom,
-  joinRoom as apiJoinRoom,
-  leaveRoom as apiLeaveRoom,
-  heartbeat as apiHeartbeat,
-  persistSession, loadSession, clearSession,
-  generateRoomCode,
-} from './roomApi';
+
+// Global world configuration
+const GLOBAL_WORLD_KEY = 'global_world_1';
+const SESSION_KEY = 'global_world_session';
 
 // ===== Stable player ID per browser session =====
 function getOrCreatePlayerId(): string {
@@ -28,39 +24,48 @@ function getDisplayName(): string {
   return sessionStorage.getItem('mp_display_name') || 'Knight';
 }
 
+function persistSession(displayName: string) {
+  sessionStorage.setItem('mp_display_name', displayName);
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ displayName, timestamp: Date.now() }));
+}
+
+function loadSession(): { displayName: string } | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+}
+
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
 
 export interface MultiplayerState {
   connectionStatus: ConnectionStatus;
   connected: boolean;
-  roomId: string | null;
-  roomCode: string | null;
   playerId: string;
   displayName: string;
   remotePlayers: Map<string, InterpolatedPlayer>;
   chatMessages: ChatMessage[];
   worldEvents: WorldEvent[];
-  mockMode: boolean;
 }
-
-const HEARTBEAT_INTERVAL_MS = 15_000; // 15s heartbeat
 
 export function useMultiplayer() {
   const playerId = useRef(getOrCreatePlayerId()).current;
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
-  const [roomId, setRoomId] = useState<string | null>(null);
-  const [roomCode, setRoomCode] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState(getDisplayName());
   const [remotePlayers, setRemotePlayers] = useState<Map<string, InterpolatedPlayer>>(new Map());
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [worldEvents, setWorldEvents] = useState<WorldEvent[]>([]);
-  const [mockMode, setMockMode] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const broadcastTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const localStateRef = useRef<NetworkPlayerState | null>(null);
   const staleCleanupRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const mockIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const connected = connectionStatus === 'connected';
 
@@ -71,15 +76,15 @@ export function useMultiplayer() {
     sessionStorage.setItem('mp_display_name', trimmed);
   }, []);
 
-  // ===== Internal: subscribe to realtime channel =====
-  const subscribeToChannel = useCallback(async (targetRoomCode: string, targetRoomId: string, playerName: string) => {
+  // ===== Internal: subscribe to global world channel =====
+  const subscribeToGlobalWorld = useCallback(async (playerName: string) => {
     // Cleanup any existing channel
     if (channelRef.current) {
       await channelRef.current.unsubscribe();
       channelRef.current = null;
     }
 
-    const channel = supabase.channel(`game_room:${targetRoomCode}`, {
+    const channel = supabase.channel(`world:${GLOBAL_WORLD_KEY}`, {
       config: { broadcast: { self: false }, presence: { key: playerId } },
     });
 
@@ -174,8 +179,6 @@ export function useMultiplayer() {
       if (status === 'SUBSCRIBED') {
         await channel.track({ playerId, displayName: playerName, joinedAt: Date.now() });
         setConnectionStatus('connected');
-        setRoomId(targetRoomId);
-        setRoomCode(targetRoomCode);
         channelRef.current = channel;
 
         setChatMessages(prev => [...prev, {
@@ -220,88 +223,28 @@ export function useMultiplayer() {
         return changed ? next : prev;
       });
     }, 2000);
-
-    // Heartbeat to DB
-    if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-    heartbeatRef.current = setInterval(() => {
-      apiHeartbeat(playerId, targetRoomId).catch(() => {});
-    }, HEARTBEAT_INTERVAL_MS);
   }, [playerId]);
 
-  // ===== Create and join a new room =====
-  const createAndJoinRoom = useCallback(async (playerName?: string) => {
+  // ===== Enter the global world =====
+  const enterWorld = useCallback(async (playerName?: string) => {
     const name = (playerName?.trim() || displayName).slice(0, 20) || 'Knight';
     updateDisplayName(name);
     setConnectionStatus('connecting');
 
     try {
-      const code = generateRoomCode();
-      const dbRoomId = await apiCreateRoom(code, playerId, name);
-      persistSession({ playerId, displayName: name, roomCode: code, roomId: dbRoomId });
-      await subscribeToChannel(code, dbRoomId, name);
+      persistSession(name);
+      await subscribeToGlobalWorld(name);
     } catch (err: any) {
-      console.error('Failed to create room:', err);
+      console.error('Failed to enter world:', err);
       setConnectionStatus('disconnected');
       throw err;
     }
-  }, [playerId, displayName, updateDisplayName, subscribeToChannel]);
+  }, [displayName, updateDisplayName, subscribeToGlobalWorld]);
 
-  // ===== Join existing room by code =====
-  const joinRoomByCode = useCallback(async (code: string, playerName?: string) => {
-    const name = (playerName?.trim() || displayName).slice(0, 20) || 'Knight';
-    updateDisplayName(name);
-    setConnectionStatus('connecting');
-
-    try {
-      const cleanCode = code.trim().toUpperCase();
-      const dbRoomId = await apiJoinRoom(cleanCode, playerId, name);
-      persistSession({ playerId, displayName: name, roomCode: cleanCode, roomId: dbRoomId });
-      await subscribeToChannel(cleanCode, dbRoomId, name);
-    } catch (err: any) {
-      console.error('Failed to join room:', err);
-      setConnectionStatus('disconnected');
-      throw err;
-    }
-  }, [playerId, displayName, updateDisplayName, subscribeToChannel]);
-
-  // ===== Legacy joinRoom (used by Index.tsx) — routes to create or join =====
-  const joinRoom = useCallback(async (roomIdOrCode: string, playerName?: string) => {
-    // If it looks like an existing code (uppercase, 4-16 chars), join it, otherwise create
-    const clean = roomIdOrCode.trim().toUpperCase();
-    if (/^[A-Z0-9]{4,16}$/.test(clean)) {
-      try {
-        await joinRoomByCode(clean, playerName);
-      } catch {
-        // Room not found — create with this code
-        const name = (playerName?.trim() || displayName).slice(0, 20) || 'Knight';
-        updateDisplayName(name);
-        setConnectionStatus('connecting');
-        try {
-          const dbRoomId = await apiCreateRoom(clean, playerId, name);
-          persistSession({ playerId, displayName: name, roomCode: clean, roomId: dbRoomId });
-          await subscribeToChannel(clean, dbRoomId, name);
-        } catch (err2: any) {
-          console.error('Failed to create room:', err2);
-          setConnectionStatus('disconnected');
-          throw err2;
-        }
-      }
-    } else {
-      await createAndJoinRoom(playerName);
-    }
-  }, [joinRoomByCode, createAndJoinRoom, playerId, displayName, updateDisplayName, subscribeToChannel]);
-
-  // ===== Leave room =====
-  const leaveRoom = useCallback(async () => {
+  // ===== Leave world =====
+  const leaveWorld = useCallback(async () => {
     if (broadcastTimerRef.current) { clearInterval(broadcastTimerRef.current); broadcastTimerRef.current = null; }
     if (staleCleanupRef.current) { clearInterval(staleCleanupRef.current); staleCleanupRef.current = null; }
-    if (heartbeatRef.current) { clearInterval(heartbeatRef.current); heartbeatRef.current = null; }
-    if (mockIntervalRef.current) { clearInterval(mockIntervalRef.current); mockIntervalRef.current = null; }
-
-    // DB leave
-    if (roomId) {
-      apiLeaveRoom(playerId, roomId).catch(() => {});
-    }
 
     if (channelRef.current) {
       await channelRef.current.unsubscribe();
@@ -309,13 +252,10 @@ export function useMultiplayer() {
     }
     clearSession();
     setConnectionStatus('disconnected');
-    setRoomId(null);
-    setRoomCode(null);
     setRemotePlayers(new Map());
-    setChatMessages([]); // FIX: Clear chat on leave
-    setWorldEvents([]); // FIX: Clear world events on leave
-    setMockMode(false);
-  }, [roomId, playerId]);
+    setChatMessages([]);
+    setWorldEvents([]);
+  }, []);
 
   // ===== Reconnect on mount if session exists =====
   const hasAttemptedReconnect = useRef(false);
@@ -324,39 +264,21 @@ export function useMultiplayer() {
     hasAttemptedReconnect.current = true;
 
     const session = loadSession();
-    // FIX: Clear session if playerId mismatch (different browser session)
     if (!session) return;
-    if (session.playerId !== playerId) {
-      clearSession();
-      return;
-    }
 
-    // Check room is still open
+    // Reconnect directly to global world
     (async () => {
       setConnectionStatus('reconnecting');
       try {
-        const { data, error } = await supabase
-          .from('game_rooms')
-          .select('status')
-          .eq('id', session.roomId)
-          .single();
-
-        if (error || !data || data.status !== 'open') {
-          clearSession();
-          setConnectionStatus('disconnected'); // FIX: Reset status on failure
-          return;
-        }
-
-        const dbRoomId = await apiJoinRoom(session.roomCode, playerId, session.displayName);
-        await subscribeToChannel(session.roomCode, dbRoomId, session.displayName);
         updateDisplayName(session.displayName);
+        await subscribeToGlobalWorld(session.displayName);
       } catch (err) {
         console.warn('Reconnect failed:', err);
         clearSession();
-        setConnectionStatus('disconnected'); // FIX: Reset status on failure
+        setConnectionStatus('disconnected');
       }
     })();
-  }, [playerId, subscribeToChannel, updateDisplayName]);
+  }, [subscribeToGlobalWorld, updateDisplayName]);
 
   // ===== Broadcast local player state =====
   const updateLocalState = useCallback((state: NetworkPlayerState) => {
@@ -366,32 +288,34 @@ export function useMultiplayer() {
   // ===== Send chat =====
   const sendChat = useCallback((text: string) => {
     if (!channelRef.current || !text.trim()) return;
+    const currentDisplayName = sessionStorage.getItem('mp_display_name') || 'Knight';
     const msg: ChatMessage = {
       id: crypto.randomUUID(),
       playerId,
-      displayName,
+      displayName: currentDisplayName,
       text: text.trim().slice(0, 200),
       timestamp: Date.now(),
       type: 'chat',
     };
     channelRef.current.send({ type: 'broadcast', event: 'chat', payload: msg });
     setChatMessages(prev => [...prev.slice(-99), msg]);
-  }, [playerId, displayName]);
+  }, [playerId]);
 
   // ===== Send emote =====
   const sendEmote = useCallback((emoteKey: string) => {
     if (!channelRef.current) return;
+    const currentDisplayName = sessionStorage.getItem('mp_display_name') || 'Knight';
     const msg: ChatMessage = {
       id: crypto.randomUUID(),
       playerId,
-      displayName,
+      displayName: currentDisplayName,
       text: emoteKey,
       timestamp: Date.now(),
       type: 'emote',
     };
     channelRef.current.send({ type: 'broadcast', event: 'chat', payload: msg });
     setChatMessages(prev => [...prev.slice(-99), msg]);
-  }, [playerId, displayName]);
+  }, [playerId]);
 
   // ===== Broadcast world event =====
   const broadcastWorldEvent = useCallback((event: WorldEvent) => {
@@ -400,64 +324,11 @@ export function useMultiplayer() {
     setWorldEvents(prev => [...prev.slice(-49), event]);
   }, []);
 
-  // ===== Mock mode =====
-  const enableMockMode = useCallback(() => {
-    setMockMode(true);
-    setConnectionStatus('connected');
-    setRoomId('mock-room');
-    setRoomCode('MOCK');
-
-    const mockPlayers = new Map<string, InterpolatedPlayer>();
-    for (let i = 0; i < 2; i++) {
-      const id = `mock_${i}`;
-      const x = 5 + i * 8;
-      const z = 50 + i * 5;
-      mockPlayers.set(id, {
-        playerId: id,
-        displayName: i === 0 ? 'Sir Mock' : 'Lady Test',
-        prevPosition: [x, 0, z], targetPosition: [x, 0, z],
-        prevRotation: 0, targetRotation: 0,
-        renderPosition: [x, 0, z], renderRotation: 0,
-        moveSpeed: 0, isRunning: false, isMounted: false,
-        health: 100, maxHealth: 100, attackAnim: 0, buildMode: false,
-        horsePitch: 0, horsePosition: [x + 3, 0, z], horseRotation: 0, horseState: 'idle',
-        emote: null, lastUpdateTime: Date.now(), interpolationT: 0,
-      });
-    }
-    setRemotePlayers(mockPlayers);
-
-    if (mockIntervalRef.current) clearInterval(mockIntervalRef.current);
-    mockIntervalRef.current = setInterval(() => {
-      const now = Date.now();
-      setRemotePlayers(prev => {
-        const next = new Map(prev);
-        for (const [id, rp] of next) {
-          const t = now / 1000;
-          const baseX = id === 'mock_0' ? 5 : 13;
-          const baseZ = id === 'mock_0' ? 50 : 55;
-          const nx = baseX + Math.sin(t * 0.5 + (id === 'mock_0' ? 0 : 2)) * 10;
-          const nz = baseZ + Math.cos(t * 0.3 + (id === 'mock_0' ? 0 : 1)) * 8;
-          next.set(id, {
-            ...rp,
-            prevPosition: [...rp.targetPosition] as [number, number, number],
-            targetPosition: [nx, 0, nz],
-            prevRotation: rp.targetRotation,
-            targetRotation: Math.atan2(nx - rp.targetPosition[0], nz - rp.targetPosition[2]),
-            moveSpeed: 6, isRunning: false, lastUpdateTime: now, interpolationT: 0,
-          });
-        }
-        return next;
-      });
-    }, BROADCAST_RATE_MS);
-  }, []);
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (broadcastTimerRef.current) clearInterval(broadcastTimerRef.current);
       if (staleCleanupRef.current) clearInterval(staleCleanupRef.current);
-      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-      if (mockIntervalRef.current) clearInterval(mockIntervalRef.current);
       if (channelRef.current) channelRef.current.unsubscribe();
     };
   }, []);
@@ -466,22 +337,16 @@ export function useMultiplayer() {
     playerId,
     connected,
     connectionStatus,
-    roomId,
-    roomCode,
     displayName,
     updateDisplayName,
     remotePlayers,
     chatMessages,
     worldEvents,
-    mockMode,
-    joinRoom,
-    createAndJoinRoom,
-    joinRoomByCode,
-    leaveRoom,
+    enterWorld,
+    leaveWorld,
     updateLocalState,
     sendChat,
     sendEmote,
     broadcastWorldEvent,
-    enableMockMode,
   };
 }

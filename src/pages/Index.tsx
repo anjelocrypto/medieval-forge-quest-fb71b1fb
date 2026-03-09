@@ -16,37 +16,20 @@ const Index = () => {
     }
   }, [multiplayer.connected, appMode]);
 
-  const handleCreateRoom = useCallback(async (playerName: string) => {
-    await multiplayer.createAndJoinRoom(playerName);
+  const handleEnterWorld = useCallback(async (playerName: string) => {
+    await multiplayer.enterWorld(playerName);
     setAppMode('game');
-  }, [multiplayer.createAndJoinRoom]);
-
-  const handleJoinByCode = useCallback(async (code: string, playerName: string) => {
-    await multiplayer.joinRoomByCode(code, playerName);
-    setAppMode('game');
-  }, [multiplayer.joinRoomByCode]);
-
-  const handleSinglePlayer = useCallback(() => {
-    setAppMode('game');
-  }, []);
-
-  const handleMockMode = useCallback(() => {
-    multiplayer.enableMockMode();
-    setAppMode('game');
-  }, [multiplayer.enableMockMode]);
+  }, [multiplayer.enterWorld]);
 
   const handleLeave = useCallback(async () => {
-    await multiplayer.leaveRoom();
+    await multiplayer.leaveWorld();
     setAppMode('lobby');
-  }, [multiplayer.leaveRoom]);
+  }, [multiplayer.leaveWorld]);
 
   if (appMode === 'lobby') {
     return (
       <CinematicMenu
-        onCreateRoom={handleCreateRoom}
-        onJoinByCode={handleJoinByCode}
-        onSinglePlayer={handleSinglePlayer}
-        onMockMode={handleMockMode}
+        onEnterWorld={handleEnterWorld}
         isReconnecting={multiplayer.connectionStatus === 'reconnecting'}
       />
     );
@@ -55,7 +38,7 @@ const Index = () => {
   return (
     <GameScene
       multiplayer={multiplayer}
-      onLeaveRoom={handleLeave}
+      onLeaveWorld={handleLeave}
     />
   );
 };
