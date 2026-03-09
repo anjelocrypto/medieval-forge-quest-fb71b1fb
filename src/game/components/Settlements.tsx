@@ -1496,6 +1496,7 @@ function SmallVillage({ def }: { def: SettlementDef }) {
 }
 
 // ========== SETTLEMENT DISPATCHER ==========
+import { FortifiedCity, RiverTown, MountainHold, FrontierCamp, TradeCity } from './NewKingdomRenderers';
 
 function SettlementRenderer({ def, playerPos }: { def: SettlementDef; playerPos: THREE.Vector3 | null }) {
   if (playerPos) {
@@ -1514,6 +1515,11 @@ function SettlementRenderer({ def, playerPos }: { def: SettlementDef; playerPos:
     case 'bandit_camp': return <BanditCamp def={def} />;
     case 'outpost': return <ForestOutpost def={def} />;
     case 'monastery': return <MountainMonastery def={def} />;
+    case 'fortified_city': return <FortifiedCity def={def} />;
+    case 'river_town': return <RiverTown def={def} />;
+    case 'mountain_hold': return <MountainHold def={def} />;
+    case 'frontier_camp': return <FrontierCamp def={def} />;
+    case 'trade_city': return <TradeCity def={def} />;
     default: return null;
   }
 }
