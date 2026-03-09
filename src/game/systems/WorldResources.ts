@@ -5,20 +5,38 @@ import { RIVERS, LAKES } from '../world/WaterData';
 import { BRIDGES } from '../world/BridgeData';
 import { LootPickup } from '../types';
 
-// Lazy-imported to avoid circular deps — wilderness buildings list for tree exclusion
-let _wildernessBuildings: { x: number; z: number; w: number; d: number }[] | null = null;
-function getWildernessBuildings() {
-  if (!_wildernessBuildings) {
-    try {
-      // Import at generation time
-      const mod = require('../components/WildernessStructures');
-      _wildernessBuildings = mod.WILDERNESS_BUILDINGS || [];
-    } catch {
-      _wildernessBuildings = [];
-    }
-  }
-  return _wildernessBuildings;
-}
+// Wilderness building positions for tree exclusion — inline list matching WildernessStructures clusters
+// We can't import WILDERNESS_BUILDINGS directly due to circular deps, so we define cluster centers here
+const WILDERNESS_CLUSTER_CENTERS: { x: number; z: number; radius: number }[] = [
+  // Central world
+  { x: 120, z: 30, radius: 20 }, { x: 75, z: -20, radius: 15 }, { x: -40, z: -120, radius: 22 },
+  { x: 15, z: -130, radius: 14 }, { x: -175, z: -20, radius: 20 }, { x: -160, z: 60, radius: 16 },
+  { x: -40, z: 140, radius: 18 }, { x: 50, z: 140, radius: 16 }, { x: 110, z: -140, radius: 18 },
+  { x: 70, z: -120, radius: 14 }, { x: -240, z: -130, radius: 19 }, { x: 240, z: 180, radius: 16 },
+  { x: -140, z: 210, radius: 18 }, { x: 200, z: -80, radius: 16 }, { x: -85, z: -30, radius: 14 },
+  { x: 40, z: 70, radius: 14 },
+  // Thornwall corridor
+  { x: -350, z: -300, radius: 24 }, { x: -420, z: -380, radius: 19 }, { x: -480, z: -500, radius: 22 },
+  { x: -550, z: -480, radius: 16 }, { x: -460, z: -350, radius: 18 },
+  // Goldenvale corridor
+  { x: -400, z: 80, radius: 22 }, { x: -480, z: 60, radius: 18 }, { x: -520, z: 180, radius: 20 },
+  { x: -600, z: 50, radius: 19 }, { x: -580, z: 160, radius: 16 },
+  // Rivermoor corridor
+  { x: 350, z: 280, radius: 22 }, { x: 420, z: 400, radius: 18 }, { x: 380, z: 320, radius: 20 },
+  { x: 500, z: 380, radius: 16 }, { x: 480, z: 420, radius: 18 },
+  // Stonepeak corridor
+  { x: -350, z: 380, radius: 24 }, { x: -300, z: 450, radius: 19 }, { x: -430, z: 550, radius: 18 },
+  { x: -450, z: 450, radius: 20 },
+  // Darkhollow corridor
+  { x: 400, z: -300, radius: 22 }, { x: 480, z: -380, radius: 18 }, { x: 550, z: -450, radius: 20 },
+  { x: 600, z: -350, radius: 16 },
+  // Inter-kingdom + edge
+  { x: -560, z: -200, radius: 19 }, { x: -540, z: -80, radius: 18 }, { x: -500, z: 300, radius: 20 },
+  { x: -460, z: 400, radius: 18 }, { x: 520, z: 50, radius: 19 }, { x: 530, z: -150, radius: 18 },
+  { x: -200, z: 540, radius: 20 }, { x: 100, z: 530, radius: 18 }, { x: 300, z: 450, radius: 19 },
+  { x: -650, z: -600, radius: 24 }, { x: 650, z: 500, radius: 22 }, { x: 0, z: 600, radius: 20 },
+  { x: -200, z: -500, radius: 22 }, { x: 200, z: 500, radius: 19 },
+];
 export interface WorldResource {
   id: string;
   type: 'tree' | 'rock' | 'berry_bush' | 'crate';
