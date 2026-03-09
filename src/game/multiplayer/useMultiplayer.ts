@@ -176,8 +176,10 @@ export function useMultiplayer() {
     });
 
     await channel.subscribe(async (status, err) => {
+      console.log('[Multiplayer] Channel status:', status, err ? err : '');
       if (status === 'SUBSCRIBED') {
         await channel.track({ playerId, displayName: playerName, joinedAt: Date.now() });
+        console.log('[Multiplayer] Connected successfully, status → connected');
         setConnectionStatus('connected');
         channelRef.current = channel;
 
@@ -190,7 +192,7 @@ export function useMultiplayer() {
           type: 'system',
         }]);
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-        console.warn('Channel error/closed:', status, err);
+        console.warn('[Multiplayer] Channel error/closed:', status, err);
         setConnectionStatus('disconnected');
       }
     });
@@ -260,20 +262,28 @@ export function useMultiplayer() {
   // ===== Reconnect on mount if session exists =====
   const hasAttemptedReconnect = useRef(false);
   useEffect(() => {
-    if (hasAttemptedReconnect.current) return;
+    if (hasAttemptedReconnect.current) {
+      console.log('[Multiplayer] Reconnect skipped — already attempted');
+      return;
+    }
     hasAttemptedReconnect.current = true;
 
     const session = loadSession();
-    if (!session) return;
+    if (!session) {
+      console.log('[Multiplayer] No session to restore');
+      return;
+    }
 
     // Reconnect directly to global world
+    console.log('[Multiplayer] Attempting reconnect for:', session.displayName);
     (async () => {
       setConnectionStatus('reconnecting');
       try {
         updateDisplayName(session.displayName);
         await subscribeToGlobalWorld(session.displayName);
+        console.log('[Multiplayer] Reconnect successful');
       } catch (err) {
-        console.warn('Reconnect failed:', err);
+        console.warn('[Multiplayer] Reconnect failed:', err);
         clearSession();
         setConnectionStatus('disconnected');
       }

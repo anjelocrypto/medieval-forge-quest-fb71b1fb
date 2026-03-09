@@ -65,6 +65,12 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
   const isRunningRef = useRef(false);
   const attackAnimRef = useRef(0);
 
+  // Debug: track GameScene mount/unmount
+  useEffect(() => {
+    console.log('[GameScene] MOUNTED');
+    return () => console.log('[GameScene] UNMOUNTED');
+  }, []);
+
   useEffect(() => { initInput(); }, []);
 
   useEffect(() => {
