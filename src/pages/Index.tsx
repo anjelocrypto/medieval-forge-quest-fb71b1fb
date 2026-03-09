@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { GameScene } from '../game/GameScene';
-import { LobbyScreen } from '../game/multiplayer/LobbyScreen';
+import { CinematicMenu } from '../game/menu/CinematicMenu';
 import { useMultiplayer } from '../game/multiplayer/useMultiplayer';
 
 type AppMode = 'lobby' | 'game';
@@ -42,7 +42,7 @@ const Index = () => {
 
   if (appMode === 'lobby') {
     return (
-      <LobbyScreen
+      <CinematicMenu
         onCreateRoom={handleCreateRoom}
         onJoinByCode={handleJoinByCode}
         onSinglePlayer={handleSinglePlayer}
