@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { getTerrainHeight } from './Terrain';
+import { getBridgeHeight } from '../world/BridgeData';
 import { getMovementInput } from '../systems/InputSystem';
 import {
   PLAYER_SPEED, PLAYER_RUN_SPEED, PLAYER_JUMP_FORCE,
@@ -546,7 +547,11 @@ export function Player({
 
     // === GROUNDING — terrain height at FINAL resolved X/Z ===
     const heightOffset = isMounted ? 2.2 : PLAYER_HEIGHT / 2;
-    const terrainY = getTerrainHeight(pos.x, pos.z) + heightOffset;
+    const rawTerrainY = getTerrainHeight(pos.x, pos.z);
+    // Bridge override: if player is on a bridge, use bridge deck height
+    const bridgeY = getBridgeHeight(pos.x, pos.z);
+    const groundY = bridgeY !== null ? bridgeY : rawTerrainY;
+    const terrainY = groundY + heightOffset;
 
     if (isMounted) {
       // MOUNTED: ALWAYS snap to terrain — no conditional, no drift, no float
@@ -559,19 +564,20 @@ export function Player({
       const frontZ = pos.z + Math.cos(facingAngle) * pitchSampleDist;
       const backX = pos.x - Math.sin(facingAngle) * pitchSampleDist;
       const backZ = pos.z - Math.cos(facingAngle) * pitchSampleDist;
-      const frontY = getTerrainHeight(frontX, frontZ);
-      const backY = getTerrainHeight(backX, backZ);
+      const frontBridge = getBridgeHeight(frontX, frontZ);
+      const backBridge = getBridgeHeight(backX, backZ);
+      const frontY = frontBridge !== null ? frontBridge : getTerrainHeight(frontX, frontZ);
+      const backY = backBridge !== null ? backBridge : getTerrainHeight(backX, backZ);
       const slopeAngle = Math.atan2(frontY - backY, pitchSampleDist * 2);
       const clampedPitch = THREE.MathUtils.clamp(slopeAngle, -0.45, 0.45); // ~25° max
       horsePitchRef.current = THREE.MathUtils.lerp(horsePitchRef.current, clampedPitch, dt * 8);
 
       // Debug data
-      const rawTerrainY = getTerrainHeight(pos.x, pos.z);
       debugRef.current = {
-        terrainY: rawTerrainY,
-        horseY: rawTerrainY,
+        terrainY: groundY,
+        horseY: groundY,
         riderY: pos.y,
-        delta: pos.y - (rawTerrainY + heightOffset),
+        delta: pos.y - terrainY,
         pitch: horsePitchRef.current * (180 / Math.PI),
         pushX, pushZ,
       };
@@ -591,8 +597,9 @@ export function Player({
       }
       horsePitchRef.current = THREE.MathUtils.lerp(horsePitchRef.current, 0, dt * 10);
     }
-    pos.x = THREE.MathUtils.clamp(pos.x, -290, 290);
-    pos.z = THREE.MathUtils.clamp(pos.z, -290, 290);
+    const halfWorld = 890;
+    pos.x = THREE.MathUtils.clamp(pos.x, -halfWorld, halfWorld);
+    pos.z = THREE.MathUtils.clamp(pos.z, -halfWorld, halfWorld);
     playerPositionRef.current.copy(pos);
 
     // Loot collection
