@@ -6,7 +6,7 @@
 import { WorldResource } from './WorldResources';
 import { PlacedStructure, BUILDABLES } from './BuildingData';
 import { HorseData } from './HorseData';
-import { SETTLEMENTS, SettlementDef } from '../world/RegionData';
+import { SETTLEMENTS, SettlementDef, SMALL_POIS } from '../world/RegionData';
 import { seededRng } from '../world/SettlementPieces';
 
 export interface CircleObstacle {
@@ -71,6 +71,7 @@ export function rebuildObstacles(
   }
 
   addSettlementObstacles();
+  addPOIObstacles();
 }
 
 function addSettlementObstacles() {
