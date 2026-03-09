@@ -133,35 +133,24 @@ function Civilian({ def, playerPos }: { def: CivilianDef; playerPos: THREE.Vecto
 
   useFrame((_, delta) => {
     if (!groupRef.current || !isVisible) return;
-
-  /* useFrame moved above */
-  // this block intentionally left for the replacement above
-  if (false) {
-    const dt = 0; // dead code removed
+    const dt = Math.min(delta, 0.05);
 
     if (def.behavior === 'patrol') {
-      // Walk in circle around home position
       patrolAngleRef.current += dt * def.patrolSpeed * 0.3;
       const pa = patrolAngleRef.current;
       const tx = def.homePos[0] + Math.cos(pa) * def.patrolRadius;
       const tz = def.homePos[2] + Math.sin(pa) * def.patrolRadius;
       const ty = getTerrainHeight(tx, tz);
-
       groupRef.current.position.set(tx, ty, tz);
-      // Face direction of movement
       angleRef.current = pa + Math.PI / 2;
       groupRef.current.rotation.y = angleRef.current;
     } else if (def.behavior === 'idle') {
-      // Subtle head turns, occasional small body rotation
       idleTimerRef.current += dt;
       headTurnRef.current = Math.sin(idleTimerRef.current * 0.5) * 0.2;
-      // Small sway
       groupRef.current.rotation.y = def.facingAngle + Math.sin(idleTimerRef.current * 0.3) * 0.08;
     } else if (def.behavior === 'talking') {
-      // Face partner, slight head bob
       idleTimerRef.current += dt;
       headTurnRef.current = Math.sin(idleTimerRef.current * 1.2) * 0.1;
-      // Subtle gesture — lean slightly
       groupRef.current.rotation.y = def.facingAngle + Math.sin(idleTimerRef.current * 0.8) * 0.05;
     }
   });
