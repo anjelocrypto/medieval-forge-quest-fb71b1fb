@@ -486,12 +486,16 @@ function addMountainHoldCollision(s: SettlementDef, sx: number, sz: number) {
   // Walls
   boxObstacles.push({ cx: sx, cz: sz - 25, halfW: 25, halfD: 1, rotation: 0, id: `${s.id}-wall-n` });
   boxObstacles.push({ cx: sx + 25, cz: sz, halfW: 1, halfD: 25, rotation: 0, id: `${s.id}-wall-e` });
+  // South wall: visual gap is [5,25] to [-5,25] — gap ±5 (10 units wide)
   boxObstacles.push({ cx: sx - 15, cz: sz + 25, halfW: 10, halfD: 1, rotation: 0, id: `${s.id}-wall-s-l` });
   boxObstacles.push({ cx: sx + 15, cz: sz + 25, halfW: 10, halfD: 1, rotation: 0, id: `${s.id}-wall-s-r` });
   boxObstacles.push({ cx: sx - 25, cz: sz, halfW: 1, halfD: 25, rotation: 0, id: `${s.id}-wall-w` });
   for (const [tx, tz] of [[-25, -25], [25, -25], [25, 25], [-25, 25]]) {
     circleObstacles.push({ x: sx + tx, z: sz + tz, radius: 2.5, id: `${s.id}-tower-${tx}-${tz}` });
   }
+  // Gate towers at ±4 (matching visual)
+  circleObstacles.push({ x: sx - 4, z: sz + 25, radius: 1.8, id: `${s.id}-gate-l` });
+  circleObstacles.push({ x: sx + 4, z: sz + 25, radius: 1.8, id: `${s.id}-gate-r` });
 }
 
 function addFrontierCampCollision(s: SettlementDef, sx: number, sz: number) {

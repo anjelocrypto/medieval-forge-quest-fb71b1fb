@@ -65,8 +65,9 @@ export function getTerrainHeight(x: number, z: number): number {
   let settleFlatten = 0;
   for (const s of SETTLEMENTS) {
     const sd = Math.sqrt((x - s.position[0]) ** 2 + (z - s.position[1]) ** 2);
-    // Radii sized to cover full settlement diagonal (walls + corners + margin)
-    const flatR = s.size === 'large' ? 65 : s.size === 'medium' ? 35 : 25;
+    // Large kingdoms (walls at ±45) need bigger flatten radius
+    // Medium (walls ±20) and small get proportional radii
+    const flatR = s.size === 'large' ? 70 : s.size === 'medium' ? 35 : 25;
     if (sd < flatR) {
       const t = sd / flatR;
       // Plateau: terrain is ~97% flat within 85% of radius, then rapid linear falloff

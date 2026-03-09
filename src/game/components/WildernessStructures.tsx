@@ -139,7 +139,7 @@ function generateWildernessBuildings(): WildernessBuilding[] {
       const y = getTerrainHeight(x, z);
 
       if (y < -0.3) continue;
-      if (isNearSettlement(x, z, 35)) continue;
+      if (isNearSettlement(x, z, 60)) continue;
       if (isNearRoad(x, z, 4)) continue;
       if (isNearPOI(x, z, 8)) continue;
 

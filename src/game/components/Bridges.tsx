@@ -30,11 +30,14 @@ function BridgeRenderer({ bridge, playerPos }: { bridge: BridgeDef; playerPos: T
         scale={[0.3, 1.2, bridge.length]} material={railMat} castShadow />
       <mesh position={[bridge.width / 2 + 0.15, 1.5, 0]} geometry={GEO.box}
         scale={[0.3, 1.2, bridge.length]} material={railMat} castShadow />
-      {/* Support pillars */}
-      {[-bridge.length * 0.35, 0, bridge.length * 0.35].map((zOff, i) => (
-        <mesh key={i} position={[0, 0, zOff]} geometry={GEO.box}
-          scale={[bridge.width * 0.3, py + 1.5, bridge.width * 0.3]} material={supportMat} castShadow />
-      ))}
+      {/* Support pillars — extend from ground to just below deck */}
+      {[-bridge.length * 0.35, 0, bridge.length * 0.35].map((zOff, i) => {
+        const pillarH = Math.max(2, py + 2);
+        return (
+          <mesh key={i} position={[0, -pillarH / 2 + 0.8, zOff]} geometry={GEO.box}
+            scale={[bridge.width * 0.3, pillarH, bridge.width * 0.3]} material={supportMat} castShadow />
+        );
+      })}
       {/* Grand bridge extras */}
       {bridge.style === 'grand' && (
         <>

@@ -36,6 +36,17 @@ export function generateEnemies(): EnemyData[] {
       const z = cz + Math.sin(angle) * r;
       // Exclude town center area (capital at [0,0] with town extending to r~80)
       if (x * x + z * z < 80 * 80) continue;
+      // Exclude new kingdom interiors — all have walls at radius ~45 from center
+      const KINGDOM_CENTERS: [number, number][] = [
+        [-500, -450], [450, 350], [-400, 500], [550, -400], [-550, 100],
+        [-440, -400], [400, 300], [-350, 450], [500, -350], [-500, 150],
+      ];
+      let inKingdom = false;
+      for (const [kcx, kcz] of KINGDOM_CENTERS) {
+        const kdx = x - kcx, kdz = z - kcz;
+        if (kdx * kdx + kdz * kdz < 50 * 50) { inKingdom = true; break; }
+      }
+      if (inKingdom) continue;
       const y = getTerrainHeight(x, z);
       const groundOffset = type === 'wolf' ? 0.45 : 0.9;
       enemies.push({

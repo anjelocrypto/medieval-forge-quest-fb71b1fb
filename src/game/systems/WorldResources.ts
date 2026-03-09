@@ -263,8 +263,8 @@ export function generateWorldResources(): WorldResource[] {
     const distCenter = Math.sqrt(x * x + z * z);
     if (distCenter < 50) continue;
     
-    // Skip near settlements (larger buffer for gates/approaches)
-    if (isNearSettlement(x, z, 25)) continue;
+    // Skip near settlements — large kingdoms have walls at ±45 radius, need bigger buffer
+    if (isNearSettlement(x, z, 55)) continue;
     
     // Skip on roads (wider buffer to keep roads visible)
     if (isNearRoad(x, z, 5)) continue;
@@ -318,7 +318,7 @@ export function generateWorldResources(): WorldResource[] {
     const y = getTerrainHeight(x, z);
     
     if (y < -0.5) continue;
-    if (isNearSettlement(x, z, 20)) continue;
+    if (isNearSettlement(x, z, 55)) continue;
     if (isNearRoad(x, z, 4)) continue;
     if (isNearPOI(x, z, 5)) continue;
     

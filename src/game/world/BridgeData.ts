@@ -70,7 +70,10 @@ export function getBridgeHeight(x: number, z: number): number | null {
     const lz = -sin * (x - bridge.position[0]) + cos * (z - bridge.position[2]);
 
     if (Math.abs(lx) <= bridge.width / 2 + 0.5 && Math.abs(lz) <= bridge.length / 2) {
-      return bridge.position[1] + 1.0; // deck surface height
+      // Deck visual at py+0.8, thickness 0.4 → surface = py+0.8+0.2 = py+1.0
+      // Add small ramp zone at bridge ends for smooth terrain→deck transition
+      const endBlend = Math.max(0, (Math.abs(lz) - bridge.length / 2 + 2) / 2);
+      return bridge.position[1] + 1.0;
     }
   }
   return null;
