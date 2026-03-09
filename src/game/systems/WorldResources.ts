@@ -1,6 +1,8 @@
 import { getTerrainHeight } from '../components/Terrain';
 import { WORLD_SIZE } from '../constants';
 import { REGIONS, SETTLEMENTS, SMALL_POIS, ROADS } from '../world/RegionData';
+import { RIVERS, LAKES } from '../world/WaterData';
+import { BRIDGES } from '../world/BridgeData';
 import { LootPickup } from '../types';
 
 export interface WorldResource {
@@ -29,87 +31,237 @@ interface ForestZone {
 }
 
 const FOREST_ZONES: ForestZone[] = [
-  // === CENTRAL WORLD (original) ===
+  // ================================================================
+  // === CENTRAL WORLD (original heartland, ±300) ===
+  // ================================================================
+  // Ashwood deep forest complex
   { cx: -210, cz: 165, radius: 70, density: 2.2, type: 'dense', name: 'Ashwood Deep' },
   { cx: -240, cz: 200, radius: 45, density: 1.8, type: 'dense', name: 'Ashwood North' },
   { cx: -175, cz: 115, radius: 35, density: 1.2, type: 'light', name: 'Ashwood Edge' },
   { cx: -260, cz: 40, radius: 50, density: 1.3, type: 'light', name: 'Western Woodland' },
   { cx: -280, cz: 130, radius: 35, density: 1.0, type: 'scattered', name: 'Far West Grove' },
   { cx: -220, cz: 250, radius: 45, density: 1.5, type: 'dense', name: 'Northern Pines' },
+  { cx: -165, cz: 50, radius: 30, density: 0.7, type: 'light', name: 'Ashwood Southern Reach' },
+  // Frostmere / highland
   { cx: 90, cz: 220, radius: 40, density: 0.9, type: 'scattered', name: 'Highland Thicket' },
   { cx: 60, cz: 260, radius: 45, density: 1.1, type: 'light', name: 'Northern Frontier' },
   { cx: 230, cz: 260, radius: 35, density: 0.7, type: 'scattered', name: 'Frostmere Pines' },
+  // Heartland groves
   { cx: -70, cz: 45, radius: 25, density: 0.5, type: 'grove', name: 'Capital Grove East' },
   { cx: -115, cz: 130, radius: 30, density: 0.7, type: 'light', name: 'Midland Woods' },
   { cx: 70, cz: 100, radius: 22, density: 0.5, type: 'grove', name: 'Veyra Trail Grove' },
+  { cx: -30, cz: 120, radius: 25, density: 0.6, type: 'grove', name: 'Northern Capital Grove' },
+  { cx: 40, cz: 160, radius: 30, density: 0.7, type: 'light', name: 'Northern Meadow Woods' },
+  // Greenmeadow surrounds
   { cx: -230, cz: -100, radius: 40, density: 1.0, type: 'light', name: 'Greenmeadow West Woods' },
   { cx: -200, cz: -210, radius: 45, density: 0.9, type: 'scattered', name: 'Southern Wilderness' },
   { cx: -100, cz: -200, radius: 30, density: 0.6, type: 'grove', name: 'Ravenwatch Approach' },
+  // Blackthorn / eastern
   { cx: 260, cz: -210, radius: 40, density: 0.8, type: 'scattered', name: 'Blackthorn Frontier' },
   { cx: 160, cz: -240, radius: 35, density: 0.6, type: 'grove', name: 'Eastern Badlands Edge' },
   { cx: 115, cz: -180, radius: 28, density: 0.5, type: 'scattered', name: 'Frontier Copse' },
   { cx: 250, cz: 50, radius: 35, density: 0.6, type: 'scattered', name: 'Veyra Dead Woods' },
   { cx: 270, cz: 150, radius: 30, density: 0.5, type: 'grove', name: 'Ancient Grove' },
+  // Border forests
   { cx: -280, cz: -200, radius: 45, density: 0.9, type: 'light', name: 'SW Border Forest' },
   { cx: 285, cz: 110, radius: 35, density: 0.6, type: 'scattered', name: 'Eastern Edge' },
   { cx: 0, cz: 285, radius: 40, density: 0.8, type: 'light', name: 'Northern Border' },
   { cx: 0, cz: -285, radius: 40, density: 0.7, type: 'scattered', name: 'Southern Border' },
+  // Trail / road groves
   { cx: 140, cz: 70, radius: 28, density: 0.6, type: 'grove', name: 'Veyra Road Grove' },
   { cx: 110, cz: 25, radius: 22, density: 0.5, type: 'scattered', name: 'Eastern Meadow Trees' },
   { cx: -30, cz: -130, radius: 30, density: 0.7, type: 'light', name: 'Southern Heartland Woods' },
   { cx: 25, cz: -160, radius: 25, density: 0.6, type: 'scattered', name: 'Badlands Approach Trees' },
   { cx: -180, cz: -30, radius: 35, density: 0.8, type: 'light', name: 'Western Trail Forest' },
-  { cx: -165, cz: 50, radius: 30, density: 0.7, type: 'light', name: 'Ashwood Southern Reach' },
   { cx: 100, cz: -165, radius: 28, density: 0.5, type: 'scattered', name: 'Frontier Brush' },
   { cx: 140, cz: -200, radius: 25, density: 0.4, type: 'grove', name: 'Southern Frontier Grove' },
-  { cx: -30, cz: 120, radius: 25, density: 0.6, type: 'grove', name: 'Northern Capital Grove' },
-  { cx: 40, cz: 160, radius: 30, density: 0.7, type: 'light', name: 'Northern Meadow Woods' },
+  // Deep corners
   { cx: -250, cz: 260, radius: 35, density: 0.6, type: 'scattered', name: 'NW Deep Forest' },
   { cx: 250, cz: -260, radius: 30, density: 0.5, type: 'scattered', name: 'SE Frontier Pines' },
   { cx: -150, cz: 250, radius: 30, density: 0.6, type: 'light', name: 'Far Northern Woods' },
   { cx: 150, cz: -270, radius: 25, density: 0.4, type: 'scattered', name: 'Deep South Trees' },
 
-  // === EXPANDED WORLD FORESTS ===
-  // Thornwall region (SW) — sparse frontier forests
-  { cx: -450, cz: -500, radius: 50, density: 0.8, type: 'scattered', name: 'Thornwall Frontier Woods' },
-  { cx: -550, cz: -400, radius: 40, density: 0.7, type: 'light', name: 'Thornwall Western Forest' },
-  { cx: -400, cz: -380, radius: 35, density: 0.6, type: 'grove', name: 'Thornwall Approach Grove' },
+  // ================================================================
+  // === EXPANDED WORLD — KINGDOM SURROUNDS ===
+  // ================================================================
 
-  // Goldenvale region (W) — lush trading grounds
+  // --- THORNWALL REGION (SW, center -500, -450) — broken woodland patches ---
+  { cx: -450, cz: -500, radius: 55, density: 0.9, type: 'scattered', name: 'Thornwall Frontier Woods' },
+  { cx: -550, cz: -400, radius: 45, density: 0.7, type: 'light', name: 'Thornwall Western Forest' },
+  { cx: -400, cz: -380, radius: 40, density: 0.6, type: 'grove', name: 'Thornwall Approach Grove' },
+  { cx: -580, cz: -500, radius: 50, density: 0.8, type: 'scattered', name: 'SW Frontier Pines' },
+  { cx: -460, cz: -350, radius: 45, density: 0.7, type: 'light', name: 'Thornwall North Woodland' },
+  { cx: -520, cz: -550, radius: 40, density: 0.6, type: 'scattered', name: 'Thornwall South Scrub' },
+  { cx: -600, cz: -450, radius: 55, density: 0.8, type: 'light', name: 'Far SW Forest' },
+  { cx: -380, cz: -500, radius: 35, density: 0.5, type: 'grove', name: 'Thornwall East Copse' },
+
+  // --- GOLDENVALE REGION (W, center -550, 100) — cultivated groves, road-edge trees ---
   { cx: -600, cz: 50, radius: 55, density: 1.2, type: 'dense', name: 'Goldenvale Great Forest' },
-  { cx: -580, cz: 180, radius: 45, density: 1.0, type: 'light', name: 'Vale Northern Woods' },
-  { cx: -480, cz: 30, radius: 35, density: 0.8, type: 'light', name: 'Trade Road Forest' },
+  { cx: -580, cz: 180, radius: 50, density: 1.0, type: 'light', name: 'Vale Northern Woods' },
+  { cx: -480, cz: 30, radius: 40, density: 0.8, type: 'light', name: 'Trade Road Forest' },
+  { cx: -650, cz: 150, radius: 45, density: 0.9, type: 'light', name: 'Goldenvale Western Groves' },
+  { cx: -620, cz: -50, radius: 50, density: 0.8, type: 'grove', name: 'Southern Vale Woods' },
+  { cx: -500, cz: 200, radius: 40, density: 0.7, type: 'grove', name: 'Harvest Hill Grove' },
+  { cx: -680, cz: 80, radius: 45, density: 0.7, type: 'scattered', name: 'Far West Vale Forest' },
+  { cx: -550, cz: 250, radius: 40, density: 0.8, type: 'light', name: 'Vale Northern Reach' },
 
-  // Rivermoor region (NE) — wetland groves
-  { cx: 500, cz: 400, radius: 45, density: 0.9, type: 'light', name: 'Rivermoor Wetland Trees' },
-  { cx: 420, cz: 420, radius: 35, density: 0.7, type: 'grove', name: 'Riverside Grove' },
-  { cx: 380, cz: 280, radius: 40, density: 0.8, type: 'scattered', name: 'Reed Village Copse' },
+  // --- RIVERMOOR REGION (NE, center 450, 350) — riverbank trees, willow spacing ---
+  { cx: 500, cz: 400, radius: 50, density: 0.9, type: 'light', name: 'Rivermoor Wetland Trees' },
+  { cx: 420, cz: 420, radius: 40, density: 0.7, type: 'grove', name: 'Riverside Grove' },
+  { cx: 380, cz: 280, radius: 45, density: 0.8, type: 'scattered', name: 'Reed Village Copse' },
+  { cx: 520, cz: 300, radius: 45, density: 0.7, type: 'scattered', name: 'Rivermoor East Bank' },
+  { cx: 400, cz: 450, radius: 40, density: 0.6, type: 'grove', name: 'Northern Wetland Copse' },
+  { cx: 550, cz: 350, radius: 50, density: 0.8, type: 'light', name: 'Rivermoor Outer Forest' },
+  { cx: 350, cz: 350, radius: 35, density: 0.6, type: 'grove', name: 'Rivermoor SW Copse' },
+  { cx: 480, cz: 450, radius: 40, density: 0.7, type: 'light', name: 'NE Wetland Forest' },
 
-  // Stonepeak region (NW) — highland pines
-  { cx: -450, cz: 550, radius: 50, density: 1.3, type: 'dense', name: 'Highland Pine Forest' },
-  { cx: -350, cz: 520, radius: 40, density: 1.0, type: 'light', name: 'Mountain Approach Woods' },
-  { cx: -300, cz: 400, radius: 35, density: 0.7, type: 'scattered', name: 'Peak Trail Trees' },
+  // --- STONEPEAK REGION (NW, center -400, 500) — highland pines, mountain bands ---
+  { cx: -450, cz: 550, radius: 55, density: 1.3, type: 'dense', name: 'Highland Pine Forest' },
+  { cx: -350, cz: 520, radius: 45, density: 1.0, type: 'light', name: 'Mountain Approach Woods' },
+  { cx: -300, cz: 400, radius: 40, density: 0.7, type: 'scattered', name: 'Peak Trail Trees' },
+  { cx: -480, cz: 500, radius: 50, density: 1.1, type: 'dense', name: 'Stonepeak Western Pines' },
+  { cx: -420, cz: 600, radius: 45, density: 0.9, type: 'light', name: 'Stonepeak North Ridge' },
+  { cx: -350, cz: 560, radius: 35, density: 0.8, type: 'scattered', name: 'Mountain Pass Forest' },
+  { cx: -500, cz: 550, radius: 40, density: 0.7, type: 'scattered', name: 'Far NW Pines' },
+  { cx: -320, cz: 480, radius: 35, density: 0.6, type: 'grove', name: 'Stonepeak Approach Copse' },
 
-  // Darkhollow region (SE) — dead/sparse trees
-  { cx: 600, cz: -350, radius: 40, density: 0.5, type: 'scattered', name: 'Darkhollow Dead Forest' },
-  { cx: 500, cz: -450, radius: 35, density: 0.4, type: 'grove', name: 'Wasteland Copse' },
-  { cx: 480, cz: -300, radius: 30, density: 0.6, type: 'scattered', name: 'Hollow Edge Trees' },
+  // --- DARKHOLLOW REGION (SE, center 550, -400) — sparse dead woods ---
+  { cx: 600, cz: -350, radius: 45, density: 0.5, type: 'scattered', name: 'Darkhollow Dead Forest' },
+  { cx: 500, cz: -450, radius: 40, density: 0.4, type: 'grove', name: 'Wasteland Copse' },
+  { cx: 480, cz: -300, radius: 35, density: 0.6, type: 'scattered', name: 'Hollow Edge Trees' },
+  { cx: 620, cz: -450, radius: 50, density: 0.5, type: 'scattered', name: 'Far SE Dead Scrub' },
+  { cx: 550, cz: -500, radius: 40, density: 0.4, type: 'scattered', name: 'Darkhollow Southern Waste' },
+  { cx: 500, cz: -350, radius: 35, density: 0.5, type: 'grove', name: 'Ashkeep Ruins Trees' },
+  { cx: 650, cz: -380, radius: 45, density: 0.4, type: 'scattered', name: 'Eastern Wastes Trees' },
+  { cx: 580, cz: -280, radius: 35, density: 0.5, type: 'scattered', name: 'Hollow North Edge' },
 
-  // Travel corridor forests
-  { cx: -350, cz: -280, radius: 40, density: 0.7, type: 'light', name: 'Western March Forest' },
-  { cx: -300, cz: 300, radius: 45, density: 0.9, type: 'light', name: 'NW Corridor Forest' },
-  { cx: 350, cz: -200, radius: 40, density: 0.6, type: 'scattered', name: 'SE Corridor Trees' },
-  { cx: 300, cz: 250, radius: 35, density: 0.7, type: 'light', name: 'NE Corridor Forest' },
-  { cx: -200, cz: 500, radius: 40, density: 0.8, type: 'light', name: 'Northern Route Woods' },
-  { cx: 100, cz: 500, radius: 35, density: 0.7, type: 'scattered', name: 'Northern Route East' },
-  { cx: 500, cz: 100, radius: 30, density: 0.5, type: 'scattered', name: 'Eastern Wilds Trees' },
-  { cx: -400, cz: -150, radius: 35, density: 0.6, type: 'light', name: 'Connector Forest W' },
+  // ================================================================
+  // === TRAVEL CORRIDORS — forests lining the roads between kingdoms ===
+  // ================================================================
 
-  // World edge fill
-  { cx: -700, cz: 0, radius: 50, density: 0.5, type: 'scattered', name: 'Far West Edge' },
-  { cx: 700, cz: 0, radius: 50, density: 0.4, type: 'scattered', name: 'Far East Edge' },
-  { cx: 0, cz: 700, radius: 50, density: 0.6, type: 'light', name: 'Far North Edge' },
-  { cx: 0, cz: -700, radius: 50, density: 0.5, type: 'scattered', name: 'Far South Edge' },
+  // Ironhold → Thornwall corridor (SW diagonal)
+  { cx: -200, cz: -180, radius: 45, density: 0.9, type: 'light', name: 'Western March South Woods' },
+  { cx: -280, cz: -240, radius: 50, density: 0.8, type: 'light', name: 'March Waypoint Forest' },
+  { cx: -350, cz: -300, radius: 50, density: 0.8, type: 'light', name: 'Western March Forest' },
+  { cx: -380, cz: -350, radius: 45, density: 0.7, type: 'scattered', name: 'March Deep Woods' },
+  { cx: -420, cz: -400, radius: 40, density: 0.6, type: 'scattered', name: 'Thornwatch Trail Trees' },
+  { cx: -320, cz: -180, radius: 40, density: 0.7, type: 'light', name: 'Western March North Belt' },
+
+  // Ironhold → Goldenvale corridor (W)
+  { cx: -250, cz: 100, radius: 45, density: 0.9, type: 'light', name: 'Western Forest Belt' },
+  { cx: -320, cz: 120, radius: 50, density: 0.8, type: 'light', name: 'Ashwood-Vale Transition' },
+  { cx: -400, cz: 100, radius: 50, density: 0.9, type: 'light', name: 'Vale Approach Forest' },
+  { cx: -450, cz: 80, radius: 40, density: 0.7, type: 'grove', name: 'Trade Route Groves' },
+  { cx: -380, cz: 160, radius: 45, density: 0.8, type: 'light', name: 'Northern Vale Trail Forest' },
+
+  // Ironhold → Stonepeak corridor (NW)
+  { cx: -220, cz: 300, radius: 50, density: 1.0, type: 'light', name: 'NW Corridor South Forest' },
+  { cx: -250, cz: 350, radius: 55, density: 1.1, type: 'dense', name: 'NW Corridor Deep Forest' },
+  { cx: -280, cz: 400, radius: 50, density: 0.9, type: 'light', name: 'Highland Approach Forest' },
+  { cx: -320, cz: 350, radius: 40, density: 0.8, type: 'light', name: 'Peak Road Forest' },
+  { cx: -200, cz: 400, radius: 45, density: 0.8, type: 'scattered', name: 'Northern Wilderness' },
+
+  // Ironhold → Rivermoor corridor (NE)
+  { cx: 200, cz: 200, radius: 45, density: 0.8, type: 'light', name: 'NE Corridor South Forest' },
+  { cx: 250, cz: 250, radius: 50, density: 0.9, type: 'light', name: 'NE Corridor Forest' },
+  { cx: 300, cz: 280, radius: 45, density: 0.8, type: 'light', name: 'Rivermoor Trail Forest' },
+  { cx: 350, cz: 300, radius: 40, density: 0.7, type: 'scattered', name: 'Reed Village Trail Trees' },
+  { cx: 250, cz: 180, radius: 35, density: 0.6, type: 'grove', name: 'NE Meadow Copse' },
+
+  // Ironhold → Darkhollow corridor (SE)
+  { cx: 250, cz: -180, radius: 45, density: 0.7, type: 'scattered', name: 'SE Corridor South Forest' },
+  { cx: 300, cz: -220, radius: 50, density: 0.7, type: 'light', name: 'SE Corridor Forest' },
+  { cx: 350, cz: -260, radius: 45, density: 0.6, type: 'scattered', name: 'Darkhollow Trail Forest' },
+  { cx: 400, cz: -300, radius: 40, density: 0.6, type: 'scattered', name: 'Ashkeep Approach Trees' },
+  { cx: 450, cz: -350, radius: 40, density: 0.5, type: 'scattered', name: 'SE Wasteland Trees' },
+
+  // Inter-kingdom connectors
+  // Thornwall → Goldenvale (W edge)
+  { cx: -580, cz: -200, radius: 50, density: 0.7, type: 'light', name: 'Thornwall-Vale Trail West' },
+  { cx: -560, cz: -100, radius: 50, density: 0.8, type: 'light', name: 'Western Wall Forest' },
+  { cx: -550, cz: 0, radius: 45, density: 0.7, type: 'scattered', name: 'SW-W Connector Woods' },
+
+  // Goldenvale → Stonepeak (NW edge)
+  { cx: -500, cz: 280, radius: 50, density: 0.9, type: 'light', name: 'Vale-Peak Trail Forest' },
+  { cx: -480, cz: 380, radius: 50, density: 1.0, type: 'dense', name: 'Western Highland Forest' },
+  { cx: -450, cz: 450, radius: 45, density: 0.8, type: 'light', name: 'Peak Southern Approach' },
+
+  // Rivermoor → Darkhollow (E edge)
+  { cx: 520, cz: 200, radius: 45, density: 0.6, type: 'scattered', name: 'Eastern Coastal Woods' },
+  { cx: 530, cz: 50, radius: 50, density: 0.6, type: 'scattered', name: 'Eastern Frontier Forest' },
+  { cx: 520, cz: -100, radius: 45, density: 0.5, type: 'scattered', name: 'Eastern Badlands Edge' },
+  { cx: 540, cz: -200, radius: 40, density: 0.5, type: 'scattered', name: 'Darkhollow NE Approach' },
+
+  // Stonepeak → Rivermoor (N edge)
+  { cx: -200, cz: 550, radius: 50, density: 0.8, type: 'light', name: 'Northern Route W Forest' },
+  { cx: -50, cz: 580, radius: 55, density: 0.9, type: 'light', name: 'Far North Woods' },
+  { cx: 100, cz: 550, radius: 50, density: 0.8, type: 'light', name: 'Northern Route E Forest' },
+  { cx: 250, cz: 500, radius: 45, density: 0.7, type: 'scattered', name: 'NE Northern Approach' },
+  { cx: 350, cz: 420, radius: 40, density: 0.6, type: 'scattered', name: 'Rivermoor Northern Edge' },
+
+  // ================================================================
+  // === EMPTY ZONE FILL — plains, hillsides, edge wilderness ===
+  // ================================================================
+
+  // Central heartland fill (between original settlements)
+  { cx: -80, cz: -80, radius: 35, density: 0.6, type: 'grove', name: 'Heartland South Copse' },
+  { cx: 80, cz: -60, radius: 30, density: 0.5, type: 'grove', name: 'Heartland East Trees' },
+  { cx: -50, cz: 200, radius: 35, density: 0.7, type: 'light', name: 'Northern Heartland Forest' },
+  { cx: 150, cz: 130, radius: 30, density: 0.5, type: 'grove', name: 'Frostmere Road Copse' },
+  { cx: -120, cz: -30, radius: 28, density: 0.5, type: 'grove', name: 'Western Heartland Copse' },
+
+  // Transition zone fill (300-500 range — mostly empty currently)
+  { cx: -350, cz: 0, radius: 55, density: 0.8, type: 'light', name: 'Western Plains Forest' },
+  { cx: -300, cz: -100, radius: 50, density: 0.7, type: 'light', name: 'SW Plains Woodland' },
+  { cx: -400, cz: -50, radius: 45, density: 0.7, type: 'scattered', name: 'Deep Western Forest' },
+  { cx: 350, cz: 0, radius: 50, density: 0.6, type: 'scattered', name: 'Eastern Plains Trees' },
+  { cx: 300, cz: -100, radius: 45, density: 0.5, type: 'scattered', name: 'SE Plains Scrub' },
+  { cx: 400, cz: 100, radius: 50, density: 0.6, type: 'scattered', name: 'Eastern Wilds Forest' },
+  { cx: 0, cz: 400, radius: 55, density: 0.8, type: 'light', name: 'Central North Forest' },
+  { cx: 100, cz: 350, radius: 45, density: 0.7, type: 'scattered', name: 'NE Heartland Extension' },
+  { cx: -100, cz: 350, radius: 50, density: 0.8, type: 'light', name: 'NW Heartland Extension' },
+  { cx: 0, cz: -350, radius: 50, density: 0.6, type: 'scattered', name: 'Southern Wilds Forest' },
+  { cx: -150, cz: -300, radius: 45, density: 0.7, type: 'light', name: 'SW Transition Forest' },
+  { cx: 150, cz: -300, radius: 40, density: 0.5, type: 'scattered', name: 'SE Transition Scrub' },
+  { cx: -150, cz: 400, radius: 45, density: 0.8, type: 'light', name: 'NW Transition Forest' },
+  { cx: 200, cz: 400, radius: 45, density: 0.7, type: 'scattered', name: 'NE Transition Forest' },
+  { cx: -400, cz: 250, radius: 50, density: 0.9, type: 'light', name: 'Western Highland Transition' },
+  { cx: 400, cz: -150, radius: 45, density: 0.5, type: 'scattered', name: 'Eastern Frontier Transition' },
+
+  // World edge forests (600-850 range)
+  { cx: -700, cz: 0, radius: 60, density: 0.6, type: 'scattered', name: 'Far West Edge' },
+  { cx: -750, cz: -200, radius: 55, density: 0.5, type: 'scattered', name: 'Far SW Edge Forest' },
+  { cx: -750, cz: 200, radius: 55, density: 0.6, type: 'scattered', name: 'Far NW Edge Forest' },
+  { cx: 700, cz: 0, radius: 55, density: 0.4, type: 'scattered', name: 'Far East Edge' },
+  { cx: 700, cz: -200, radius: 50, density: 0.4, type: 'scattered', name: 'Far SE Edge Forest' },
+  { cx: 700, cz: 200, radius: 50, density: 0.5, type: 'scattered', name: 'Far NE Edge Forest' },
+  { cx: 0, cz: 700, radius: 60, density: 0.7, type: 'light', name: 'Far North Edge' },
+  { cx: -300, cz: 650, radius: 55, density: 0.7, type: 'light', name: 'NW Edge Forest' },
+  { cx: 300, cz: 600, radius: 50, density: 0.6, type: 'scattered', name: 'NE Edge Forest' },
+  { cx: 0, cz: -700, radius: 55, density: 0.5, type: 'scattered', name: 'Far South Edge' },
+  { cx: -300, cz: -600, radius: 50, density: 0.6, type: 'scattered', name: 'SW Edge Forest' },
+  { cx: 300, cz: -600, radius: 50, density: 0.4, type: 'scattered', name: 'SE Edge Forest' },
+
+  // Ridgeline and hillside forests
+  { cx: -350, cz: 500, radius: 45, density: 1.0, type: 'dense', name: 'Stonepeak Ridge Forest' },
+  { cx: -450, cz: 400, radius: 40, density: 0.8, type: 'light', name: 'Mountain Pine Belt' },
+  { cx: 150, cz: 450, radius: 40, density: 0.7, type: 'scattered', name: 'Northern Hills Trees' },
+  { cx: -100, cz: 500, radius: 45, density: 0.8, type: 'light', name: 'Northern Hillside Forest' },
+  { cx: 500, cz: -150, radius: 40, density: 0.4, type: 'scattered', name: 'Eastern Crag Trees' },
+
+  // Fill between kingdom pairs
+  { cx: -500, cz: -250, radius: 50, density: 0.7, type: 'light', name: 'Thornwall-Vale Gap Forest' },
+  { cx: -450, cz: -150, radius: 45, density: 0.6, type: 'scattered', name: 'SW Connector Forest' },
+  { cx: 450, cz: 150, radius: 45, density: 0.5, type: 'scattered', name: 'Rivermoor Western Approach' },
+  { cx: 400, cz: -50, radius: 40, density: 0.5, type: 'scattered', name: 'Eastern Crossroads Forest' },
+  { cx: -450, cz: 250, radius: 45, density: 0.8, type: 'light', name: 'Vale-Peak Mid Forest' },
+  { cx: 0, cz: -500, radius: 50, density: 0.5, type: 'scattered', name: 'Deep South Wilderness' },
+  { cx: -200, cz: -450, radius: 45, density: 0.6, type: 'scattered', name: 'Far SW Plains Trees' },
+  { cx: 200, cz: -450, radius: 40, density: 0.4, type: 'scattered', name: 'Far SE Plains Scrub' },
+  { cx: 600, cz: 300, radius: 40, density: 0.5, type: 'scattered', name: 'Far NE Coastal Forest' },
+  { cx: 650, cz: -100, radius: 40, density: 0.4, type: 'scattered', name: 'Eastern Wasteland Edge' },
+  { cx: -650, cz: -300, radius: 45, density: 0.5, type: 'scattered', name: 'Far SW Border Forest' },
+  { cx: -650, cz: 350, radius: 45, density: 0.6, type: 'light', name: 'Far NW Highland Forest' },
 ];
 
 // ========== ROCK FORMATIONS ==========
