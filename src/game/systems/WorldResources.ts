@@ -29,50 +29,45 @@ interface ForestZone {
 }
 
 const FOREST_ZONES: ForestZone[] = [
-  // Ashwood Deep - main dense forest
-  { cx: -190, cz: 140, radius: 80, density: 2.5, type: 'dense', name: 'Ashwood Deep' },
-  { cx: -220, cz: 180, radius: 50, density: 2.0, type: 'dense', name: 'Ashwood North' },
-  { cx: -160, cz: 100, radius: 45, density: 1.8, type: 'light', name: 'Ashwood Edge' },
+  // Ashwood Deep - main dense forest (shifted away from road corridor)
+  { cx: -210, cz: 165, radius: 70, density: 2.2, type: 'dense', name: 'Ashwood Deep' },
+  { cx: -240, cz: 200, radius: 45, density: 1.8, type: 'dense', name: 'Ashwood North' },
+  { cx: -175, cz: 115, radius: 35, density: 1.2, type: 'light', name: 'Ashwood Edge' },
   
-  // NW wilderness forests
-  { cx: -250, cz: 50, radius: 55, density: 1.5, type: 'light', name: 'Western Woodland' },
-  { cx: -280, cz: 120, radius: 40, density: 1.2, type: 'scattered', name: 'Far West Grove' },
-  { cx: -200, cz: 250, radius: 50, density: 1.8, type: 'dense', name: 'Northern Pines' },
+  // NW wilderness forests (clear of Ashwood road)
+  { cx: -260, cz: 40, radius: 50, density: 1.3, type: 'light', name: 'Western Woodland' },
+  { cx: -280, cz: 130, radius: 35, density: 1.0, type: 'scattered', name: 'Far West Grove' },
+  { cx: -220, cz: 250, radius: 45, density: 1.5, type: 'dense', name: 'Northern Pines' },
   
-  // NE frontier forests  
-  { cx: 100, cz: 180, radius: 45, density: 1.0, type: 'scattered', name: 'Highland Thicket' },
-  { cx: 80, cz: 250, radius: 55, density: 1.3, type: 'light', name: 'Northern Frontier' },
-  { cx: 220, cz: 250, radius: 40, density: 0.8, type: 'scattered', name: 'Frostmere Pines' },
+  // NE frontier forests (away from Frostmere paths)
+  { cx: 90, cz: 220, radius: 40, density: 0.9, type: 'scattered', name: 'Highland Thicket' },
+  { cx: 60, cz: 260, radius: 45, density: 1.1, type: 'light', name: 'Northern Frontier' },
+  { cx: 230, cz: 260, radius: 35, density: 0.7, type: 'scattered', name: 'Frostmere Pines' },
   
-  // Central corridor forests
-  { cx: -60, cz: 30, radius: 35, density: 0.9, type: 'grove', name: 'Capital Grove East' },
-  { cx: -100, cz: 120, radius: 40, density: 1.0, type: 'light', name: 'Midland Woods' },
-  { cx: 60, cz: 80, radius: 30, density: 0.7, type: 'grove', name: 'Veyra Trail Grove' },
+  // Central corridor - REDUCED to keep roads clear
+  { cx: -70, cz: 45, radius: 25, density: 0.5, type: 'grove', name: 'Capital Grove East' },
+  { cx: -115, cz: 130, radius: 30, density: 0.7, type: 'light', name: 'Midland Woods' },
+  { cx: 70, cz: 100, radius: 22, density: 0.5, type: 'grove', name: 'Veyra Trail Grove' },
   
-  // SW area forests
-  { cx: -220, cz: -80, radius: 45, density: 1.2, type: 'light', name: 'Greenmeadow West Woods' },
-  { cx: -180, cz: -200, radius: 50, density: 1.0, type: 'scattered', name: 'Southern Wilderness' },
-  { cx: -80, cz: -180, radius: 35, density: 0.8, type: 'grove', name: 'Ravenwatch Approach' },
+  // SW area forests (clear of Greenmeadow approaches)
+  { cx: -230, cz: -100, radius: 40, density: 1.0, type: 'light', name: 'Greenmeadow West Woods' },
+  { cx: -200, cz: -210, radius: 45, density: 0.9, type: 'scattered', name: 'Southern Wilderness' },
+  { cx: -100, cz: -200, radius: 30, density: 0.6, type: 'grove', name: 'Ravenwatch Approach' },
   
-  // SE area forests
-  { cx: 250, cz: -200, radius: 45, density: 0.9, type: 'scattered', name: 'Blackthorn Frontier' },
-  { cx: 150, cz: -220, radius: 40, density: 0.7, type: 'grove', name: 'Eastern Badlands Edge' },
-  { cx: 100, cz: -150, radius: 35, density: 0.6, type: 'scattered', name: 'Frontier Copse' },
+  // SE area forests (away from Blackthorn Fort)
+  { cx: 260, cz: -210, radius: 40, density: 0.8, type: 'scattered', name: 'Blackthorn Frontier' },
+  { cx: 160, cz: -240, radius: 35, density: 0.6, type: 'grove', name: 'Eastern Badlands Edge' },
+  { cx: 115, cz: -180, radius: 28, density: 0.5, type: 'scattered', name: 'Frontier Copse' },
   
-  // Old Veyra region - sparse haunted woods
-  { cx: 240, cz: 60, radius: 45, density: 0.8, type: 'scattered', name: 'Veyra Dead Woods' },
-  { cx: 260, cz: 140, radius: 40, density: 0.6, type: 'grove', name: 'Ancient Grove' },
+  // Old Veyra region - sparse haunted woods (clear of ruins center)
+  { cx: 250, cz: 50, radius: 35, density: 0.6, type: 'scattered', name: 'Veyra Dead Woods' },
+  { cx: 270, cz: 150, radius: 30, density: 0.5, type: 'grove', name: 'Ancient Grove' },
   
   // Map edge forests for visual fill
-  { cx: -280, cz: -180, radius: 50, density: 1.0, type: 'light', name: 'SW Border Forest' },
-  { cx: 280, cz: 100, radius: 45, density: 0.7, type: 'scattered', name: 'Eastern Edge' },
-  { cx: 0, cz: 280, radius: 50, density: 0.9, type: 'light', name: 'Northern Border' },
-  { cx: 0, cz: -280, radius: 45, density: 0.8, type: 'scattered', name: 'Southern Border' },
-  
-  // Roadside tree belts
-  { cx: -50, cz: -50, radius: 25, density: 0.6, type: 'grove', name: 'Crossroads Grove' },
-  { cx: 120, cz: -80, radius: 30, density: 0.5, type: 'grove', name: 'Blackthorn Road Trees' },
-  { cx: -120, cz: 50, radius: 25, density: 0.5, type: 'grove', name: 'Ashwood Approach' },
+  { cx: -280, cz: -200, radius: 45, density: 0.9, type: 'light', name: 'SW Border Forest' },
+  { cx: 285, cz: 110, radius: 35, density: 0.6, type: 'scattered', name: 'Eastern Edge' },
+  { cx: 0, cz: 285, radius: 40, density: 0.8, type: 'light', name: 'Northern Border' },
+  { cx: 0, cz: -285, radius: 40, density: 0.7, type: 'scattered', name: 'Southern Border' },
 ];
 
 // ========== ROCK FORMATIONS ==========
@@ -86,35 +81,35 @@ interface RockZone {
 }
 
 const ROCK_ZONES: RockZone[] = [
-  // Frostmere highlands - rocky terrain
-  { cx: 160, cz: 200, radius: 65, density: 2.0, type: 'outcrop', name: 'Frostmere Crags' },
-  { cx: 200, cz: 250, radius: 45, density: 1.5, type: 'field', name: 'Highland Stones' },
-  { cx: 120, cz: 220, radius: 35, density: 1.2, type: 'scattered', name: 'Mountain Pass Rocks' },
+  // Frostmere highlands - rocky terrain (clear of monastery approach)
+  { cx: 180, cz: 230, radius: 50, density: 1.5, type: 'outcrop', name: 'Frostmere Crags' },
+  { cx: 220, cz: 260, radius: 40, density: 1.2, type: 'field', name: 'Highland Stones' },
+  { cx: 130, cz: 245, radius: 30, density: 0.9, type: 'scattered', name: 'Mountain Pass Rocks' },
   
-  // Blackthorn frontier - rugged terrain
-  { cx: 185, cz: -155, radius: 50, density: 1.5, type: 'field', name: 'Fort Approach Stones' },
-  { cx: 230, cz: -120, radius: 40, density: 1.2, type: 'outcrop', name: 'Eastern Frontier Rocks' },
-  { cx: 250, cz: -220, radius: 50, density: 1.0, type: 'scattered', name: 'Badlands Boulders' },
+  // Blackthorn frontier - rugged terrain (clear of fort gates)
+  { cx: 210, cz: -175, radius: 40, density: 1.2, type: 'field', name: 'Fort Approach Stones' },
+  { cx: 250, cz: -130, radius: 35, density: 1.0, type: 'outcrop', name: 'Eastern Frontier Rocks' },
+  { cx: 265, cz: -230, radius: 40, density: 0.8, type: 'scattered', name: 'Badlands Boulders' },
   
-  // Old Veyra ruins - ancient stone debris
-  { cx: 195, cz: 95, radius: 55, density: 1.8, type: 'outcrop', name: 'Veyra Rubble' },
-  { cx: 240, cz: 40, radius: 40, density: 1.3, type: 'field', name: 'Ancient Stones' },
-  { cx: 170, cz: 130, radius: 35, density: 0.9, type: 'scattered', name: 'Veyra Path Rocks' },
+  // Old Veyra ruins - ancient stone debris (avoid central ruins area)
+  { cx: 220, cz: 115, radius: 40, density: 1.3, type: 'outcrop', name: 'Veyra Rubble' },
+  { cx: 255, cz: 30, radius: 35, density: 1.0, type: 'field', name: 'Ancient Stones' },
+  { cx: 180, cz: 145, radius: 28, density: 0.7, type: 'scattered', name: 'Veyra Path Rocks' },
   
-  // Ravenwatch badlands
-  { cx: 5, cz: -205, radius: 45, density: 1.4, type: 'field', name: 'Ravenwatch Rocks' },
-  { cx: 50, cz: -240, radius: 40, density: 1.0, type: 'outcrop', name: 'Southern Crags' },
-  { cx: -40, cz: -230, radius: 35, density: 0.8, type: 'scattered', name: 'Bandit Stones' },
+  // Ravenwatch badlands (clear of camp center)
+  { cx: 30, cz: -225, radius: 35, density: 1.1, type: 'field', name: 'Ravenwatch Rocks' },
+  { cx: 60, cz: -250, radius: 35, density: 0.8, type: 'outcrop', name: 'Southern Crags' },
+  { cx: -50, cz: -245, radius: 30, density: 0.7, type: 'scattered', name: 'Bandit Stones' },
   
-  // Central terrain variation
-  { cx: 40, cz: 40, radius: 25, density: 0.5, type: 'scattered', name: 'Heartland Stones' },
-  { cx: -30, cz: -100, radius: 30, density: 0.6, type: 'scattered', name: 'Road Boulders' },
+  // Central terrain variation (small, decorative)
+  { cx: 50, cz: 50, radius: 18, density: 0.4, type: 'scattered', name: 'Heartland Stones' },
+  { cx: -40, cz: -110, radius: 22, density: 0.4, type: 'scattered', name: 'Road Boulders' },
   
   // Map edges and corners
-  { cx: -260, cz: 250, radius: 50, density: 0.8, type: 'boulders', name: 'NW Corner Rocks' },
-  { cx: 260, cz: 260, radius: 50, density: 1.0, type: 'outcrop', name: 'NE Mountain Edge' },
-  { cx: -260, cz: -250, radius: 45, density: 0.7, type: 'scattered', name: 'SW Wilderness Stones' },
-  { cx: 260, cz: -260, radius: 45, density: 0.6, type: 'boulders', name: 'SE Border Rocks' },
+  { cx: -270, cz: 260, radius: 40, density: 0.7, type: 'boulders', name: 'NW Corner Rocks' },
+  { cx: 270, cz: 270, radius: 40, density: 0.8, type: 'outcrop', name: 'NE Mountain Edge' },
+  { cx: -270, cz: -260, radius: 38, density: 0.6, type: 'scattered', name: 'SW Wilderness Stones' },
+  { cx: 270, cz: -270, radius: 38, density: 0.5, type: 'boulders', name: 'SE Border Rocks' },
 ];
 
 function seededRandom(seed: number) {
@@ -200,18 +195,18 @@ export function generateWorldResources(): WorldResource[] {
     // Skip water
     if (y < -0.3) continue;
     
-    // Skip too close to center (capital area)
+    // Skip too close to center (capital area - larger exclusion)
     const distCenter = Math.sqrt(x * x + z * z);
-    if (distCenter < 35) continue;
+    if (distCenter < 50) continue;
     
-    // Skip near settlements
-    if (isNearSettlement(x, z, 12)) continue;
+    // Skip near settlements (larger buffer for gates/approaches)
+    if (isNearSettlement(x, z, 25)) continue;
     
-    // Skip on roads
-    if (isNearRoad(x, z, 3)) continue;
+    // Skip on roads (wider buffer to keep roads visible)
+    if (isNearRoad(x, z, 5)) continue;
     
-    // Skip near POIs
-    if (isNearPOI(x, z, 4)) continue;
+    // Skip near POIs (preserve visibility)
+    if (isNearPOI(x, z, 6)) continue;
     
     // Get local forest density
     const forest = getForestDensityAt(x, z);
@@ -259,9 +254,9 @@ export function generateWorldResources(): WorldResource[] {
     const y = getTerrainHeight(x, z);
     
     if (y < -0.5) continue;
-    if (isNearSettlement(x, z, 10)) continue;
-    if (isNearRoad(x, z, 2.5)) continue;
-    if (isNearPOI(x, z, 3)) continue;
+    if (isNearSettlement(x, z, 20)) continue;
+    if (isNearRoad(x, z, 4)) continue;
+    if (isNearPOI(x, z, 5)) continue;
     
     const rock = getRockDensityAt(x, z);
     
