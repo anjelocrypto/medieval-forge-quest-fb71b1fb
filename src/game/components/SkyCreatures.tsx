@@ -72,7 +72,7 @@ const DRAGONS: DragonDef[] = [
   { cx: 180, cz: 220, altitude: 85, radius: 55, speed: 0.07, phase: 4 },
   // Over new kingdoms — rare sightings
   { cx: -500, cz: -400, altitude: 95, radius: 80, speed: 0.05, phase: 1 },  // Thornwall frontier
-  { cx: -400, cz: 520, altitude: 100, radius: 70, speed: 0.04, phase: 3 },  // Stonepeak mountains
+  { cx: -400, cz: 520, altitude: 110, radius: 70, speed: 0.04, phase: 3 },  // Stonepeak mountains — extra altitude for terrain
   { cx: 500, cz: -350, altitude: 85, radius: 65, speed: 0.06, phase: 5 },   // Darkhollow wastes
 ];
 
