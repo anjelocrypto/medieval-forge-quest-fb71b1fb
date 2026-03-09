@@ -364,6 +364,48 @@ function isNearPOI(x: number, z: number, minDist: number): boolean {
   return false;
 }
 
+function isInWater(x: number, z: number): boolean {
+  // Check lakes
+  for (const lake of LAKES) {
+    const cos = Math.cos(-lake.rotation);
+    const sin = Math.sin(-lake.rotation);
+    const lx = cos * (x - lake.position[0]) + sin * (z - lake.position[2]);
+    const lz = -sin * (x - lake.position[0]) + cos * (z - lake.position[2]);
+    const nx = lx / (lake.radiusX + 3); // 3-unit buffer
+    const nz = lz / (lake.radiusZ + 3);
+    if (nx * nx + nz * nz <= 1) return true;
+  }
+  // Check rivers
+  for (const river of RIVERS) {
+    const pts = river.points;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const ax = pts[i][0], az = pts[i][2];
+      const bx = pts[i + 1][0], bz = pts[i + 1][2];
+      const dx = bx - ax, dz = bz - az;
+      const len2 = dx * dx + dz * dz;
+      if (len2 < 1) continue;
+      const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / len2));
+      const px = ax + t * dx, pz = az + t * dz;
+      const dist = Math.sqrt((x - px) ** 2 + (z - pz) ** 2);
+      if (dist < river.width / 2 + 3) return true; // 3-unit buffer
+    }
+  }
+  return false;
+}
+
+function isOnBridge(x: number, z: number): boolean {
+  for (const bridge of BRIDGES) {
+    const cos = Math.cos(-bridge.rotation);
+    const sin = Math.sin(-bridge.rotation);
+    const lx = cos * (x - bridge.position[0]) + sin * (z - bridge.position[2]);
+    const lz = -sin * (x - bridge.position[0]) + cos * (z - bridge.position[2]);
+    if (Math.abs(lx) <= bridge.width / 2 + 3 && Math.abs(lz) <= bridge.length / 2 + 3) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function getForestDensityAt(x: number, z: number): { density: number; type: ForestZone['type'] } {
   let best = { density: 0, type: 'scattered' as ForestZone['type'] };
   for (const zone of FOREST_ZONES) {
@@ -401,28 +443,32 @@ export function generateWorldResources(): WorldResource[] {
   const half = WORLD_SIZE / 2;
 
   // ========== TREES ==========
-  // Generate trees using forest zone density system
-  const treeAttempts = 8000; // Increased for 1800x1800 world
+  // 5x density increase — 40k attempts across 1800x1800 world
+  const treeAttempts = 40000;
   for (let i = 0; i < treeAttempts; i++) {
-    const x = (rand() - 0.5) * WORLD_SIZE * 0.95;
-    const z = (rand() - 0.5) * WORLD_SIZE * 0.95;
+    const x = (rand() - 0.5) * WORLD_SIZE * 0.97;
+    const z = (rand() - 0.5) * WORLD_SIZE * 0.97;
     const y = getTerrainHeight(x, z);
     
-    // Skip water
+    // Skip water and steep underwater
     if (y < -0.3) continue;
     
-    // Skip too close to center (capital area - larger exclusion)
+    // Skip too close to center (capital area)
     const distCenter = Math.sqrt(x * x + z * z);
     if (distCenter < 50) continue;
     
-    // Skip near settlements — large kingdoms have walls at ±45 radius, need bigger buffer
-    if (isNearSettlement(x, z, 55)) continue;
+    // Skip near settlements — large kingdoms need bigger buffer
+    if (isNearSettlement(x, z, 60)) continue;
     
-    // Skip on roads (wider buffer to keep roads visible)
-    if (isNearRoad(x, z, 5)) continue;
+    // Skip on roads (wider buffer for readability)
+    if (isNearRoad(x, z, 6)) continue;
     
-    // Skip near POIs (preserve visibility)
-    if (isNearPOI(x, z, 6)) continue;
+    // Skip near POIs
+    if (isNearPOI(x, z, 7)) continue;
+    
+    // Skip in water bodies and on bridges
+    if (isInWater(x, z)) continue;
+    if (isOnBridge(x, z)) continue;
     
     // Get local forest density
     const forest = getForestDensityAt(x, z);
@@ -430,9 +476,9 @@ export function generateWorldResources(): WorldResource[] {
     // Base spawn chance depends on density
     let spawnChance = forest.density * 0.35;
     
-    // Add minimum scatter everywhere (except near settlements)
+    // Minimum scatter in wilderness (not near settlements)
     if (distCenter > 60) {
-      spawnChance = Math.max(spawnChance, 0.05);
+      spawnChance = Math.max(spawnChance, 0.04);
     }
     
     if (rand() > spawnChance) continue;
@@ -461,7 +507,6 @@ export function generateWorldResources(): WorldResource[] {
       depleted: false, scale, variant, gatherable, trunkHeight, crownRadius,
     });
   }
-
   // ========== ROCKS ==========
   const rockAttempts = 3000; // Increased for expanded world
   for (let i = 0; i < rockAttempts; i++) {
