@@ -2,11 +2,13 @@
  * CivilianNPCs — Non-hostile townspeople with full procedural animation.
  * Scale-matched to player (~1.8m). Articulated limbs, distinct guard/villager gaits.
  * Performance: distance-culled, shared geometry/materials, lightweight state machine.
+ * Covers central town + all 5 new kingdoms.
  */
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { getTerrainHeight } from './Terrain';
+import { SETTLEMENTS } from '../world/RegionData';
 
 type CivilianBehavior = 'idle' | 'patrol' | 'talking';
 type CivilianRole = 'villager' | 'merchant' | 'guard' | 'worker';
@@ -20,6 +22,7 @@ interface CivilianDef {
   patrolSpeed: number;
   talkPartnerOffset?: [number, number];
   facingAngle: number;
+  kingdom?: string;
 }
 
 // ========== SEEDED RNG ==========
@@ -47,6 +50,7 @@ function generateCivilians(): CivilianDef[] {
     });
   };
 
+  // ===== IRONHOLD (CENTRAL TOWN) =====
   // GATE DISTRICT
   add('guard', 'patrol', 5, 42, { patrolRadius: 6, patrolSpeed: 0.6 });
   add('guard', 'patrol', -5, 42, { patrolRadius: 6, patrolSpeed: 0.55 });
@@ -85,10 +89,144 @@ function generateCivilians(): CivilianDef[] {
   add('villager', 'patrol', -10, 15, { patrolRadius: 6, patrolSpeed: 0.4 });
   add('villager', 'idle', 8, 18);
 
+  // ===== THORNWALL (fortified city) at [-500, -450] =====
+  const tw = [-500, -450];
+  // Gate guards
+  add('guard', 'idle', tw[0] - 5, tw[1] + 45, { kingdom: 'thornwall' });
+  add('guard', 'idle', tw[0] + 5, tw[1] + 45, { kingdom: 'thornwall' });
+  add('guard', 'patrol', tw[0], tw[1] + 42, { patrolRadius: 8, patrolSpeed: 0.5, kingdom: 'thornwall' });
+  add('guard', 'patrol', tw[0] + 40, tw[1], { patrolRadius: 12, patrolSpeed: 0.45, kingdom: 'thornwall' });
+  // Barracks district
+  add('guard', 'patrol', tw[0] - 15, tw[1] + 15, { patrolRadius: 10, patrolSpeed: 0.5, kingdom: 'thornwall' });
+  add('guard', 'patrol', tw[0] + 15, tw[1] + 15, { patrolRadius: 10, patrolSpeed: 0.5, kingdom: 'thornwall' });
+  // Workers at smithy
+  add('worker', 'idle', tw[0] - 25, tw[1] + 5, { kingdom: 'thornwall' });
+  add('worker', 'patrol', tw[0] - 22, tw[1] + 8, { patrolRadius: 3, patrolSpeed: 0.4, kingdom: 'thornwall' });
+  // Civilians in housing
+  add('villager', 'patrol', tw[0] + 20, tw[1] - 10, { patrolRadius: 8, patrolSpeed: 0.5, kingdom: 'thornwall' });
+  add('villager', 'talking', tw[0] + 10, tw[1] + 25, { facingAngle: 1.2, kingdom: 'thornwall' });
+  add('villager', 'talking', tw[0] + 11.5, tw[1] + 25, { facingAngle: -1.9, kingdom: 'thornwall' });
+  add('villager', 'patrol', tw[0] - 15, tw[1] - 20, { patrolRadius: 6, kingdom: 'thornwall' });
+  add('villager', 'idle', tw[0] + 10, tw[1] + 25, { kingdom: 'thornwall' });
+
+  // ===== RIVERMOOR (river town) at [450, 350] =====
+  const rm = [450, 350];
+  // Dock guards
+  add('guard', 'patrol', rm[0] - 15, rm[1] - 28, { patrolRadius: 10, patrolSpeed: 0.5, kingdom: 'rivermoor' });
+  add('guard', 'patrol', rm[0] + 15, rm[1] - 28, { patrolRadius: 8, patrolSpeed: 0.45, kingdom: 'rivermoor' });
+  // Market merchants near dock
+  add('merchant', 'idle', rm[0] - 8, rm[1] - 22, { kingdom: 'rivermoor' });
+  add('merchant', 'idle', rm[0] - 2, rm[1] - 22, { kingdom: 'rivermoor' });
+  add('merchant', 'idle', rm[0] + 4, rm[1] - 22, { kingdom: 'rivermoor' });
+  add('merchant', 'talking', rm[0] + 10, rm[1] - 22, { facingAngle: -0.5, kingdom: 'rivermoor' });
+  add('villager', 'talking', rm[0] + 11, rm[1] - 21, { facingAngle: 2.6, kingdom: 'rivermoor' });
+  // Town center
+  add('villager', 'patrol', rm[0], rm[1] + 5, { patrolRadius: 10, patrolSpeed: 0.5, kingdom: 'rivermoor' });
+  add('villager', 'patrol', rm[0] - 12, rm[1] + 10, { patrolRadius: 6, kingdom: 'rivermoor' });
+  add('villager', 'patrol', rm[0] + 15, rm[1] + 8, { patrolRadius: 7, kingdom: 'rivermoor' });
+  // Workers on docks
+  add('worker', 'patrol', rm[0] - 5, rm[1] - 30, { patrolRadius: 8, patrolSpeed: 0.6, kingdom: 'rivermoor' });
+  add('worker', 'idle', rm[0] + 8, rm[1] - 32, { kingdom: 'rivermoor' });
+  // Gate approach
+  add('guard', 'idle', rm[0] - 3, rm[1] + 30, { kingdom: 'rivermoor' });
+  add('guard', 'idle', rm[0] + 3, rm[1] + 30, { kingdom: 'rivermoor' });
+
+  // ===== STONEPEAK (mountain hold) at [-400, 500] =====
+  const sp = [-400, 500];
+  // Gate guards
+  add('guard', 'idle', sp[0] - 4, sp[1] + 25, { kingdom: 'stonepeak' });
+  add('guard', 'idle', sp[0] + 4, sp[1] + 25, { kingdom: 'stonepeak' });
+  add('guard', 'patrol', sp[0], sp[1] + 30, { patrolRadius: 6, patrolSpeed: 0.5, kingdom: 'stonepeak' });
+  // Wall patrols
+  add('guard', 'patrol', sp[0] + 20, sp[1], { patrolRadius: 15, patrolSpeed: 0.4, kingdom: 'stonepeak' });
+  add('guard', 'patrol', sp[0] - 20, sp[1], { patrolRadius: 15, patrolSpeed: 0.4, kingdom: 'stonepeak' });
+  // Mine workers
+  add('worker', 'patrol', sp[0] - 18, sp[1] - 5, { patrolRadius: 4, patrolSpeed: 0.5, kingdom: 'stonepeak' });
+  add('worker', 'idle', sp[0] - 20, sp[1] - 3, { kingdom: 'stonepeak' });
+  // Inner residents
+  add('villager', 'patrol', sp[0] + 10, sp[1] + 5, { patrolRadius: 8, kingdom: 'stonepeak' });
+  add('villager', 'patrol', sp[0] - 8, sp[1] + 10, { patrolRadius: 6, kingdom: 'stonepeak' });
+  add('villager', 'talking', sp[0] + 5, sp[1] - 8, { facingAngle: 0.3, kingdom: 'stonepeak' });
+  add('villager', 'talking', sp[0] + 6.5, sp[1] - 8, { facingAngle: -2.8, kingdom: 'stonepeak' });
+  add('villager', 'idle', sp[0], sp[1] + 15, { kingdom: 'stonepeak' });
+
+  // ===== DARKHOLLOW (frontier camp) at [550, -400] =====
+  const dh = [550, -400];
+  // Makeshift gate
+  add('guard', 'patrol', dh[0], dh[1] + 25, { patrolRadius: 6, patrolSpeed: 0.6, kingdom: 'darkhollow' });
+  add('guard', 'patrol', dh[0] + 18, dh[1] - 18, { patrolRadius: 8, patrolSpeed: 0.5, kingdom: 'darkhollow' });
+  // Central fire gathering
+  add('villager', 'talking', dh[0] - 2, dh[1] + 1, { facingAngle: 0.8, kingdom: 'darkhollow' });
+  add('villager', 'talking', dh[0] + 1, dh[1] - 1.5, { facingAngle: -2.3, kingdom: 'darkhollow' });
+  add('villager', 'idle', dh[0] + 3, dh[1] + 2, { kingdom: 'darkhollow' });
+  // Scavenger workers
+  add('worker', 'patrol', dh[0] + 8, dh[1] + 8, { patrolRadius: 5, patrolSpeed: 0.5, kingdom: 'darkhollow' });
+  add('worker', 'patrol', dh[0] - 10, dh[1] - 5, { patrolRadius: 6, kingdom: 'darkhollow' });
+  // Lookout tower guards
+  add('guard', 'idle', dh[0] - 20, dh[1] + 18, { kingdom: 'darkhollow' });
+  add('villager', 'patrol', dh[0] - 15, dh[1] + 5, { patrolRadius: 7, kingdom: 'darkhollow' });
+
+  // ===== GOLDENVALE (trade city) at [-550, 100] =====
+  const gv = [-550, 100];
+  // Gate guards
+  add('guard', 'idle', gv[0] - 4, gv[1] + 35, { kingdom: 'goldenvale' });
+  add('guard', 'idle', gv[0] + 4, gv[1] + 35, { kingdom: 'goldenvale' });
+  add('guard', 'patrol', gv[0], gv[1] + 33, { patrolRadius: 6, patrolSpeed: 0.5, kingdom: 'goldenvale' });
+  // Wall patrol
+  add('guard', 'patrol', gv[0] + 35, gv[1], { patrolRadius: 15, patrolSpeed: 0.4, kingdom: 'goldenvale' });
+  // Market plaza — lots of merchants
+  add('merchant', 'idle', gv[0] - 10, gv[1] + 8, { kingdom: 'goldenvale' });
+  add('merchant', 'idle', gv[0] - 4, gv[1] + 8, { kingdom: 'goldenvale' });
+  add('merchant', 'idle', gv[0] + 2, gv[1] + 8, { kingdom: 'goldenvale' });
+  add('merchant', 'idle', gv[0] + 8, gv[1] + 8, { kingdom: 'goldenvale' });
+  add('merchant', 'talking', gv[0] - 6, gv[1] + 12, { facingAngle: 1.5, kingdom: 'goldenvale' });
+  add('villager', 'talking', gv[0] - 5, gv[1] + 13, { facingAngle: -1.5, kingdom: 'goldenvale' });
+  // Residential areas
+  add('villager', 'patrol', gv[0] + 20, gv[1] - 15, { patrolRadius: 8, kingdom: 'goldenvale' });
+  add('villager', 'patrol', gv[0] - 20, gv[1] + 20, { patrolRadius: 6, kingdom: 'goldenvale' });
+  add('villager', 'patrol', gv[0] + 15, gv[1] + 20, { patrolRadius: 7, kingdom: 'goldenvale' });
+  add('villager', 'idle', gv[0] + 5, gv[1] - 10, { kingdom: 'goldenvale' });
+  // Workers
+  add('worker', 'patrol', gv[0] - 25, gv[1] - 10, { patrolRadius: 5, patrolSpeed: 0.5, kingdom: 'goldenvale' });
+
   return civs;
 }
 
 const CIVILIANS = generateCivilians();
+
+// Group NPCs by kingdom center for distance culling
+interface KingdomGroup {
+  cx: number; cz: number;
+  cullRadius: number;
+  npcs: CivilianDef[];
+}
+
+function buildKingdomGroups(): KingdomGroup[] {
+  const groups: KingdomGroup[] = [
+    { cx: 0, cz: 50, cullRadius: 120, npcs: [] }, // Ironhold
+    { cx: -500, cz: -450, cullRadius: 100, npcs: [] }, // Thornwall
+    { cx: 450, cz: 350, cullRadius: 100, npcs: [] }, // Rivermoor
+    { cx: -400, cz: 500, cullRadius: 100, npcs: [] }, // Stonepeak
+    { cx: 550, cz: -400, cullRadius: 100, npcs: [] }, // Darkhollow
+    { cx: -550, cz: 100, cullRadius: 100, npcs: [] }, // Goldenvale
+  ];
+
+  for (const c of CIVILIANS) {
+    let bestGroup = groups[0];
+    let bestDist = Infinity;
+    for (const g of groups) {
+      const dx = c.homePos[0] - g.cx;
+      const dz = c.homePos[2] - g.cz;
+      const d = dx * dx + dz * dz;
+      if (d < bestDist) { bestDist = d; bestGroup = g; }
+    }
+    bestGroup.npcs.push(c);
+  }
+
+  return groups;
+}
+
+const KINGDOM_GROUPS = buildKingdomGroups();
 
 // ========== SHARED GEOMETRY & MATERIALS ==========
 const _boxGeo = new THREE.BoxGeometry(1, 1, 1);
@@ -132,15 +270,14 @@ function Civilian({ def, playerPos }: { def: CivilianDef; playerPos: THREE.Vecto
   const torsoRef = useRef<THREE.Group>(null!);
 
   const patrolAngleRef = useRef(Math.random() * Math.PI * 2);
-  const timeRef = useRef(Math.random() * 100); // offset so NPCs aren't synced
+  const timeRef = useRef(Math.random() * 100);
   const facingRef = useRef(def.facingAngle);
 
   const civIndex = parseInt(def.id.replace('civ-', ''));
   const tunicMat = useMemo(() => getTunicMat(def.role, civIndex), [def.role, civIndex]);
   const hairMat = useMemo(() => getHairMat(civIndex), [civIndex]);
   const isGuard = def.role === 'guard';
-  const walkCycleSpeed = isGuard ? 5.5 : 7.0; // guards walk steadier
-  // Height variation: 0.95 to 1.05 of base
+  const walkCycleSpeed = isGuard ? 5.5 : 7.0;
   const heightScale = useMemo(() => 0.95 + (seededRng(civIndex * 37)() * 0.1), [civIndex]);
 
   useFrame((_, delta) => {
@@ -149,7 +286,7 @@ function Civilian({ def, playerPos }: { def: CivilianDef; playerPos: THREE.Vecto
     timeRef.current += dt;
     const t = timeRef.current;
 
-    // Distance cull
+    // Per-NPC distance cull (secondary — primary is kingdom-level)
     if (playerPos) {
       const dx = playerPos.x - groupRef.current.position.x;
       const dz = playerPos.z - groupRef.current.position.z;
@@ -161,8 +298,6 @@ function Civilian({ def, playerPos }: { def: CivilianDef; playerPos: THREE.Vecto
       groupRef.current.visible = true;
     }
 
-    let moveSpeed = 0; // 0-1 blend for animation
-
     if (def.behavior === 'patrol') {
       patrolAngleRef.current += dt * def.patrolSpeed * 0.3;
       const pa = patrolAngleRef.current;
@@ -170,14 +305,10 @@ function Civilian({ def, playerPos }: { def: CivilianDef; playerPos: THREE.Vecto
       const tz = def.homePos[2] + Math.sin(pa) * def.patrolRadius;
       const ty = getTerrainHeight(tx, tz);
       groupRef.current.position.set(tx, ty, tz);
-
-      // Smooth facing toward movement direction
       const targetAngle = pa + Math.PI / 2;
       facingRef.current += (((targetAngle - facingRef.current + Math.PI) % (Math.PI * 2)) - Math.PI) * dt * 4;
       groupRef.current.rotation.y = facingRef.current;
-      moveSpeed = 1;
     } else {
-      // Stay at home position, update terrain height
       const ty = getTerrainHeight(def.homePos[0], def.homePos[2]);
       groupRef.current.position.set(def.homePos[0], ty, def.homePos[2]);
     }
@@ -188,212 +319,115 @@ function Civilian({ def, playerPos }: { def: CivilianDef; playerPos: THREE.Vecto
     const cycleT = t * walkCycleSpeed;
 
     if (def.behavior === 'patrol') {
-      // ===== WALKING ANIMATION =====
-      const legSwing = isGuard ? 0.35 : 0.5; // guards: tighter stride
-      const armSwing = isGuard ? 0.2 : 0.35;  // guards: less arm movement
+      const legSwing = isGuard ? 0.35 : 0.5;
+      const armSwing = isGuard ? 0.2 : 0.35;
       const hipSway = isGuard ? 0.01 : 0.03;
       const bodyBob = isGuard ? 0.03 : 0.06;
       const torsoTwist = isGuard ? 0.02 : 0.04;
       const shoulderRoll = isGuard ? 0.015 : 0.03;
 
-      // Leg gait — alternating sinusoidal
       leftLegRef.current.rotation.x = Math.sin(cycleT) * legSwing;
       rightLegRef.current.rotation.x = Math.sin(cycleT + Math.PI) * legSwing;
-
-      // Arm counter-swing
       leftArmRef.current.rotation.x = Math.sin(cycleT + Math.PI) * armSwing;
       rightArmRef.current.rotation.x = Math.sin(cycleT) * armSwing;
-      // Slight arm outward sway
       leftArmRef.current.rotation.z = -0.05 + Math.sin(cycleT * 0.5) * 0.02;
       rightArmRef.current.rotation.z = 0.05 + Math.sin(cycleT * 0.5 + Math.PI) * 0.02;
-
-      // Body bob synced to step frequency (2x leg freq)
       bodyRef.current.position.y = Math.abs(Math.sin(cycleT)) * bodyBob;
-
-      // Hip sway
       bodyRef.current.position.x = Math.sin(cycleT) * hipSway;
-
-      // Torso twist — counter to legs
       torsoRef.current.rotation.y = Math.sin(cycleT) * torsoTwist;
-      // Shoulder roll
       torsoRef.current.rotation.z = Math.sin(cycleT) * shoulderRoll;
-
-      // Forward lean
       torsoRef.current.rotation.x = isGuard ? 0 : 0.03;
-
-      // Head stability — counter-rotates slightly against torso
       headRef.current.rotation.y = -Math.sin(cycleT) * torsoTwist * 0.5;
       headRef.current.rotation.x = 0;
-
     } else if (def.behavior === 'idle') {
-      // ===== IDLE ANIMATION =====
       const breathRate = 1.2;
       const breathAmt = 0.015;
       const swayRate = 0.4;
       const swayAmt = 0.008;
 
-      // Breathing — subtle torso scale/position
       torsoRef.current.rotation.x = Math.sin(t * breathRate) * breathAmt;
       bodyRef.current.position.y = Math.sin(t * breathRate) * 0.005;
-
-      // Weight shift — slow lateral sway
       bodyRef.current.position.x = Math.sin(t * swayRate) * swayAmt;
       bodyRef.current.rotation.z = Math.sin(t * swayRate) * 0.005;
-
-      // Head turns — slow look around
       headRef.current.rotation.y = Math.sin(t * 0.25) * 0.15;
       headRef.current.rotation.x = Math.sin(t * 0.18) * 0.03;
-
-      // Arms relaxed at sides with slight sway
       leftArmRef.current.rotation.x = Math.sin(t * 0.3) * 0.02;
       rightArmRef.current.rotation.x = Math.sin(t * 0.35 + 1) * 0.02;
       leftArmRef.current.rotation.z = -0.08;
       rightArmRef.current.rotation.z = 0.08;
-
-      // Legs straight
       leftLegRef.current.rotation.x = 0;
       rightLegRef.current.rotation.x = 0;
-
-      // Slow body rotation — looking around
       groupRef.current.rotation.y = def.facingAngle + Math.sin(t * 0.15) * 0.15;
 
-      // Guard: more upright, less sway
       if (isGuard) {
         bodyRef.current.position.x = 0;
         bodyRef.current.rotation.z = 0;
         headRef.current.rotation.y = Math.sin(t * 0.3) * 0.08;
         torsoRef.current.rotation.x = 0;
       }
-
     } else if (def.behavior === 'talking') {
-      // ===== TALKING ANIMATION =====
-      // Face partner direction
       groupRef.current.rotation.y = def.facingAngle + Math.sin(t * 0.3) * 0.03;
-
-      // Head nods — conversational rhythm
       headRef.current.rotation.x = Math.sin(t * 2.5) * 0.06 + Math.sin(t * 1.1) * 0.03;
-      // Head tilts
       headRef.current.rotation.z = Math.sin(t * 0.7) * 0.04;
       headRef.current.rotation.y = Math.sin(t * 0.8) * 0.08;
-
-      // Gesture — one arm moves more (talking hand)
       const gesturePhase = Math.sin(t * 1.8);
       leftArmRef.current.rotation.x = -0.3 + gesturePhase * 0.15;
       leftArmRef.current.rotation.z = -0.15 + Math.sin(t * 1.2) * 0.05;
-      // Other arm relaxed
       rightArmRef.current.rotation.x = Math.sin(t * 0.4) * 0.03;
       rightArmRef.current.rotation.z = 0.08;
-
-      // Subtle weight shift
       bodyRef.current.position.x = Math.sin(t * 0.5) * 0.01;
       bodyRef.current.position.y = 0;
       torsoRef.current.rotation.x = Math.sin(t * 0.6) * 0.01;
       torsoRef.current.rotation.y = Math.sin(t * 0.9) * 0.02;
-
-      // Legs still
       leftLegRef.current.rotation.x = 0;
       rightLegRef.current.rotation.x = 0;
     }
   });
 
-  // Body dimensions matched to player:
-  // Player total: ~1.8m. Boots ~0.1, legs ~0.55, torso ~0.65, head ~0.4, hair ~0.1
   return (
     <group ref={groupRef} position={def.homePos} rotation={[0, def.facingAngle, 0]}>
       <group ref={bodyRef} scale={[heightScale, heightScale, heightScale]}>
-        {/* LEFT LEG — pivot at hip */}
         <group ref={leftLegRef} position={[-0.15, 0.55, 0]}>
-          {/* Upper leg */}
-          <mesh position={[0, -0.15, 0]} geometry={_boxGeo}
-            scale={[0.2, 0.3, 0.2]} material={pantsColor} castShadow />
-          {/* Lower leg */}
-          <mesh position={[0, -0.4, 0]} geometry={_boxGeo}
-            scale={[0.18, 0.25, 0.18]} material={pantsColor} castShadow />
-          {/* Boot */}
-          <mesh position={[0, -0.58, 0.03]} geometry={_boxGeo}
-            scale={[0.22, 0.12, 0.28]} material={bootColor} castShadow />
+          <mesh position={[0, -0.15, 0]} geometry={_boxGeo} scale={[0.2, 0.3, 0.2]} material={pantsColor} castShadow />
+          <mesh position={[0, -0.4, 0]} geometry={_boxGeo} scale={[0.18, 0.25, 0.18]} material={pantsColor} castShadow />
+          <mesh position={[0, -0.58, 0.03]} geometry={_boxGeo} scale={[0.22, 0.12, 0.28]} material={bootColor} castShadow />
         </group>
-
-        {/* RIGHT LEG — pivot at hip */}
         <group ref={rightLegRef} position={[0.15, 0.55, 0]}>
-          <mesh position={[0, -0.15, 0]} geometry={_boxGeo}
-            scale={[0.2, 0.3, 0.2]} material={pantsColor} castShadow />
-          <mesh position={[0, -0.4, 0]} geometry={_boxGeo}
-            scale={[0.18, 0.25, 0.18]} material={pantsColor} castShadow />
-          <mesh position={[0, -0.58, 0.03]} geometry={_boxGeo}
-            scale={[0.22, 0.12, 0.28]} material={bootColor} castShadow />
+          <mesh position={[0, -0.15, 0]} geometry={_boxGeo} scale={[0.2, 0.3, 0.2]} material={pantsColor} castShadow />
+          <mesh position={[0, -0.4, 0]} geometry={_boxGeo} scale={[0.18, 0.25, 0.18]} material={pantsColor} castShadow />
+          <mesh position={[0, -0.58, 0.03]} geometry={_boxGeo} scale={[0.22, 0.12, 0.28]} material={bootColor} castShadow />
         </group>
-
-        {/* TORSO GROUP — pivot at waist */}
         <group ref={torsoRef} position={[0, 0.7, 0]}>
-          {/* Lower torso */}
-          <mesh position={[0, 0, 0]} geometry={_boxGeo}
-            scale={[0.55, 0.35, 0.3]} material={tunicMat} castShadow />
-          {/* Upper torso */}
-          <mesh position={[0, 0.25, 0]} geometry={_boxGeo}
-            scale={[0.6, 0.3, 0.32]} material={tunicMat} castShadow />
-          {/* Belt */}
-          <mesh position={[0, -0.12, 0]} geometry={_boxGeo}
-            scale={[0.58, 0.06, 0.32]} material={bootColor} castShadow />
-
-          {/* LEFT ARM — pivot at shoulder */}
+          <mesh position={[0, 0, 0]} geometry={_boxGeo} scale={[0.55, 0.35, 0.3]} material={tunicMat} castShadow />
+          <mesh position={[0, 0.25, 0]} geometry={_boxGeo} scale={[0.6, 0.3, 0.32]} material={tunicMat} castShadow />
+          <mesh position={[0, -0.12, 0]} geometry={_boxGeo} scale={[0.58, 0.06, 0.32]} material={bootColor} castShadow />
           <group ref={leftArmRef} position={[-0.38, 0.2, 0]}>
-            {/* Upper arm */}
-            <mesh position={[0, -0.12, 0]} geometry={_boxGeo}
-              scale={[0.16, 0.3, 0.16]} material={tunicMat} castShadow />
-            {/* Forearm */}
-            <mesh position={[0, -0.35, 0]} geometry={_boxGeo}
-              scale={[0.14, 0.22, 0.14]} material={tunicMat} castShadow />
-            {/* Hand */}
-            <mesh position={[0, -0.5, 0]} geometry={_boxGeo}
-              scale={[0.1, 0.1, 0.1]} material={skinMat} />
+            <mesh position={[0, -0.12, 0]} geometry={_boxGeo} scale={[0.16, 0.3, 0.16]} material={tunicMat} castShadow />
+            <mesh position={[0, -0.35, 0]} geometry={_boxGeo} scale={[0.14, 0.22, 0.14]} material={tunicMat} castShadow />
+            <mesh position={[0, -0.5, 0]} geometry={_boxGeo} scale={[0.1, 0.1, 0.1]} material={skinMat} />
           </group>
-
-          {/* RIGHT ARM — pivot at shoulder */}
           <group ref={rightArmRef} position={[0.38, 0.2, 0]}>
-            <mesh position={[0, -0.12, 0]} geometry={_boxGeo}
-              scale={[0.16, 0.3, 0.16]} material={tunicMat} castShadow />
-            <mesh position={[0, -0.35, 0]} geometry={_boxGeo}
-              scale={[0.14, 0.22, 0.14]} material={tunicMat} castShadow />
-            <mesh position={[0, -0.5, 0]} geometry={_boxGeo}
-              scale={[0.1, 0.1, 0.1]} material={skinMat} />
+            <mesh position={[0, -0.12, 0]} geometry={_boxGeo} scale={[0.16, 0.3, 0.16]} material={tunicMat} castShadow />
+            <mesh position={[0, -0.35, 0]} geometry={_boxGeo} scale={[0.14, 0.22, 0.14]} material={tunicMat} castShadow />
+            <mesh position={[0, -0.5, 0]} geometry={_boxGeo} scale={[0.1, 0.1, 0.1]} material={skinMat} />
           </group>
-
-          {/* HEAD — pivot at neck */}
           <group ref={headRef} position={[0, 0.55, 0]}>
-            {/* Head */}
-            <mesh position={[0, 0.05, 0]} geometry={_boxGeo}
-              scale={[0.3, 0.32, 0.3]} material={skinMat} castShadow />
-            {/* Eyes strip */}
-            <mesh position={[0, 0.07, 0.155]} geometry={_boxGeo}
-              scale={[0.2, 0.04, 0.01]} material={bootColor} />
-            {/* Hair or helmet */}
+            <mesh position={[0, 0.05, 0]} geometry={_boxGeo} scale={[0.3, 0.32, 0.3]} material={skinMat} castShadow />
+            <mesh position={[0, 0.07, 0.155]} geometry={_boxGeo} scale={[0.2, 0.04, 0.01]} material={bootColor} />
             {isGuard ? (
               <>
-                <mesh position={[0, 0.18, 0]} geometry={_boxGeo}
-                  scale={[0.34, 0.12, 0.34]} material={helmetColor} castShadow />
-                {/* Nose guard */}
-                <mesh position={[0, 0.08, 0.16]} geometry={_boxGeo}
-                  scale={[0.03, 0.12, 0.03]} material={helmetColor} />
+                <mesh position={[0, 0.18, 0]} geometry={_boxGeo} scale={[0.34, 0.12, 0.34]} material={helmetColor} castShadow />
+                <mesh position={[0, 0.08, 0.16]} geometry={_boxGeo} scale={[0.03, 0.12, 0.03]} material={helmetColor} />
               </>
             ) : (
-              <mesh position={[0, 0.16, -0.02]} geometry={_boxGeo}
-                scale={[0.32, 0.12, 0.32]} material={hairMat} castShadow />
+              <mesh position={[0, 0.16, -0.02]} geometry={_boxGeo} scale={[0.32, 0.12, 0.32]} material={hairMat} castShadow />
             )}
           </group>
-
-          {/* Guard equipment */}
           {isGuard && (
             <>
-              {/* Spear in right hand */}
-              <mesh position={[0.4, -0.1, 0]} geometry={_boxGeo}
-                scale={[0.04, 2.0, 0.04]} material={spearWood} castShadow />
-              {/* Spear tip */}
-              <mesh position={[0.4, 0.95, 0]} geometry={_boxGeo}
-                scale={[0.06, 0.12, 0.02]} material={helmetColor} castShadow />
-              {/* Shield on left arm */}
-              <mesh position={[-0.45, 0, -0.05]} geometry={_boxGeo}
-                scale={[0.04, 0.4, 0.3]} material={shieldMat} castShadow />
+              <mesh position={[0.4, -0.1, 0]} geometry={_boxGeo} scale={[0.04, 2.0, 0.04]} material={spearWood} castShadow />
+              <mesh position={[0.4, 0.95, 0]} geometry={_boxGeo} scale={[0.06, 0.12, 0.02]} material={helmetColor} castShadow />
+              <mesh position={[-0.45, 0, -0.05]} geometry={_boxGeo} scale={[0.04, 0.4, 0.3]} material={shieldMat} castShadow />
             </>
           )}
         </group>
@@ -410,18 +444,23 @@ interface CivilianNPCsProps {
 export function CivilianNPCs({ playerPositionRef }: CivilianNPCsProps) {
   const playerPos = playerPositionRef.current;
 
-  // Early out if player is far from entire town
-  if (playerPos) {
-    const dx = playerPos.x;
-    const dz = playerPos.z - 50;
-    if (dx * dx + dz * dz > 120 * 120) return null;
-  }
-
   return (
     <group>
-      {CIVILIANS.map(c => (
-        <Civilian key={c.id} def={c} playerPos={playerPos} />
-      ))}
+      {KINGDOM_GROUPS.map((group, gi) => {
+        // Kingdom-level distance cull
+        if (playerPos) {
+          const dx = playerPos.x - group.cx;
+          const dz = playerPos.z - group.cz;
+          if (dx * dx + dz * dz > group.cullRadius * group.cullRadius) return null;
+        }
+        return (
+          <group key={gi}>
+            {group.npcs.map(c => (
+              <Civilian key={c.id} def={c} playerPos={playerPos} />
+            ))}
+          </group>
+        );
+      })}
     </group>
   );
 }

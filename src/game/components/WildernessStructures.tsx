@@ -1,6 +1,6 @@
 /**
  * WildernessStructures — Isolated buildings, camps, farms, and outposts
- * placed in empty wilderness areas to add density and life.
+ * placed in empty wilderness areas across the full 1800x1800 world.
  * All structures are terrain-aligned and collision-registered.
  */
 import { useMemo } from 'react';
@@ -51,36 +51,83 @@ function isNearPOI(x: number, z: number, minDist: number): boolean {
   return false;
 }
 
-// Pre-computed structure placements in empty zones
 function generateWildernessBuildings(): WildernessBuilding[] {
   const buildings: WildernessBuilding[] = [];
   const rand = seededRandom(54321);
 
-  // Define cluster spots in identified empty zones
   const clusters = [
-    // Central-east corridor
+    // === CENTRAL WORLD (original) ===
     { cx: 120, cz: 30, count: 3, spread: 15, types: ['cottage', 'shed', 'farmhouse'] as const },
     { cx: 75, cz: -20, count: 2, spread: 12, types: ['cottage', 'ruin'] as const },
-    // Central-south
     { cx: -40, cz: -120, count: 3, spread: 18, types: ['farmhouse', 'cottage', 'shed'] as const },
     { cx: 15, cz: -130, count: 2, spread: 10, types: ['ruin', 'camp'] as const },
-    // Western corridor (Greenmeadow to Ashwood)
     { cx: -175, cz: -20, count: 3, spread: 16, types: ['cottage', 'farmhouse', 'shed'] as const },
     { cx: -160, cz: 60, count: 2, spread: 12, types: ['outpost', 'shed'] as const },
-    // Northern area
     { cx: -40, cz: 140, count: 2, spread: 14, types: ['cottage', 'camp'] as const },
     { cx: 50, cz: 140, count: 2, spread: 12, types: ['farmhouse', 'shed'] as const },
-    // Between Blackthorn and Ravenwatch
     { cx: 110, cz: -140, count: 2, spread: 14, types: ['outpost', 'ruin'] as const },
     { cx: 70, cz: -120, count: 2, spread: 10, types: ['camp', 'shed'] as const },
-    // Far wilderness
     { cx: -240, cz: -130, count: 2, spread: 15, types: ['ruin', 'cottage'] as const },
     { cx: 240, cz: 180, count: 2, spread: 12, types: ['shrine_hut', 'camp'] as const },
     { cx: -140, cz: 210, count: 2, spread: 14, types: ['cottage', 'shed'] as const },
     { cx: 200, cz: -80, count: 2, spread: 12, types: ['outpost', 'ruin'] as const },
-    // Near roads but offset
     { cx: -85, cz: -30, count: 2, spread: 10, types: ['farmhouse', 'shed'] as const },
     { cx: 40, cz: 70, count: 2, spread: 10, types: ['cottage', 'shrine_hut'] as const },
+
+    // === THORNWALL CORRIDOR (SW) ===
+    { cx: -350, cz: -300, count: 3, spread: 20, types: ['cottage', 'outpost', 'shed'] as const },
+    { cx: -420, cz: -380, count: 2, spread: 15, types: ['ruin', 'camp'] as const },
+    { cx: -480, cz: -500, count: 2, spread: 18, types: ['farmhouse', 'cottage'] as const },
+    { cx: -550, cz: -480, count: 2, spread: 12, types: ['outpost', 'shed'] as const },
+    { cx: -460, cz: -350, count: 2, spread: 14, types: ['camp', 'shrine_hut'] as const },
+
+    // === GOLDENVALE CORRIDOR (W) ===
+    { cx: -400, cz: 80, count: 3, spread: 18, types: ['farmhouse', 'cottage', 'shed'] as const },
+    { cx: -480, cz: 60, count: 2, spread: 14, types: ['cottage', 'farmhouse'] as const },
+    { cx: -520, cz: 180, count: 2, spread: 16, types: ['shed', 'camp'] as const },
+    { cx: -600, cz: 50, count: 2, spread: 15, types: ['ruin', 'outpost'] as const },
+    { cx: -580, cz: 160, count: 2, spread: 12, types: ['farmhouse', 'shrine_hut'] as const },
+
+    // === RIVERMOOR CORRIDOR (NE) ===
+    { cx: 350, cz: 280, count: 3, spread: 18, types: ['cottage', 'farmhouse', 'shed'] as const },
+    { cx: 420, cz: 400, count: 2, spread: 14, types: ['camp', 'shed'] as const },
+    { cx: 380, cz: 320, count: 2, spread: 16, types: ['farmhouse', 'cottage'] as const },
+    { cx: 500, cz: 380, count: 2, spread: 12, types: ['outpost', 'shed'] as const },
+    { cx: 480, cz: 420, count: 2, spread: 14, types: ['ruin', 'camp'] as const },
+
+    // === STONEPEAK CORRIDOR (NW) ===
+    { cx: -350, cz: 380, count: 3, spread: 20, types: ['cottage', 'outpost', 'ruin'] as const },
+    { cx: -300, cz: 450, count: 2, spread: 15, types: ['camp', 'shed'] as const },
+    { cx: -430, cz: 550, count: 2, spread: 14, types: ['cottage', 'shrine_hut'] as const },
+    { cx: -450, cz: 450, count: 2, spread: 16, types: ['farmhouse', 'shed'] as const },
+
+    // === DARKHOLLOW CORRIDOR (SE) ===
+    { cx: 400, cz: -300, count: 3, spread: 18, types: ['ruin', 'camp', 'outpost'] as const },
+    { cx: 480, cz: -380, count: 2, spread: 14, types: ['ruin', 'shed'] as const },
+    { cx: 550, cz: -450, count: 2, spread: 16, types: ['camp', 'ruin'] as const },
+    { cx: 600, cz: -350, count: 2, spread: 12, types: ['outpost', 'camp'] as const },
+
+    // === INTER-KINGDOM CORRIDORS ===
+    // Thornwall → Goldenvale
+    { cx: -560, cz: -200, count: 2, spread: 15, types: ['cottage', 'shed'] as const },
+    { cx: -540, cz: -80, count: 2, spread: 14, types: ['farmhouse', 'camp'] as const },
+    // Goldenvale → Stonepeak
+    { cx: -500, cz: 300, count: 2, spread: 16, types: ['cottage', 'outpost'] as const },
+    { cx: -460, cz: 400, count: 2, spread: 14, types: ['shrine_hut', 'shed'] as const },
+    // Rivermoor → Darkhollow
+    { cx: 520, cz: 50, count: 2, spread: 15, types: ['ruin', 'camp'] as const },
+    { cx: 530, cz: -150, count: 2, spread: 14, types: ['outpost', 'shed'] as const },
+    // Stonepeak → Rivermoor (northern)
+    { cx: -200, cz: 540, count: 2, spread: 16, types: ['cottage', 'camp'] as const },
+    { cx: 100, cz: 530, count: 2, spread: 14, types: ['shed', 'shrine_hut'] as const },
+    { cx: 300, cz: 450, count: 2, spread: 15, types: ['farmhouse', 'cottage'] as const },
+
+    // === EMPTY ZONE FILL ===
+    { cx: -650, cz: -600, count: 2, spread: 20, types: ['ruin', 'camp'] as const },
+    { cx: 650, cz: 500, count: 2, spread: 18, types: ['cottage', 'shed'] as const },
+    { cx: 0, cz: 600, count: 2, spread: 16, types: ['outpost', 'camp'] as const },
+    { cx: -200, cz: -500, count: 2, spread: 18, types: ['ruin', 'shrine_hut'] as const },
+    { cx: 200, cz: 500, count: 2, spread: 15, types: ['farmhouse', 'cottage'] as const },
   ];
 
   for (const cluster of clusters) {
@@ -132,14 +179,11 @@ function WildernessFarmhouse({ pos, rot, w, d }: { pos: [number, number, number]
     <group position={pos} rotation={[0, rot, 0]}>
       <mesh position={[0, 0.15, 0]} geometry={GEO.box} scale={[w + 0.4, 0.3, d + 0.4]} material={MAT.cobble} castShadow />
       <mesh position={[0, 1.5, 0]} geometry={GEO.box} scale={[w, 3, d]} material={MAT.daub} castShadow />
-      {/* Timber frame */}
       <mesh position={[0, 1.5, d / 2 + 0.01]} geometry={GEO.box} scale={[w, 0.1, 0.06]} material={MAT.timber} />
       <mesh position={[0, 0.5, d / 2 + 0.01]} geometry={GEO.box} scale={[w, 0.1, 0.06]} material={MAT.timber} />
       <mesh position={[0, 3.3, 0]} geometry={GEO.cone4} scale={[w * 0.7, 1.8, d * 0.7]} material={MAT.roofTile} castShadow />
       <mesh position={[0, 0.8, d / 2 + 0.01]} geometry={GEO.box} scale={[0.8, 1.5, 0.08]} material={MAT.door} />
-      {/* Chimney */}
       <mesh position={[w * 0.3, 4, -d * 0.3]} geometry={GEO.box} scale={[0.4, 1.2, 0.4]} material={MAT.stoneDark} castShadow />
-      {/* Fence */}
       {[-1, 0, 1].map(i => (
         <mesh key={i} position={[w * 0.7 + 1, 0.3, i * 1.2]} geometry={GEO.box}
           scale={[0.06, 0.6, 0.06]} material={MAT.fence} castShadow />
@@ -167,7 +211,6 @@ function WildernessShed({ pos, rot }: { pos: [number, number, number]; rot: numb
       <mesh position={[0, 0.8, 0]} geometry={GEO.box} scale={[2, 1.6, 2.5]} material={MAT.woodWeathered} castShadow />
       <mesh position={[0, 1.9, 0]} geometry={GEO.cone4} scale={[1.5, 1, 1.8]} material={MAT.roofThatch} castShadow />
       <mesh position={[0, 0.6, 1.26]} geometry={GEO.box} scale={[0.6, 1, 0.06]} material={MAT.door} />
-      {/* Woodpile next to shed */}
       <mesh position={[1.5, 0.2, 0]} geometry={GEO.box} scale={[0.6, 0.4, 1]} material={MAT.woodDark} castShadow />
     </group>
   );
@@ -176,11 +219,9 @@ function WildernessShed({ pos, rot }: { pos: [number, number, number]; rot: numb
 function WildernessOutpost({ pos, rot }: { pos: [number, number, number]; rot: number }) {
   return (
     <group position={pos} rotation={[0, rot, 0]}>
-      {/* Small watchtower */}
       <mesh position={[0, 2, 0]} geometry={GEO.box} scale={[1.8, 4, 1.8]} material={MAT.woodDark} castShadow />
       <mesh position={[0, 4.2, 0]} geometry={GEO.box} scale={[2.5, 0.15, 2.5]} material={MAT.woodDark} castShadow />
       <mesh position={[0, 5, 0]} geometry={GEO.cone4} scale={[1.8, 1.2, 1.8]} material={MAT.roofSlate} castShadow />
-      {/* Banner */}
       <mesh position={[0, 6, 0]} geometry={GEO.box} scale={[0.06, 1.5, 0.06]} material={MAT.timber} />
       <mesh position={[0.2, 5.8, 0]} geometry={GEO.box} scale={[0.4, 0.6, 0.02]} material={MAT.banner} />
     </group>
@@ -191,14 +232,12 @@ function WildernessCamp({ pos, rot }: { pos: [number, number, number]; rot: numb
   return (
     <group position={pos} rotation={[0, rot, 0]}>
       <mesh position={[0, 0.7, 0]} geometry={GEO.cone6} scale={[1.2, 1.4, 1.2]} material={MAT.tentRagged} castShadow />
-      {/* Fire ring */}
       {[0, 1, 2, 3, 4, 5].map(i => {
         const a = (i / 6) * Math.PI * 2;
         return <mesh key={i} position={[Math.cos(a) * 0.6 + 1.5, 0.06, Math.sin(a) * 0.6]}
           geometry={GEO.box} scale={[0.15, 0.12, 0.15]} material={MAT.stoneDark} castShadow />;
       })}
       <mesh position={[1.5, 0.15, 0]} geometry={GEO.box} scale={[0.1, 0.15, 0.1]} material={MAT.fire} />
-      {/* Bedroll */}
       <mesh position={[-1.2, 0.05, 0.5]} geometry={GEO.box} scale={[0.5, 0.08, 1.2]} material={MAT.leather} />
     </group>
   );
@@ -207,11 +246,9 @@ function WildernessCamp({ pos, rot }: { pos: [number, number, number]; rot: numb
 function WildernessShrineHut({ pos, rot }: { pos: [number, number, number]; rot: number }) {
   return (
     <group position={pos} rotation={[0, rot, 0]}>
-      {/* Small stone shrine with canopy */}
       <mesh position={[0, 0.1, 0]} geometry={GEO.box} scale={[2, 0.2, 2]} material={MAT.cobble} castShadow />
       <mesh position={[0, 0.8, 0]} geometry={GEO.box} scale={[0.5, 1.2, 0.3]} material={MAT.stoneWarm} castShadow />
       <mesh position={[0, 1.6, 0]} geometry={GEO.cone4} scale={[0.3, 0.4, 0.3]} material={MAT.stone} castShadow />
-      {/* Posts holding canopy */}
       {[[-0.8, -0.8], [0.8, -0.8], [-0.8, 0.8], [0.8, 0.8]].map(([px, pz], i) => (
         <mesh key={i} position={[px, 1, pz]} geometry={GEO.box} scale={[0.06, 2, 0.06]} material={MAT.timber} castShadow />
       ))}
@@ -233,7 +270,7 @@ export function WildernessStructures({ playerPositionRef }: Props) {
         if (playerPos) {
           const dx = playerPos.x - b.x;
           const dz = playerPos.z - b.z;
-          if (dx * dx + dz * dz > 140 * 140) return null;
+          if (dx * dx + dz * dz > 160 * 160) return null;
         }
         const y = getTerrainHeight(b.x, b.z);
         const pos: [number, number, number] = [b.x, y, b.z];
