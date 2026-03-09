@@ -94,7 +94,7 @@ const ROCK_ZONES: RockZone[] = [
   // Old Veyra ruins - ancient stone debris (avoid central ruins area)
   { cx: 220, cz: 115, radius: 40, density: 1.3, type: 'outcrop', name: 'Veyra Rubble' },
   { cx: 255, cz: 30, radius: 35, density: 1.0, type: 'field', name: 'Ancient Stones' },
-  { cx: 180, cz: 145, radius: 28, density: 0.7, type: 'scattered', name: 'Veyra Path Rocks' },
+  { cx: 205, cz: 158, radius: 28, density: 0.7, type: 'scattered', name: 'Veyra Path Rocks' },
   
   // Ravenwatch badlands (clear of camp center)
   { cx: 30, cz: -225, radius: 35, density: 1.1, type: 'field', name: 'Ravenwatch Rocks' },
@@ -295,10 +295,9 @@ export function generateWorldResources(): WorldResource[] {
   // ========== BERRY BUSHES ==========
   // Near villages, forest edges, and groves
   const berrySpots = [
-    // Near villages
+    // Near villages (NOT inside walled settlements)
     { cx: -155, cz: -125, count: 8, spread: 35 },
     { cx: -110, cz: -80, count: 5, spread: 25 },
-    { cx: 0, cz: 0, count: 4, spread: 45 },
     // Forest edges
     { cx: -160, cz: 120, count: 6, spread: 30 },
     { cx: -140, cz: 90, count: 4, spread: 20 },
@@ -323,7 +322,7 @@ export function generateWorldResources(): WorldResource[] {
       const z = spot.cz + Math.sin(angle) * r;
       const y = getTerrainHeight(x, z);
       if (y < -0.2) continue;
-      if (isNearSettlement(x, z, 8)) continue;
+      if (isNearSettlement(x, z, 25)) continue;
       if (isNearRoad(x, z, 2)) continue;
       
       resources.push({
@@ -366,6 +365,7 @@ export function generateWorldResources(): WorldResource[] {
       const z = spot.cz + Math.sin(angle) * r;
       const y = getTerrainHeight(x, z);
       if (y < -0.3) continue;
+      if (isNearSettlement(x, z, 20)) continue;
       
       resources.push({
         id: `crate-${crateId++}`, type: 'crate',
