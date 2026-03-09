@@ -92,6 +92,11 @@ function addSettlementObstacles() {
       case 'bandit_camp': addBanditCampCollision(s, sx, sz); break;
       case 'outpost': addOutpostCollision(s, sx, sz); break;
       case 'monastery': addMonasteryCollision(s, sx, sz); break;
+      case 'fortified_city': addFortifiedCityCollision(s, sx, sz); break;
+      case 'river_town': addRiverTownCollision(s, sx, sz); break;
+      case 'mountain_hold': addMountainHoldCollision(s, sx, sz); break;
+      case 'frontier_camp': addFrontierCampCollision(s, sx, sz); break;
+      case 'trade_city': addTradeCityCollision(s, sx, sz); break;
     }
   }
 }
@@ -433,6 +438,82 @@ function addWildernessObstacles() {
       });
     }
   }
+}
+
+// ========== NEW KINGDOM COLLISION ==========
+function addFortifiedCityCollision(s: SettlementDef, sx: number, sz: number) {
+  // Walls at ±45
+  boxObstacles.push({ cx: sx, cz: sz - 45, halfW: 45, halfD: 1, rotation: 0, id: `${s.id}-wall-n` });
+  boxObstacles.push({ cx: sx + 45, cz: sz, halfW: 1, halfD: 45, rotation: 0, id: `${s.id}-wall-e` });
+  boxObstacles.push({ cx: sx - 22, cz: sz + 45, halfW: 22, halfD: 1, rotation: 0, id: `${s.id}-wall-s-l` });
+  boxObstacles.push({ cx: sx + 22, cz: sz + 45, halfW: 22, halfD: 1, rotation: 0, id: `${s.id}-wall-s-r` });
+  boxObstacles.push({ cx: sx - 45, cz: sz, halfW: 1, halfD: 45, rotation: 0, id: `${s.id}-wall-w` });
+  // Corner towers
+  for (const [tx, tz] of [[-45, -45], [45, -45], [45, 45], [-45, 45]]) {
+    circleObstacles.push({ x: sx + tx, z: sz + tz, radius: 3.5, id: `${s.id}-tower-${tx}-${tz}` });
+  }
+  // Gate towers
+  circleObstacles.push({ x: sx - 5, z: sz + 45, radius: 2, id: `${s.id}-gate-l` });
+  circleObstacles.push({ x: sx + 5, z: sz + 45, radius: 2, id: `${s.id}-gate-r` });
+  // Citadel
+  boxObstacles.push({ cx: sx, cz: sz - 10, halfW: 7, halfD: 7, rotation: 0, id: `${s.id}-citadel` });
+}
+
+function addRiverTownCollision(s: SettlementDef, sx: number, sz: number) {
+  // Town hall
+  boxObstacles.push({ cx: sx, cz: sz, halfW: 4, halfD: 5, rotation: 0, id: `${s.id}-hall` });
+  // Clock tower
+  boxObstacles.push({ cx: sx, cz: sz - 5, halfW: 1.5, halfD: 1.5, rotation: 0, id: `${s.id}-tower` });
+  // Dock platform
+  boxObstacles.push({ cx: sx, cz: sz - 30, halfW: 20, halfD: 4, rotation: 0, id: `${s.id}-dock` });
+  // Lighthouse
+  circleObstacles.push({ x: sx + 25, z: sz - 28, radius: 1.5, id: `${s.id}-light` });
+}
+
+function addMountainHoldCollision(s: SettlementDef, sx: number, sz: number) {
+  // Platform
+  boxObstacles.push({ cx: sx, cz: sz, halfW: 25, halfD: 25, rotation: 0, id: `${s.id}-platform` });
+  // Great hall
+  boxObstacles.push({ cx: sx, cz: sz, halfW: 8, halfD: 10, rotation: 0, id: `${s.id}-hall` });
+  // Walls
+  boxObstacles.push({ cx: sx, cz: sz - 25, halfW: 25, halfD: 1, rotation: 0, id: `${s.id}-wall-n` });
+  boxObstacles.push({ cx: sx + 25, cz: sz, halfW: 1, halfD: 25, rotation: 0, id: `${s.id}-wall-e` });
+  boxObstacles.push({ cx: sx - 15, cz: sz + 25, halfW: 10, halfD: 1, rotation: 0, id: `${s.id}-wall-s-l` });
+  boxObstacles.push({ cx: sx + 15, cz: sz + 25, halfW: 10, halfD: 1, rotation: 0, id: `${s.id}-wall-s-r` });
+  boxObstacles.push({ cx: sx - 25, cz: sz, halfW: 1, halfD: 25, rotation: 0, id: `${s.id}-wall-w` });
+  for (const [tx, tz] of [[-25, -25], [25, -25], [25, 25], [-25, 25]]) {
+    circleObstacles.push({ x: sx + tx, z: sz + tz, radius: 2.5, id: `${s.id}-tower-${tx}-${tz}` });
+  }
+}
+
+function addFrontierCampCollision(s: SettlementDef, sx: number, sz: number) {
+  // Ruined walls
+  boxObstacles.push({ cx: sx - 30, cz: sz - 15, halfW: 1, halfD: 10, rotation: 0, id: `${s.id}-rwall-w` });
+  boxObstacles.push({ cx: sx + 25, cz: sz - 13, halfW: 1, halfD: 7.5, rotation: 0, id: `${s.id}-rwall-e` });
+  boxObstacles.push({ cx: sx, cz: sz - 30, halfW: 15, halfD: 1, rotation: 0, id: `${s.id}-rwall-n` });
+  // Palisade - circle
+  for (let i = 0; i < 24; i++) {
+    const a = (i / 24) * Math.PI * 2;
+    const angleDiff = Math.abs(((a - 0 + Math.PI) % (Math.PI * 2)) - Math.PI);
+    if (angleDiff < 0.3) continue;
+    circleObstacles.push({ x: sx + Math.cos(a) * 25, z: sz + Math.sin(a) * 25, radius: 0.35, id: `${s.id}-pal-${i}` });
+  }
+}
+
+function addTradeCityCollision(s: SettlementDef, sx: number, sz: number) {
+  // Walls at ±40/±35
+  boxObstacles.push({ cx: sx, cz: sz - 35, halfW: 40, halfD: 1, rotation: 0, id: `${s.id}-wall-n` });
+  boxObstacles.push({ cx: sx + 40, cz: sz, halfW: 1, halfD: 35, rotation: 0, id: `${s.id}-wall-e` });
+  boxObstacles.push({ cx: sx - 22, cz: sz + 35, halfW: 18, halfD: 1, rotation: 0, id: `${s.id}-wall-s-l` });
+  boxObstacles.push({ cx: sx + 22, cz: sz + 35, halfW: 18, halfD: 1, rotation: 0, id: `${s.id}-wall-s-r` });
+  boxObstacles.push({ cx: sx - 40, cz: sz, halfW: 1, halfD: 35, rotation: 0, id: `${s.id}-wall-w` });
+  for (const [tx, tz] of [[-40, -35], [40, -35], [40, 35], [-40, 35]]) {
+    circleObstacles.push({ x: sx + tx, z: sz + tz, radius: 2.5, id: `${s.id}-tower-${tx}-${tz}` });
+  }
+  circleObstacles.push({ x: sx - 4, z: sz + 35, radius: 1.8, id: `${s.id}-gate-l` });
+  circleObstacles.push({ x: sx + 4, z: sz + 35, radius: 1.8, id: `${s.id}-gate-r` });
+  // Trade hall
+  boxObstacles.push({ cx: sx, cz: sz - 10, halfW: 7, halfD: 6, rotation: 0, id: `${s.id}-hall` });
 }
 
 // ========== COLLISION RESOLUTION ==========
