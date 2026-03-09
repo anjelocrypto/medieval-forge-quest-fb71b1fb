@@ -126,23 +126,51 @@ export function Player({
   const debugRef = mountedDebugRef || _internalDebugRef;
   const isDead = survival.health <= 0;
 
+  // === SPAWN GUARD: Only run once per browser session ===
+  const hasSpawnedRef = useRef(false);
+  
   useEffect(() => {
+    // CRITICAL: Only spawn once. Never re-run on reconnect or remount.
+    if (hasSpawnedRef.current) {
+      console.log('[Player] SPAWN SKIPPED — already spawned this session');
+      return;
+    }
+    
     if (groupRef.current) {
-      // Spawn near the south gate of Ironhold, not inside the keep
+      // Check if playerPositionRef already has a valid position (reconnect case)
+      const existingPos = playerPositionRef.current;
+      if (existingPos && (existingPos.x !== 0 || existingPos.z !== 0)) {
+        // Restore existing position instead of respawning
+        console.log('[Player] SPAWN RESTORED — using existing position:', existingPos.x.toFixed(1), existingPos.z.toFixed(1));
+        groupRef.current.position.copy(existingPos);
+        hasSpawnedRef.current = true;
+        return;
+      }
+      
+      // Fresh spawn near the south gate of Ironhold
       const spawnX = 0;
       const spawnZ = 45;
       const startY = getTerrainHeight(spawnX, spawnZ) + PLAYER_HEIGHT / 2;
+      console.log('[Player] SPAWN FRESH — new game start at', spawnX, spawnZ);
       groupRef.current.position.set(spawnX, startY, spawnZ);
       playerPositionRef.current.set(spawnX, startY, spawnZ);
+      hasSpawnedRef.current = true;
     }
-  }, []);
+  }, [playerPositionRef]);
 
+  // === RESPAWN GUARD: Only run when health transitions to 0 ===
+  const wasDeadRef = useRef(false);
+  
   useEffect(() => {
-    if (isDead) {
+    // Only trigger respawn when transitioning TO dead state
+    if (isDead && !wasDeadRef.current) {
+      console.log('[Player] RESPAWN TRIGGERED — health reached 0');
+      wasDeadRef.current = true;
       if (isMounted) onDismountHorse();
       const timer = setTimeout(() => {
         if (groupRef.current) {
           const y = getTerrainHeight(0, 45) + PLAYER_HEIGHT / 2;
+          console.log('[Player] RESPAWN COMPLETE — teleporting to spawn');
           groupRef.current.position.set(0, y, 45);
           playerPositionRef.current.set(0, y, 45);
           velocityRef.current.set(0, 0, 0);
@@ -151,7 +179,13 @@ export function Player({
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [isDead]);
+    
+    // Reset dead state when health restored
+    if (!isDead && wasDeadRef.current) {
+      console.log('[Player] RESPAWN STATE CLEARED — player alive again');
+      wasDeadRef.current = false;
+    }
+  }, [isDead, isMounted, onDismountHorse, onRespawn, playerPositionRef]);
 
   useFrame((_, delta) => {
     if (!groupRef.current || !bodyRef.current || isDead) return;

@@ -10,8 +10,11 @@ const Index = () => {
   const multiplayer = useMultiplayer();
 
   // Auto-reconnect: if multiplayer reconnects successfully, switch to game
+  // GUARD: Only transition lobby→game, never cause remounts while in game
   useEffect(() => {
+    console.log('[Index] connectionStatus changed:', multiplayer.connectionStatus, 'appMode:', appMode);
     if (multiplayer.connected && appMode === 'lobby') {
+      console.log('[Index] Transitioning lobby → game');
       setAppMode('game');
     }
   }, [multiplayer.connected, appMode]);
