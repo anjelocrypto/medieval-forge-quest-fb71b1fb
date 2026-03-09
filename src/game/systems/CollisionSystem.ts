@@ -352,6 +352,54 @@ function addMonasteryCollision(s: SettlementDef, sx: number, sz: number) {
   circleObstacles.push({ x: sx + 3, z: sz + 10, radius: 0.8, id: `${s.id}-well` });
 }
 
+// ========== POI OBSTACLES ==========
+// Add collision for inns, camps, supply depots, etc. (not decorative shrines/milestones)
+function addPOIObstacles() {
+  for (const poi of SMALL_POIS) {
+    const [px, pz] = poi.position;
+    switch (poi.type) {
+      case 'inn':
+        // Inn footprint: 7x6 building
+        boxObstacles.push({ cx: px, cz: pz, halfW: 3.5, halfD: 3, rotation: 0, id: `poi-${poi.id}` });
+        break;
+      case 'watchtower':
+        // Tower base
+        circleObstacles.push({ x: px, z: pz, radius: 1.5, id: `poi-${poi.id}` });
+        break;
+      case 'supply_depot':
+        // Depot shelter
+        boxObstacles.push({ cx: px, cz: pz, halfW: 2.5, halfD: 2, rotation: 0, id: `poi-${poi.id}` });
+        break;
+      case 'hunter_camp':
+        // Tent
+        circleObstacles.push({ x: px, z: pz, radius: 1.2, id: `poi-${poi.id}` });
+        break;
+      case 'ruined_house':
+        // Foundation footprint
+        boxObstacles.push({ cx: px, cz: pz, halfW: 2.5, halfD: 2, rotation: 0, id: `poi-${poi.id}` });
+        break;
+      case 'cave':
+        // Rock mass
+        circleObstacles.push({ x: px, z: pz, radius: 2, id: `poi-${poi.id}` });
+        break;
+      case 'stone_circle':
+        // Central altar only (stones are passable between)
+        circleObstacles.push({ x: px, z: pz, radius: 1.2, id: `poi-${poi.id}` });
+        break;
+      case 'burned_village':
+        // Passable - charred remains don't block
+        break;
+      case 'wagon':
+        // Wagon body
+        boxObstacles.push({ cx: px, cz: pz, halfW: 1, halfD: 1.8, rotation: Math.sin(px) * 0.5, id: `poi-${poi.id}` });
+        break;
+      // Decorative POIs - no collision (shrines, milestones, crosses, lanterns, graves, ponds, clearings, crossroads)
+      default:
+        break;
+    }
+  }
+}
+
 // ========== COLLISION RESOLUTION ==========
 
 export function resolveCollision(px: number, pz: number, playerRadius: number): { x: number; z: number } {
