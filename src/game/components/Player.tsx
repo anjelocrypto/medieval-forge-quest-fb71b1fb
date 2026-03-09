@@ -644,14 +644,22 @@ export function Player({
         staminaChange = -(isMounted ? STAMINA_DRAIN * 0.4 : STAMINA_DRAIN) * elapsed;
       } else {
         let regenRate = STAMINA_REGEN;
-        if (survival.hunger < LOW_HUNGER_THRESHOLD) regenRate *= 0.5;
+        // Graduated stamina penalty based on hunger level
+        if (survival.hunger <= 0) {
+          regenRate *= 0.2; // almost no regen when starving
+        } else if (survival.hunger < LOW_HUNGER_THRESHOLD) {
+          regenRate *= 0.4;
+        } else if (survival.hunger < 40) {
+          regenRate *= 0.7; // mild penalty at medium hunger
+        }
         if (nearShelter) regenRate += SHELTER_STAMINA_BONUS;
         if (nearBedroll && !isMoving) regenRate += 12;
         staminaChange = regenRate * elapsed;
       }
 
       let healthChange = 0;
-      if (survival.hunger <= 0) healthChange -= 2 * elapsed;
+      // Only lose HP when hunger is truly empty — and slowly
+      if (survival.hunger <= 0) healthChange -= 0.3 * elapsed;
       if (survival.temperature < LOW_TEMP_THRESHOLD) healthChange -= COLD_DAMAGE_RATE * elapsed;
       if (nearCampfire) healthChange += 1.5 * elapsed;
       if (nearShelter && survival.hunger > 30) healthChange += 0.8 * elapsed;
