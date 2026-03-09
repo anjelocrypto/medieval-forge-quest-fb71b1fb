@@ -68,6 +68,28 @@ const FOREST_ZONES: ForestZone[] = [
   { cx: 285, cz: 110, radius: 35, density: 0.6, type: 'scattered', name: 'Eastern Edge' },
   { cx: 0, cz: 285, radius: 40, density: 0.8, type: 'light', name: 'Northern Border' },
   { cx: 0, cz: -285, radius: 40, density: 0.7, type: 'scattered', name: 'Southern Border' },
+
+  // === NEW DENSITY PASS — filling empty corridors ===
+  // Central-east corridor (Ironhold to Old Veyra)
+  { cx: 140, cz: 70, radius: 28, density: 0.6, type: 'grove', name: 'Veyra Road Grove' },
+  { cx: 110, cz: 25, radius: 22, density: 0.5, type: 'scattered', name: 'Eastern Meadow Trees' },
+  // Central-south (Ironhold to Ravenwatch)
+  { cx: -30, cz: -130, radius: 30, density: 0.7, type: 'light', name: 'Southern Heartland Woods' },
+  { cx: 25, cz: -160, radius: 25, density: 0.6, type: 'scattered', name: 'Badlands Approach Trees' },
+  // Between Greenmeadow and Ashwood (long empty west corridor)
+  { cx: -180, cz: -30, radius: 35, density: 0.8, type: 'light', name: 'Western Trail Forest' },
+  { cx: -165, cz: 50, radius: 30, density: 0.7, type: 'light', name: 'Ashwood Southern Reach' },
+  // Between Blackthorn and Ravenwatch
+  { cx: 100, cz: -165, radius: 28, density: 0.5, type: 'scattered', name: 'Frontier Brush' },
+  { cx: 140, cz: -200, radius: 25, density: 0.4, type: 'grove', name: 'Southern Frontier Grove' },
+  // Central-north (above Ironhold)
+  { cx: -30, cz: 120, radius: 25, density: 0.6, type: 'grove', name: 'Northern Capital Grove' },
+  { cx: 40, cz: 160, radius: 30, density: 0.7, type: 'light', name: 'Northern Meadow Woods' },
+  // Far corners fill
+  { cx: -250, cz: 260, radius: 35, density: 0.6, type: 'scattered', name: 'NW Deep Forest' },
+  { cx: 250, cz: -260, radius: 30, density: 0.5, type: 'scattered', name: 'SE Frontier Pines' },
+  { cx: -150, cz: 250, radius: 30, density: 0.6, type: 'light', name: 'Far Northern Woods' },
+  { cx: 150, cz: -270, radius: 25, density: 0.4, type: 'scattered', name: 'Deep South Trees' },
 ];
 
 // ========== ROCK FORMATIONS ==========
@@ -110,6 +132,21 @@ const ROCK_ZONES: RockZone[] = [
   { cx: 270, cz: 270, radius: 40, density: 0.8, type: 'outcrop', name: 'NE Mountain Edge' },
   { cx: -270, cz: -260, radius: 38, density: 0.6, type: 'scattered', name: 'SW Wilderness Stones' },
   { cx: 270, cz: -270, radius: 38, density: 0.5, type: 'boulders', name: 'SE Border Rocks' },
+
+  // === NEW DENSITY PASS — filling empty corridors ===
+  // Central-east (Ironhold to Veyra)
+  { cx: 130, cz: 50, radius: 22, density: 0.5, type: 'scattered', name: 'Eastern Road Rocks' },
+  { cx: 160, cz: 15, radius: 20, density: 0.6, type: 'field', name: 'Veyra Approach Stones' },
+  // Central-south corridor
+  { cx: -20, cz: -150, radius: 25, density: 0.6, type: 'scattered', name: 'Southern Heartland Rocks' },
+  { cx: 40, cz: -180, radius: 22, density: 0.5, type: 'field', name: 'Ravenwatch Road Rocks' },
+  // Western corridor
+  { cx: -200, cz: -50, radius: 25, density: 0.5, type: 'scattered', name: 'Western Wilderness Rocks' },
+  // Central-north  
+  { cx: 30, cz: 145, radius: 20, density: 0.4, type: 'scattered', name: 'Northern Meadow Stones' },
+  // Between settlements
+  { cx: -70, cz: -160, radius: 22, density: 0.5, type: 'field', name: 'Greenmeadow-Ravenwatch Rocks' },
+  { cx: 120, cz: -60, radius: 18, density: 0.4, type: 'scattered', name: 'Blackthorn Approach Rocks' },
 ];
 
 function seededRandom(seed: number) {
