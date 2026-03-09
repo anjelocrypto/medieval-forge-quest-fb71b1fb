@@ -442,11 +442,12 @@ function addWildernessObstacles() {
 
 // ========== NEW KINGDOM COLLISION ==========
 function addFortifiedCityCollision(s: SettlementDef, sx: number, sz: number) {
-  // Walls at ±45
+  // Walls at ±45 — south wall has gate gap from -6 to +6 (matching visual)
   boxObstacles.push({ cx: sx, cz: sz - 45, halfW: 45, halfD: 1, rotation: 0, id: `${s.id}-wall-n` });
   boxObstacles.push({ cx: sx + 45, cz: sz, halfW: 1, halfD: 45, rotation: 0, id: `${s.id}-wall-e` });
-  boxObstacles.push({ cx: sx - 22, cz: sz + 45, halfW: 22, halfD: 1, rotation: 0, id: `${s.id}-wall-s-l` });
-  boxObstacles.push({ cx: sx + 22, cz: sz + 45, halfW: 22, halfD: 1, rotation: 0, id: `${s.id}-wall-s-r` });
+  // South wall: gap at ±6 for gate (visual uses [6,45] to [-6,45] gap)
+  boxObstacles.push({ cx: sx - 25.5, cz: sz + 45, halfW: 19.5, halfD: 1, rotation: 0, id: `${s.id}-wall-s-l` });
+  boxObstacles.push({ cx: sx + 25.5, cz: sz + 45, halfW: 19.5, halfD: 1, rotation: 0, id: `${s.id}-wall-s-r` });
   boxObstacles.push({ cx: sx - 45, cz: sz, halfW: 1, halfD: 45, rotation: 0, id: `${s.id}-wall-w` });
   // Corner towers
   for (const [tx, tz] of [[-45, -45], [45, -45], [45, 45], [-45, 45]]) {
@@ -464,17 +465,24 @@ function addRiverTownCollision(s: SettlementDef, sx: number, sz: number) {
   boxObstacles.push({ cx: sx, cz: sz, halfW: 4, halfD: 5, rotation: 0, id: `${s.id}-hall` });
   // Clock tower
   boxObstacles.push({ cx: sx, cz: sz - 5, halfW: 1.5, halfD: 1.5, rotation: 0, id: `${s.id}-tower` });
-  // Dock platform
-  boxObstacles.push({ cx: sx, cz: sz - 30, halfW: 20, halfD: 4, rotation: 0, id: `${s.id}-dock` });
+  // Dock platform is walkable — no collision (player walks ON it)
   // Lighthouse
   circleObstacles.push({ x: sx + 25, z: sz - 28, radius: 1.5, id: `${s.id}-light` });
+  // Fence segments (but gate gap at south approach)
+  boxObstacles.push({ cx: sx, cz: sz + 30, halfW: 30, halfD: 0.06, rotation: 0, id: `${s.id}-fence-s` });
+  boxObstacles.push({ cx: sx - 30, cz: sz, halfW: 0.06, halfD: 30, rotation: 0, id: `${s.id}-fence-w` });
+  boxObstacles.push({ cx: sx + 30, cz: sz, halfW: 0.06, halfD: 30, rotation: 0, id: `${s.id}-fence-e` });
 }
 
 function addMountainHoldCollision(s: SettlementDef, sx: number, sz: number) {
-  // Platform
-  boxObstacles.push({ cx: sx, cz: sz, halfW: 25, halfD: 25, rotation: 0, id: `${s.id}-platform` });
+  // Platform is walkable — no collision for it (player walks ON it)
   // Great hall
   boxObstacles.push({ cx: sx, cz: sz, halfW: 8, halfD: 10, rotation: 0, id: `${s.id}-hall` });
+  // Flanking towers
+  circleObstacles.push({ x: sx - 10, z: sz - 12, radius: 3, id: `${s.id}-ftower-l` });
+  circleObstacles.push({ x: sx + 10, z: sz - 12, radius: 3, id: `${s.id}-ftower-r` });
+  // Mine entrance
+  boxObstacles.push({ cx: sx - 20, cz: sz - 5, halfW: 2, halfD: 1.25, rotation: 0, id: `${s.id}-mine` });
   // Walls
   boxObstacles.push({ cx: sx, cz: sz - 25, halfW: 25, halfD: 1, rotation: 0, id: `${s.id}-wall-n` });
   boxObstacles.push({ cx: sx + 25, cz: sz, halfW: 1, halfD: 25, rotation: 0, id: `${s.id}-wall-e` });
@@ -501,11 +509,11 @@ function addFrontierCampCollision(s: SettlementDef, sx: number, sz: number) {
 }
 
 function addTradeCityCollision(s: SettlementDef, sx: number, sz: number) {
-  // Walls at ±40/±35
+  // Walls at ±40/±35 — south wall gap at ±5 for gate (matches visual)
   boxObstacles.push({ cx: sx, cz: sz - 35, halfW: 40, halfD: 1, rotation: 0, id: `${s.id}-wall-n` });
   boxObstacles.push({ cx: sx + 40, cz: sz, halfW: 1, halfD: 35, rotation: 0, id: `${s.id}-wall-e` });
-  boxObstacles.push({ cx: sx - 22, cz: sz + 35, halfW: 18, halfD: 1, rotation: 0, id: `${s.id}-wall-s-l` });
-  boxObstacles.push({ cx: sx + 22, cz: sz + 35, halfW: 18, halfD: 1, rotation: 0, id: `${s.id}-wall-s-r` });
+  boxObstacles.push({ cx: sx - 22.5, cz: sz + 35, halfW: 17.5, halfD: 1, rotation: 0, id: `${s.id}-wall-s-l` });
+  boxObstacles.push({ cx: sx + 22.5, cz: sz + 35, halfW: 17.5, halfD: 1, rotation: 0, id: `${s.id}-wall-s-r` });
   boxObstacles.push({ cx: sx - 40, cz: sz, halfW: 1, halfD: 35, rotation: 0, id: `${s.id}-wall-w` });
   for (const [tx, tz] of [[-40, -35], [40, -35], [40, 35], [-40, 35]]) {
     circleObstacles.push({ x: sx + tx, z: sz + tz, radius: 2.5, id: `${s.id}-tower-${tx}-${tz}` });
