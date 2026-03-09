@@ -1,7 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 export function Sky() {
+  const meshRef = useRef<THREE.Mesh>(null);
   const gradientMap = useMemo(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 1;
@@ -24,8 +26,15 @@ export function Sky() {
     return tex;
   }, []);
 
+  // Follow the camera position so the sky sphere always surrounds the viewer
+  useFrame(({ camera }) => {
+    if (meshRef.current) {
+      meshRef.current.position.copy(camera.position);
+    }
+  });
+
   return (
-    <mesh>
+    <mesh ref={meshRef}>
       <sphereGeometry args={[400, 32, 16]} />
       <meshBasicMaterial map={gradientMap} side={THREE.BackSide} />
     </mesh>
