@@ -14,6 +14,8 @@ import { LootPickups } from './components/LootPickups';
 import { Horse } from './components/Horses';
 import { Settlements } from './components/Settlements';
 import { WorldPOIs } from './components/WorldPOIs';
+import { TownDistrict } from './components/TownDistrict';
+import { CivilianNPCs } from './components/CivilianNPCs';
 import { DebugCollision } from './components/DebugCollision';
 import { CameraController } from './systems/CameraController';
 import { InputFlusher } from './systems/InputFlusher';
@@ -296,6 +298,8 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
         <Water />
         <Settlements playerPositionRef={playerPositionRef} />
         <WorldPOIs playerPositionRef={playerPositionRef} />
+        <TownDistrict playerPositionRef={playerPositionRef} />
+        <CivilianNPCs playerPositionRef={playerPositionRef} />
         <AmbientEffects />
         <CameraController targetRef={playerPositionRef} azimuthRef={cameraAzimuthRef} isMounted={isMounted} />
         <Player

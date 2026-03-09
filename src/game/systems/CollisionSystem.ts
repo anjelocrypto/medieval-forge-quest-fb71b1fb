@@ -8,6 +8,7 @@ import { PlacedStructure, BUILDABLES } from './BuildingData';
 import { HorseData } from './HorseData';
 import { SETTLEMENTS, SettlementDef, SMALL_POIS } from '../world/RegionData';
 import { seededRng } from '../world/SettlementPieces';
+import { TOWN_BUILDINGS } from '../components/TownDistrict';
 
 export interface CircleObstacle {
   x: number;
@@ -72,6 +73,7 @@ export function rebuildObstacles(
 
   addSettlementObstacles();
   addPOIObstacles();
+  addTownDistrictObstacles();
 }
 
 function addSettlementObstacles() {
@@ -397,6 +399,18 @@ function addPOIObstacles() {
       default:
         break;
     }
+  }
+}
+
+// ========== TOWN DISTRICT OBSTACLES ==========
+function addTownDistrictObstacles() {
+  for (const b of TOWN_BUILDINGS) {
+    boxObstacles.push({
+      cx: b.x, cz: b.z,
+      halfW: b.w / 2, halfD: b.d / 2,
+      rotation: b.rot,
+      id: `town-${b.x}-${b.z}`,
+    });
   }
 }
 
