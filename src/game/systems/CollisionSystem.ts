@@ -72,6 +72,7 @@ export function rebuildObstacles(
 
   addSettlementObstacles();
   addPOIObstacles();
+  addTownDistrictObstacles();
 }
 
 function addSettlementObstacles() {

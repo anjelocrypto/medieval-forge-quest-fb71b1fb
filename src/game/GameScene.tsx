@@ -298,6 +298,8 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
         <Water />
         <Settlements playerPositionRef={playerPositionRef} />
         <WorldPOIs playerPositionRef={playerPositionRef} />
+        <TownDistrict playerPositionRef={playerPositionRef} />
+        <CivilianNPCs playerPositionRef={playerPositionRef} />
         <AmbientEffects />
         <CameraController targetRef={playerPositionRef} azimuthRef={cameraAzimuthRef} isMounted={isMounted} />
         <Player
