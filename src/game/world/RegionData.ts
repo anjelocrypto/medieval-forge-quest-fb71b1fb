@@ -213,6 +213,58 @@ export const SETTLEMENTS: SettlementDef[] = [
     position: [-110, -80], type: 'village', size: 'small',
     description: 'Small hamlet with a grain mill',
   },
+  // === 5 NEW KINGDOMS ===
+  {
+    id: 'thornwall_city', name: 'Thornwall', regionId: 'thornwall',
+    position: [-500, -450], type: 'fortified_city', size: 'large',
+    description: 'Fortified stone city on the frontier',
+  },
+  {
+    id: 'rivermoor_city', name: 'Rivermoor', regionId: 'rivermoor',
+    position: [450, 350], type: 'river_town', size: 'large',
+    description: 'River kingdom with docks and bridges',
+  },
+  {
+    id: 'stonepeak_hold', name: 'Stonepeak', regionId: 'stonepeak',
+    position: [-400, 500], type: 'mountain_hold', size: 'large',
+    description: 'Mountain fortress carved into the highlands',
+  },
+  {
+    id: 'darkhollow_camp', name: 'Darkhollow', regionId: 'darkhollow',
+    position: [550, -400], type: 'frontier_camp', size: 'large',
+    description: 'Ruined-but-inhabited frontier settlement',
+  },
+  {
+    id: 'goldenvale_city', name: 'Goldenvale', regionId: 'goldenvale',
+    position: [-550, 100], type: 'trade_city', size: 'large',
+    description: 'Prosperous trading city',
+  },
+  // Supporting settlements near new kingdoms
+  {
+    id: 'thornwall_outpost', name: 'Thornwatch', regionId: 'thornwall',
+    position: [-440, -400], type: 'outpost', size: 'small',
+    description: 'Border watch near Thornwall',
+  },
+  {
+    id: 'rivermoor_village', name: 'Reed Village', regionId: 'rivermoor',
+    position: [400, 300], type: 'village', size: 'small',
+    description: 'Fishing village near Rivermoor',
+  },
+  {
+    id: 'stonepeak_outpost', name: 'High Watch', regionId: 'stonepeak',
+    position: [-350, 450], type: 'outpost', size: 'small',
+    description: 'Mountain lookout post',
+  },
+  {
+    id: 'darkhollow_ruins', name: 'Ashkeep', regionId: 'darkhollow',
+    position: [500, -350], type: 'ruins', size: 'medium',
+    description: 'Ancient fortress ruins repurposed by scavengers',
+  },
+  {
+    id: 'goldenvale_village', name: 'Harvest Hill', regionId: 'goldenvale',
+    position: [-500, 150], type: 'village', size: 'small',
+    description: 'Farming hamlet supplying Goldenvale',
+  },
 ];
 
 // ========== ROAD NETWORK ==========
