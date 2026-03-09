@@ -34,6 +34,8 @@ export function generateEnemies(): EnemyData[] {
       const r = 3 + Math.random() * spread;
       const x = cx + Math.cos(angle) * r;
       const z = cz + Math.sin(angle) * r;
+      // Exclude town center area (capital at [0,0] with town extending to r~80)
+      if (x * x + z * z < 80 * 80) continue;
       const y = getTerrainHeight(x, z);
       const groundOffset = type === 'wolf' ? 0.45 : 0.9;
       enemies.push({
