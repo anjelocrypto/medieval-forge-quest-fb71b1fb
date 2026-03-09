@@ -324,21 +324,13 @@ function MenuButton({ onClick, disabled, variant = 'primary', className = '', ch
       color: '#8a9ab5',
     },
   };
-  
-  // Default styling for secondary buttons
-  const defaultStyle: React.CSSProperties = {
-      background: 'rgba(255,255,255,0.08)',
-      color: '#e8d5b7',
-      border: '1px solid rgba(255,255,255,0.15)',
-    },
-  };
 
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       className={`${baseStyles} ${className}`}
-      style={variantStyles[variant] || variantStyles.default}
+      style={variantStyles[variant]}
     >
       {children}
     </button>
