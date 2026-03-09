@@ -29,67 +29,87 @@ interface ForestZone {
 }
 
 const FOREST_ZONES: ForestZone[] = [
-  // Ashwood Deep - main dense forest (shifted away from road corridor)
+  // === CENTRAL WORLD (original) ===
   { cx: -210, cz: 165, radius: 70, density: 2.2, type: 'dense', name: 'Ashwood Deep' },
   { cx: -240, cz: 200, radius: 45, density: 1.8, type: 'dense', name: 'Ashwood North' },
   { cx: -175, cz: 115, radius: 35, density: 1.2, type: 'light', name: 'Ashwood Edge' },
-  
-  // NW wilderness forests (clear of Ashwood road)
   { cx: -260, cz: 40, radius: 50, density: 1.3, type: 'light', name: 'Western Woodland' },
   { cx: -280, cz: 130, radius: 35, density: 1.0, type: 'scattered', name: 'Far West Grove' },
   { cx: -220, cz: 250, radius: 45, density: 1.5, type: 'dense', name: 'Northern Pines' },
-  
-  // NE frontier forests (away from Frostmere paths)
   { cx: 90, cz: 220, radius: 40, density: 0.9, type: 'scattered', name: 'Highland Thicket' },
   { cx: 60, cz: 260, radius: 45, density: 1.1, type: 'light', name: 'Northern Frontier' },
   { cx: 230, cz: 260, radius: 35, density: 0.7, type: 'scattered', name: 'Frostmere Pines' },
-  
-  // Central corridor - REDUCED to keep roads clear
   { cx: -70, cz: 45, radius: 25, density: 0.5, type: 'grove', name: 'Capital Grove East' },
   { cx: -115, cz: 130, radius: 30, density: 0.7, type: 'light', name: 'Midland Woods' },
   { cx: 70, cz: 100, radius: 22, density: 0.5, type: 'grove', name: 'Veyra Trail Grove' },
-  
-  // SW area forests (clear of Greenmeadow approaches)
   { cx: -230, cz: -100, radius: 40, density: 1.0, type: 'light', name: 'Greenmeadow West Woods' },
   { cx: -200, cz: -210, radius: 45, density: 0.9, type: 'scattered', name: 'Southern Wilderness' },
   { cx: -100, cz: -200, radius: 30, density: 0.6, type: 'grove', name: 'Ravenwatch Approach' },
-  
-  // SE area forests (away from Blackthorn Fort)
   { cx: 260, cz: -210, radius: 40, density: 0.8, type: 'scattered', name: 'Blackthorn Frontier' },
   { cx: 160, cz: -240, radius: 35, density: 0.6, type: 'grove', name: 'Eastern Badlands Edge' },
   { cx: 115, cz: -180, radius: 28, density: 0.5, type: 'scattered', name: 'Frontier Copse' },
-  
-  // Old Veyra region - sparse haunted woods (clear of ruins center)
   { cx: 250, cz: 50, radius: 35, density: 0.6, type: 'scattered', name: 'Veyra Dead Woods' },
   { cx: 270, cz: 150, radius: 30, density: 0.5, type: 'grove', name: 'Ancient Grove' },
-  
-  // Map edge forests for visual fill
   { cx: -280, cz: -200, radius: 45, density: 0.9, type: 'light', name: 'SW Border Forest' },
   { cx: 285, cz: 110, radius: 35, density: 0.6, type: 'scattered', name: 'Eastern Edge' },
   { cx: 0, cz: 285, radius: 40, density: 0.8, type: 'light', name: 'Northern Border' },
   { cx: 0, cz: -285, radius: 40, density: 0.7, type: 'scattered', name: 'Southern Border' },
-
-  // === NEW DENSITY PASS — filling empty corridors ===
-  // Central-east corridor (Ironhold to Old Veyra)
   { cx: 140, cz: 70, radius: 28, density: 0.6, type: 'grove', name: 'Veyra Road Grove' },
   { cx: 110, cz: 25, radius: 22, density: 0.5, type: 'scattered', name: 'Eastern Meadow Trees' },
-  // Central-south (Ironhold to Ravenwatch)
   { cx: -30, cz: -130, radius: 30, density: 0.7, type: 'light', name: 'Southern Heartland Woods' },
   { cx: 25, cz: -160, radius: 25, density: 0.6, type: 'scattered', name: 'Badlands Approach Trees' },
-  // Between Greenmeadow and Ashwood (long empty west corridor)
   { cx: -180, cz: -30, radius: 35, density: 0.8, type: 'light', name: 'Western Trail Forest' },
   { cx: -165, cz: 50, radius: 30, density: 0.7, type: 'light', name: 'Ashwood Southern Reach' },
-  // Between Blackthorn and Ravenwatch
   { cx: 100, cz: -165, radius: 28, density: 0.5, type: 'scattered', name: 'Frontier Brush' },
   { cx: 140, cz: -200, radius: 25, density: 0.4, type: 'grove', name: 'Southern Frontier Grove' },
-  // Central-north (above Ironhold)
   { cx: -30, cz: 120, radius: 25, density: 0.6, type: 'grove', name: 'Northern Capital Grove' },
   { cx: 40, cz: 160, radius: 30, density: 0.7, type: 'light', name: 'Northern Meadow Woods' },
-  // Far corners fill
   { cx: -250, cz: 260, radius: 35, density: 0.6, type: 'scattered', name: 'NW Deep Forest' },
   { cx: 250, cz: -260, radius: 30, density: 0.5, type: 'scattered', name: 'SE Frontier Pines' },
   { cx: -150, cz: 250, radius: 30, density: 0.6, type: 'light', name: 'Far Northern Woods' },
   { cx: 150, cz: -270, radius: 25, density: 0.4, type: 'scattered', name: 'Deep South Trees' },
+
+  // === EXPANDED WORLD FORESTS ===
+  // Thornwall region (SW) — sparse frontier forests
+  { cx: -450, cz: -500, radius: 50, density: 0.8, type: 'scattered', name: 'Thornwall Frontier Woods' },
+  { cx: -550, cz: -400, radius: 40, density: 0.7, type: 'light', name: 'Thornwall Western Forest' },
+  { cx: -400, cz: -380, radius: 35, density: 0.6, type: 'grove', name: 'Thornwall Approach Grove' },
+
+  // Goldenvale region (W) — lush trading grounds
+  { cx: -600, cz: 50, radius: 55, density: 1.2, type: 'dense', name: 'Goldenvale Great Forest' },
+  { cx: -580, cz: 180, radius: 45, density: 1.0, type: 'light', name: 'Vale Northern Woods' },
+  { cx: -480, cz: 30, radius: 35, density: 0.8, type: 'light', name: 'Trade Road Forest' },
+
+  // Rivermoor region (NE) — wetland groves
+  { cx: 500, cz: 400, radius: 45, density: 0.9, type: 'light', name: 'Rivermoor Wetland Trees' },
+  { cx: 420, cz: 420, radius: 35, density: 0.7, type: 'grove', name: 'Riverside Grove' },
+  { cx: 380, cz: 280, radius: 40, density: 0.8, type: 'scattered', name: 'Reed Village Copse' },
+
+  // Stonepeak region (NW) — highland pines
+  { cx: -450, cz: 550, radius: 50, density: 1.3, type: 'dense', name: 'Highland Pine Forest' },
+  { cx: -350, cz: 520, radius: 40, density: 1.0, type: 'light', name: 'Mountain Approach Woods' },
+  { cx: -300, cz: 400, radius: 35, density: 0.7, type: 'scattered', name: 'Peak Trail Trees' },
+
+  // Darkhollow region (SE) — dead/sparse trees
+  { cx: 600, cz: -350, radius: 40, density: 0.5, type: 'scattered', name: 'Darkhollow Dead Forest' },
+  { cx: 500, cz: -450, radius: 35, density: 0.4, type: 'grove', name: 'Wasteland Copse' },
+  { cx: 480, cz: -300, radius: 30, density: 0.6, type: 'scattered', name: 'Hollow Edge Trees' },
+
+  // Travel corridor forests
+  { cx: -350, cz: -280, radius: 40, density: 0.7, type: 'light', name: 'Western March Forest' },
+  { cx: -300, cz: 300, radius: 45, density: 0.9, type: 'light', name: 'NW Corridor Forest' },
+  { cx: 350, cz: -200, radius: 40, density: 0.6, type: 'scattered', name: 'SE Corridor Trees' },
+  { cx: 300, cz: 250, radius: 35, density: 0.7, type: 'light', name: 'NE Corridor Forest' },
+  { cx: -200, cz: 500, radius: 40, density: 0.8, type: 'light', name: 'Northern Route Woods' },
+  { cx: 100, cz: 500, radius: 35, density: 0.7, type: 'scattered', name: 'Northern Route East' },
+  { cx: 500, cz: 100, radius: 30, density: 0.5, type: 'scattered', name: 'Eastern Wilds Trees' },
+  { cx: -400, cz: -150, radius: 35, density: 0.6, type: 'light', name: 'Connector Forest W' },
+
+  // World edge fill
+  { cx: -700, cz: 0, radius: 50, density: 0.5, type: 'scattered', name: 'Far West Edge' },
+  { cx: 700, cz: 0, radius: 50, density: 0.4, type: 'scattered', name: 'Far East Edge' },
+  { cx: 0, cz: 700, radius: 50, density: 0.6, type: 'light', name: 'Far North Edge' },
+  { cx: 0, cz: -700, radius: 50, density: 0.5, type: 'scattered', name: 'Far South Edge' },
 ];
 
 // ========== ROCK FORMATIONS ==========
@@ -103,50 +123,57 @@ interface RockZone {
 }
 
 const ROCK_ZONES: RockZone[] = [
-  // Frostmere highlands - rocky terrain (clear of monastery approach)
+  // === CENTRAL WORLD (original) ===
   { cx: 180, cz: 230, radius: 50, density: 1.5, type: 'outcrop', name: 'Frostmere Crags' },
   { cx: 220, cz: 260, radius: 40, density: 1.2, type: 'field', name: 'Highland Stones' },
   { cx: 130, cz: 245, radius: 30, density: 0.9, type: 'scattered', name: 'Mountain Pass Rocks' },
-  
-  // Blackthorn frontier - rugged terrain (clear of fort gates)
   { cx: 210, cz: -175, radius: 40, density: 1.2, type: 'field', name: 'Fort Approach Stones' },
   { cx: 250, cz: -130, radius: 35, density: 1.0, type: 'outcrop', name: 'Eastern Frontier Rocks' },
   { cx: 265, cz: -230, radius: 40, density: 0.8, type: 'scattered', name: 'Badlands Boulders' },
-  
-  // Old Veyra ruins - ancient stone debris (avoid central ruins area)
   { cx: 220, cz: 115, radius: 40, density: 1.3, type: 'outcrop', name: 'Veyra Rubble' },
   { cx: 255, cz: 30, radius: 35, density: 1.0, type: 'field', name: 'Ancient Stones' },
   { cx: 205, cz: 158, radius: 28, density: 0.7, type: 'scattered', name: 'Veyra Path Rocks' },
-  
-  // Ravenwatch badlands (clear of camp center)
   { cx: 30, cz: -225, radius: 35, density: 1.1, type: 'field', name: 'Ravenwatch Rocks' },
   { cx: 60, cz: -250, radius: 35, density: 0.8, type: 'outcrop', name: 'Southern Crags' },
   { cx: -50, cz: -245, radius: 30, density: 0.7, type: 'scattered', name: 'Bandit Stones' },
-  
-  // Central terrain variation (small, decorative)
   { cx: 50, cz: 50, radius: 18, density: 0.4, type: 'scattered', name: 'Heartland Stones' },
   { cx: -40, cz: -110, radius: 22, density: 0.4, type: 'scattered', name: 'Road Boulders' },
-  
-  // Map edges and corners
   { cx: -270, cz: 260, radius: 40, density: 0.7, type: 'boulders', name: 'NW Corner Rocks' },
   { cx: 270, cz: 270, radius: 40, density: 0.8, type: 'outcrop', name: 'NE Mountain Edge' },
   { cx: -270, cz: -260, radius: 38, density: 0.6, type: 'scattered', name: 'SW Wilderness Stones' },
   { cx: 270, cz: -270, radius: 38, density: 0.5, type: 'boulders', name: 'SE Border Rocks' },
-
-  // === NEW DENSITY PASS — filling empty corridors ===
-  // Central-east (Ironhold to Veyra)
   { cx: 130, cz: 50, radius: 22, density: 0.5, type: 'scattered', name: 'Eastern Road Rocks' },
   { cx: 160, cz: 15, radius: 20, density: 0.6, type: 'field', name: 'Veyra Approach Stones' },
-  // Central-south corridor
   { cx: -20, cz: -150, radius: 25, density: 0.6, type: 'scattered', name: 'Southern Heartland Rocks' },
   { cx: 40, cz: -180, radius: 22, density: 0.5, type: 'field', name: 'Ravenwatch Road Rocks' },
-  // Western corridor
   { cx: -200, cz: -50, radius: 25, density: 0.5, type: 'scattered', name: 'Western Wilderness Rocks' },
-  // Central-north  
   { cx: 30, cz: 145, radius: 20, density: 0.4, type: 'scattered', name: 'Northern Meadow Stones' },
-  // Between settlements
   { cx: -70, cz: -160, radius: 22, density: 0.5, type: 'field', name: 'Greenmeadow-Ravenwatch Rocks' },
   { cx: 120, cz: -60, radius: 18, density: 0.4, type: 'scattered', name: 'Blackthorn Approach Rocks' },
+
+  // === EXPANDED WORLD ROCKS ===
+  // Thornwall — rugged frontier stone
+  { cx: -480, cz: -480, radius: 45, density: 1.0, type: 'outcrop', name: 'Thornwall Crags' },
+  { cx: -530, cz: -420, radius: 35, density: 0.8, type: 'field', name: 'Frontier Stones' },
+  // Stonepeak — very rocky mountain terrain
+  { cx: -420, cz: 520, radius: 55, density: 1.8, type: 'outcrop', name: 'Stonepeak Crags' },
+  { cx: -380, cz: 480, radius: 40, density: 1.3, type: 'boulders', name: 'Mountain Boulders' },
+  { cx: -340, cz: 540, radius: 35, density: 1.0, type: 'field', name: 'Peak Road Stones' },
+  // Darkhollow — wasteland rubble
+  { cx: 580, cz: -420, radius: 45, density: 1.2, type: 'field', name: 'Darkhollow Rubble' },
+  { cx: 520, cz: -380, radius: 40, density: 0.9, type: 'scattered', name: 'Wasteland Stones' },
+  // Rivermoor — river stones
+  { cx: 470, cz: 300, radius: 30, density: 0.6, type: 'scattered', name: 'River Stones' },
+  // Goldenvale — decorative stones
+  { cx: -580, cz: 120, radius: 30, density: 0.5, type: 'scattered', name: 'Vale Stones' },
+  // Travel corridors
+  { cx: -380, cz: -300, radius: 35, density: 0.7, type: 'scattered', name: 'March Road Rocks' },
+  { cx: 380, cz: -280, radius: 35, density: 0.8, type: 'field', name: 'Eastern Corridor Rocks' },
+  { cx: -280, cz: 380, radius: 30, density: 0.6, type: 'scattered', name: 'NW Corridor Rocks' },
+  { cx: 280, cz: 300, radius: 30, density: 0.5, type: 'scattered', name: 'NE Corridor Rocks' },
+  // World edges
+  { cx: -650, cz: -50, radius: 40, density: 0.4, type: 'scattered', name: 'Far West Rocks' },
+  { cx: 650, cz: -50, radius: 40, density: 0.4, type: 'scattered', name: 'Far East Rocks' },
 ];
 
 function seededRandom(seed: number) {
@@ -223,7 +250,7 @@ export function generateWorldResources(): WorldResource[] {
 
   // ========== TREES ==========
   // Generate trees using forest zone density system
-  const treeAttempts = 3500; // More attempts for denser forests
+  const treeAttempts = 8000; // Increased for 1800x1800 world
   for (let i = 0; i < treeAttempts; i++) {
     const x = (rand() - 0.5) * WORLD_SIZE * 0.95;
     const z = (rand() - 0.5) * WORLD_SIZE * 0.95;
@@ -284,7 +311,7 @@ export function generateWorldResources(): WorldResource[] {
   }
 
   // ========== ROCKS ==========
-  const rockAttempts = 1200;
+  const rockAttempts = 3000; // Increased for expanded world
   for (let i = 0; i < rockAttempts; i++) {
     const x = (rand() - 0.5) * WORLD_SIZE * 0.94;
     const z = (rand() - 0.5) * WORLD_SIZE * 0.94;
