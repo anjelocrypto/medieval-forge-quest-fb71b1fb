@@ -76,7 +76,8 @@ export function WorldObjects({
           const dx = playerPos.x - res.position[0];
           const dz = playerPos.z - res.position[2];
           const distSq = dx * dx + dz * dz;
-          const cullDist = res.gatherable ? 150 : 100;
+          // Tighter culling for performance with high tree count
+          const cullDist = res.type === 'tree' ? (res.gatherable ? 120 : 80) : (res.gatherable ? 150 : 100);
           if (distSq > cullDist * cullDist) return null;
         }
 
