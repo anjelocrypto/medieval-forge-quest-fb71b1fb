@@ -1,6 +1,6 @@
 import { getTerrainHeight } from '../components/Terrain';
 import { WORLD_SIZE } from '../constants';
-import { REGIONS, SETTLEMENTS, SMALL_POIS } from '../world/RegionData';
+import { REGIONS, SETTLEMENTS, SMALL_POIS, ROADS } from '../world/RegionData';
 import { LootPickup } from '../types';
 
 export interface WorldResource {
@@ -18,6 +18,105 @@ export interface WorldResource {
   respawnTimer?: number;
 }
 
+// ========== FOREST BIOMES ==========
+interface ForestZone {
+  cx: number;
+  cz: number;
+  radius: number;
+  density: number; // trees per ~100 sq units
+  type: 'dense' | 'light' | 'scattered' | 'grove';
+  name: string;
+}
+
+const FOREST_ZONES: ForestZone[] = [
+  // Ashwood Deep - main dense forest
+  { cx: -190, cz: 140, radius: 80, density: 2.5, type: 'dense', name: 'Ashwood Deep' },
+  { cx: -220, cz: 180, radius: 50, density: 2.0, type: 'dense', name: 'Ashwood North' },
+  { cx: -160, cz: 100, radius: 45, density: 1.8, type: 'light', name: 'Ashwood Edge' },
+  
+  // NW wilderness forests
+  { cx: -250, cz: 50, radius: 55, density: 1.5, type: 'light', name: 'Western Woodland' },
+  { cx: -280, cz: 120, radius: 40, density: 1.2, type: 'scattered', name: 'Far West Grove' },
+  { cx: -200, cz: 250, radius: 50, density: 1.8, type: 'dense', name: 'Northern Pines' },
+  
+  // NE frontier forests  
+  { cx: 100, cz: 180, radius: 45, density: 1.0, type: 'scattered', name: 'Highland Thicket' },
+  { cx: 80, cz: 250, radius: 55, density: 1.3, type: 'light', name: 'Northern Frontier' },
+  { cx: 220, cz: 250, radius: 40, density: 0.8, type: 'scattered', name: 'Frostmere Pines' },
+  
+  // Central corridor forests
+  { cx: -60, cz: 30, radius: 35, density: 0.9, type: 'grove', name: 'Capital Grove East' },
+  { cx: -100, cz: 120, radius: 40, density: 1.0, type: 'light', name: 'Midland Woods' },
+  { cx: 60, cz: 80, radius: 30, density: 0.7, type: 'grove', name: 'Veyra Trail Grove' },
+  
+  // SW area forests
+  { cx: -220, cz: -80, radius: 45, density: 1.2, type: 'light', name: 'Greenmeadow West Woods' },
+  { cx: -180, cz: -200, radius: 50, density: 1.0, type: 'scattered', name: 'Southern Wilderness' },
+  { cx: -80, cz: -180, radius: 35, density: 0.8, type: 'grove', name: 'Ravenwatch Approach' },
+  
+  // SE area forests
+  { cx: 250, cz: -200, radius: 45, density: 0.9, type: 'scattered', name: 'Blackthorn Frontier' },
+  { cx: 150, cz: -220, radius: 40, density: 0.7, type: 'grove', name: 'Eastern Badlands Edge' },
+  { cx: 100, cz: -150, radius: 35, density: 0.6, type: 'scattered', name: 'Frontier Copse' },
+  
+  // Old Veyra region - sparse haunted woods
+  { cx: 240, cz: 60, radius: 45, density: 0.8, type: 'scattered', name: 'Veyra Dead Woods' },
+  { cx: 260, cz: 140, radius: 40, density: 0.6, type: 'grove', name: 'Ancient Grove' },
+  
+  // Map edge forests for visual fill
+  { cx: -280, cz: -180, radius: 50, density: 1.0, type: 'light', name: 'SW Border Forest' },
+  { cx: 280, cz: 100, radius: 45, density: 0.7, type: 'scattered', name: 'Eastern Edge' },
+  { cx: 0, cz: 280, radius: 50, density: 0.9, type: 'light', name: 'Northern Border' },
+  { cx: 0, cz: -280, radius: 45, density: 0.8, type: 'scattered', name: 'Southern Border' },
+  
+  // Roadside tree belts
+  { cx: -50, cz: -50, radius: 25, density: 0.6, type: 'grove', name: 'Crossroads Grove' },
+  { cx: 120, cz: -80, radius: 30, density: 0.5, type: 'grove', name: 'Blackthorn Road Trees' },
+  { cx: -120, cz: 50, radius: 25, density: 0.5, type: 'grove', name: 'Ashwood Approach' },
+];
+
+// ========== ROCK FORMATIONS ==========
+interface RockZone {
+  cx: number;
+  cz: number;
+  radius: number;
+  density: number;
+  type: 'field' | 'outcrop' | 'scattered' | 'boulders';
+  name: string;
+}
+
+const ROCK_ZONES: RockZone[] = [
+  // Frostmere highlands - rocky terrain
+  { cx: 160, cz: 200, radius: 65, density: 2.0, type: 'outcrop', name: 'Frostmere Crags' },
+  { cx: 200, cz: 250, radius: 45, density: 1.5, type: 'field', name: 'Highland Stones' },
+  { cx: 120, cz: 220, radius: 35, density: 1.2, type: 'scattered', name: 'Mountain Pass Rocks' },
+  
+  // Blackthorn frontier - rugged terrain
+  { cx: 185, cz: -155, radius: 50, density: 1.5, type: 'field', name: 'Fort Approach Stones' },
+  { cx: 230, cz: -120, radius: 40, density: 1.2, type: 'outcrop', name: 'Eastern Frontier Rocks' },
+  { cx: 250, cz: -220, radius: 50, density: 1.0, type: 'scattered', name: 'Badlands Boulders' },
+  
+  // Old Veyra ruins - ancient stone debris
+  { cx: 195, cz: 95, radius: 55, density: 1.8, type: 'outcrop', name: 'Veyra Rubble' },
+  { cx: 240, cz: 40, radius: 40, density: 1.3, type: 'field', name: 'Ancient Stones' },
+  { cx: 170, cz: 130, radius: 35, density: 0.9, type: 'scattered', name: 'Veyra Path Rocks' },
+  
+  // Ravenwatch badlands
+  { cx: 5, cz: -205, radius: 45, density: 1.4, type: 'field', name: 'Ravenwatch Rocks' },
+  { cx: 50, cz: -240, radius: 40, density: 1.0, type: 'outcrop', name: 'Southern Crags' },
+  { cx: -40, cz: -230, radius: 35, density: 0.8, type: 'scattered', name: 'Bandit Stones' },
+  
+  // Central terrain variation
+  { cx: 40, cz: 40, radius: 25, density: 0.5, type: 'scattered', name: 'Heartland Stones' },
+  { cx: -30, cz: -100, radius: 30, density: 0.6, type: 'scattered', name: 'Road Boulders' },
+  
+  // Map edges and corners
+  { cx: -260, cz: 250, radius: 50, density: 0.8, type: 'boulders', name: 'NW Corner Rocks' },
+  { cx: 260, cz: 260, radius: 50, density: 1.0, type: 'outcrop', name: 'NE Mountain Edge' },
+  { cx: -260, cz: -250, radius: 45, density: 0.7, type: 'scattered', name: 'SW Wilderness Stones' },
+  { cx: 260, cz: -260, radius: 45, density: 0.6, type: 'boulders', name: 'SE Border Rocks' },
+];
+
 function seededRandom(seed: number) {
   let s = seed;
   return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
@@ -31,32 +130,119 @@ function isNearSettlement(x: number, z: number, minDist: number): boolean {
   return false;
 }
 
+function isNearRoad(x: number, z: number, minDist: number): boolean {
+  for (const road of ROADS) {
+    const dx = road.to[0] - road.from[0];
+    const dz = road.to[1] - road.from[1];
+    const len2 = dx * dx + dz * dz;
+    if (len2 < 1) continue;
+    const t = Math.max(0, Math.min(1, ((x - road.from[0]) * dx + (z - road.from[1]) * dz) / len2));
+    const px = road.from[0] + t * dx;
+    const pz = road.from[1] + t * dz;
+    const dist = Math.sqrt((x - px) ** 2 + (z - pz) ** 2);
+    if (dist < minDist + road.width) return true;
+  }
+  return false;
+}
+
+function isNearPOI(x: number, z: number, minDist: number): boolean {
+  for (const poi of SMALL_POIS) {
+    const d = Math.sqrt((x - poi.position[0]) ** 2 + (z - poi.position[1]) ** 2);
+    if (d < minDist) return true;
+  }
+  return false;
+}
+
+function getForestDensityAt(x: number, z: number): { density: number; type: ForestZone['type'] } {
+  let best = { density: 0, type: 'scattered' as ForestZone['type'] };
+  for (const zone of FOREST_ZONES) {
+    const d = Math.sqrt((x - zone.cx) ** 2 + (z - zone.cz) ** 2);
+    if (d < zone.radius) {
+      // Smooth falloff from center to edge
+      const factor = 1 - (d / zone.radius) ** 0.7;
+      const effectiveDensity = zone.density * factor;
+      if (effectiveDensity > best.density) {
+        best = { density: effectiveDensity, type: zone.type };
+      }
+    }
+  }
+  return best;
+}
+
+function getRockDensityAt(x: number, z: number): { density: number; type: RockZone['type'] } {
+  let best = { density: 0, type: 'scattered' as RockZone['type'] };
+  for (const zone of ROCK_ZONES) {
+    const d = Math.sqrt((x - zone.cx) ** 2 + (z - zone.cz) ** 2);
+    if (d < zone.radius) {
+      const factor = 1 - (d / zone.radius) ** 0.8;
+      const effectiveDensity = zone.density * factor;
+      if (effectiveDensity > best.density) {
+        best = { density: effectiveDensity, type: zone.type };
+      }
+    }
+  }
+  return best;
+}
+
 export function generateWorldResources(): WorldResource[] {
   const resources: WorldResource[] = [];
   const rand = seededRandom(12345);
   const half = WORLD_SIZE / 2;
 
-  // TREES — more in Ashwood, scattered elsewhere
-  for (let i = 0; i < 600; i++) {
-    const x = (rand() - 0.5) * WORLD_SIZE * 0.92;
-    const z = (rand() - 0.5) * WORLD_SIZE * 0.92;
+  // ========== TREES ==========
+  // Generate trees using forest zone density system
+  const treeAttempts = 3500; // More attempts for denser forests
+  for (let i = 0; i < treeAttempts; i++) {
+    const x = (rand() - 0.5) * WORLD_SIZE * 0.95;
+    const z = (rand() - 0.5) * WORLD_SIZE * 0.95;
     const y = getTerrainHeight(x, z);
-    if (y < 0) continue;
-
+    
+    // Skip water
+    if (y < -0.3) continue;
+    
+    // Skip too close to center (capital area)
     const distCenter = Math.sqrt(x * x + z * z);
-    if (distCenter < 15) continue;
-    if (isNearSettlement(x, z, 10)) continue;
-
-    // Dense in Ashwood
-    const ashDist = Math.sqrt((x + 190) ** 2 + (z - 140) ** 2);
-    const inAshwood = ashDist < 75;
-    if (!inAshwood && rand() > 0.45) continue;
-
-    const scale = 0.8 + rand() * 0.6;
-    const variant = rand() > 0.5 ? 0 : 1;
-    const trunkHeight = 2 + rand() * 2;
-    const crownRadius = 1.5 + rand() * 1.5;
-    const gatherable = rand() > 0.3;
+    if (distCenter < 35) continue;
+    
+    // Skip near settlements
+    if (isNearSettlement(x, z, 12)) continue;
+    
+    // Skip on roads
+    if (isNearRoad(x, z, 3)) continue;
+    
+    // Skip near POIs
+    if (isNearPOI(x, z, 4)) continue;
+    
+    // Get local forest density
+    const forest = getForestDensityAt(x, z);
+    
+    // Base spawn chance depends on density
+    let spawnChance = forest.density * 0.35;
+    
+    // Add minimum scatter everywhere (except near settlements)
+    if (distCenter > 60) {
+      spawnChance = Math.max(spawnChance, 0.05);
+    }
+    
+    if (rand() > spawnChance) continue;
+    
+    // Variant based on forest type
+    let variant = rand() > 0.5 ? 0 : 1;
+    let scale = 0.7 + rand() * 0.6;
+    
+    if (forest.type === 'dense') {
+      scale = 0.9 + rand() * 0.8;
+      variant = rand() > 0.3 ? 1 : 0; // More conifers in dense
+    } else if (forest.type === 'light') {
+      scale = 0.8 + rand() * 0.5;
+    } else if (forest.type === 'grove') {
+      scale = 0.6 + rand() * 0.4;
+      variant = 0; // More deciduous in groves
+    }
+    
+    const trunkHeight = 2 + rand() * 2.5;
+    const crownRadius = 1.2 + rand() * 1.8;
+    const gatherable = rand() > 0.25;
 
     resources.push({
       id: `tree-${i}`, type: 'tree',
@@ -65,33 +251,74 @@ export function generateWorldResources(): WorldResource[] {
     });
   }
 
-  // ROCKS — more in Frostmere and Blackthorn
-  for (let i = 0; i < 250; i++) {
-    const x = (rand() - 0.5) * WORLD_SIZE * 0.9;
-    const z = (rand() - 0.5) * WORLD_SIZE * 0.9;
+  // ========== ROCKS ==========
+  const rockAttempts = 1200;
+  for (let i = 0; i < rockAttempts; i++) {
+    const x = (rand() - 0.5) * WORLD_SIZE * 0.94;
+    const z = (rand() - 0.5) * WORLD_SIZE * 0.94;
     const y = getTerrainHeight(x, z);
-    if (y < -0.3) continue;
-    if (isNearSettlement(x, z, 8)) continue;
-
-    const scale = 0.3 + rand() * 1.5;
-    const gatherable = scale > 0.5 && rand() > 0.3;
+    
+    if (y < -0.5) continue;
+    if (isNearSettlement(x, z, 10)) continue;
+    if (isNearRoad(x, z, 2.5)) continue;
+    if (isNearPOI(x, z, 3)) continue;
+    
+    const rock = getRockDensityAt(x, z);
+    
+    // Base spawn chance
+    let spawnChance = rock.density * 0.3;
+    
+    // Higher terrain = more rocks
+    if (y > 5) spawnChance += 0.1;
+    if (y > 10) spawnChance += 0.15;
+    
+    // Minimum scatter
+    spawnChance = Math.max(spawnChance, 0.03);
+    
+    if (rand() > spawnChance) continue;
+    
+    // Scale based on zone type
+    let scale = 0.3 + rand() * 1.2;
+    if (rock.type === 'outcrop') {
+      scale = 0.8 + rand() * 2.0;
+    } else if (rock.type === 'boulders') {
+      scale = 1.2 + rand() * 1.5;
+    } else if (rock.type === 'field') {
+      scale = 0.4 + rand() * 1.0;
+    }
+    
+    const gatherable = scale > 0.5 && rand() > 0.35;
 
     resources.push({
       id: `rock-${i}`, type: 'rock',
-      position: [x, y + scale * 0.3, z], health: 3, maxHealth: 3,
+      position: [x, y + scale * 0.25, z], health: 3, maxHealth: 3,
       depleted: false, scale, variant: Math.floor(rand() * 3),
       gatherable, trunkHeight: 0, crownRadius: 0,
     });
   }
 
-  // BERRY BUSHES — near villages and forest edges
+  // ========== BERRY BUSHES ==========
+  // Near villages, forest edges, and groves
   const berrySpots = [
-    { cx: -155, cz: -125, count: 6, spread: 30 },
-    { cx: -110, cz: -80, count: 4, spread: 20 },
-    { cx: -160, cz: 120, count: 4, spread: 25 },
-    { cx: 20, cz: -20, count: 3, spread: 30 },
-    { cx: 0, cz: 0, count: 3, spread: 35 },
+    // Near villages
+    { cx: -155, cz: -125, count: 8, spread: 35 },
+    { cx: -110, cz: -80, count: 5, spread: 25 },
+    { cx: 0, cz: 0, count: 4, spread: 45 },
+    // Forest edges
+    { cx: -160, cz: 120, count: 6, spread: 30 },
+    { cx: -140, cz: 90, count: 4, spread: 20 },
+    { cx: -100, cz: 60, count: 3, spread: 25 },
+    // Scattered wilderness
+    { cx: -80, cz: -50, count: 3, spread: 20 },
+    { cx: 50, cz: -80, count: 2, spread: 20 },
+    { cx: 80, cz: 120, count: 3, spread: 25 },
+    { cx: -200, cz: -60, count: 4, spread: 30 },
+    { cx: 100, cz: 200, count: 3, spread: 25 },
+    // Trail food
+    { cx: -40, cz: 0, count: 2, spread: 15 },
+    { cx: 30, cz: -120, count: 2, spread: 15 },
   ];
+  
   let berryId = 0;
   for (const spot of berrySpots) {
     for (let i = 0; i < spot.count; i++) {
@@ -100,37 +327,55 @@ export function generateWorldResources(): WorldResource[] {
       const x = spot.cx + Math.cos(angle) * r;
       const z = spot.cz + Math.sin(angle) * r;
       const y = getTerrainHeight(x, z);
-      if (y < 0) continue;
+      if (y < -0.2) continue;
+      if (isNearSettlement(x, z, 8)) continue;
+      if (isNearRoad(x, z, 2)) continue;
+      
       resources.push({
         id: `berry-${berryId++}`, type: 'berry_bush',
         position: [x, y, z], health: 2, maxHealth: 2,
-        depleted: false, scale: 0.6 + rand() * 0.3, variant: 0,
+        depleted: false, scale: 0.5 + rand() * 0.35, variant: 0,
         gatherable: true, trunkHeight: 0, crownRadius: 0.8,
       });
     }
   }
 
-  // LOOTABLE CRATES — near camps, ruins, forts
+  // ========== LOOTABLE CRATES ==========
+  // Near camps, ruins, forts, and along trade routes
   const crateSpots = [
-    { cx: 5, cz: -205, count: 4, spread: 12 },
-    { cx: 195, cz: 95, count: 4, spread: 18 },
-    { cx: 185, cz: -155, count: 3, spread: 15 },
-    { cx: 160, cz: 50, count: 2, spread: 10 },
-    { cx: 0, cz: 0, count: 2, spread: 30 },
+    // Near POIs
+    { cx: 5, cz: -205, count: 5, spread: 15 },
+    { cx: 195, cz: 95, count: 6, spread: 22 },
+    { cx: 185, cz: -155, count: 5, spread: 18 },
+    { cx: 160, cz: 50, count: 3, spread: 12 },
+    { cx: 155, cz: 195, count: 3, spread: 15 },
+    // Supply depots and camps
+    { cx: 60, cz: -50, count: 3, spread: 8 },
+    { cx: 130, cz: -110, count: 2, spread: 10 },
+    // Roadside finds
+    { cx: -70, cz: -55, count: 2, spread: 10 },
+    { cx: 90, cz: -75, count: 2, spread: 8 },
+    { cx: -90, cz: 65, count: 2, spread: 10 },
+    { cx: 100, cz: 45, count: 2, spread: 10 },
+    // Scattered wilderness
+    { cx: -180, cz: 135, count: 2, spread: 15 },
+    { cx: 0, cz: 0, count: 2, spread: 40 },
   ];
+  
   let crateId = 0;
   for (const spot of crateSpots) {
     for (let i = 0; i < spot.count; i++) {
       const angle = rand() * Math.PI * 2;
-      const r = 3 + rand() * spot.spread;
+      const r = 2 + rand() * spot.spread;
       const x = spot.cx + Math.cos(angle) * r;
       const z = spot.cz + Math.sin(angle) * r;
       const y = getTerrainHeight(x, z);
-      if (y < -0.2) continue;
+      if (y < -0.3) continue;
+      
       resources.push({
         id: `crate-${crateId++}`, type: 'crate',
         position: [x, y, z], health: 2, maxHealth: 2,
-        depleted: false, scale: 0.5 + rand() * 0.3, variant: 0,
+        depleted: false, scale: 0.45 + rand() * 0.35, variant: 0,
         gatherable: true, trunkHeight: 0, crownRadius: 0,
       });
     }
