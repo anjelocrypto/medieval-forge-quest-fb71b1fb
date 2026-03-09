@@ -367,8 +367,8 @@ function addPOIObstacles() {
         circleObstacles.push({ x: px, z: pz, radius: 1.5, id: `poi-${poi.id}` });
         break;
       case 'supply_depot':
-        // Depot shelter
-        boxObstacles.push({ cx: px, cz: pz, halfW: 2.5, halfD: 2, rotation: 0, id: `poi-${poi.id}` });
+        // Depot shelter — matches visual 4x3 footprint
+        boxObstacles.push({ cx: px, cz: pz, halfW: 2, halfD: 1.5, rotation: 0, id: `poi-${poi.id}` });
         break;
       case 'hunter_camp':
         // Tent
@@ -390,8 +390,8 @@ function addPOIObstacles() {
         // Passable - charred remains don't block
         break;
       case 'wagon':
-        // Wagon body
-        boxObstacles.push({ cx: px, cz: pz, halfW: 1, halfD: 1.8, rotation: Math.sin(px) * 0.5, id: `poi-${poi.id}` });
+        // Wagon body — matches visual 1.5x3 footprint
+        boxObstacles.push({ cx: px, cz: pz, halfW: 0.75, halfD: 1.5, rotation: Math.sin(px) * 0.5, id: `poi-${poi.id}` });
         break;
       // Decorative POIs - no collision (shrines, milestones, crosses, lanterns, graves, ponds, clearings, crossroads)
       default:
