@@ -295,19 +295,24 @@ export function MenuOverlay({ onCreateRoom, onJoinByCode, onSinglePlayer, onMock
 interface MenuButtonProps {
   onClick: () => void;
   disabled?: boolean;
-  variant?: 'primary' | 'success' | 'subtle' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'success' | 'subtle' | 'ghost';
   className?: string;
   children: React.ReactNode;
 }
 
-function MenuButton({ onClick, disabled, variant = 'primary', className = '', children }: MenuButtonProps) {
+function MenuButton({ onClick, disabled, variant = 'secondary', className = '', children }: MenuButtonProps) {
   const baseStyles = "w-full py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-all hover:scale-[1.02] disabled:opacity-40 disabled:hover:scale-100";
   
-  const variantStyles: Record<'primary' | 'success' | 'subtle' | 'ghost', React.CSSProperties> = {
+  const variantStyles: Record<'primary' | 'secondary' | 'success' | 'subtle' | 'ghost', React.CSSProperties> = {
     primary: {
       background: 'linear-gradient(135deg, #e8a838 0%, #c47f17 100%)',
       color: '#1a1a2e',
       boxShadow: '0 4px 20px rgba(232,168,56,0.3)',
+    },
+    secondary: {
+      background: 'rgba(255,255,255,0.08)',
+      color: '#e8d5b7',
+      border: '1px solid rgba(255,255,255,0.15)',
     },
     success: {
       background: 'linear-gradient(135deg, #4aad4a 0%, #2a7a2a 100%)',
