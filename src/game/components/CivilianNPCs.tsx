@@ -136,10 +136,10 @@ function generateCivilians(): CivilianDef[] {
   // Gate guards
   add('guard', 'idle', sp[0] - 4, sp[1] + 25, { kingdom: 'stonepeak' });
   add('guard', 'idle', sp[0] + 4, sp[1] + 25, { kingdom: 'stonepeak' });
-  add('guard', 'patrol', sp[0], sp[1] + 30, { patrolRadius: 6, patrolSpeed: 0.5, kingdom: 'stonepeak' });
-  // Wall patrols
-  add('guard', 'patrol', sp[0] + 20, sp[1], { patrolRadius: 15, patrolSpeed: 0.4, kingdom: 'stonepeak' });
-  add('guard', 'patrol', sp[0] - 20, sp[1], { patrolRadius: 15, patrolSpeed: 0.4, kingdom: 'stonepeak' });
+  add('guard', 'patrol', sp[0], sp[1] + 28, { patrolRadius: 4, patrolSpeed: 0.5, kingdom: 'stonepeak' });
+  // Wall patrols — constrained to stay inside walls (radius ±25)
+  add('guard', 'patrol', sp[0] + 15, sp[1], { patrolRadius: 8, patrolSpeed: 0.4, kingdom: 'stonepeak' });
+  add('guard', 'patrol', sp[0] - 15, sp[1], { patrolRadius: 8, patrolSpeed: 0.4, kingdom: 'stonepeak' });
   // Mine workers
   add('worker', 'patrol', sp[0] - 18, sp[1] - 5, { patrolRadius: 4, patrolSpeed: 0.5, kingdom: 'stonepeak' });
   add('worker', 'idle', sp[0] - 20, sp[1] - 3, { kingdom: 'stonepeak' });
