@@ -1,26 +1,27 @@
 /**
  * Complete cinematic menu screen.
  * Combines the 3D world background with the menu UI overlay.
+ * Simplified for single global world entry.
  */
 import { MenuScene3D } from './MenuScene3D';
 import { MenuOverlay } from './MenuOverlay';
 
 interface Props {
-  onCreateRoom: (playerName: string) => Promise<void>;
-  onJoinByCode: (code: string, playerName: string) => Promise<void>;
-  onSinglePlayer: () => void;
-  onMockMode: () => void;
+  onEnterWorld: (playerName: string) => Promise<void>;
   isReconnecting: boolean;
 }
 
-export function CinematicMenu(props: Props) {
+export function CinematicMenu({ onEnterWorld, isReconnecting }: Props) {
   return (
     <div className="w-screen h-screen relative overflow-hidden">
       {/* 3D cinematic world background */}
       <MenuScene3D />
       
       {/* UI overlay on top */}
-      <MenuOverlay {...props} />
+      <MenuOverlay 
+        onEnterWorld={onEnterWorld}
+        isReconnecting={isReconnecting}
+      />
       
       {/* Subtle animated vignette effect */}
       <div 
