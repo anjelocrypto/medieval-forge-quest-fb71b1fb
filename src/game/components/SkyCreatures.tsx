@@ -53,8 +53,8 @@ const FLOCKS: BirdFlock[] = [
   { cx: -520, cz: -420, altitude: 60, radius: 35, speed: 0.2, count: 3, phase: 0.3 },
   { cx: 450, cz: 350, altitude: 50, radius: 45, speed: 0.22, count: 5, phase: 1.8 },   // Rivermoor
   { cx: 430, cz: 380, altitude: 42, radius: 30, speed: 0.3, count: 3, phase: 4.5 },
-  { cx: -400, cz: 500, altitude: 65, radius: 50, speed: 0.18, count: 4, phase: 2.5 },   // Stonepeak
-  { cx: -380, cz: 530, altitude: 70, radius: 40, speed: 0.15, count: 3, phase: 5.3 },
+  { cx: -400, cz: 500, altitude: 85, radius: 50, speed: 0.18, count: 4, phase: 2.5 },   // Stonepeak — higher for mountain terrain
+  { cx: -380, cz: 530, altitude: 90, radius: 40, speed: 0.15, count: 3, phase: 5.3 },
   { cx: 550, cz: -400, altitude: 48, radius: 35, speed: 0.28, count: 4, phase: 3.2 },   // Darkhollow
   { cx: -550, cz: 100, altitude: 52, radius: 40, speed: 0.24, count: 5, phase: 0.7 },    // Goldenvale
   // Travel corridors
