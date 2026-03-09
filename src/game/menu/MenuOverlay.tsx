@@ -300,10 +300,10 @@ interface MenuButtonProps {
   children: React.ReactNode;
 }
 
-function MenuButton({ onClick, disabled, variant = 'default', className = '', children }: MenuButtonProps) {
+function MenuButton({ onClick, disabled, variant = 'primary', className = '', children }: MenuButtonProps) {
   const baseStyles = "w-full py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-all hover:scale-[1.02] disabled:opacity-40 disabled:hover:scale-100";
   
-  const variantStyles: Record<string, React.CSSProperties> = {
+  const variantStyles: Record<'primary' | 'success' | 'subtle' | 'ghost', React.CSSProperties> = {
     primary: {
       background: 'linear-gradient(135deg, #e8a838 0%, #c47f17 100%)',
       color: '#1a1a2e',
@@ -323,7 +323,10 @@ function MenuButton({ onClick, disabled, variant = 'default', className = '', ch
       background: 'transparent',
       color: '#8a9ab5',
     },
-    default: {
+  };
+  
+  // Default styling for secondary buttons
+  const defaultStyle: React.CSSProperties = {
       background: 'rgba(255,255,255,0.08)',
       color: '#e8d5b7',
       border: '1px solid rgba(255,255,255,0.15)',
