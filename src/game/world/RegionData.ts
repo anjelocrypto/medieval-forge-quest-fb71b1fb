@@ -269,6 +269,7 @@ export const SETTLEMENTS: SettlementDef[] = [
 
 // ========== ROAD NETWORK ==========
 export const ROADS: RoadSegment[] = [
+  // ===== EXISTING CENTRAL ROADS =====
   // Main roads from Ironhold
   { from: [0, 38], to: [0, 55], width: 4.0 },             // Capital gate approach
   { from: [0, 55], to: [-155, -125], width: 3.5 },         // Ironhold → Greenmeadow
@@ -279,7 +280,7 @@ export const ROADS: RoadSegment[] = [
   { from: [0, 55], to: [195, 95], width: 2.5 },            // Ironhold → Old Veyra
   // Secondary roads
   { from: [185, -155], to: [195, 95], width: 2.0 },        // Blackthorn → Old Veyra
-  { from: [195, 95], to: [155, 209], width: 2.0 },         // Old Veyra → Frostmere (approach monastery gate)
+  { from: [195, 95], to: [155, 209], width: 2.0 },         // Old Veyra → Frostmere
   { from: [-155, -125], to: [-110, -80], width: 2.0 },     // Greenmeadow → Millbrook
   { from: [-110, -80], to: [0, 55], width: 2.0 },          // Millbrook → Ironhold
   { from: [5, -205], to: [185, -155], width: 1.8 },        // Ravenwatch → Blackthorn
@@ -288,6 +289,49 @@ export const ROADS: RoadSegment[] = [
   // Ring road segments
   { from: [-155, -125], to: [5, -205], width: 1.5 },       // Greenmeadow → Ravenwatch
   { from: [-185, 135], to: [-155, -125], width: 1.5 },     // Ashwood → Greenmeadow (long trail)
+
+  // ===== NEW KINGDOM CONNECTOR ROADS =====
+  // Ironhold → Thornwall (SW main road, via Western Marches)
+  { from: [-155, -125], to: [-280, -240], width: 3.0 },    // Greenmeadow → Western Marches waypoint
+  { from: [-280, -240], to: [-440, -400], width: 2.5 },    // Waypoint → Thornwatch outpost
+  { from: [-440, -400], to: [-500, -450], width: 3.0 },    // Thornwatch → Thornwall
+
+  // Ironhold → Goldenvale (W main road)
+  { from: [-185, 135], to: [-320, 120], width: 2.5 },      // Ashwood → midpoint
+  { from: [-320, 120], to: [-500, 150], width: 2.5 },      // midpoint → Harvest Hill
+  { from: [-500, 150], to: [-550, 100], width: 3.0 },      // Harvest Hill → Goldenvale
+
+  // Ironhold → Rivermoor (NE main road, via Frostmere)
+  { from: [155, 195], to: [280, 260], width: 2.5 },        // Frostmere → midpoint
+  { from: [280, 260], to: [400, 300], width: 2.5 },        // midpoint → Reed Village
+  { from: [400, 300], to: [450, 350], width: 3.0 },        // Reed Village → Rivermoor
+
+  // Ironhold → Darkhollow (SE main road, via Blackthorn)
+  { from: [185, -155], to: [340, -260], width: 2.5 },      // Blackthorn → midpoint
+  { from: [340, -260], to: [500, -350], width: 2.5 },      // midpoint → Ashkeep
+  { from: [500, -350], to: [550, -400], width: 3.0 },      // Ashkeep → Darkhollow
+
+  // Ironhold → Stonepeak (NW main road, via Ashwood)
+  { from: [-185, 135], to: [-280, 280], width: 2.5 },      // Ashwood → midpoint
+  { from: [-280, 280], to: [-350, 450], width: 2.5 },      // midpoint → High Watch
+  { from: [-350, 450], to: [-400, 500], width: 3.0 },      // High Watch → Stonepeak
+
+  // ===== INTER-KINGDOM SECONDARY ROADS =====
+  // Thornwall → Goldenvale (southern connector)
+  { from: [-500, -450], to: [-550, -200], width: 2.0 },    // Thornwall → waypoint
+  { from: [-550, -200], to: [-550, 100], width: 2.0 },     // waypoint → Goldenvale
+
+  // Goldenvale → Stonepeak (western connector)
+  { from: [-550, 100], to: [-480, 300], width: 2.0 },      // Goldenvale → waypoint
+  { from: [-480, 300], to: [-400, 500], width: 2.0 },      // waypoint → Stonepeak
+
+  // Rivermoor → Darkhollow (eastern connector)
+  { from: [450, 350], to: [520, 100], width: 2.0 },        // Rivermoor → waypoint
+  { from: [520, 100], to: [550, -400], width: 2.0 },       // waypoint → Darkhollow
+
+  // Stonepeak → Rivermoor (northern connector)
+  { from: [-400, 500], to: [0, 550], width: 2.0 },         // Stonepeak → north waypoint
+  { from: [0, 550], to: [450, 350], width: 2.0 },          // north waypoint → Rivermoor
 ];
 
 // ========== SMALL POIS ==========
@@ -401,7 +445,7 @@ export const SMALL_POIS: SmallPOIDef[] = [
   { id: 'sp99', name: 'Desert Camp', position: [225, -225], type: 'abandoned_camp' },
   { id: 'sp100', name: 'Border Watch', position: [275, -105], type: 'watchtower' },
   
-  // === MAP BORDER DETAILS (sparse, not spam) ===
+  // === MAP BORDER DETAILS ===
   { id: 'sp101', name: 'Northern Cross', position: [0, 275], type: 'roadside_cross' },
   { id: 'sp104', name: 'Southern Cross', position: [0, -275], type: 'roadside_cross' },
   { id: 'sp105', name: 'Border Cave', position: [65, -265], type: 'cave' },
@@ -433,6 +477,55 @@ export const SMALL_POIS: SmallPOIDef[] = [
   { id: 'sp128', name: 'Western Trail', position: [-180, 25], type: 'milestone' },
   { id: 'sp129', name: 'Forest Edge Camp', position: [-195, -35], type: 'hunter_camp' },
   { id: 'sp130', name: 'Woodland Shrine', position: [-205, -85], type: 'shrine' },
+
+  // ===== NEW KINGDOM CORRIDOR POIS =====
+  // Greenmeadow → Thornwall road
+  { id: 'sp200', name: 'Western March Inn', position: [-220, -180], type: 'inn' },
+  { id: 'sp201', name: 'March Milestone', position: [-300, -260], type: 'milestone' },
+  { id: 'sp202', name: 'Frontier Watch', position: [-360, -320], type: 'watchtower' },
+  { id: 'sp203', name: 'March Shrine', position: [-400, -380], type: 'shrine' },
+  { id: 'sp204', name: 'Thornwall Approach', position: [-460, -420], type: 'lantern_post' },
+  
+  // Ashwood → Goldenvale road
+  { id: 'sp210', name: 'Trader Rest', position: [-250, 130], type: 'inn' },
+  { id: 'sp211', name: 'Western Milestone', position: [-380, 115], type: 'milestone' },
+  { id: 'sp212', name: 'Vale Shrine', position: [-440, 125], type: 'shrine' },
+  { id: 'sp213', name: 'Merchant Camp', position: [-470, 140], type: 'hunter_camp' },
+  
+  // Frostmere → Rivermoor road
+  { id: 'sp220', name: 'River Approach', position: [220, 230], type: 'milestone' },
+  { id: 'sp221', name: 'Eastern Inn', position: [320, 270], type: 'inn' },
+  { id: 'sp222', name: 'River Shrine', position: [370, 290], type: 'shrine' },
+  { id: 'sp223', name: 'Fisher Camp', position: [420, 320], type: 'hunter_camp' },
+  
+  // Blackthorn → Darkhollow road
+  { id: 'sp230', name: 'Frontier Inn', position: [260, -210], type: 'inn' },
+  { id: 'sp231', name: 'Dark Milestone', position: [380, -290], type: 'milestone' },
+  { id: 'sp232', name: 'Hollow Shrine', position: [450, -330], type: 'shrine' },
+  { id: 'sp233', name: 'Ruins Watch', position: [480, -360], type: 'watchtower' },
+  
+  // Ashwood → Stonepeak road
+  { id: 'sp240', name: 'Mountain Road Start', position: [-230, 210], type: 'milestone' },
+  { id: 'sp241', name: 'Mountain Inn', position: [-300, 340], type: 'inn' },
+  { id: 'sp242', name: 'Peak Shrine', position: [-340, 420], type: 'shrine' },
+  { id: 'sp243', name: 'High Watch Post', position: [-370, 470], type: 'watchpost' },
+
+  // Thornwall → Goldenvale road
+  { id: 'sp250', name: 'Western Waystation', position: [-540, -100], type: 'supply_depot' },
+  { id: 'sp251', name: 'Border Shrine', position: [-560, -30], type: 'shrine' },
+  
+  // Goldenvale → Stonepeak road
+  { id: 'sp260', name: 'Mountain Trail Post', position: [-510, 220], type: 'watchpost' },
+  { id: 'sp261', name: 'Highland Shrine', position: [-450, 380], type: 'shrine' },
+  
+  // Rivermoor → Darkhollow road
+  { id: 'sp270', name: 'Eastern Waystation', position: [500, 50], type: 'supply_depot' },
+  { id: 'sp271', name: 'Wasteland Shrine', position: [530, -150], type: 'shrine' },
+  
+  // Stonepeak → Rivermoor (northern route)
+  { id: 'sp280', name: 'Northern Waypoint', position: [-200, 540], type: 'watchpost' },
+  { id: 'sp281', name: 'Cold Shrine', position: [100, 520], type: 'shrine' },
+  { id: 'sp282', name: 'Northern Inn', position: [250, 460], type: 'inn' },
 ];
 
 // ========== LANDMARK DEFINITIONS ==========
@@ -441,7 +534,7 @@ export interface LandmarkDef {
   name: string;
   position: [number, number];
   type: 'great_tower' | 'windmill' | 'cathedral' | 'giant_tree' | 'ruins_arch' | 'beacon';
-  height: number; // how tall for visibility
+  height: number;
 }
 
 export const LANDMARKS: LandmarkDef[] = [
@@ -451,6 +544,12 @@ export const LANDMARKS: LandmarkDef[] = [
   { id: 'lm4', name: 'Veyra Grand Arch', position: [195, 95], type: 'ruins_arch', height: 25 },
   { id: 'lm5', name: 'Ancient Oak', position: [-190, 145], type: 'giant_tree', height: 28 },
   { id: 'lm6', name: 'Frostmere Spire', position: [155, 200], type: 'cathedral', height: 24 },
+  // New kingdom landmarks
+  { id: 'lm7', name: 'Thornwall Citadel', position: [-500, -450], type: 'great_tower', height: 28 },
+  { id: 'lm8', name: 'Rivermoor Lighthouse', position: [450, 350], type: 'beacon', height: 20 },
+  { id: 'lm9', name: 'Stonepeak Spire', position: [-400, 500], type: 'cathedral', height: 30 },
+  { id: 'lm10', name: 'Darkhollow Ruin', position: [550, -400], type: 'ruins_arch', height: 22 },
+  { id: 'lm11', name: 'Goldenvale Gate', position: [-550, 100], type: 'great_tower', height: 24 },
 ];
 
 // Utility: get region at world position
