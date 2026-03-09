@@ -441,10 +441,9 @@ function isOnBridge(x: number, z: number): boolean {
 }
 
 function isNearWildernessBuilding(x: number, z: number, minDist: number): boolean {
-  const buildings = getWildernessBuildings();
-  for (const b of buildings) {
-    const d = Math.sqrt((x - b.x) ** 2 + (z - b.z) ** 2);
-    if (d < minDist + Math.max(b.w, b.d)) return true;
+  for (const c of WILDERNESS_CLUSTER_CENTERS) {
+    const d = Math.sqrt((x - c.x) ** 2 + (z - c.z) ** 2);
+    if (d < c.radius + minDist) return true;
   }
   return false;
 }
