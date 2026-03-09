@@ -92,22 +92,24 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
     return () => cancelAnimationFrame(raf);
   }, [applyPlayerDamage]);
 
-  // Mounted horse sync — Player.tsx is sole movement authority.
+  // Mounted horse sync — commit position to React state only on dismount,
+  // not every frame. Player.tsx is sole movement authority while mounted.
+  // The horse visual is hidden while mounted (rendered inline by Player).
+  const mountedSyncRef = useRef(false);
   useEffect(() => {
-    if (!isMounted) return;
-    let raf: number;
-    const sync = () => {
+    if (isMounted) {
+      mountedSyncRef.current = true;
+    } else if (mountedSyncRef.current) {
+      // Just dismounted — commit final horse position to state once
+      mountedSyncRef.current = false;
       const pos = playerPositionRef.current;
       const horseY = getTerrainHeight(pos.x, pos.z);
       updateHorse({
         position: [pos.x, horseY, pos.z],
         rotation: playerRotationRef.current,
       });
-      raf = requestAnimationFrame(sync);
-    };
-    raf = requestAnimationFrame(sync);
-    return () => cancelAnimationFrame(raf);
-  }, [isMounted, updateHorse]);
+    }
+  }, [isMounted, updateHorse, playerPositionRef, playerRotationRef]);
 
   useEffect(() => {
     const checkInterval = setInterval(() => {
