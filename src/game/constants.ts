@@ -21,19 +21,22 @@ export const MAX_HEALTH = 100;
 export const MAX_STAMINA = 100;
 export const MAX_HUNGER = 100;
 export const MAX_TEMPERATURE = 100;
-export const HUNGER_DRAIN = 0.3;
+// ~90 min from full to zero: 100 / 5400s ≈ 0.0185
+export const HUNGER_DRAIN = 0.0185;
 export const STAMINA_DRAIN = 12;
 export const STAMINA_REGEN = 10;
 export const TEMPERATURE_DRAIN = 0.12;
 export const CAMPFIRE_WARMTH_RANGE = 14;
 export const CAMPFIRE_WARMTH_RATE = 10;
 export const SHELTER_EFFECT_RANGE = 10;
-export const SHELTER_HUNGER_REDUCTION = 0.4;
+export const SHELTER_HUNGER_REDUCTION = 0.5;
 export const SHELTER_STAMINA_BONUS = 6;
-export const LOW_HUNGER_THRESHOLD = 20;
+export const LOW_HUNGER_THRESHOLD = 15;
 export const LOW_TEMP_THRESHOLD = 25;
-export const COLD_DAMAGE_RATE = 2;
+export const COLD_DAMAGE_RATE = 0.5;
 export const FOOD_HUNGER_RESTORE = 25;
+// Graduated hunger thresholds
+export const MEDIUM_HUNGER_THRESHOLD = 40;
 
 // Colors (medieval palette)
 export const COLORS = {
