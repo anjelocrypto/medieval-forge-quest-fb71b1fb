@@ -775,7 +775,7 @@ export function Player({
     );
   }
 
-  const playerY = isMounted ? 0.15 + riderBounce : bodyBob + idleBreath;
+  const playerY = isMounted ? -0.35 + riderBounce : bodyBob + idleBreath;
 
   return (
     <group ref={groupRef}>
@@ -960,40 +960,42 @@ export function Player({
           {/* Legs */}
           {isMounted ? (
             <>
-              {/* Left leg - bent to straddle horse */}
-              <group position={[-0.22, -0.35, 0]} rotation={[0.8, 0, 0.35]}>
-                <mesh position={[0, -0.25, 0]} castShadow>
-                  <boxGeometry args={[0.24, 0.55, 0.24]} />
+              {/* Left leg - bent at hip, knee bent, foot in stirrup position */}
+              <group position={[-0.28, -0.25, 0.05]} rotation={[1.1, 0.1, 0.4]}>
+                {/* Upper leg / thigh */}
+                <mesh position={[0, -0.22, 0]} castShadow>
+                  <boxGeometry args={[0.24, 0.48, 0.24]} />
                   <meshLambertMaterial color="#3a3030" />
                 </mesh>
-                {/* Lower leg hanging down */}
-                <group position={[0, -0.5, 0]} rotation={[-0.9, 0, 0]}>
-                  <mesh position={[0, -0.2, 0]} castShadow>
-                    <boxGeometry args={[0.22, 0.45, 0.22]} />
+                {/* Lower leg - bent down at knee */}
+                <group position={[0, -0.44, 0]} rotation={[-1.8, 0, 0]}>
+                  <mesh position={[0, -0.22, 0]} castShadow>
+                    <boxGeometry args={[0.22, 0.48, 0.22]} />
                     <meshLambertMaterial color="#3a3030" />
                   </mesh>
-                  {/* Boot */}
-                  <mesh position={[0, -0.45, 0.05]} castShadow>
-                    <boxGeometry args={[0.22, 0.12, 0.28]} />
+                  {/* Boot pointing forward */}
+                  <mesh position={[0, -0.48, 0.08]} castShadow>
+                    <boxGeometry args={[0.2, 0.1, 0.28]} />
                     <meshLambertMaterial color="#4a3520" />
                   </mesh>
                 </group>
               </group>
-              {/* Right leg - bent to straddle horse */}
-              <group position={[0.22, -0.35, 0]} rotation={[0.8, 0, -0.35]}>
-                <mesh position={[0, -0.25, 0]} castShadow>
-                  <boxGeometry args={[0.24, 0.55, 0.24]} />
+              {/* Right leg - mirror of left */}
+              <group position={[0.28, -0.25, 0.05]} rotation={[1.1, -0.1, -0.4]}>
+                {/* Upper leg / thigh */}
+                <mesh position={[0, -0.22, 0]} castShadow>
+                  <boxGeometry args={[0.24, 0.48, 0.24]} />
                   <meshLambertMaterial color="#3a3030" />
                 </mesh>
-                {/* Lower leg hanging down */}
-                <group position={[0, -0.5, 0]} rotation={[-0.9, 0, 0]}>
-                  <mesh position={[0, -0.2, 0]} castShadow>
-                    <boxGeometry args={[0.22, 0.45, 0.22]} />
+                {/* Lower leg - bent down at knee */}
+                <group position={[0, -0.44, 0]} rotation={[-1.8, 0, 0]}>
+                  <mesh position={[0, -0.22, 0]} castShadow>
+                    <boxGeometry args={[0.22, 0.48, 0.22]} />
                     <meshLambertMaterial color="#3a3030" />
                   </mesh>
-                  {/* Boot */}
-                  <mesh position={[0, -0.45, 0.05]} castShadow>
-                    <boxGeometry args={[0.22, 0.12, 0.28]} />
+                  {/* Boot pointing forward */}
+                  <mesh position={[0, -0.48, 0.08]} castShadow>
+                    <boxGeometry args={[0.2, 0.1, 0.28]} />
                     <meshLambertMaterial color="#4a3520" />
                   </mesh>
                 </group>
