@@ -18,6 +18,7 @@ import { TownDistrict } from './components/TownDistrict';
 import { CivilianNPCs } from './components/CivilianNPCs';
 import { SkyCreatures } from './components/SkyCreatures';
 import { WildernessStructures } from './components/WildernessStructures';
+import { Bridges } from './components/Bridges';
 import { DebugCollision } from './components/DebugCollision';
 import { CameraController } from './systems/CameraController';
 import { InputFlusher } from './systems/InputFlusher';
@@ -304,6 +305,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
         <CivilianNPCs playerPositionRef={playerPositionRef} />
         <SkyCreatures playerPositionRef={playerPositionRef} />
         <WildernessStructures playerPositionRef={playerPositionRef} />
+        <Bridges playerPositionRef={playerPositionRef} />
         <AmbientEffects />
         <CameraController targetRef={playerPositionRef} azimuthRef={cameraAzimuthRef} isMounted={isMounted} />
         <Player
