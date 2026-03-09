@@ -402,6 +402,18 @@ function addPOIObstacles() {
   }
 }
 
+// ========== TOWN DISTRICT OBSTACLES ==========
+function addTownDistrictObstacles() {
+  for (const b of TOWN_BUILDINGS) {
+    boxObstacles.push({
+      cx: b.x, cz: b.z,
+      halfW: b.w / 2, halfD: b.d / 2,
+      rotation: b.rot,
+      id: `town-${b.x}-${b.z}`,
+    });
+  }
+}
+
 // ========== COLLISION RESOLUTION ==========
 
 export function resolveCollision(px: number, pz: number, playerRadius: number): { x: number; z: number } {
