@@ -9,6 +9,7 @@ import { HorseData } from './HorseData';
 import { SETTLEMENTS, SettlementDef, SMALL_POIS } from '../world/RegionData';
 import { seededRng } from '../world/SettlementPieces';
 import { TOWN_BUILDINGS } from '../components/TownDistrict';
+import { WILDERNESS_BUILDINGS } from '../components/WildernessStructures';
 
 export interface CircleObstacle {
   x: number;
@@ -74,6 +75,7 @@ export function rebuildObstacles(
   addSettlementObstacles();
   addPOIObstacles();
   addTownDistrictObstacles();
+  addWildernessObstacles();
 }
 
 function addSettlementObstacles() {
@@ -411,6 +413,25 @@ function addTownDistrictObstacles() {
       rotation: b.rot,
       id: `town-${b.x}-${b.z}`,
     });
+  }
+}
+
+// ========== WILDERNESS STRUCTURE OBSTACLES ==========
+function addWildernessObstacles() {
+  for (const b of WILDERNESS_BUILDINGS) {
+    if (b.type === 'camp') {
+      // Camps are mostly passable, just tent
+      circleObstacles.push({ x: b.x, z: b.z, radius: 0.8, id: `wild-${b.x}-${b.z}` });
+    } else if (b.type === 'shrine_hut') {
+      circleObstacles.push({ x: b.x, z: b.z, radius: 0.6, id: `wild-${b.x}-${b.z}` });
+    } else {
+      boxObstacles.push({
+        cx: b.x, cz: b.z,
+        halfW: b.w / 2, halfD: b.d / 2,
+        rotation: b.rot,
+        id: `wild-${b.x}-${b.z}`,
+      });
+    }
   }
 }
 
