@@ -18,7 +18,7 @@ interface MinimapProps {
 
 const MAP_SIZE = 160; // minimap size in pixels
 const MAP_WORLD_RADIUS = 120; // world units visible from center
-const FULL_MAP_WORLD = 280; // full map view radius
+const FULL_MAP_WORLD = 850; // full map view radius — expanded world
 
 function drawMinimap(
   ctx: CanvasRenderingContext2D,

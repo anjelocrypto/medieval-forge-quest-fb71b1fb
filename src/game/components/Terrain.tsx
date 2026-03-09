@@ -11,7 +11,7 @@ function noise2D(x: number, z: number, scale: number = 1, seed: number = 0): num
           Math.cos(nx * 2.1 + nz * 0.7) * 0.2);
 }
 
-// Regional height modifiers
+// Regional height modifiers — expanded for new kingdoms
 function getRegionalHeight(x: number, z: number): number {
   let mod = 0;
   // Frostmere highlands — elevated terrain SE
@@ -25,6 +25,30 @@ function getRegionalHeight(x: number, z: number): number {
   // Greenmeadow — flatten for farmland
   const greenDist = Math.sqrt((x + 160) ** 2 + (z + 130) ** 2);
   if (greenDist < 70) mod -= (1 - greenDist / 70) * 4;
+
+  // Stonepeak — high mountain kingdom
+  const stonepeakDist = Math.sqrt((x + 400) ** 2 + (z - 500) ** 2);
+  if (stonepeakDist < 120) mod += (1 - stonepeakDist / 120) * 18;
+
+  // Thornwall — rugged frontier hills
+  const thornDist = Math.sqrt((x + 500) ** 2 + (z + 450) ** 2);
+  if (thornDist < 100) mod += (1 - thornDist / 100) * 6;
+
+  // Rivermoor — low wetlands
+  const riverDist = Math.sqrt((x - 450) ** 2 + (z - 350) ** 2);
+  if (riverDist < 100) mod -= (1 - riverDist / 100) * 3;
+
+  // Darkhollow — desolate flat wasteland
+  const darkDist = Math.sqrt((x - 550) ** 2 + (z + 400) ** 2);
+  if (darkDist < 100) mod += (1 - darkDist / 100) * 2;
+
+  // Goldenvale — gentle rolling plains
+  const goldDist = Math.sqrt((x + 550) ** 2 + (z - 100) ** 2);
+  if (goldDist < 100) mod -= (1 - goldDist / 100) * 2;
+
+  // Northern reach — cold hills
+  const northDist = Math.sqrt(x ** 2 + (z - 500) ** 2);
+  if (northDist < 100) mod += (1 - northDist / 100) * 8;
 
   return mod;
 }
@@ -76,7 +100,7 @@ function getRoadFactor(x: number, z: number): number {
 
 export function Terrain() {
   const geometry = useMemo(() => {
-    const segments = 180;
+    const segments = 300;
     const geo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, segments, segments);
     geo.rotateX(-Math.PI / 2);
 
