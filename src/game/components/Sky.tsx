@@ -26,8 +26,15 @@ export function Sky() {
     return tex;
   }, []);
 
+  // Follow the camera position so the sky sphere always surrounds the viewer
+  useFrame(({ camera }) => {
+    if (meshRef.current) {
+      meshRef.current.position.copy(camera.position);
+    }
+  });
+
   return (
-    <mesh>
+    <mesh ref={meshRef}>
       <sphereGeometry args={[400, 32, 16]} />
       <meshBasicMaterial map={gradientMap} side={THREE.BackSide} />
     </mesh>
