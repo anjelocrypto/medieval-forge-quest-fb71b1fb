@@ -960,25 +960,41 @@ export function Player({
           {/* Legs */}
           {isMounted ? (
             <>
-              <group position={[-0.25, -0.5, 0]} rotation={[0, 0, 0.3]}>
+              {/* Left leg - bent forward for sitting pose */}
+              <group position={[-0.25, -0.45, 0.1]} rotation={[1.2, 0, 0.25]}>
                 <mesh position={[0, -0.2, 0]} castShadow>
                   <boxGeometry args={[0.24, 0.55, 0.24]} />
                   <meshLambertMaterial color="#3a3030" />
                 </mesh>
-                <mesh position={[0, -0.5, 0]} castShadow>
-                  <boxGeometry args={[0.22, 0.15, 0.26]} />
-                  <meshLambertMaterial color="#4a3520" />
-                </mesh>
+                {/* Lower leg - bent back */}
+                <group position={[0, -0.45, 0]} rotation={[-1.4, 0, 0]}>
+                  <mesh position={[0, -0.18, 0]} castShadow>
+                    <boxGeometry args={[0.22, 0.4, 0.22]} />
+                    <meshLambertMaterial color="#3a3030" />
+                  </mesh>
+                  <mesh position={[0, -0.4, 0.04]} castShadow>
+                    <boxGeometry args={[0.22, 0.15, 0.26]} />
+                    <meshLambertMaterial color="#4a3520" />
+                  </mesh>
+                </group>
               </group>
-              <group position={[0.25, -0.5, 0]} rotation={[0, 0, -0.3]}>
+              {/* Right leg - bent forward for sitting pose */}
+              <group position={[0.25, -0.45, 0.1]} rotation={[1.2, 0, -0.25]}>
                 <mesh position={[0, -0.2, 0]} castShadow>
                   <boxGeometry args={[0.24, 0.55, 0.24]} />
                   <meshLambertMaterial color="#3a3030" />
                 </mesh>
-                <mesh position={[0, -0.5, 0]} castShadow>
-                  <boxGeometry args={[0.22, 0.15, 0.26]} />
-                  <meshLambertMaterial color="#4a3520" />
-                </mesh>
+                {/* Lower leg - bent back */}
+                <group position={[0, -0.45, 0]} rotation={[-1.4, 0, 0]}>
+                  <mesh position={[0, -0.18, 0]} castShadow>
+                    <boxGeometry args={[0.22, 0.4, 0.22]} />
+                    <meshLambertMaterial color="#3a3030" />
+                  </mesh>
+                  <mesh position={[0, -0.4, 0.04]} castShadow>
+                    <boxGeometry args={[0.22, 0.15, 0.26]} />
+                    <meshLambertMaterial color="#4a3520" />
+                  </mesh>
+                </group>
               </group>
             </>
           ) : (
