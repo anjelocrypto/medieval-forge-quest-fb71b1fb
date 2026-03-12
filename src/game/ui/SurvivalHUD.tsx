@@ -22,6 +22,7 @@ interface HUDProps {
   horseZ: number;
   mapOpen: boolean;
   onCloseMap: () => void;
+  isSpeaking?: boolean;
 }
 
 /* ── shared panel style ── */
