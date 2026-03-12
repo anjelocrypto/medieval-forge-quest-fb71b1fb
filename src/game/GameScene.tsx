@@ -266,6 +266,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
         horseZ={horse.position[2]}
         mapOpen={mapOpen}
         onCloseMap={() => setMapOpen(false)}
+        isSpeaking={voice.isTalking}
       />
 
       {/* Multiplayer HUD */}
