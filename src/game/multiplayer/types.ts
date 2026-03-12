@@ -65,6 +65,7 @@ export interface InterpolatedPlayer {
   horseRotation: number;
   horseState: string;
   emote: string | null;
+  isSpeaking: boolean;
   // Timing
   lastUpdateTime: number;
   interpolationT: number;
