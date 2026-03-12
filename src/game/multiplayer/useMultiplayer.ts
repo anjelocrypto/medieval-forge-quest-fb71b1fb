@@ -114,6 +114,7 @@ export function useMultiplayer() {
             horseRotation: payload.horseRotation,
             horseState: payload.horseState,
             emote: payload.emote,
+            isSpeaking: payload.isSpeaking,
             lastUpdateTime: now,
             interpolationT: 0,
             displayName: payload.displayName,
