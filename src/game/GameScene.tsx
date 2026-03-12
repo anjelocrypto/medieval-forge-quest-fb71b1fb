@@ -273,6 +273,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
         connectionStatus={multiplayer.connectionStatus}
         playerCount={1 + remotePlayerCount}
         playerId={multiplayer.playerId}
+        voiceState={multiplayer.connected ? { isTalking: voice.isTalking, micPermission: voice.micPermission } : undefined}
       />
 
       {/* Chat panel */}
