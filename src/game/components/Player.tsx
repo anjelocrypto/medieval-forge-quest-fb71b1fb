@@ -736,45 +736,58 @@ export function Player({
   const shoulderRoll = Math.sin(t) * (isRunning ? 0.06 : 0.03) * ms;
   const torsoTwist = Math.sin(t) * (isRunning ? 0.08 : 0.05) * ms + turnDelta * 0.15;
 
-  // Attack animation — multi-phase with wind-up
+  // Attack animation — forward-dominant strike
+  // Arm X rotation: positive = swing forward (hand toward +Z local), negative = pull back
   let atkSwingR = 0, atkSwingL = 0, atkBodyTwist = 0, atkLunge = 0;
   if (attacking) {
     const duration = isComboSwing ? 0.3 : 0.4;
     const phase = 1 - attackT / duration;
 
     if (isComboSwing) {
-      if (phase < 0.15) {
-        atkSwingR = 0.3 * (phase / 0.15);
-        atkSwingL = -1.0 * (phase / 0.15);
-        atkBodyTwist = 0.25 * (phase / 0.15);
-      } else if (phase < 0.4) {
-        const sp = (phase - 0.15) / 0.25;
-        atkSwingR = 0.3 - sp * 0.3;
-        atkSwingL = -1.0 + sp * 2.6;
-        atkBodyTwist = 0.25 - sp * 0.6;
-        atkLunge = sp * 0.2;
-      } else {
-        const rp = (phase - 0.4) / 0.6;
-        const ease = 1 - (1 - rp) * (1 - rp); // ease-out
-        atkSwingL = 1.6 * (1 - ease);
-        atkBodyTwist = -0.35 * (1 - ease);
-      }
-    } else {
-      if (phase < 0.2) {
-        const wp = phase / 0.2;
-        atkSwingR = -1.4 * wp;
-        atkBodyTwist = -0.2 * wp;
+      // Combo: left-arm cross slash — minimal wind-up, fast forward strike
+      if (phase < 0.1) {
+        // Brief prep — pull left arm back slightly
+        const wp = phase / 0.1;
+        atkSwingR = 0.2 * wp;
+        atkSwingL = -0.4 * wp;
+        atkBodyTwist = 0.15 * wp;
       } else if (phase < 0.45) {
-        const sp = (phase - 0.2) / 0.25;
-        atkSwingR = -1.4 + sp * 3.2;
-        atkBodyTwist = -0.2 + sp * 0.5;
-        atkLunge = sp * 0.25;
+        // MAIN STRIKE — left arm swings forward hard
+        const sp = (phase - 0.1) / 0.35;
+        const ease = 1 - (1 - sp) * (1 - sp); // ease-out for snap
+        atkSwingR = 0.2 * (1 - ease);
+        atkSwingL = -0.4 + ease * 2.0; // swing to +1.6 forward
+        atkBodyTwist = 0.15 - ease * 0.45; // twist left shoulder forward
+        atkLunge = ease * 0.3;
       } else {
+        // Recovery — quick snap back
         const rp = (phase - 0.45) / 0.55;
         const ease = 1 - (1 - rp) * (1 - rp);
+        atkSwingL = 1.6 * (1 - ease);
+        atkBodyTwist = -0.3 * (1 - ease);
+        atkLunge = 0.3 * (1 - ease);
+      }
+    } else {
+      // Primary slash — right arm forward strike
+      if (phase < 0.1) {
+        // Very brief wind-up — small pull-back only
+        const wp = phase / 0.1;
+        atkSwingR = -0.5 * wp; // subtle pull-back (was -1.4, way too much)
+        atkBodyTwist = -0.1 * wp; // slight counter-twist
+      } else if (phase < 0.5) {
+        // MAIN FORWARD STRIKE — dominant phase, longest duration
+        const sp = (phase - 0.1) / 0.4;
+        const ease = 1 - (1 - sp) * (1 - sp); // ease-out snap
+        atkSwingR = -0.5 + ease * 2.3; // swing from -0.5 to +1.8 (strongly forward)
+        atkBodyTwist = -0.1 + ease * 0.45; // twist right shoulder forward
+        atkLunge = ease * 0.35; // strong forward lunge
+      } else {
+        // Quick recovery
+        const rp = (phase - 0.5) / 0.5;
+        const ease = 1 - (1 - rp) * (1 - rp);
         atkSwingR = 1.8 * (1 - ease);
-        atkBodyTwist = 0.3 * (1 - ease);
-        atkLunge = 0.25 * (1 - ease);
+        atkBodyTwist = 0.35 * (1 - ease);
+        atkLunge = 0.35 * (1 - ease);
       }
     }
   }
