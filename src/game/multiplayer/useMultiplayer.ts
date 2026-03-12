@@ -358,5 +358,6 @@ export function useMultiplayer() {
     sendChat,
     sendEmote,
     broadcastWorldEvent,
+    channelRef,  // exposed for voice signaling
   };
 }
