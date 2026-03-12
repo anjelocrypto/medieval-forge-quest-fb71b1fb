@@ -60,7 +60,17 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
   const [mapOpen, setMapOpen] = useState(false);
   const [debugMounted, setDebugMounted] = useState(false);
   const [currentEmote, setCurrentEmote] = useState<string | null>(null);
-  const playerPositionRef = useRef(new THREE.Vector3(0, 0, 0));
+
+  // Proximity voice chat
+  const voice = useProximityVoice(
+    multiplayer.playerId,
+    multiplayer.connected,
+    multiplayer.channelRef,
+    playerPositionRef,
+    multiplayer.remotePlayers as any,
+  );
+
+  const playerPositionRef2 = useRef(new THREE.Vector3(0, 0, 0));
   const playerRotationRef = useRef(0);
   const cameraAzimuthRef = useRef(0);
   const pendingPlayerDamageRef = useRef(0);
