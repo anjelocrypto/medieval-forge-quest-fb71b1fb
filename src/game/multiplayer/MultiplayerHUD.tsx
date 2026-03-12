@@ -4,9 +4,13 @@ interface Props {
   connectionStatus: ConnectionStatus;
   playerCount: number;
   playerId: string;
+  voiceState?: {
+    isTalking: boolean;
+    micPermission: string;
+  };
 }
 
-export function MultiplayerHUD({ connectionStatus, playerCount, playerId }: Props) {
+export function MultiplayerHUD({ connectionStatus, playerCount, playerId, voiceState }: Props) {
   if (connectionStatus === 'disconnected') return null;
 
   const statusColor =
@@ -23,6 +27,22 @@ export function MultiplayerHUD({ connectionStatus, playerCount, playerId }: Prop
       <div style={{ color: statusColor }}>● {statusLabel}</div>
       <div style={{ color: '#aaa' }}>Players Online: {playerCount}</div>
       <div style={{ color: '#666', fontSize: 9 }}>ID: {playerId.slice(0, 10)}</div>
+      {voiceState && (
+        <div style={{
+          marginTop: 4,
+          padding: '2px 6px',
+          borderRadius: 3,
+          background: voiceState.isTalking ? 'rgba(80,200,80,0.2)' : 'rgba(255,255,255,0.05)',
+          border: voiceState.isTalking ? '1px solid rgba(80,200,80,0.5)' : '1px solid rgba(255,255,255,0.1)',
+          color: voiceState.isTalking ? '#6f6' : '#666',
+          fontSize: 9,
+          textAlign: 'center' as const,
+        }}>
+          {voiceState.isTalking ? '🎙️ VOICE ON' :
+           voiceState.micPermission === 'denied' ? '🔇 MIC DENIED' :
+           '🎙️ Hold K to talk'}
+        </div>
+      )}
     </div>
   );
 }
