@@ -34,6 +34,7 @@ import { RemotePlayers } from './multiplayer/RemotePlayers';
 import { MultiplayerBroadcaster } from './multiplayer/MultiplayerBroadcaster';
 import { MultiplayerHUD } from './multiplayer/MultiplayerHUD';
 import { ChatPanel } from './multiplayer/ChatPanel';
+import { useProximityVoice } from './multiplayer/useProximityVoice';
 
 interface GameSceneProps {
   multiplayer: ReturnType<typeof import('./multiplayer/useMultiplayer').useMultiplayer>;
@@ -60,6 +61,15 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
   const [debugMounted, setDebugMounted] = useState(false);
   const [currentEmote, setCurrentEmote] = useState<string | null>(null);
   const playerPositionRef = useRef(new THREE.Vector3(0, 0, 0));
+
+  // Proximity voice chat
+  const voice = useProximityVoice(
+    multiplayer.playerId,
+    multiplayer.connected,
+    multiplayer.channelRef,
+    playerPositionRef,
+    multiplayer.remotePlayers as any,
+  );
   const playerRotationRef = useRef(0);
   const cameraAzimuthRef = useRef(0);
   const pendingPlayerDamageRef = useRef(0);
@@ -263,6 +273,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
         connectionStatus={multiplayer.connectionStatus}
         playerCount={1 + remotePlayerCount}
         playerId={multiplayer.playerId}
+        voiceState={multiplayer.connected ? { isTalking: voice.isTalking, micPermission: voice.micPermission } : undefined}
       />
 
       {/* Chat panel */}
@@ -388,6 +399,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
             mountedDebugRef={mountedDebugRef}
             buildMode={buildMode}
             emote={currentEmote}
+            isSpeaking={voice.isTalking}
             onUpdateLocalState={multiplayer.updateLocalState}
           />
         )}

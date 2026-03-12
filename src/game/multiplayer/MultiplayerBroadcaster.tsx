@@ -13,13 +13,13 @@ interface Props {
   survival: SurvivalState;
   isMounted: boolean;
   horse: HorseData;
-  // Refs for frame-rate-sensitive values (read inside useFrame)
   moveSpeedRef: React.RefObject<number>;
   isRunningRef: React.RefObject<boolean>;
   attackAnimRef: React.RefObject<number>;
   mountedDebugRef: React.RefObject<MountedDebugData>;
   buildMode: boolean;
   emote: string | null;
+  isSpeaking: boolean;
   onUpdateLocalState: (state: NetworkPlayerState) => void;
 }
 
@@ -31,7 +31,7 @@ interface Props {
 export function MultiplayerBroadcaster({
   playerId, displayName, playerPositionRef, playerRotationRef,
   survival, isMounted, horse, moveSpeedRef, isRunningRef, attackAnimRef,
-  mountedDebugRef, buildMode, emote, onUpdateLocalState,
+  mountedDebugRef, buildMode, emote, isSpeaking, onUpdateLocalState,
 }: Props) {
 
   useFrame(() => {
@@ -59,6 +59,7 @@ export function MultiplayerBroadcaster({
       horseRotation: horse.rotation,
       horseState: horse.state,
       emote,
+      isSpeaking,
       timestamp: Date.now(),
     };
     onUpdateLocalState(state);

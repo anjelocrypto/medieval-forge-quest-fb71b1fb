@@ -322,6 +322,7 @@ export function SurvivalHUD({
         <ControlSection title="Utility">
           {!isMounted && <ControlRow keys="H" action="Call Horse" />}
           <ControlRow keys="M" action="Map" />
+          <ControlRow keys="K" action="Voice (Hold)" />
           <ControlRow keys="SCROLL" action="Zoom" />
         </ControlSection>
       </div>

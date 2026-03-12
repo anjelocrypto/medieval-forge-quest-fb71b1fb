@@ -66,6 +66,7 @@ export function RemotePlayer({ player }: Props) {
           textShadow: '0 1px 4px rgba(0,0,0,0.8)', fontFamily: 'monospace',
         }}>
           <div style={{ color: '#fff', fontSize: 11, fontWeight: 700, marginBottom: 2 }}>
+            {player.isSpeaking && <span style={{ marginRight: 3 }}>🎙️</span>}
             {player.displayName}
           </div>
           {/* Health bar */}
@@ -82,6 +83,14 @@ export function RemotePlayer({ player }: Props) {
           {emoteText && (
             <div style={{ fontSize: 18, marginTop: 4, animation: 'bounce 0.5s ease-out' }}>
               {emoteText}
+            </div>
+          )}
+          {player.isSpeaking && (
+            <div style={{
+              marginTop: 3, fontSize: 9, color: '#6f6',
+              animation: 'pulse 1s infinite',
+            }}>
+              SPEAKING
             </div>
           )}
         </div>

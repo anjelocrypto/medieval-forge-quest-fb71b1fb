@@ -21,6 +21,7 @@ export interface NetworkPlayerState {
   horseRotation: number;
   horseState: string;
   emote: string | null; // current emote key or null
+  isSpeaking: boolean; // voice chat push-to-talk active
   timestamp: number;
 }
 
@@ -64,6 +65,7 @@ export interface InterpolatedPlayer {
   horseRotation: number;
   horseState: string;
   emote: string | null;
+  isSpeaking: boolean;
   // Timing
   lastUpdateTime: number;
   interpolationT: number;
