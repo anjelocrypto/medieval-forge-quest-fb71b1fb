@@ -59,6 +59,7 @@ export function MultiplayerBroadcaster({
       horseRotation: horse.rotation,
       horseState: horse.state,
       emote,
+      isSpeaking,
       timestamp: Date.now(),
     };
     onUpdateLocalState(state);
