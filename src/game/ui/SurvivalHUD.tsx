@@ -387,6 +387,27 @@ export function SurvivalHUD({
         </div>
       )}
 
+      {/* Voice indicator */}
+      {isSpeaking && (
+        <div className="absolute left-1/2 -translate-x-1/2 animate-fade-in" style={{ bottom: 140 }}>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{
+            ...panelStyle,
+            border: '1px solid hsla(120,50%,50%,0.4)',
+            boxShadow: '0 0 16px hsla(120,60%,40%,0.25)',
+          }}>
+            <span style={{ fontSize: 14 }}>🎙️</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'hsl(120,50%,65%)', letterSpacing: '0.06em' }}>
+              TRANSMITTING
+            </span>
+            <span className="animate-pulse" style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: 'hsl(120,60%,50%)',
+              boxShadow: '0 0 6px hsl(120,60%,50%)',
+            }} />
+          </div>
+        </div>
+      )}
+
       {/* Crosshair */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
         <div style={{
