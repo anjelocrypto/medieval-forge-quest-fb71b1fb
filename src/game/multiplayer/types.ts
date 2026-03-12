@@ -21,6 +21,7 @@ export interface NetworkPlayerState {
   horseRotation: number;
   horseState: string;
   emote: string | null; // current emote key or null
+  isSpeaking: boolean; // voice chat push-to-talk active
   timestamp: number;
 }
 
