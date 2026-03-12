@@ -398,6 +398,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
             mountedDebugRef={mountedDebugRef}
             buildMode={buildMode}
             emote={currentEmote}
+            isSpeaking={voice.isTalking}
             onUpdateLocalState={multiplayer.updateLocalState}
           />
         )}
