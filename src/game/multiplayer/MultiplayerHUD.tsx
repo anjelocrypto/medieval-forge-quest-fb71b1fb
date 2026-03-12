@@ -22,7 +22,7 @@ export function MultiplayerHUD({ connectionStatus, playerCount, playerId, voiceS
     connectionStatus === 'reconnecting' ? 'RECONNECTING' : 'CONNECTING';
 
   return (
-    <div className="fixed top-24 right-4 z-40 pointer-events-none font-mono text-xs"
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 pointer-events-none font-mono text-xs"
       style={{ background: 'rgba(0,0,0,0.6)', padding: '6px 10px', borderRadius: 6, border: '1px solid #333' }}>
       <div style={{ color: statusColor }}>● {statusLabel}</div>
       <div style={{ color: '#aaa' }}>Players Online: {playerCount}</div>
