@@ -158,7 +158,7 @@ export function SurvivalHUD({
   survival, inventory, interactionText, buildMode, selectedBuildIndex,
   buildFeedback, damageFlash, progression, notification, availableBuildables,
   isMounted = false, playerX, playerZ, playerRotation, horseX, horseZ,
-  mapOpen, onCloseMap,
+  mapOpen, onCloseMap, isSpeaking = false,
 }: HUDProps) {
   const lowHunger = survival.hunger < 20;
   const lowTemp = survival.temperature < 25;
