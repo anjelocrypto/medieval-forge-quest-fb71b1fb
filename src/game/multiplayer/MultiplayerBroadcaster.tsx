@@ -31,7 +31,7 @@ interface Props {
 export function MultiplayerBroadcaster({
   playerId, displayName, playerPositionRef, playerRotationRef,
   survival, isMounted, horse, moveSpeedRef, isRunningRef, attackAnimRef,
-  mountedDebugRef, buildMode, emote, onUpdateLocalState,
+  mountedDebugRef, buildMode, emote, isSpeaking, onUpdateLocalState,
 }: Props) {
 
   useFrame(() => {
