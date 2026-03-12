@@ -24,19 +24,132 @@ interface HUDProps {
   onCloseMap: () => void;
 }
 
-function StatBar({ label, value, max, color, warning }: {
-  label: string; value: number; max: number; color: string; warning?: boolean;
+/* ── shared panel style ── */
+const panelStyle: React.CSSProperties = {
+  background: 'linear-gradient(135deg, hsla(0,0%,0%,0.72), hsla(0,0%,0%,0.58))',
+  border: '1px solid hsla(40,30%,45%,0.4)',
+  backdropFilter: 'blur(6px)',
+  boxShadow: '0 4px 20px hsla(0,0%,0%,0.4), inset 0 1px 0 hsla(40,30%,60%,0.08)',
+};
+
+const keycapStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minWidth: 22,
+  height: 20,
+  padding: '0 5px',
+  borderRadius: 4,
+  background: 'hsla(40,20%,50%,0.18)',
+  border: '1px solid hsla(40,30%,50%,0.3)',
+  fontSize: 10,
+  fontFamily: 'ui-monospace, monospace',
+  fontWeight: 700,
+  color: 'hsl(40,30%,82%)',
+  lineHeight: 1,
+};
+
+/* ── Stat bar ── */
+function StatBar({ label, icon, value, max, color, warning }: {
+  label: string; icon: string; value: number; max: number; color: string; warning?: boolean;
 }) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
   return (
-    <div className="flex items-center gap-2">
-      <span className={`text-xs font-bold uppercase tracking-wider w-8 ${warning ? 'text-red-400' : 'text-foreground/70'}`}>{label}</span>
-      <div className="relative h-3 w-32 rounded-sm overflow-hidden" style={{ background: 'hsl(var(--muted))' }}>
+    <div className="flex items-center gap-2.5">
+      <span className="text-sm w-5 text-center" style={{ filter: warning ? 'saturate(2)' : undefined }}>{icon}</span>
+      <span className={`text-[10px] font-bold uppercase tracking-widest w-7 ${warning ? 'animate-pulse' : ''}`}
+        style={{ color: warning ? 'hsl(0,70%,65%)' : 'hsl(40,20%,65%)' }}>{label}</span>
+      <div className="relative h-2.5 w-28 rounded-sm overflow-hidden"
+        style={{ background: 'hsla(0,0%,100%,0.06)', boxShadow: 'inset 0 1px 3px hsla(0,0%,0%,0.4)' }}>
         <div className={`absolute inset-y-0 left-0 rounded-sm transition-all duration-300 ${warning ? 'animate-pulse' : ''}`}
-          style={{ width: `${pct}%`, background: color }} />
+          style={{
+            width: `${pct}%`,
+            background: `linear-gradient(90deg, ${color}, ${color}dd)`,
+            boxShadow: `0 0 8px ${color}40`,
+          }} />
       </div>
-      <span className={`text-xs font-mono w-8 ${warning ? 'text-red-400' : 'text-foreground/60'}`}>{Math.round(value)}</span>
+      <span className="text-[11px] font-mono w-7 text-right"
+        style={{ color: warning ? 'hsl(0,70%,65%)' : 'hsl(40,20%,70%)' }}>{Math.round(value)}</span>
     </div>
+  );
+}
+
+/* ── Keycap ── */
+function Key({ children }: { children: React.ReactNode }) {
+  return <span style={keycapStyle}>{children}</span>;
+}
+
+/* ── Control row ── */
+function ControlRow({ keys, action }: { keys: string; action: string }) {
+  return (
+    <div className="flex items-center gap-2" style={{ marginBottom: 3 }}>
+      <Key>{keys}</Key>
+      <span style={{ color: 'hsl(40,15%,60%)', fontSize: 11 }}>{action}</span>
+    </div>
+  );
+}
+
+/* ── Section divider in controls ── */
+function ControlSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{
+        fontSize: 9,
+        fontWeight: 700,
+        textTransform: 'uppercase' as const,
+        letterSpacing: '0.12em',
+        color: 'hsl(35,60%,55%)',
+        marginBottom: 4,
+        paddingBottom: 2,
+        borderBottom: '1px solid hsla(40,30%,45%,0.2)',
+      }}>{title}</div>
+      {children}
+    </div>
+  );
+}
+
+/* ── Resource slot ── */
+function ResourceSlot({ icon, value, label }: { icon: string; value: number; label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-0.5" style={{ minWidth: 44 }}>
+      <span className="text-base">{icon}</span>
+      <span className="text-sm font-bold" style={{ color: 'hsl(40,30%,88%)' }}>{value}</span>
+      <span style={{ fontSize: 8, color: 'hsl(40,15%,50%)', textTransform: 'uppercase' as const, letterSpacing: '0.1em' }}>{label}</span>
+    </div>
+  );
+}
+
+/* ── Secured area pill ── */
+function SecuredPill({ name }: { name: string }) {
+  return (
+    <span style={{
+      display: 'inline-block',
+      padding: '2px 8px',
+      borderRadius: 4,
+      fontSize: 10,
+      fontWeight: 600,
+      color: 'hsl(120,30%,70%)',
+      background: 'hsla(120,30%,40%,0.15)',
+      border: '1px solid hsla(120,30%,50%,0.2)',
+    }}>🏴 {name}</span>
+  );
+}
+
+/* ── Status badge ── */
+function StatusBadge({ icon, text, hue }: { icon: string; text: string; hue: string }) {
+  return (
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 3,
+      padding: '2px 8px',
+      borderRadius: 4,
+      fontSize: 10,
+      fontWeight: 600,
+      color: `hsl(${hue})`,
+      background: `hsla(${hue} / 0.12)`,
+      border: `1px solid hsla(${hue} / 0.2)`,
+    }}>{icon} {text}</span>
   );
 }
 
@@ -51,23 +164,28 @@ export function SurvivalHUD({
   const lowHealth = survival.health < 25;
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-50">
+    <div className="fixed inset-0 pointer-events-none z-50" style={{ fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
       {/* Damage flash */}
       {damageFlash > 0 && (
         <div className="absolute inset-0"
-          style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(200,0,0,0.3) 100%)' }} />
+          style={{ background: 'radial-gradient(ellipse at center, transparent 40%, hsla(0,70%,40%,0.35) 100%)' }} />
       )}
 
       {/* Cold overlay */}
       {lowTemp && (
         <div className="absolute inset-0"
-          style={{ background: 'radial-gradient(ellipse at center, transparent 50%, rgba(80,120,200,0.15) 100%)' }} />
+          style={{ background: 'radial-gradient(ellipse at center, transparent 50%, hsla(210,50%,50%,0.12) 100%)' }} />
       )}
 
       {/* Notification banner */}
       {notification && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg text-sm font-bold text-foreground animate-fade-in"
-          style={{ background: 'hsl(var(--hud-bg))', border: '2px solid hsl(var(--primary))' }}>
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg text-sm font-bold animate-fade-in"
+          style={{
+            ...panelStyle,
+            color: 'hsl(40,30%,90%)',
+            border: '1px solid hsl(35,70%,50%)',
+            boxShadow: '0 0 30px hsla(35,70%,50%,0.25), 0 4px 20px hsla(0,0%,0%,0.4)',
+          }}>
           {notification}
         </div>
       )}
@@ -79,120 +197,201 @@ export function SurvivalHUD({
         mapOpen={mapOpen} onCloseMap={onCloseMap}
       />
 
-      {/* Survival bars */}
-      <div className="absolute bottom-6 left-6 flex flex-col gap-1.5 p-3 rounded-lg"
-        style={{ background: 'hsl(var(--hud-bg))', border: '1px solid hsl(var(--hud-border))' }}>
-        <StatBar label="HP" value={survival.health} max={100} color="hsl(var(--health))" warning={lowHealth} />
-        <StatBar label="STA" value={survival.stamina} max={100} color="hsl(var(--stamina))" />
-        <StatBar label="FD" value={survival.hunger} max={100} color="hsl(var(--hunger))" warning={lowHunger} />
-        <StatBar label="TMP" value={survival.temperature} max={100} color="hsl(var(--temperature))" warning={lowTemp} />
+      {/* ═══ BOTTOM LEFT — Survival bars ═══ */}
+      <div className="absolute bottom-6 left-6 flex flex-col gap-2 p-4 rounded-lg" style={panelStyle}>
+        <StatBar label="HP" icon="❤️" value={survival.health} max={100} color="hsl(0,70%,50%)" warning={lowHealth} />
+        <StatBar label="STA" icon="⚡" value={survival.stamina} max={100} color="hsl(45,80%,50%)" />
+        <StatBar label="FD" icon="🍖" value={survival.hunger} max={100} color="hsl(25,70%,50%)" warning={lowHunger} />
+        <StatBar label="TMP" icon="🌡️" value={survival.temperature} max={100} color="hsl(200,70%,50%)" warning={lowTemp} />
 
-        <div className="flex gap-1 mt-1">
-          {lowHunger && <span className="text-xs px-1 rounded" style={{ background: 'rgba(200,100,0,0.3)' }}>🍖 Hungry</span>}
-          {lowTemp && <span className="text-xs px-1 rounded" style={{ background: 'rgba(80,120,200,0.3)' }}>❄️ Cold</span>}
-          {lowHealth && <span className="text-xs px-1 rounded" style={{ background: 'rgba(200,0,0,0.3)' }}>💔 Wounded</span>}
-          {isMounted && <span className="text-xs px-1 rounded" style={{ background: 'rgba(100,80,40,0.3)' }}>🐴 Mounted</span>}
-        </div>
+        {(lowHunger || lowTemp || lowHealth || isMounted) && (
+          <div className="flex flex-wrap gap-1.5 mt-1 pt-2" style={{ borderTop: '1px solid hsla(40,30%,45%,0.2)' }}>
+            {lowHunger && <StatusBadge icon="🍖" text="Hungry" hue="25,70%,55%" />}
+            {lowTemp && <StatusBadge icon="❄️" text="Cold" hue="210,60%,60%" />}
+            {lowHealth && <StatusBadge icon="💔" text="Wounded" hue="0,70%,60%" />}
+            {isMounted && <StatusBadge icon="🐴" text="Mounted" hue="35,40%,55%" />}
+          </div>
+        )}
       </div>
 
-      {/* Inventory */}
+      {/* ═══ BOTTOM RIGHT — Inventory ═══ */}
       <div className="absolute bottom-6 right-6 flex flex-col items-end gap-2">
-        <div className="flex gap-3 p-3 rounded-lg"
-          style={{ background: 'hsl(var(--hud-bg))', border: '1px solid hsl(var(--hud-border))' }}>
-          <div className="flex flex-col items-center">
-            <span className="text-xs text-foreground/60">🪵</span>
-            <span className="text-sm font-bold text-foreground">{inventory.wood}</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="text-xs text-foreground/60">🪨</span>
-            <span className="text-sm font-bold text-foreground">{inventory.stone}</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="text-xs text-foreground/60">🍖</span>
-            <span className="text-sm font-bold text-foreground">{inventory.food}</span>
-          </div>
+        <div className="flex gap-4 p-3.5 rounded-lg" style={panelStyle}>
+          <ResourceSlot icon="🪵" value={inventory.wood} label="Wood" />
+          <div style={{ width: 1, background: 'hsla(40,30%,45%,0.25)' }} />
+          <ResourceSlot icon="🪨" value={inventory.stone} label="Stone" />
+          <div style={{ width: 1, background: 'hsla(40,30%,45%,0.25)' }} />
+          <ResourceSlot icon="🍖" value={inventory.food} label="Food" />
         </div>
         {inventory.food > 0 && lowHunger && (
-          <div className="px-2 py-1 rounded text-xs text-foreground/80 animate-pulse"
-            style={{ background: 'hsl(var(--hud-bg))' }}>
-            Press <kbd className="font-mono font-bold">F</kbd> to eat
+          <div className="px-3 py-1.5 rounded-md text-xs font-semibold animate-pulse"
+            style={{ ...panelStyle, color: 'hsl(40,30%,85%)' }}>
+            Press <Key>F</Key> to eat
           </div>
         )}
       </div>
 
-      {/* Progression panel */}
-      <div className="absolute top-4 right-4 p-2 rounded-lg text-xs text-foreground/60"
-        style={{ background: 'hsl(var(--hud-bg))' }}>
-        <div className="text-foreground/80 font-bold mb-1">
-          ⚔️ Tier {progression.tier} {progression.tier >= 2 ? '— Advanced' : '— Basic'}
-        </div>
-        <div>Kills: {progression.enemiesKilled}{progression.tier < 2 ? ` / ${TIER2_KILLS_REQUIRED}` : ''}</div>
-        <div>Built: {progression.structuresBuilt}{progression.tier < 2 ? ` / ${TIER2_STRUCTURES_REQUIRED}` : ''}</div>
-        {progression.areasSecured.length > 0 && (
-          <div className="mt-1 text-foreground/50">
-            🏴 Secured: {progression.areasSecured.join(', ')}
+      {/* ═══ TOP RIGHT — Progression panel ═══ */}
+      <div className="absolute top-4 right-4 rounded-lg overflow-hidden" style={{ ...panelStyle, maxWidth: 240 }}>
+        {/* Header */}
+        <div className="px-4 py-2.5" style={{
+          background: 'linear-gradient(90deg, hsla(35,60%,45%,0.2), transparent)',
+          borderBottom: '1px solid hsla(40,30%,45%,0.2)',
+        }}>
+          <div className="flex items-center gap-2">
+            <span className="text-base">⚔️</span>
+            <span style={{
+              fontSize: 13,
+              fontWeight: 800,
+              letterSpacing: '0.04em',
+              color: 'hsl(35,60%,65%)',
+            }}>
+              TIER {progression.tier}
+            </span>
+            <span style={{
+              fontSize: 10,
+              fontWeight: 600,
+              color: 'hsl(40,15%,50%)',
+              marginLeft: 2,
+            }}>
+              — {progression.tier >= 2 ? 'Advanced' : 'Basic'}
+            </span>
           </div>
+        </div>
+
+        {/* Stats */}
+        <div className="px-4 py-3 flex flex-col gap-2">
+          {/* Kills */}
+          <div className="flex items-center justify-between">
+            <span style={{ fontSize: 11, color: 'hsl(40,15%,55%)', fontWeight: 600 }}>Kills</span>
+            <div className="flex items-center gap-1.5">
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'hsl(0,60%,60%)' }}>{progression.enemiesKilled}</span>
+              {progression.tier < 2 && (
+                <span style={{ fontSize: 10, color: 'hsl(40,15%,40%)' }}>/ {TIER2_KILLS_REQUIRED}</span>
+              )}
+            </div>
+          </div>
+          {/* Built */}
+          <div className="flex items-center justify-between">
+            <span style={{ fontSize: 11, color: 'hsl(40,15%,55%)', fontWeight: 600 }}>Built</span>
+            <div className="flex items-center gap-1.5">
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'hsl(35,60%,60%)' }}>{progression.structuresBuilt}</span>
+              {progression.tier < 2 && (
+                <span style={{ fontSize: 10, color: 'hsl(40,15%,40%)' }}>/ {TIER2_STRUCTURES_REQUIRED}</span>
+              )}
+            </div>
+          </div>
+
+          {/* Secured areas */}
+          {progression.areasSecured.length > 0 && (
+            <div style={{ borderTop: '1px solid hsla(40,30%,45%,0.2)', paddingTop: 8, marginTop: 4 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'hsl(40,15%,45%)', marginBottom: 6 }}>
+                Secured Regions
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {progression.areasSecured.map(a => (
+                  <SecuredPill key={a} name={a.charAt(0).toUpperCase() + a.slice(1)} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ═══ TOP LEFT — Controls panel ═══ */}
+      <div className="absolute top-4 left-4 p-4 rounded-lg" style={{ ...panelStyle, maxWidth: 190 }}>
+        <ControlSection title="Movement">
+          <ControlRow keys="WASD" action="Move" />
+          <ControlRow keys="SHIFT" action="Run" />
+          {!isMounted && <ControlRow keys="SPACE" action="Jump" />}
+          <ControlRow keys="MOUSE" action="Look" />
+        </ControlSection>
+
+        {!isMounted && (
+          <ControlSection title="Combat">
+            <ControlRow keys="CLICK" action="Attack" />
+          </ControlSection>
         )}
+
+        <ControlSection title="Interact">
+          <ControlRow keys="E" action={isMounted ? 'Dismount' : 'Interact'} />
+          <ControlRow keys="F" action="Eat Food" />
+          {!isMounted && <ControlRow keys="B" action="Build" />}
+        </ControlSection>
+
+        <ControlSection title="Utility">
+          {!isMounted && <ControlRow keys="H" action="Call Horse" />}
+          <ControlRow keys="M" action="Map" />
+          <ControlRow keys="SCROLL" action="Zoom" />
+        </ControlSection>
       </div>
 
       {/* Build mode panel */}
       {buildMode && (
-        <div className="absolute top-24 right-4 p-3 rounded-lg min-w-52"
-          style={{ background: 'hsl(var(--hud-bg))', border: '1px solid hsl(var(--hud-border))' }}>
-          <div className="text-sm font-bold text-foreground mb-2">🔨 Build Mode</div>
+        <div className="absolute top-24 right-4 p-4 rounded-lg min-w-56" style={panelStyle}>
+          <div className="flex items-center gap-2 mb-3 pb-2" style={{ borderBottom: '1px solid hsla(40,30%,45%,0.2)' }}>
+            <span className="text-base">🔨</span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: 'hsl(35,60%,65%)', letterSpacing: '0.04em' }}>BUILD MODE</span>
+          </div>
           {availableBuildables.map((b, i) => (
             <div key={b.type}
-              className={`text-xs py-1 px-2 rounded mb-0.5 ${i === selectedBuildIndex ? 'text-foreground font-bold' : 'text-foreground/50'}`}
-              style={i === selectedBuildIndex ? { background: 'hsl(var(--primary) / 0.3)' } : {}}>
-              <div>{b.label} — {b.description}</div>
+              className="py-1.5 px-2.5 rounded mb-1"
+              style={i === selectedBuildIndex
+                ? { background: 'hsla(35,60%,50%,0.15)', border: '1px solid hsla(35,60%,50%,0.3)' }
+                : { border: '1px solid transparent' }
+              }>
+              <div style={{
+                fontSize: 11,
+                fontWeight: i === selectedBuildIndex ? 700 : 400,
+                color: i === selectedBuildIndex ? 'hsl(40,30%,88%)' : 'hsl(40,15%,50%)',
+              }}>
+                {b.label} — {b.description}
+              </div>
               {b.effect && i === selectedBuildIndex && (
-                <div className="text-foreground/40 text-[10px] mt-0.5">{b.effect}</div>
+                <div style={{ fontSize: 9, color: 'hsl(40,15%,40%)', marginTop: 2 }}>{b.effect}</div>
               )}
             </div>
           ))}
-          <div className="text-xs text-foreground/40 mt-2">
-            <div><kbd className="font-mono text-foreground/60">Q/R</kbd> Cycle</div>
-            <div><kbd className="font-mono text-foreground/60">Click</kbd> Place</div>
-            <div><kbd className="font-mono text-foreground/60">B</kbd> Exit</div>
+          <div className="mt-3 pt-2 flex flex-col gap-1" style={{ borderTop: '1px solid hsla(40,30%,45%,0.2)' }}>
+            <div className="flex items-center gap-2">
+              <Key>Q</Key><Key>R</Key>
+              <span style={{ fontSize: 10, color: 'hsl(40,15%,50%)' }}>Cycle</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Key>CLICK</Key>
+              <span style={{ fontSize: 10, color: 'hsl(40,15%,50%)' }}>Place</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Key>B</Key>
+              <span style={{ fontSize: 10, color: 'hsl(40,15%,50%)' }}>Exit</span>
+            </div>
           </div>
         </div>
       )}
 
       {/* Build feedback */}
       {buildMode && buildFeedback && (
-        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 px-5 py-2.5 rounded-lg text-sm font-semibold text-foreground"
-          style={{ background: 'hsl(var(--hud-bg))', border: '1px solid hsl(var(--hud-border))' }}>
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg text-sm font-semibold"
+          style={{ ...panelStyle, color: 'hsl(40,30%,88%)' }}>
           {buildFeedback}
         </div>
       )}
 
       {/* Interaction prompt */}
       {!buildMode && interactionText && (
-        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 px-5 py-2.5 rounded-lg text-sm font-semibold text-foreground animate-pulse"
-          style={{ background: 'hsl(var(--hud-bg))', border: '1px solid hsl(var(--hud-border))' }}>
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg text-sm font-semibold animate-pulse"
+          style={{ ...panelStyle, color: 'hsl(40,30%,88%)', border: '1px solid hsla(35,60%,50%,0.4)' }}>
           {interactionText}
         </div>
       )}
 
-      {/* Controls */}
-      <div className="absolute top-4 left-4 p-3 rounded-lg text-xs text-foreground/50 leading-relaxed"
-        style={{ background: 'hsl(var(--hud-bg))' }}>
-        <div><kbd className="font-mono text-foreground/70">WASD</kbd> Move</div>
-        <div><kbd className="font-mono text-foreground/70">SHIFT</kbd> Run</div>
-        {!isMounted && <div><kbd className="font-mono text-foreground/70">SPACE</kbd> Jump</div>}
-        <div><kbd className="font-mono text-foreground/70">MOUSE</kbd> Look</div>
-        {!isMounted && <div><kbd className="font-mono text-foreground/70">CLICK</kbd> Attack</div>}
-        <div><kbd className="font-mono text-foreground/70">E</kbd> {isMounted ? 'Dismount' : 'Interact'}</div>
-        <div><kbd className="font-mono text-foreground/70">F</kbd> Eat Food</div>
-        {!isMounted && <div><kbd className="font-mono text-foreground/70">B</kbd> Build</div>}
-        {!isMounted && <div><kbd className="font-mono text-foreground/70">H</kbd> Call Horse</div>}
-        <div><kbd className="font-mono text-foreground/70">M</kbd> Map</div>
-        <div><kbd className="font-mono text-foreground/70">SCROLL</kbd> Zoom</div>
-      </div>
-
       {/* Crosshair */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-        <div className={`w-2 h-2 rounded-full border ${buildMode ? 'border-primary' : 'border-foreground/40'}`} />
+        <div style={{
+          width: 6, height: 6, borderRadius: '50%',
+          border: buildMode ? '1.5px solid hsl(35,70%,50%)' : '1.5px solid hsla(40,30%,90%,0.5)',
+          boxShadow: buildMode ? '0 0 6px hsla(35,70%,50%,0.4)' : '0 0 4px hsla(0,0%,0%,0.5)',
+        }} />
       </div>
     </div>
   );
