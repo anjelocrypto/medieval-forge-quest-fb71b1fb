@@ -214,6 +214,7 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   const runInspection = useMemo(() => inspectModel('octopus_run', runGltf.scene), [runGltf.scene]);
   const jumpInspection = useMemo(() => inspectModel('octopus_jump', jumpGltf.scene), [jumpGltf.scene]);
   const hitInspection = useMemo(() => inspectModel('octopus_hit', hitGltf.scene), [hitGltf.scene]);
+  const fightInspection = useMemo(() => inspectModel('octopus_fight', fightGltf.scene), [fightGltf.scene]);
   const danceInspection = useMemo(() => inspectModel('octopus_dance', danceGltf.scene), [danceGltf.scene]);
 
   const canonicalHeight = useMemo(() => {
