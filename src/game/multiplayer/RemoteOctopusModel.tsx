@@ -304,3 +304,4 @@ useGLTF.preload(octopusJumpUrl);
 useGLTF.preload(octopusGetHitUrl);
 useGLTF.preload(octopusDieUrl);
 useGLTF.preload(octopusDanceUrl);
+useGLTF.preload(octopusKickUrl);
