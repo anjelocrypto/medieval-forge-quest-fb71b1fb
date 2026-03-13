@@ -384,6 +384,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     <group>
       {renderModel(idleVisibleRef, idleNorm, idleGltf.scene)}
       {renderModel(walkVisibleRef, walkNorm, walkGltf.scene)}
+      {renderModel(runVisibleRef, runNorm, runGltf.scene)}
       {renderModel(jumpVisibleRef, jumpNorm, jumpGltf.scene)}
       {renderModel(pushupEnterVisibleRef, pushupEnterNorm, idleToPushupGltf.scene)}
       {renderModel(pushupLoopVisibleRef, pushupLoopNorm, pushupGltf.scene)}
