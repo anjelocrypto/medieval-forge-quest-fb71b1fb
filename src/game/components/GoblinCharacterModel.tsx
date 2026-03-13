@@ -237,11 +237,14 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const { actions: jumpActions, clips: jumpClips } = useAnimations(sanitizedJumpClips, jumpGltf.scene);
   const jumpClipName = useMemo(() => getFirstClipName(jumpClips, /jump/i), [jumpClips]);
 
+  const { actions: hiphopActions, clips: hiphopClips } = useAnimations(sanitizedHiphopClips, hiphopGltf.scene);
+  const hiphopClipName = useMemo(() => getFirstClipName(hiphopClips, /hip|hop|dance/i), [hiphopClips]);
+
   // Enable shadows + debug
   useEffect(() => {
-    [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene].forEach(enableMeshShadows);
-    console.log('[Goblin] Clip names — idle:', idleClipName, 'walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName);
-  }, [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, idleClipName, walkClipName, runClipName, jumpClipName]);
+    [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hiphopGltf.scene].forEach(enableMeshShadows);
+    console.log('[Goblin] Clip names — idle:', idleClipName, 'walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName, 'hiphop:', hiphopClipName);
+  }, [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hiphopGltf.scene, idleClipName, walkClipName, runClipName, jumpClipName, hiphopClipName]);
 
   // Initialize idle (looping)
   useEffect(() => {
