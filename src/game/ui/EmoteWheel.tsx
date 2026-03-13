@@ -20,6 +20,10 @@ const GOBLIN_EMOTES: EmoteOption[] = [
   { key: 'gangnam', label: 'Gangnam', icon: '🎶' },
 ];
 
+const OCTOPUS_EMOTES: EmoteOption[] = [
+  { key: 'octopusdance', label: 'Dance', icon: '🐙' },
+];
+
 interface EmoteWheelProps {
   onSelectEmote: (emoteKey: string) => void;
   isPlayingEmote: boolean;
