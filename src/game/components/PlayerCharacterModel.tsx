@@ -359,6 +359,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       stateRef.current = 'fight';
       fightStartTimeRef.current = performance.now();
       setVisibleState('fight');
+      if (isFightingRef) isFightingRef.current = true;
       if (fightClipName) {
         const a = fightActions[fightClipName];
         if (a) { a.reset(); a.play(); a.paused = false; }
