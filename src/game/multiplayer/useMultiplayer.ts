@@ -239,10 +239,16 @@ export function useMultiplayer() {
     // Subscribe with timeout
     return new Promise<boolean>((resolve) => {
       let resolved = false;
+      const clearAllTimers = () => {
+        if (broadcastTimerRef.current) { clearInterval(broadcastTimerRef.current); broadcastTimerRef.current = null; }
+        if (staleCleanupRef.current) { clearInterval(staleCleanupRef.current); staleCleanupRef.current = null; }
+      };
+
       const timeoutId = setTimeout(() => {
         if (resolved) return;
         resolved = true;
         console.error(`[MP-Startup] SUBSCRIBE TIMEOUT after ${SUBSCRIBE_TIMEOUT_MS}ms — channel never reached SUBSCRIBED`);
+        clearAllTimers();
         try { channel.unsubscribe(); } catch {}
         setConnectionStatus('disconnected');
         resolve(false);
