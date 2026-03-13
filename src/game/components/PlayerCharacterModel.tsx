@@ -209,6 +209,9 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const { actions: agreeActions, clips: agreeClips } = useAnimations(sanitizedAgreeClips, agreeGltf.scene);
   const agreeClipName = useMemo(() => getFirstClipName(agreeClips, /agree|nod|yes/i), [agreeClips]);
 
+  const { actions: waveActions, clips: waveClips } = useAnimations(sanitizedWaveClips, waveGltf.scene);
+  const waveClipName = useMemo(() => getFirstClipName(waveClips, /wave|greet|hello/i), [waveClips]);
+
   // Enable shadows on all models
   useEffect(() => {
     [idleGltf.scene, walkGltf.scene, jumpGltf.scene, runGltf.scene, hitGltf.scene, fightGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene, agreeGltf.scene].forEach(enableMeshShadows);
