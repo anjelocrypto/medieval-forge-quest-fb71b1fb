@@ -266,11 +266,19 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
     console.log('[Octopus] Clip names — idle:', idleClipName, 'walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName, 'hit:', hitClipName, 'fight:', fightClipName, 'dance:', danceClipName);
   }, [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hitGltf.scene, fightGltf.scene, danceGltf.scene, idleClipName, walkClipName, runClipName, jumpClipName, hitClipName, fightClipName, danceClipName]);
 
-  // Initialize walk/idle (looping)
+  // Initialize idle (looping)
+  useEffect(() => {
+    if (!idleClipName) return;
+    const a = idleActions[idleClipName]; if (!a) return;
+    a.reset(); a.setLoop(THREE.LoopRepeat, Infinity); a.clampWhenFinished = false; a.enabled = true; a.play();
+    return () => { a.stop(); };
+  }, [idleActions, idleClipName]);
+
+  // Initialize walk (looping, paused)
   useEffect(() => {
     if (!walkClipName) return;
     const a = walkActions[walkClipName]; if (!a) return;
-    a.reset(); a.setLoop(THREE.LoopRepeat, Infinity); a.clampWhenFinished = false; a.enabled = true; a.play();
+    a.reset(); a.setLoop(THREE.LoopRepeat, Infinity); a.clampWhenFinished = false; a.enabled = true; a.play(); a.paused = true;
     return () => { a.stop(); };
   }, [walkActions, walkClipName]);
 
