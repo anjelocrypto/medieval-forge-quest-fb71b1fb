@@ -321,7 +321,12 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
       />
 
       <Canvas shadows camera={{ fov: 55, near: 0.5, far: 1500, position: [0, 10, 15] }}
-        style={{ width: '100%', height: '100%' }}>
+        style={{ width: '100%', height: '100%' }}
+        gl={{ antialias: true, powerPreference: 'high-performance', failIfMajorPerformanceCaveat: false }}
+        onCreated={({ gl }) => {
+          console.log('[WebGL] GameScene Canvas created', gl.getContext()?.constructor.name);
+        }}>
+
         <WebGLRecovery />
         <PerfBaselineR3F />
         <InputFlusher />
