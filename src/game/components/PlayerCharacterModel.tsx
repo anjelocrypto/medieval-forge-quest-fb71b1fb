@@ -748,14 +748,3 @@ function findArmatureNode(scene: THREE.Object3D): THREE.Object3D | null {
   return armature;
 }
 
-useGLTF.preload(standingUrl);
-useGLTF.preload(soldierWalkUrl);
-useGLTF.preload(jumpUrl);
-useGLTF.preload(runUrl);
-useGLTF.preload(gethitUrl);
-useGLTF.preload(fightUrl);
-useGLTF.preload(idleToPushupUrl);
-useGLTF.preload(pushupUrl);
-useGLTF.preload(pushupToIdleUrl);
-useGLTF.preload(agreeUrl);
-useGLTF.preload(waveUrl);
