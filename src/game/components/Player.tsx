@@ -941,3 +941,65 @@ export function Player({
     </group>
   );
 }
+
+/** GLB-based player character model with walk animation */
+function PlayerGLBModel({ moveSpeed }: { moveSpeed: number }) {
+  const gltf = useGLTF(soldierWalkUrl);
+  const modelRef = useRef<THREE.Group>(null);
+  
+  // Clone the scene so it doesn't get mutated across re-renders
+  const clonedScene = useMemo(() => {
+    const clone = gltf.scene.clone(true);
+    // Enable shadows on all meshes
+    clone.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    return clone;
+  }, [gltf.scene]);
+
+  const { actions, clips } = useAnimations(gltf.animations, modelRef);
+  const walkClipName = clips.length > 0 ? clips[0].name : null;
+  const prevMovingRef = useRef(false);
+
+  // Play/stop walk animation based on movement
+  useEffect(() => {
+    if (!walkClipName || !actions[walkClipName]) return;
+    const action = actions[walkClipName]!;
+    // Start playing looped
+    action.setLoop(THREE.LoopRepeat, Infinity);
+    action.clampWhenFinished = false;
+    action.play();
+    action.paused = true; // start paused
+  }, [walkClipName, actions]);
+
+  useFrame(() => {
+    if (!walkClipName || !actions[walkClipName]) return;
+    const action = actions[walkClipName]!;
+    const isMoving = moveSpeed > 0.05;
+    
+    if (isMoving && !prevMovingRef.current) {
+      action.paused = false;
+      action.setEffectiveTimeScale(1);
+    } else if (!isMoving && prevMovingRef.current) {
+      action.paused = true;
+    }
+    
+    // Scale animation speed with movement speed
+    if (isMoving) {
+      action.setEffectiveTimeScale(Math.max(0.5, moveSpeed * 1.5));
+    }
+    
+    prevMovingRef.current = isMoving;
+  });
+
+  // Scale: model is 1.7m, we want ~1.8m. Offset: center at feet.
+  // The model's Armature is offset — we need to zero it out.
+  return (
+    <group ref={modelRef} position={[0, -0.9, 0]} scale={[1.06, 1.06, 1.06]} rotation={[0, Math.PI, 0]}>
+      <primitive object={clonedScene} />
+    </group>
+  );
+}
