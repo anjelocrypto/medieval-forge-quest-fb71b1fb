@@ -66,6 +66,7 @@ interface PlayerProps {
   // Emote
   activeEmote: string | null;
   onEmoteComplete: () => void;
+  damageFlash?: number;
 }
 
 const _camForward = new THREE.Vector3();
@@ -98,7 +99,7 @@ export function Player({
   shakeResourceRef, highlightedResourceRef,
   resources, mountedDebugRef,
   externalMoveSpeedRef, externalIsRunningRef, externalAttackAnimRef,
-  activeEmote, onEmoteComplete,
+  activeEmote, onEmoteComplete, damageFlash,
 }: PlayerProps) {
   const groupRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Group>(null);
@@ -938,7 +939,7 @@ export function Player({
             lean + riderLean
           ]}
         >
-          <PlayerGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} onEmoteComplete={onEmoteComplete} />
+          <PlayerGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} />
         </group>
       </group>
     </group>
