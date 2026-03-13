@@ -7,6 +7,7 @@ import goblinWalkingUrl from '@/assets/goblinwalking.glb?url';
 import goblinRunningUrl from '@/assets/goblinrunning.glb?url';
 import goblinJumpUrl from '@/assets/goblinjump.glb?url';
 import hiphopUrl from '@/assets/hiphop.glb?url';
+import gangnamUrl from '@/assets/gangnam.glb?url';
 
 interface GoblinGLBModelProps {
   moveSpeedRef: React.MutableRefObject<number>;
@@ -20,7 +21,7 @@ interface GoblinGLBModelProps {
   isFightingRef?: React.MutableRefObject<boolean>;
 }
 
-type GoblinState = 'idle' | 'walk' | 'run' | 'jump' | 'emote_hiphop';
+type GoblinState = 'idle' | 'walk' | 'run' | 'jump' | 'emote_hiphop' | 'emote_gangnam';
 
 const MOVE_START_THRESHOLD = 0.07;
 const MOVE_STOP_THRESHOLD = 0.04;
@@ -181,12 +182,14 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const runGltf = useGLTF(goblinRunningUrl);
   const jumpGltf = useGLTF(goblinJumpUrl);
   const hiphopGltf = useGLTF(hiphopUrl);
+  const gangnamGltf = useGLTF(gangnamUrl);
 
   const idleVisibleRef = useRef<THREE.Group>(null);
   const walkVisibleRef = useRef<THREE.Group>(null);
   const runVisibleRef = useRef<THREE.Group>(null);
   const jumpVisibleRef = useRef<THREE.Group>(null);
   const hiphopVisibleRef = useRef<THREE.Group>(null);
+  const gangnamVisibleRef = useRef<THREE.Group>(null);
 
   const lastEmoteIdRef = useRef<number>(0);
 
@@ -198,6 +201,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const sanitizedRunClips = useMemo(() => sanitizeClips(runGltf.animations), [runGltf.animations]);
   const sanitizedJumpClips = useMemo(() => sanitizeClips(jumpGltf.animations), [jumpGltf.animations]);
   const sanitizedHiphopClips = useMemo(() => sanitizeClips(hiphopGltf.animations), [hiphopGltf.animations]);
+  const sanitizedGangnamClips = useMemo(() => sanitizeClips(gangnamGltf.animations), [gangnamGltf.animations]);
 
   // Inspections
   const idleInspection = useMemo(() => inspectModel('goblin_idle', idleGltf.scene), [idleGltf.scene]);
@@ -205,6 +209,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const runInspection = useMemo(() => inspectModel('goblin_run', runGltf.scene), [runGltf.scene]);
   const jumpInspection = useMemo(() => inspectModel('goblin_jump', jumpGltf.scene), [jumpGltf.scene]);
   const hiphopInspection = useMemo(() => inspectModel('goblin_hiphop', hiphopGltf.scene), [hiphopGltf.scene]);
+  const gangnamInspection = useMemo(() => inspectModel('goblin_gangnam', gangnamGltf.scene), [gangnamGltf.scene]);
 
   // Use a shorter canonical height for the goblin (about 1.2m)
   const canonicalHeight = useMemo(() => {
@@ -223,6 +228,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const runNorm = useMemo(() => buildNormalization(runInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [runInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const jumpNorm = useMemo(() => buildNormalization(jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const hiphopNorm = useMemo(() => buildNormalization(hiphopInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [hiphopInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
+  const gangnamNorm = useMemo(() => buildNormalization(gangnamInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [gangnamInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
 
   // Animation setups
   const { actions: idleActions, clips: idleClips } = useAnimations(sanitizedIdleClips, idleGltf.scene);
@@ -240,11 +246,14 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const { actions: hiphopActions, clips: hiphopClips } = useAnimations(sanitizedHiphopClips, hiphopGltf.scene);
   const hiphopClipName = useMemo(() => getFirstClipName(hiphopClips, /hip|hop|dance/i), [hiphopClips]);
 
+  const { actions: gangnamActions, clips: gangnamClips } = useAnimations(sanitizedGangnamClips, gangnamGltf.scene);
+  const gangnamClipName = useMemo(() => getFirstClipName(gangnamClips, /gangnam|dance/i), [gangnamClips]);
+
   // Enable shadows + debug
   useEffect(() => {
-    [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hiphopGltf.scene].forEach(enableMeshShadows);
-    console.log('[Goblin] Clip names — idle:', idleClipName, 'walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName, 'hiphop:', hiphopClipName);
-  }, [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hiphopGltf.scene, idleClipName, walkClipName, runClipName, jumpClipName, hiphopClipName]);
+    [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hiphopGltf.scene, gangnamGltf.scene].forEach(enableMeshShadows);
+    console.log('[Goblin] Clip names — idle:', idleClipName, 'walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName, 'hiphop:', hiphopClipName, 'gangnam:', gangnamClipName);
+  }, [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hiphopGltf.scene, gangnamGltf.scene, idleClipName, walkClipName, runClipName, jumpClipName, hiphopClipName, gangnamClipName]);
 
   // Initialize idle (looping)
   useEffect(() => {
@@ -285,6 +294,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     if (runVisibleRef.current) runVisibleRef.current.visible = false;
     if (jumpVisibleRef.current) jumpVisibleRef.current.visible = false;
     if (hiphopVisibleRef.current) hiphopVisibleRef.current.visible = false;
+    if (gangnamVisibleRef.current) gangnamVisibleRef.current.visible = false;
   }, []);
 
   const setVisibleState = useCallback((state: GoblinState) => {
@@ -293,11 +303,13 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     const showRun = state === 'run';
     const showJump = state === 'jump';
     const showHiphop = state === 'emote_hiphop';
+    const showGangnam = state === 'emote_gangnam';
     if (idleVisibleRef.current) idleVisibleRef.current.visible = showIdle;
     if (walkVisibleRef.current) walkVisibleRef.current.visible = showWalk;
     if (runVisibleRef.current) runVisibleRef.current.visible = showRun;
     if (jumpVisibleRef.current) jumpVisibleRef.current.visible = showJump;
     if (hiphopVisibleRef.current) hiphopVisibleRef.current.visible = showHiphop;
+    if (gangnamVisibleRef.current) gangnamVisibleRef.current.visible = showGangnam;
   }, []);
 
   useFrame(() => {
@@ -317,11 +329,39 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       }
       return;
     }
+    if (activeEmote === 'gangnam' && emoteId !== lastEmoteIdRef.current) {
+      lastEmoteIdRef.current = emoteId;
+      stateRef.current = 'emote_gangnam';
+      setVisibleState('emote_gangnam');
+      if (gangnamClipName) {
+        const a = gangnamActions[gangnamClipName];
+        if (a) { a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.enabled = true; a.play(); a.paused = false; }
+      }
+      return;
+    }
 
     // ===== HIPHOP EMOTE STATE =====
     if (state === 'emote_hiphop') {
       if (hiphopClipName) {
         const a = hiphopActions[hiphopClipName];
+        if (a && a.time >= a.getClip().duration - 0.05) {
+          a.paused = true;
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+          onEmoteComplete();
+        }
+      } else {
+        stateRef.current = 'idle';
+        setVisibleState('idle');
+        onEmoteComplete();
+      }
+      return;
+    }
+
+    // ===== GANGNAM EMOTE STATE =====
+    if (state === 'emote_gangnam') {
+      if (gangnamClipName) {
+        const a = gangnamActions[gangnamClipName];
         if (a && a.time >= a.getClip().duration - 0.05) {
           a.paused = true;
           stateRef.current = 'idle';
@@ -418,6 +458,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       {renderModel(runVisibleRef, runNorm, runGltf.scene)}
       {renderModel(jumpVisibleRef, jumpNorm, jumpGltf.scene)}
       {renderModel(hiphopVisibleRef, hiphopNorm, hiphopGltf.scene)}
+      {renderModel(gangnamVisibleRef, gangnamNorm, gangnamGltf.scene)}
     </group>
   );
 }
@@ -427,3 +468,4 @@ useGLTF.preload(goblinWalkingUrl);
 useGLTF.preload(goblinRunningUrl);
 useGLTF.preload(goblinJumpUrl);
 useGLTF.preload(hiphopUrl);
+useGLTF.preload(gangnamUrl);
