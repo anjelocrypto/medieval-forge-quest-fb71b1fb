@@ -296,6 +296,40 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   useFrame(() => {
     const state = stateRef.current;
 
+    // ===== DAMAGE HIT TRIGGER =====
+    const currentFlash = damageFlash ?? 0;
+    if (currentFlash > 0 && prevDamageFlashRef.current === 0 && state !== 'hit') {
+      // Player just got hit — trigger hit animation
+      stateRef.current = 'hit';
+      hitStartTimeRef.current = performance.now();
+      setVisibleState('hit');
+      if (hitClipName) {
+        const a = hitActions[hitClipName];
+        if (a) { a.reset(); a.play(); a.paused = false; }
+      }
+    }
+    prevDamageFlashRef.current = currentFlash;
+
+    // ===== HIT STATE =====
+    if (stateRef.current === 'hit') {
+      const elapsed = (performance.now() - hitStartTimeRef.current) / 1000;
+      if (hitClipName) {
+        const a = hitActions[hitClipName];
+        if (a && (elapsed >= HIT_ANIM_DURATION || a.time >= a.getClip().duration - 0.05)) {
+          a.paused = true;
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+        }
+      } else {
+        // No hit clip — fallback to idle after duration
+        if (elapsed >= HIT_ANIM_DURATION) {
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+        }
+      }
+      return;
+    }
+
     // ===== EMOTE STATES =====
     if (state === 'emote_pushup_enter') {
       if (pushupEnterClipName) {
