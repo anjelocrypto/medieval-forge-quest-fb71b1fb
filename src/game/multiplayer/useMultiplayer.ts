@@ -102,8 +102,14 @@ export function useMultiplayer() {
   const staleCleanupRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timingsRef = useRef<StartupTimings>(createTimings());
   const firstRemoteReceivedRef = useRef(false);
+  const connectionStatusRef = useRef<ConnectionStatus>('disconnected');
 
   const connected = connectionStatus === 'connected';
+
+  // Keep ref in sync with state for use in timeout callbacks
+  useEffect(() => {
+    connectionStatusRef.current = connectionStatus;
+  }, [connectionStatus]);
 
   // Update display name
   const updateDisplayName = useCallback((name: string) => {
@@ -233,10 +239,16 @@ export function useMultiplayer() {
     // Subscribe with timeout
     return new Promise<boolean>((resolve) => {
       let resolved = false;
+      const clearAllTimers = () => {
+        if (broadcastTimerRef.current) { clearInterval(broadcastTimerRef.current); broadcastTimerRef.current = null; }
+        if (staleCleanupRef.current) { clearInterval(staleCleanupRef.current); staleCleanupRef.current = null; }
+      };
+
       const timeoutId = setTimeout(() => {
         if (resolved) return;
         resolved = true;
         console.error(`[MP-Startup] SUBSCRIBE TIMEOUT after ${SUBSCRIBE_TIMEOUT_MS}ms — channel never reached SUBSCRIBED`);
+        clearAllTimers();
         try { channel.unsubscribe(); } catch {}
         setConnectionStatus('disconnected');
         resolve(false);
@@ -252,7 +264,7 @@ export function useMultiplayer() {
           logTiming('Channel subscribed', timings, 'channelSubscribed');
 
           await channel.track({ playerId, displayName: playerName, joinedAt: Date.now() });
-          logTiming('Presence synced', timings, 'presenceSynced');
+          logTiming('Presence track sent', timings, 'presenceSynced');
 
           console.log('[Multiplayer] Connected successfully, status → connected');
           setConnectionStatus('connected');
@@ -277,6 +289,7 @@ export function useMultiplayer() {
           if (resolved) return;
           resolved = true;
           clearTimeout(timeoutId);
+          clearAllTimers();
           console.warn('[Multiplayer] Channel error/closed:', status, err);
           setConnectionStatus('disconnected');
           resolve(false);
@@ -385,7 +398,7 @@ export function useMultiplayer() {
 
     // Startup watchdog — if not connected within RECONNECT_TIMEOUT_MS, give up
     const watchdogId = setTimeout(() => {
-      if (connectionStatus !== 'connected') {
+      if (connectionStatusRef.current !== 'connected') {
         console.error(`[MP-Startup] RECONNECT WATCHDOG: Not connected after ${RECONNECT_TIMEOUT_MS}ms. Stalled stages:`);
         const t = timingsRef.current;
         if (!t.connectStart) console.error('  → Stalled BEFORE connect start');
@@ -393,6 +406,9 @@ export function useMultiplayer() {
         else if (!t.channelSubscribed) console.error('  → Stalled at channel subscribe');
         else if (!t.presenceSynced) console.error('  → Stalled at presence sync');
         else if (!t.gameplayReady) console.error('  → Stalled at gameplay ready');
+        // Clear any leaked timers
+        if (broadcastTimerRef.current) { clearInterval(broadcastTimerRef.current); broadcastTimerRef.current = null; }
+        if (staleCleanupRef.current) { clearInterval(staleCleanupRef.current); staleCleanupRef.current = null; }
         clearSession();
         setConnectionStatus('disconnected');
       }
