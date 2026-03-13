@@ -36,6 +36,7 @@ import { MultiplayerHUD } from './multiplayer/MultiplayerHUD';
 import { ChatPanel } from './multiplayer/ChatPanel';
 import { useProximityVoice } from './multiplayer/useProximityVoice';
 import { EmoteWheel } from './ui/EmoteWheel';
+import { CharacterSelect } from './ui/CharacterSelect';
 
 interface GameSceneProps {
   multiplayer: ReturnType<typeof import('./multiplayer/useMultiplayer').useMultiplayer>;
@@ -302,6 +303,9 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
           ← Leave World
         </button>
       )}
+
+      {/* Character Select (F4) */}
+      <CharacterSelect />
 
       {/* Emote Wheel */}
       <EmoteWheel

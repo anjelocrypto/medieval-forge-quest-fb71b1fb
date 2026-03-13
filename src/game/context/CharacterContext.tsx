@@ -1,0 +1,35 @@
+import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+
+export type CharacterType = 'soldier' | 'goblin';
+
+interface CharacterContextValue {
+  character: CharacterType;
+  setCharacter: (c: CharacterType) => void;
+}
+
+const CharacterContext = createContext<CharacterContextValue>({
+  character: 'soldier',
+  setCharacter: () => {},
+});
+
+export function CharacterProvider({ children }: { children: ReactNode }) {
+  const [character, setCharacterState] = useState<CharacterType>(() => {
+    const saved = localStorage.getItem('selected-character');
+    return saved === 'goblin' ? 'goblin' : 'soldier';
+  });
+
+  const setCharacter = useCallback((c: CharacterType) => {
+    setCharacterState(c);
+    localStorage.setItem('selected-character', c);
+  }, []);
+
+  return (
+    <CharacterContext.Provider value={{ character, setCharacter }}>
+      {children}
+    </CharacterContext.Provider>
+  );
+}
+
+export function useCharacter() {
+  return useContext(CharacterContext);
+}

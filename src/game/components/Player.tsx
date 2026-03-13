@@ -2,6 +2,8 @@ import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { PlayerGLBModel } from './PlayerCharacterModel';
+import { GoblinGLBModel } from './GoblinCharacterModel';
+import { useCharacter } from '../context/CharacterContext';
 import { getTerrainHeight } from './Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
 import { getMovementInput } from '../systems/InputSystem';
@@ -102,6 +104,7 @@ export function Player({
   externalMoveSpeedRef, externalIsRunningRef, externalAttackAnimRef,
   activeEmote, activeEmoteId, onEmoteComplete, damageFlash,
 }: PlayerProps) {
+  const { character } = useCharacter();
   const groupRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Group>(null);
   const velocityRef = useRef(new THREE.Vector3(0, 0, 0));
@@ -942,7 +945,11 @@ export function Player({
             lean + riderLean
           ]}
         >
-          <PlayerGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={attackAnimRef} isFightingRef={isFightingRef} />
+          {character === 'goblin' ? (
+            <GoblinGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={attackAnimRef} isFightingRef={isFightingRef} />
+          ) : (
+            <PlayerGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={attackAnimRef} isFightingRef={isFightingRef} />
+          )}
         </group>
       </group>
     </group>
