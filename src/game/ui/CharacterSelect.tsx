@@ -12,7 +12,7 @@ export function CharacterSelect() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'F4') {
+      if (e.code === 'Tab') {
         e.preventDefault();
         setOpen(prev => !prev);
       }
