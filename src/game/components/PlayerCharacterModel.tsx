@@ -117,6 +117,8 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const pushupStartTimeRef = useRef(0);
   const hitStartTimeRef = useRef(0);
   const prevDamageFlashRef = useRef(0);
+  const prevAttackingRef = useRef(false);
+  const fightStartTimeRef = useRef(0);
   const auditLoggedRef = useRef(false);
 
   // Sanitize clips
