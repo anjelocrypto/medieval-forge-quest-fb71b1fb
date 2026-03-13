@@ -11,6 +11,7 @@ import { Settlements } from '../components/Settlements';
 import { WorldPOIs } from '../components/WorldPOIs';
 import { AmbientEffects } from '../components/AmbientEffects';
 import { CinematicCamera } from './CinematicCamera';
+import { MenuCanvasCleanup } from '../systems/WebGLRecovery';
 import { useRef } from 'react';
 import * as THREE from 'three';
 
