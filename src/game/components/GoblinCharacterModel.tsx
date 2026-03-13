@@ -292,10 +292,12 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     const showWalk = state === 'walk';
     const showRun = state === 'run';
     const showJump = state === 'jump';
+    const showHiphop = state === 'emote_hiphop';
     if (idleVisibleRef.current) idleVisibleRef.current.visible = showIdle;
     if (walkVisibleRef.current) walkVisibleRef.current.visible = showWalk;
     if (runVisibleRef.current) runVisibleRef.current.visible = showRun;
     if (jumpVisibleRef.current) jumpVisibleRef.current.visible = showJump;
+    if (hiphopVisibleRef.current) hiphopVisibleRef.current.visible = showHiphop;
   }, []);
 
   useFrame(() => {
