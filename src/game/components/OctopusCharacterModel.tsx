@@ -444,14 +444,17 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
       setVisibleState(newState);
     }
 
-    // Walk animation (also used for idle with slower speed)
+    // Idle animation
+    if (idleClipName) {
+      const ia = idleActions[idleClipName];
+      if (ia) { ia.paused = newState !== 'idle'; }
+    }
+
+    // Walk animation
     if (walkClipName) {
       const wa = walkActions[walkClipName];
       if (wa) {
-        if (newState === 'idle') {
-          wa.paused = false;
-          wa.setEffectiveTimeScale(0.3); // slow walk = idle breathing
-        } else if (newState === 'walk') {
+        if (newState === 'walk') {
           wa.paused = false;
           wa.setEffectiveTimeScale(Math.max(0.55, THREE.MathUtils.clamp(speed, 0, 1.4) * 1.35));
         } else {
