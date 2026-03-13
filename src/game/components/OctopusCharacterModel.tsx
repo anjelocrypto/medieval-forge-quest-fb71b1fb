@@ -197,6 +197,8 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   const lastEmoteIdRef = useRef<number>(0);
   const hitStartTimeRef = useRef(0);
   const prevDamageFlashRef = useRef(0);
+  const prevAttackingRef = useRef(false);
+  const fightStartTimeRef = useRef(0);
   const stateRef = useRef<OctopusState>('idle');
 
   // Sanitize clips
