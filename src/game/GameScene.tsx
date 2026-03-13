@@ -305,7 +305,10 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
 
       {/* Emote Wheel */}
       <EmoteWheel
-        onSelectEmote={(key) => setActiveEmote(key)}
+        onSelectEmote={(key) => {
+          emoteIdRef.current += 1;
+          setActiveEmote({ key, id: emoteIdRef.current });
+        }}
         isPlayingEmote={activeEmote !== null}
       />
 
