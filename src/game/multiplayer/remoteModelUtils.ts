@@ -163,13 +163,25 @@ function normalizeAngle(v: number): number {
   return out;
 }
 
+function sanitizeScale(rawScale: number, fallbackScale?: number): number {
+  const reference = Number.isFinite(fallbackScale) && (fallbackScale ?? 0) > 0
+    ? (fallbackScale as number)
+    : 1;
+  const finiteRaw = Number.isFinite(rawScale) && rawScale > 0 ? rawScale : reference;
+  const min = Math.max(0.05, reference * 0.35);
+  const max = Math.min(4, reference * 2.5);
+  return THREE.MathUtils.clamp(finiteRaw, min, max);
+}
+
 export function buildModelNormalization(
   scene: THREE.Object3D,
   targetHeight: number,
   fallbackYawCorrection = 0,
+  fallbackScale?: number,
 ): ModelNormalization {
   const inspection = inspectModel(scene);
-  const scale = inspection.height > 0.01 ? targetHeight / inspection.height : 1;
+  const rawScale = inspection.height > 0.01 ? targetHeight / inspection.height : (fallbackScale ?? 1);
+  const scale = sanitizeScale(rawScale, fallbackScale);
   const yawCorrection = inspection.facingYaw !== null ? -inspection.facingYaw : fallbackYawCorrection;
 
   return {
