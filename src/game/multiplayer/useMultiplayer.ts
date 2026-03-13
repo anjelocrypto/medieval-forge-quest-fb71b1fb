@@ -398,7 +398,7 @@ export function useMultiplayer() {
 
     // Startup watchdog — if not connected within RECONNECT_TIMEOUT_MS, give up
     const watchdogId = setTimeout(() => {
-      if (connectionStatus !== 'connected') {
+      if (connectionStatusRef.current !== 'connected') {
         console.error(`[MP-Startup] RECONNECT WATCHDOG: Not connected after ${RECONNECT_TIMEOUT_MS}ms. Stalled stages:`);
         const t = timingsRef.current;
         if (!t.connectStart) console.error('  → Stalled BEFORE connect start');
