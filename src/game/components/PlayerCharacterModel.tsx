@@ -166,6 +166,9 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const pushupExitNorm = useMemo(() => buildEmoteNormalization(pushupExitInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight), [pushupExitInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight]);
 
   // Animation setups
+  const { actions: idleActions, clips: idleClips } = useAnimations(sanitizedIdleClips, idleGltf.scene);
+  const idleClipName = useMemo(() => getFirstClipName(idleClips, /idle|stand/i), [idleClips]);
+
   const { actions: walkActions, clips: walkClips } = useAnimations(sanitizedWalkClips, walkGltf.scene);
   const walkClipName = useMemo(() => getFirstClipName(walkClips, /walk/i), [walkClips]);
 
