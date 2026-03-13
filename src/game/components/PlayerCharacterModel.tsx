@@ -375,6 +375,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
           a.paused = true;
           stateRef.current = 'idle';
           setVisibleState('idle');
+          if (isFightingRef) isFightingRef.current = false;
         }
       } else {
         const elapsed = (performance.now() - fightStartTimeRef.current) / 1000;
