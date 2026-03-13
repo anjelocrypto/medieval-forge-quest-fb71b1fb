@@ -708,3 +708,4 @@ useGLTF.preload(fightUrl);
 useGLTF.preload(idleToPushupUrl);
 useGLTF.preload(pushupUrl);
 useGLTF.preload(pushupToIdleUrl);
+useGLTF.preload(agreeUrl);
