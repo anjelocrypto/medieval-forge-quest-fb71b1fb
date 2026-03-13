@@ -118,13 +118,13 @@ export function useMultiplayer() {
             lastUpdateTime: now,
             interpolationT: 0,
             displayName: payload.displayName,
-            characterType: payload.characterType || 'soldier',
+            characterType: payload.characterType ?? 'goblin',
           });
         } else {
           next.set(payload.playerId, {
             playerId: payload.playerId,
             displayName: payload.displayName,
-            characterType: payload.characterType || 'soldier',
+            characterType: payload.characterType ?? 'goblin',
             prevPosition: payload.position,
             targetPosition: payload.position,
             prevRotation: payload.rotation,
