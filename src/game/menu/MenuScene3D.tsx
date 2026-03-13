@@ -27,6 +27,8 @@ export function MenuScene3D() {
         style={{ width: '100%', height: '100%' }}
         gl={{ antialias: true, powerPreference: 'high-performance' }}
       >
+        {/* Cleanup on unmount to free GPU memory */}
+        <MenuCanvasCleanup />
         {/* Core atmosphere */}
         <Atmosphere playerPositionRef={dummyPositionRef} />
         <Sky />
