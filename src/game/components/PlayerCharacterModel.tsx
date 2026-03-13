@@ -288,6 +288,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       run: runVisibleRef,
       jump: jumpVisibleRef,
       hit: hitVisibleRef,
+      fight: fightVisibleRef,
       emote_pushup_enter: pushupEnterVisibleRef,
       emote_pushup_loop: pushupLoopVisibleRef,
       emote_pushup_exit: pushupExitVisibleRef,
