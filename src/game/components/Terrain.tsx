@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import * as THREE from 'three';
 import { WORLD_SIZE, COLORS } from '../constants';
 import { ROADS, REGIONS, SETTLEMENTS } from '../world/RegionData';
