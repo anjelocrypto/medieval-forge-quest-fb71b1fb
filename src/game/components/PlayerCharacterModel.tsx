@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import soldierWalkUrl from '@/assets/soldierwalking.glb?url';
 import soldierIdleUrl from '@/assets/soldier.glb?url';
 import jumpUrl from '@/assets/jump.glb?url';
+import runUrl from '@/assets/run.glb?url';
 import idleToPushupUrl from '@/assets/idletopushup.glb?url';
 import pushupUrl from '@/assets/pushup.glb?url';
 import pushupToIdleUrl from '@/assets/pushuptoidle.glb?url';
