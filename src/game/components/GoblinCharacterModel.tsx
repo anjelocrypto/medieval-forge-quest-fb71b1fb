@@ -358,6 +358,24 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       return;
     }
 
+    // ===== GANGNAM EMOTE STATE =====
+    if (state === 'emote_gangnam') {
+      if (gangnamClipName) {
+        const a = gangnamActions[gangnamClipName];
+        if (a && a.time >= a.getClip().duration - 0.05) {
+          a.paused = true;
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+          onEmoteComplete();
+        }
+      } else {
+        stateRef.current = 'idle';
+        setVisibleState('idle');
+        onEmoteComplete();
+      }
+      return;
+    }
+
     // ===== NORMAL LOCOMOTION =====
     let newState: GoblinState;
     if (!grounded) {
