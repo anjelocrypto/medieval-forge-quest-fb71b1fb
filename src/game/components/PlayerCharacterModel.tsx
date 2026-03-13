@@ -7,6 +7,7 @@ import soldierIdleUrl from '@/assets/soldier.glb?url';
 
 interface PlayerGLBModelProps {
   moveSpeedRef: React.MutableRefObject<number>;
+  controllerHalfHeight: number;
 }
 
 interface ModelInspection {
@@ -22,12 +23,14 @@ interface ModelInspection {
   footY: number;
   height: number;
   facingYaw: number | null;
+  facingYawCandidates: number[];
 }
 
 interface ModelNormalization {
-  anchorOffset: [number, number, number];
+  modelAnchorOffset: [number, number, number];
   scale: number;
   yawCorrection: number;
+  controllerGroundOffset: number;
 }
 
 const MOVE_START_THRESHOLD = 0.07;
@@ -45,10 +48,11 @@ const _tmpVecD = new THREE.Vector3();
 const _tmpUp = new THREE.Vector3();
 const _tmpRight = new THREE.Vector3();
 const _tmpForward = new THREE.Vector3();
+const _tmpForwardAlt = new THREE.Vector3();
 const _tmpCenter = new THREE.Vector3();
 const _tmpSize = new THREE.Vector3();
 
-export function PlayerGLBModel({ moveSpeedRef }: PlayerGLBModelProps) {
+export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight }: PlayerGLBModelProps) {
   const walkGltf = useGLTF(soldierWalkUrl);
   const idleGltf = useGLTF(soldierIdleUrl);
 
@@ -83,12 +87,12 @@ export function PlayerGLBModel({ moveSpeedRef }: PlayerGLBModelProps) {
   }, [walkInspection.facingYaw]);
 
   const idleNormalization = useMemo(() => {
-    return buildNormalization(idleInspection, canonicalHeight, canonicalYawCorrection);
-  }, [idleInspection, canonicalHeight, canonicalYawCorrection]);
+    return buildNormalization(idleInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight);
+  }, [idleInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
 
   const walkNormalization = useMemo(() => {
-    return buildNormalization(walkInspection, canonicalHeight, canonicalYawCorrection);
-  }, [walkInspection, canonicalHeight, canonicalYawCorrection]);
+    return buildNormalization(walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight);
+  }, [walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
 
   const { actions, clips } = useAnimations(sanitizedWalkClips, walkGltf.scene);
 
@@ -128,16 +132,26 @@ export function PlayerGLBModel({ moveSpeedRef }: PlayerGLBModelProps) {
     const sanitizedDrift = summarizeRootMotionDrift(sanitizedWalkClips);
 
     console.groupCollapsed('[Character Audit] GLB integration deep audit');
-    console.log('Canonical rule: gameplay forward == visual forward (+Z local basis)');
+    console.log('Canonical gameplay rule: move forward = model forward, camera behind, back facing camera');
     console.log('Idle inspection:', serializeInspection(idleInspection));
     console.log('Walk inspection:', serializeInspection(walkInspection));
     console.log('Idle normalization:', idleNormalization);
     console.log('Walk normalization:', walkNormalization);
+    console.log('Grounding check:', {
+      controllerHalfHeight,
+      idleFootToGroundError: Number(
+        computeFootGroundError(idleNormalization, idleInspection, controllerHalfHeight).toFixed(6),
+      ),
+      walkFootToGroundError: Number(
+        computeFootGroundError(walkNormalization, walkInspection, controllerHalfHeight).toFixed(6),
+      ),
+    });
     console.log('Walk clip selected:', walkClipName);
     console.log('Raw walk root translation drift:', rawDrift);
     console.log('Sanitized walk root translation drift:', sanitizedDrift);
     console.groupEnd();
   }, [
+    controllerHalfHeight,
     idleInspection,
     walkInspection,
     idleNormalization,
@@ -180,12 +194,14 @@ export function PlayerGLBModel({ moveSpeedRef }: PlayerGLBModelProps) {
 
   return (
     <group>
-      {/* Stable visual root: gameplay root (parent) -> orientation layer -> scale layer -> ground anchor layer */}
+      {/* Stable visual stack: gameplay root -> orientation -> controller-ground offset -> scale -> model anchor */}
       <group ref={idleVisibleRef}>
         <group rotation={[0, idleNormalization.yawCorrection, 0]}>
-          <group scale={[idleNormalization.scale, idleNormalization.scale, idleNormalization.scale]}>
-            <group position={idleNormalization.anchorOffset}>
-              <primitive object={idleGltf.scene} />
+          <group position={[0, idleNormalization.controllerGroundOffset, 0]}>
+            <group scale={[idleNormalization.scale, idleNormalization.scale, idleNormalization.scale]}>
+              <group position={idleNormalization.modelAnchorOffset}>
+                <primitive object={idleGltf.scene} />
+              </group>
             </group>
           </group>
         </group>
@@ -193,9 +209,11 @@ export function PlayerGLBModel({ moveSpeedRef }: PlayerGLBModelProps) {
 
       <group ref={walkVisibleRef}>
         <group rotation={[0, walkNormalization.yawCorrection, 0]}>
-          <group scale={[walkNormalization.scale, walkNormalization.scale, walkNormalization.scale]}>
-            <group position={walkNormalization.anchorOffset}>
-              <primitive object={walkGltf.scene} />
+          <group position={[0, walkNormalization.controllerGroundOffset, 0]}>
+            <group scale={[walkNormalization.scale, walkNormalization.scale, walkNormalization.scale]}>
+              <group position={walkNormalization.modelAnchorOffset}>
+                <primitive object={walkGltf.scene} />
+              </group>
             </group>
           </group>
         </group>
@@ -208,6 +226,7 @@ function buildNormalization(
   inspection: ModelInspection,
   canonicalHeight: number,
   fallbackYawCorrection: number,
+  controllerHalfHeight: number,
 ): ModelNormalization {
   const scale = inspection.height > 0.01
     ? canonicalHeight / inspection.height
@@ -218,13 +237,14 @@ function buildNormalization(
     : fallbackYawCorrection;
 
   return {
-    anchorOffset: [
+    modelAnchorOffset: [
       -inspection.anchor.x,
       -inspection.footY,
       -inspection.anchor.z,
     ],
     scale,
     yawCorrection,
+    controllerGroundOffset: -controllerHalfHeight,
   };
 }
 
@@ -247,7 +267,7 @@ function inspectModel(label: 'idle' | 'walk', scene: THREE.Object3D): ModelInspe
   const hipsBone = skeleton?.bones.find((bone) => BONE_HIPS_RE.test(bone.name)) ?? skeleton?.bones[0] ?? null;
 
   const armature = scene.getObjectByName('Armature') ?? findArmatureNode(scene);
-  const facingYaw = inferFacingYawFromSkeleton(skeleton);
+  const facing = inferFacingYawFromSkeleton(skeleton);
 
   let anchorX = center.x;
   let anchorZ = center.z;
@@ -270,19 +290,20 @@ function inspectModel(label: 'idle' | 'walk', scene: THREE.Object3D): ModelInspe
     anchor: new THREE.Vector3(anchorX, 0, anchorZ),
     footY: bounds.min.y,
     height: size.y,
-    facingYaw,
+    facingYaw: facing.yaw,
+    facingYawCandidates: facing.candidates,
   };
 }
 
-function inferFacingYawFromSkeleton(skeleton: THREE.Skeleton | null): number | null {
-  if (!skeleton || skeleton.bones.length === 0) return null;
+function inferFacingYawFromSkeleton(skeleton: THREE.Skeleton | null): { yaw: number | null; candidates: number[] } {
+  if (!skeleton || skeleton.bones.length === 0) return { yaw: null, candidates: [] };
 
   const hips = skeleton.bones.find((bone) => BONE_HIPS_RE.test(bone.name)) ?? null;
   const head = skeleton.bones.find((bone) => BONE_HEAD_RE.test(bone.name)) ?? null;
   const left = skeleton.bones.find((bone) => BONE_LEFT_RE.test(bone.name)) ?? null;
   const right = skeleton.bones.find((bone) => BONE_RIGHT_RE.test(bone.name)) ?? null;
 
-  if (!hips || !head || !left || !right) return null;
+  if (!hips || !head || !left || !right) return { yaw: null, candidates: [] };
 
   hips.getWorldPosition(_tmpVecA);
   head.getWorldPosition(_tmpVecB);
@@ -291,13 +312,39 @@ function inferFacingYawFromSkeleton(skeleton: THREE.Skeleton | null): number | n
 
   _tmpUp.subVectors(_tmpVecB, _tmpVecA).normalize();
   _tmpRight.subVectors(_tmpVecD, _tmpVecC).normalize();
-  _tmpForward.crossVectors(_tmpRight, _tmpUp).normalize();
 
-  if (!Number.isFinite(_tmpForward.x) || !Number.isFinite(_tmpForward.z) || _tmpForward.lengthSq() < 1e-6) {
-    return null;
+  _tmpForward.crossVectors(_tmpRight, _tmpUp).normalize();
+  _tmpForwardAlt.crossVectors(_tmpUp, _tmpRight).normalize();
+
+  if (_tmpForward.lengthSq() < 1e-6 || _tmpForwardAlt.lengthSq() < 1e-6) {
+    return { yaw: null, candidates: [] };
   }
 
-  return Math.atan2(_tmpForward.x, _tmpForward.z);
+  const yawA = Math.atan2(_tmpForward.x, _tmpForward.z);
+  const yawB = Math.atan2(_tmpForwardAlt.x, _tmpForwardAlt.z);
+
+  const normalizedA = normalizeAngle(yawA);
+  const normalizedB = normalizeAngle(yawB);
+
+  // Choose the candidate requiring the least correction from canonical +Z forward.
+  const preferred = Math.abs(normalizedA) <= Math.abs(normalizedB)
+    ? normalizedA
+    : normalizedB;
+
+  return { yaw: preferred, candidates: [normalizedA, normalizedB] };
+}
+
+function computeFootGroundError(
+  normalization: ModelNormalization,
+  inspection: ModelInspection,
+  controllerHalfHeight: number,
+): number {
+  const footWorldFromRoot =
+    normalization.controllerGroundOffset +
+    normalization.scale * (inspection.footY + normalization.modelAnchorOffset[1]);
+
+  const expectedGroundFromRoot = -controllerHalfHeight;
+  return footWorldFromRoot - expectedGroundFromRoot;
 }
 
 function summarizeRootMotionDrift(clips: THREE.AnimationClip[]) {
@@ -378,6 +425,7 @@ function serializeInspection(inspection: ModelInspection) {
       inferredFacingYaw: inspection.facingYaw !== null
         ? Number(inspection.facingYaw.toFixed(4))
         : null,
+      facingYawCandidates: inspection.facingYawCandidates.map((v) => Number(v.toFixed(4))),
     },
   };
 }
@@ -388,6 +436,13 @@ function toFixedVec3(v: THREE.Vector3 | THREE.Euler) {
     y: Number(v.y.toFixed(4)),
     z: Number(v.z.toFixed(4)),
   };
+}
+
+function normalizeAngle(v: number): number {
+  let out = v;
+  while (out > Math.PI) out -= Math.PI * 2;
+  while (out < -Math.PI) out += Math.PI * 2;
+  return out;
 }
 
 function enableMeshShadows(scene: THREE.Object3D) {
