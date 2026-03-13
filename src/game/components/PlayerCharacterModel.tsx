@@ -382,6 +382,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
         if (elapsed >= 0.5) {
           stateRef.current = 'idle';
           setVisibleState('idle');
+          if (isFightingRef) isFightingRef.current = false;
         }
       }
       return;
