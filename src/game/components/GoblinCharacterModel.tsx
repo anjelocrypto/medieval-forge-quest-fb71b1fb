@@ -191,11 +191,13 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const sanitizedIdleClips = useMemo(() => sanitizeClips(idleGltf.animations), [idleGltf.animations]);
   const sanitizedWalkClips = useMemo(() => sanitizeClips(walkGltf.animations), [walkGltf.animations]);
   const sanitizedRunClips = useMemo(() => sanitizeClips(runGltf.animations), [runGltf.animations]);
+  const sanitizedJumpClips = useMemo(() => sanitizeClips(jumpGltf.animations), [jumpGltf.animations]);
 
   // Inspections
   const idleInspection = useMemo(() => inspectModel('goblin_idle', idleGltf.scene), [idleGltf.scene]);
   const walkInspection = useMemo(() => inspectModel('goblin_walk', walkGltf.scene), [walkGltf.scene]);
   const runInspection = useMemo(() => inspectModel('goblin_run', runGltf.scene), [runGltf.scene]);
+  const jumpInspection = useMemo(() => inspectModel('goblin_jump', jumpGltf.scene), [jumpGltf.scene]);
 
   // Use a shorter canonical height for the goblin (about 1.2m)
   const canonicalHeight = useMemo(() => {
