@@ -835,7 +835,7 @@ export function Player({
     );
   }
 
-  const playerY = isMounted ? -0.35 + riderBounce : bodyBob + idleBreath;
+  const playerY = isMounted ? -0.35 + riderBounce : 0;
 
   return (
     <group ref={groupRef}>
