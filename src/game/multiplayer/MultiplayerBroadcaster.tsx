@@ -4,10 +4,12 @@ import { NetworkPlayerState } from './types';
 import { SurvivalState } from '../types';
 import { HorseData } from '../systems/HorseData';
 import { MountedDebugData } from '../components/Player';
+import { CharacterType } from '../context/CharacterContext';
 
 interface Props {
   playerId: string;
   displayName: string;
+  characterType: CharacterType;
   playerPositionRef: React.RefObject<THREE.Vector3>;
   playerRotationRef: React.RefObject<number>;
   survival: SurvivalState;
@@ -23,13 +25,8 @@ interface Props {
   onUpdateLocalState: (state: NetworkPlayerState) => void;
 }
 
-/**
- * R3F component that samples local player state every frame
- * and pushes it to the multiplayer hook's local state ref.
- * The actual broadcast is throttled by the hook's interval.
- */
 export function MultiplayerBroadcaster({
-  playerId, displayName, playerPositionRef, playerRotationRef,
+  playerId, displayName, characterType, playerPositionRef, playerRotationRef,
   survival, isMounted, horse, moveSpeedRef, isRunningRef, attackAnimRef,
   mountedDebugRef, buildMode, emote, isSpeaking, onUpdateLocalState,
 }: Props) {
@@ -42,6 +39,7 @@ export function MultiplayerBroadcaster({
     const state: NetworkPlayerState = {
       playerId,
       displayName,
+      characterType,
       position: [pos.x, pos.y, pos.z],
       rotation: rot ?? 0,
       moveSpeed: moveSpeedRef.current ?? 0,

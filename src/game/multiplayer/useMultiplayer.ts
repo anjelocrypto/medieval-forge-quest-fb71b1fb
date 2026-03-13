@@ -118,11 +118,13 @@ export function useMultiplayer() {
             lastUpdateTime: now,
             interpolationT: 0,
             displayName: payload.displayName,
+            characterType: payload.characterType || 'soldier',
           });
         } else {
           next.set(payload.playerId, {
             playerId: payload.playerId,
             displayName: payload.displayName,
+            characterType: payload.characterType || 'soldier',
             prevPosition: payload.position,
             targetPosition: payload.position,
             prevRotation: payload.rotation,

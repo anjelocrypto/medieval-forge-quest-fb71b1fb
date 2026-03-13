@@ -4,6 +4,7 @@
 export interface NetworkPlayerState {
   playerId: string;
   displayName: string;
+  characterType: 'soldier' | 'goblin';
   position: [number, number, number];
   rotation: number;
   moveSpeed: number;
@@ -44,6 +45,7 @@ export interface WorldEvent {
 export interface InterpolatedPlayer {
   playerId: string;
   displayName: string;
+  characterType: 'soldier' | 'goblin';
   // Interpolation buffers
   prevPosition: [number, number, number];
   targetPosition: [number, number, number];

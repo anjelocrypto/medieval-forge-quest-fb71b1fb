@@ -37,6 +37,7 @@ import { ChatPanel } from './multiplayer/ChatPanel';
 import { useProximityVoice } from './multiplayer/useProximityVoice';
 import { EmoteWheel } from './ui/EmoteWheel';
 import { CharacterSelect } from './ui/CharacterSelect';
+import { useCharacter } from './context/CharacterContext';
 
 interface GameSceneProps {
   multiplayer: ReturnType<typeof import('./multiplayer/useMultiplayer').useMultiplayer>;
@@ -57,6 +58,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
     addRemoteStructure,
   } = useGameState();
 
+  const { character } = useCharacter();
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
   const [enemies, setEnemies] = useState<EnemyData[]>(() => generateEnemies());
   const [mapOpen, setMapOpen] = useState(false);
@@ -409,6 +411,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
           <MultiplayerBroadcaster
             playerId={multiplayer.playerId}
             displayName={multiplayer.displayName}
+            characterType={character}
             playerPositionRef={playerPositionRef}
             playerRotationRef={playerRotationRef}
             survival={survival}
