@@ -65,12 +65,16 @@ function isPointBlocked(x: number, z: number, radius: number): boolean {
   return false;
 }
 
-/** Check if terrain at (x,z) is valid walkable ground (not underwater, not extreme slope). */
+/** Check if terrain at (x,z) is valid walkable ground (not underwater, not in water body). */
 function isTerrainValid(x: number, z: number): boolean {
   const y = getTerrainHeight(x, z);
-  // Reject if below water level (y < -0.5) or extreme height
+  // Reject if below water level
   if (y < -0.5) return false;
-  // Check for bridge — if on a bridge, that's valid
+  // Reject if inside a lake
+  if (getLakeHeight(x, z) !== null) return false;
+  // Reject if inside a river
+  if (getRiverHeight(x, z) !== null) return false;
+  // Bridge is valid even over water
   const bridgeY = getBridgeHeight(x, z);
   if (bridgeY !== null) return true;
   return true;
