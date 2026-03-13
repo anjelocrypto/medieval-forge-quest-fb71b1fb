@@ -31,6 +31,7 @@ interface Props {
 type RemoteState = 'idle' | 'walk' | 'run' | 'jump' | 'fight' | 'hit' | 'dead' | 'emote_dance';
 
 export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAnim, health, emote }: Props) {
+  const standGltf = useGLTF(octopusStandingUrl);
   const walkGltf = useGLTF(octopusWalkingUrl);
   const runGltf = useGLTF(octopusRunningUrl);
   const jumpGltf = useGLTF(octopusJumpUrl);
@@ -39,7 +40,7 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
   const danceGltf = useGLTF(octopusDanceUrl);
   const fightGltf = useGLTF(octopusKickUrl);
 
-  const idleScene = useMemo(() => cloneScene(walkGltf.scene), [walkGltf.scene]);
+  const idleScene = useMemo(() => cloneScene(standGltf.scene), [standGltf.scene]);
   const walkScene = useMemo(() => cloneScene(walkGltf.scene), [walkGltf.scene]);
   const runScene = useMemo(() => cloneScene(runGltf.scene), [runGltf.scene]);
   const jumpScene = useMemo(() => cloneScene(jumpGltf.scene), [jumpGltf.scene]);
