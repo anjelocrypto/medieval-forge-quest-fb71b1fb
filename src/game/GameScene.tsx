@@ -61,7 +61,8 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
   const [mapOpen, setMapOpen] = useState(false);
   const [debugMounted, setDebugMounted] = useState(false);
   const [currentEmote, setCurrentEmote] = useState<string | null>(null);
-  const [activeEmote, setActiveEmote] = useState<string | null>(null);
+  const [activeEmote, setActiveEmote] = useState<{ key: string; id: number } | null>(null);
+  const emoteIdRef = useRef(0);
   const playerPositionRef = useRef(new THREE.Vector3(0, 0, 0));
 
   // Proximity voice chat
