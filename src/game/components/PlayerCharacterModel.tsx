@@ -178,8 +178,8 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
 
   // Enable shadows on all models
   useEffect(() => {
-    [idleGltf.scene, walkGltf.scene, jumpGltf.scene, runGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene].forEach(enableMeshShadows);
-  }, [idleGltf.scene, walkGltf.scene, jumpGltf.scene, runGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene]);
+    [idleGltf.scene, walkGltf.scene, jumpGltf.scene, runGltf.scene, hitGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene].forEach(enableMeshShadows);
+  }, [idleGltf.scene, walkGltf.scene, jumpGltf.scene, runGltf.scene, hitGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene]);
 
   // Initialize walk (paused looping)
   useEffect(() => {
