@@ -345,8 +345,16 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
         if (a) { a.reset(); a.play(); a.paused = false; }
       }
     }
+    if (activeEmote === 'agree' && prevEmoteRef.current !== 'agree') {
+      stateRef.current = 'emote_agree';
+      setVisibleState('emote_agree');
+      if (agreeClipName) {
+        const a = agreeActions[agreeClipName];
+        if (a) { a.reset(); a.play(); a.paused = false; }
+      }
+    }
     prevEmoteRef.current = activeEmote;
-  }, [activeEmote, pushupEnterActions, pushupEnterClipName, setVisibleState]);
+  }, [activeEmote, pushupEnterActions, pushupEnterClipName, agreeActions, agreeClipName, setVisibleState]);
 
   useFrame(() => {
     const state = stateRef.current;
