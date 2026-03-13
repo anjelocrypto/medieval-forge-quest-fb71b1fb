@@ -8,7 +8,7 @@ interface CharacterContextValue {
 }
 
 const CharacterContext = createContext<CharacterContextValue>({
-  character: 'soldier',
+  character: 'goblin',
   setCharacter: () => {},
 });
 
