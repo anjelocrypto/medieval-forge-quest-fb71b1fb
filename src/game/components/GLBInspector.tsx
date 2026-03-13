@@ -1,15 +1,10 @@
 import { useEffect } from 'react';
 import { useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
-import soldierWalkUrl from '@/assets/soldierwalking.glb?url';
+import soldierIdleUrl from '@/assets/soldier.glb?url';
 
-/**
- * Temporary debug component — loads the soldierwalking.glb and logs
- * rig, skeleton, animation clips, bounding box, and orientation info.
- * Renders the model at origin for visual inspection.
- */
 export function GLBInspector() {
-  const gltf = useGLTF(soldierWalkUrl);
+  const gltf = useGLTF(soldierIdleUrl);
   const { actions, clips } = useAnimations(gltf.animations, gltf.scene);
 
   useEffect(() => {
