@@ -1,3 +1,5 @@
+import { forwardRef } from 'react';
+import * as THREE from 'three';
 import { InterpolatedPlayer } from './types';
 import { RemotePlayer } from './RemotePlayer';
 
@@ -16,18 +18,20 @@ function mpAuditRender(label: string, data?: Record<string, unknown>) {
   console.log(`[MP-Audit] ${label}${suffix}`);
 }
 
-export function RemotePlayers({ remotePlayers }: Props) {
+export const RemotePlayers = forwardRef<THREE.Group, Props>(function RemotePlayers({ remotePlayers }, ref) {
   const players = Array.from(remotePlayers.values());
 
   mpAuditRender('RemotePlayers render count', { count: players.length });
 
-  if (players.length === 0) return null;
+  if (players.length === 0) {
+    return <group ref={ref} visible={false} />;
+  }
 
   return (
-    <group>
+    <group ref={ref}>
       {players.map(p => (
         <RemotePlayer key={p.playerId} player={p} />
       ))}
     </group>
   );
-}
+});
