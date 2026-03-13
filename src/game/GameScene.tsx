@@ -236,9 +236,6 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
     pendingPlayerDamageRef.current = 0;
   }, [updateSurvival]);
 
-  const handleEnemiesUpdate = useCallback((updated: EnemyData[]) => {
-    setEnemies(updated);
-  }, []);
 
   // Wrap placeStructure to broadcast building placement
   const handlePlaceStructure = useCallback((structure: any) => {
