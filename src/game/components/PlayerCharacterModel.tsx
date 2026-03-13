@@ -474,6 +474,18 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       }
     }
 
+    // Idle/standing animation
+    if (idleClipName) {
+      const ia = idleActions[idleClipName];
+      if (ia) {
+        if (newState === 'idle') {
+          ia.paused = false;
+        } else {
+          ia.paused = true;
+        }
+      }
+    }
+
     // Walk animation speed
     if (walkClipName) {
       const wa = walkActions[walkClipName];
