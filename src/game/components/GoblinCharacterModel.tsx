@@ -333,6 +333,38 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     const speed = moveSpeedRef.current;
     const grounded = isGroundedRef.current;
 
+    // ===== DAMAGE HIT TRIGGER =====
+    const currentFlash = damageFlash ?? 0;
+    if (currentFlash > 0 && prevDamageFlashRef.current === 0 && state !== 'hit') {
+      stateRef.current = 'hit';
+      hitStartTimeRef.current = performance.now();
+      setVisibleState('hit');
+      if (hitClipName) {
+        const a = hitActions[hitClipName];
+        if (a) { a.reset(); a.play(); a.paused = false; }
+      }
+    }
+    prevDamageFlashRef.current = currentFlash;
+
+    // ===== HIT STATE =====
+    if (stateRef.current === 'hit') {
+      const elapsed = (performance.now() - hitStartTimeRef.current) / 1000;
+      if (hitClipName) {
+        const a = hitActions[hitClipName];
+        if (a && (elapsed >= HIT_ANIM_DURATION || a.time >= a.getClip().duration - 0.05)) {
+          a.paused = true;
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+        }
+      } else {
+        if (elapsed >= HIT_ANIM_DURATION) {
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+        }
+      }
+      return;
+    }
+
     // Handle emote trigger
     const emoteId = activeEmoteId ?? 0;
     if (activeEmote === 'hiphop' && emoteId !== lastEmoteIdRef.current) {
