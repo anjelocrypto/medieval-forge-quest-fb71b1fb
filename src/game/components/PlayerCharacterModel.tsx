@@ -354,7 +354,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
 
     // ===== FIGHT ATTACK TRIGGER =====
     const currentlyAttacking = (attackAnimRef?.current ?? 0) > 0;
-    if (currentlyAttacking && !prevAttackingRef.current && stateRef.current !== 'fight' && stateRef.current !== 'hit') {
+    if (currentlyAttacking && !prevAttackingRef.current && (stateRef.current as CharState) !== 'fight' && (stateRef.current as CharState) !== 'hit') {
       stateRef.current = 'fight';
       fightStartTimeRef.current = performance.now();
       setVisibleState('fight');
