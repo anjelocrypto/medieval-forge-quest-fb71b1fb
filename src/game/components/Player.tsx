@@ -104,6 +104,7 @@ export function Player({
   externalMoveSpeedRef, externalIsRunningRef, externalAttackAnimRef,
   activeEmote, activeEmoteId, onEmoteComplete, damageFlash,
 }: PlayerProps) {
+  const { character } = useCharacter();
   const groupRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Group>(null);
   const velocityRef = useRef(new THREE.Vector3(0, 0, 0));
