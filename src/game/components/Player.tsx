@@ -154,20 +154,22 @@ export function Player({
       // Check if playerPositionRef already has a valid position (reconnect case)
       const existingPos = playerPositionRef.current;
       if (existingPos && (existingPos.x !== 0 || existingPos.z !== 0)) {
-        // Restore existing position instead of respawning
-        console.log('[Player] SPAWN RESTORED — using existing position:', existingPos.x.toFixed(1), existingPos.z.toFixed(1));
-        groupRef.current.position.copy(existingPos);
+        // Validate existing position — if inside a building, relocate safely
+        const validated = findSafeSpawn(existingPos.x, existingPos.z, PLAYER_HEIGHT);
+        console.log('[Player] SPAWN RESTORED — validated:', validated.x.toFixed(1), validated.z.toFixed(1),
+          validated.fallbackUsed ? `(relocated from ${existingPos.x.toFixed(1)},${existingPos.z.toFixed(1)})` : '(position OK)');
+        groupRef.current.position.set(validated.x, validated.y, validated.z);
+        playerPositionRef.current.set(validated.x, validated.y, validated.z);
         hasSpawnedRef.current = true;
         return;
       }
       
-      // Fresh spawn near the south gate of Ironhold
-      const spawnX = 0;
-      const spawnZ = 45;
-      const startY = getTerrainHeight(spawnX, spawnZ) + PLAYER_HEIGHT / 2;
-      console.log('[Player] SPAWN FRESH — new game start at', spawnX, spawnZ);
-      groupRef.current.position.set(spawnX, startY, spawnZ);
-      playerPositionRef.current.set(spawnX, startY, spawnZ);
+      // Fresh spawn — use safe spawn system
+      const spawn = findSafeSpawn(undefined, undefined, PLAYER_HEIGHT);
+      console.log('[Player] SPAWN FRESH —', spawn.x.toFixed(1), spawn.z.toFixed(1), 'y=', spawn.y.toFixed(2),
+        spawn.fallbackUsed ? `(fallback: ${spawn.rejectedReason})` : '(canonical)');
+      groupRef.current.position.set(spawn.x, spawn.y, spawn.z);
+      playerPositionRef.current.set(spawn.x, spawn.y, spawn.z);
       hasSpawnedRef.current = true;
     }
   }, [playerPositionRef]);
