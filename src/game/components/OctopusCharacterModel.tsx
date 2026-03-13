@@ -348,6 +348,41 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
       return;
     }
 
+    // ===== FIGHT ATTACK TRIGGER =====
+    const currentlyAttacking = (attackAnimRef?.current ?? 0) > 0;
+    if (currentlyAttacking && !prevAttackingRef.current && stateRef.current !== 'fight' && stateRef.current !== 'hit') {
+      stateRef.current = 'fight';
+      fightStartTimeRef.current = performance.now();
+      setVisibleState('fight');
+      if (isFightingRef) isFightingRef.current = true;
+      if (fightClipName) {
+        const a = fightActions[fightClipName];
+        if (a) { a.reset(); a.play(); a.paused = false; }
+      }
+    }
+    prevAttackingRef.current = currentlyAttacking;
+
+    // ===== FIGHT STATE =====
+    if (stateRef.current === 'fight') {
+      if (fightClipName) {
+        const a = fightActions[fightClipName];
+        if (a && a.time >= a.getClip().duration - 0.05) {
+          a.paused = true;
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+          if (isFightingRef) isFightingRef.current = false;
+        }
+      } else {
+        const elapsed = (performance.now() - fightStartTimeRef.current) / 1000;
+        if (elapsed >= 0.5) {
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+          if (isFightingRef) isFightingRef.current = false;
+        }
+      }
+      return;
+    }
+
     // Handle emote trigger
     const emoteId = activeEmoteId ?? 0;
     if (activeEmote === 'octopusdance' && emoteId !== lastEmoteIdRef.current) {
