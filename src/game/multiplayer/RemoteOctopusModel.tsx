@@ -8,6 +8,7 @@ import octopusJumpUrl from '@/assets/octopusjump.glb?url';
 import octopusGetHitUrl from '@/assets/octopusgethit.glb?url';
 import octopusDieUrl from '@/assets/octopusdie.glb?url';
 import octopusDanceUrl from '@/assets/octopusdance.glb?url';
+import octopusKickUrl from '@/assets/octopuskick.glb?url';
 import {
   buildModelNormalization,
   cloneScene,
@@ -26,7 +27,7 @@ interface Props {
   emote: string | null;
 }
 
-type RemoteState = 'idle' | 'walk' | 'run' | 'jump' | 'hit' | 'dead' | 'emote_dance';
+type RemoteState = 'idle' | 'walk' | 'run' | 'jump' | 'fight' | 'hit' | 'dead' | 'emote_dance';
 
 export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAnim, health, emote }: Props) {
   const walkGltf = useGLTF(octopusWalkingUrl);
@@ -35,6 +36,7 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
   const hitGltf = useGLTF(octopusGetHitUrl);
   const deadGltf = useGLTF(octopusDieUrl);
   const danceGltf = useGLTF(octopusDanceUrl);
+  const fightGltf = useGLTF(octopusKickUrl);
 
   const idleScene = useMemo(() => cloneScene(walkGltf.scene), [walkGltf.scene]);
   const walkScene = useMemo(() => cloneScene(walkGltf.scene), [walkGltf.scene]);
@@ -43,11 +45,14 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
   const hitScene = useMemo(() => cloneScene(hitGltf.scene), [hitGltf.scene]);
   const deadScene = useMemo(() => cloneScene(deadGltf.scene), [deadGltf.scene]);
   const danceScene = useMemo(() => cloneScene(danceGltf.scene), [danceGltf.scene]);
+  const fightScene = useMemo(() => cloneScene(fightGltf.scene), [fightGltf.scene]);
 
   const stateRef = useRef<RemoteState>('idle');
   const [renderState, setRenderState] = useState<RemoteState>('idle');
   const prevHealthRef = useRef(health);
   const hitTimerRef = useRef(0);
+  const fightTimerRef = useRef(0);
+  const prevAttackRef = useRef(0);
   const emoteTimerRef = useRef(0);
   const prevEmoteRef = useRef<string | null>(null);
 
@@ -58,6 +63,7 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
   const hitClips = useMemo(() => sanitizeClips(hitGltf.animations), [hitGltf.animations]);
   const deadClips = useMemo(() => sanitizeClips(deadGltf.animations), [deadGltf.animations]);
   const danceClips = useMemo(() => sanitizeClips(danceGltf.animations), [danceGltf.animations]);
+  const fightClips = useMemo(() => sanitizeClips(fightGltf.animations), [fightGltf.animations]);
 
   const { actions: idleActions } = useAnimations(idleClips, idleScene);
   const { actions: walkActions } = useAnimations(walkClips, walkScene);
@@ -66,10 +72,11 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
   const { actions: hitActions } = useAnimations(hitClips, hitScene);
   const { actions: deadActions } = useAnimations(deadClips, deadScene);
   const { actions: danceActions } = useAnimations(danceClips, danceScene);
+  const { actions: fightActions } = useAnimations(fightClips, fightScene);
 
   useEffect(() => {
-    [idleScene, walkScene, runScene, jumpScene, hitScene, deadScene, danceScene].forEach(enableMeshShadows);
-  }, [idleScene, walkScene, runScene, jumpScene, hitScene, deadScene, danceScene]);
+    [idleScene, walkScene, runScene, jumpScene, hitScene, fightScene, deadScene, danceScene].forEach(enableMeshShadows);
+  }, [idleScene, walkScene, runScene, jumpScene, hitScene, fightScene, deadScene, danceScene]);
 
   useEffect(() => {
     const playLoop = (actions: Record<string, THREE.AnimationAction | null>) => {
@@ -126,7 +133,7 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
     }
     if (isDead) return;
 
-    if (health < prevHealthRef.current && stateRef.current !== 'hit' && stateRef.current !== 'dead') {
+    if (health < prevHealthRef.current && stateRef.current !== 'hit' && stateRef.current !== 'fight' && stateRef.current !== 'dead') {
       stateRef.current = 'hit';
       hitTimerRef.current = 0;
       setRenderFromState('hit');
@@ -141,6 +148,28 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
     if (stateRef.current === 'hit') {
       hitTimerRef.current += dt;
       if (hitTimerRef.current > 0.8) {
+        stateRef.current = 'idle';
+        setRenderFromState('idle');
+      }
+      return;
+    }
+
+    // ===== FIGHT =====
+    if (attackAnim > 0 && prevAttackRef.current === 0 && stateRef.current !== 'fight') {
+      stateRef.current = 'fight';
+      fightTimerRef.current = 0;
+      setRenderFromState('fight');
+      const name = Object.keys(fightActions)[0];
+      if (name && fightActions[name]) {
+        fightActions[name]!.reset();
+        fightActions[name]!.play();
+      }
+    }
+    prevAttackRef.current = attackAnim;
+
+    if (stateRef.current === 'fight') {
+      fightTimerRef.current += dt;
+      if (fightTimerRef.current > 0.6) {
         stateRef.current = 'idle';
         setRenderFromState('idle');
       }
@@ -221,12 +250,17 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
     () => buildModelNormalization(danceScene, targetHeight, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset),
     [danceScene, targetHeight, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset],
   );
+  const fightNorm = useMemo(
+    () => buildModelNormalization(fightScene, targetHeight, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset),
+    [fightScene, targetHeight, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset],
+  );
 
   const activeScene = useMemo(() => {
     switch (renderState) {
       case 'walk': return walkScene;
       case 'run': return runScene;
       case 'jump': return jumpScene;
+      case 'fight': return fightScene;
       case 'hit': return hitScene;
       case 'dead': return deadScene;
       case 'emote_dance': return danceScene;
@@ -234,13 +268,14 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
       default:
         return idleScene;
     }
-  }, [renderState, idleScene, walkScene, runScene, jumpScene, hitScene, deadScene, danceScene]);
+  }, [renderState, idleScene, walkScene, runScene, jumpScene, fightScene, hitScene, deadScene, danceScene]);
 
   const activeNorm: ModelNormalization = useMemo(() => {
     switch (renderState) {
       case 'walk': return walkNorm;
       case 'run': return runNorm;
       case 'jump': return jumpNorm;
+      case 'fight': return fightNorm;
       case 'hit': return hitNorm;
       case 'dead': return deadNorm;
       case 'emote_dance': return danceNorm;
@@ -248,7 +283,7 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
       default:
         return idleNorm;
     }
-  }, [renderState, idleNorm, walkNorm, runNorm, jumpNorm, hitNorm, deadNorm, danceNorm]);
+  }, [renderState, idleNorm, walkNorm, runNorm, jumpNorm, fightNorm, hitNorm, deadNorm, danceNorm]);
 
   return (
     <group>
@@ -269,3 +304,4 @@ useGLTF.preload(octopusJumpUrl);
 useGLTF.preload(octopusGetHitUrl);
 useGLTF.preload(octopusDieUrl);
 useGLTF.preload(octopusDanceUrl);
+useGLTF.preload(octopusKickUrl);
