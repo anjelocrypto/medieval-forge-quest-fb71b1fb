@@ -284,6 +284,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     if (walkVisibleRef.current) walkVisibleRef.current.visible = false;
     if (runVisibleRef.current) runVisibleRef.current.visible = false;
     if (jumpVisibleRef.current) jumpVisibleRef.current.visible = false;
+    if (hiphopVisibleRef.current) hiphopVisibleRef.current.visible = false;
   }, []);
 
   const setVisibleState = useCallback((state: GoblinState) => {
