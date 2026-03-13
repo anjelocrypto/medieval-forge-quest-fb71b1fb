@@ -11,6 +11,7 @@
 
 import { getTerrainHeight } from '../components/Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
+import { getLakeHeight, getRiverHeight } from '../world/WaterData';
 import {
   getCircleObstacles,
   getBoxObstacles,
@@ -28,6 +29,12 @@ const SPAWN_CHECK_RADIUS = 1.2; // slightly larger than player radius for safety
 // Spiral search parameters
 const SPIRAL_STEP = 2.5;    // meters between test points
 const SPIRAL_MAX_RINGS = 12; // max search distance = 12 * 2.5 = 30m
+
+// ===== Multiplayer spawn separation =====
+// Ring-based offsets so multiple players don't overlap
+const SPAWN_SEPARATION_RADIUS = 3.0; // meters between ring positions
+const SPAWN_RING_SLOTS = 8;          // 8 slots per ring (45° apart)
+let spawnIndexCounter = 0; // increments per spawn call in this session
 
 // ===== Core validation =====
 
