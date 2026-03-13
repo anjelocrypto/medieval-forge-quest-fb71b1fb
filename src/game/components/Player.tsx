@@ -63,6 +63,9 @@ interface PlayerProps {
   externalMoveSpeedRef?: React.MutableRefObject<number>;
   externalIsRunningRef?: React.MutableRefObject<boolean>;
   externalAttackAnimRef?: React.MutableRefObject<number>;
+  // Emote
+  activeEmote: string | null;
+  onEmoteComplete: () => void;
 }
 
 const _camForward = new THREE.Vector3();
