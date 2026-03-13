@@ -14,6 +14,7 @@ import {
   buildModelNormalization,
   cloneScene,
   enableMeshShadows,
+  getSceneHeight,
   ModelNormalization,
   sanitizeClips,
 } from './remoteModelUtils';
