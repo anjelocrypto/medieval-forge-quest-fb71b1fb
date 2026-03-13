@@ -30,7 +30,7 @@ interface Props {
 
 type RemoteState = 'idle' | 'walk' | 'run' | 'jump' | 'fight' | 'hit' | 'dead' | 'emote_wave' | 'emote_agree';
 
-const TARGET_HEIGHT = 1.8;
+// Target height derived from idle scene's native height — matches local soldier canonicalHeight
 
 export function RemoteSoldierModel({ moveSpeed, isRunning, isGrounded, attackAnim, health, emote }: Props) {
   const idleGltf = useGLTF(standingUrl);
