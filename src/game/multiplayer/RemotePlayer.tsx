@@ -28,10 +28,27 @@ const NAMETAG_HEIGHT_GOBLIN = 2.0;
 const NAMETAG_HEIGHT_SOLDIER = 2.8;
 const NAMETAG_HEIGHT_MOUNTED = 4.5;
 
+const remoteAuditCounts: Record<string, number> = {};
+const REMOTE_AUDIT_LIMIT = 3;
+
+function mpAuditRemote(label: string, data?: Record<string, unknown>) {
+  const count = remoteAuditCounts[label] ?? 0;
+  if (count >= REMOTE_AUDIT_LIMIT) return;
+  remoteAuditCounts[label] = count + 1;
+  const suffix = data ? ' — ' + JSON.stringify(data) : '';
+  console.log(`[MP-Audit] ${label}${suffix}`);
+}
+
 export function RemotePlayer({ player }: Props) {
   const groupRef = useRef<THREE.Group>(null);
   const currentPos = useRef(new THREE.Vector3(...player.renderPosition));
   const currentRot = useRef(player.renderRotation);
+
+  mpAuditRemote('RemotePlayer mounted', {
+    id: player.playerId,
+    charType: player.characterType,
+    pos: player.targetPosition,
+  });
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
