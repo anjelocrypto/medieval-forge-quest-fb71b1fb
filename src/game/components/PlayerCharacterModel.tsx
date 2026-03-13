@@ -524,6 +524,24 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       return;
     }
 
+    // ===== WAVE EMOTE STATE =====
+    if (state === 'emote_wave') {
+      if (waveClipName) {
+        const a = waveActions[waveClipName];
+        if (a && a.time >= a.getClip().duration - 0.05) {
+          a.paused = true;
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+          onEmoteComplete();
+        }
+      } else {
+        stateRef.current = 'idle';
+        setVisibleState('idle');
+        onEmoteComplete();
+      }
+      return;
+    }
+
     // ===== NORMAL LOCOMOTION STATES =====
     const speed = moveSpeedRef.current;
     const grounded = isGroundedRef.current;
