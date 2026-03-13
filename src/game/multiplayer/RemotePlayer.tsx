@@ -33,7 +33,7 @@ export function RemotePlayer({ player }: Props) {
     const tx = player.targetPosition[0];
     const tz = player.targetPosition[2];
     const terrainY = getTerrainHeight(tx, tz);
-    const ty = player.isMounted ? terrainY : terrainY + PLAYER_HEIGHT / 2;
+    const ty = terrainY; // GLB models have feet at Y=0, no offset needed
 
     currentPos.current.x += (tx - currentPos.current.x) * t;
     currentPos.current.y += (ty - currentPos.current.y) * t;
