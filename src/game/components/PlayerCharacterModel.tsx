@@ -132,9 +132,9 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const idleNorm = useMemo(() => buildNormalization(idleInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [idleInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const walkNorm = useMemo(() => buildNormalization(walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const jumpNorm = useMemo(() => buildNormalization(jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
-  const pushupEnterNorm = useMemo(() => buildNormalization(pushupEnterInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [pushupEnterInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
-  const pushupLoopNorm = useMemo(() => buildNormalization(pushupLoopInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [pushupLoopInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
-  const pushupExitNorm = useMemo(() => buildNormalization(pushupExitInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [pushupExitInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
+  const pushupEnterNorm = useMemo(() => buildEmoteNormalization(pushupEnterInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight), [pushupEnterInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight]);
+  const pushupLoopNorm = useMemo(() => buildEmoteNormalization(pushupLoopInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight), [pushupLoopInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight]);
+  const pushupExitNorm = useMemo(() => buildEmoteNormalization(pushupExitInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight), [pushupExitInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight]);
 
   // Animation setups
   const { actions: walkActions, clips: walkClips } = useAnimations(sanitizedWalkClips, walkGltf.scene);
