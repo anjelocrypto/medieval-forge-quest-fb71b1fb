@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -11,6 +11,13 @@ import goblinDeadUrl from '@/assets/goblindead.glb?url';
 import goblinJumpUrl from '@/assets/goblinjump.glb?url';
 import hiphopUrl from '@/assets/hiphop.glb?url';
 import gangnamUrl from '@/assets/gangnam.glb?url';
+import {
+  buildModelNormalization,
+  cloneScene,
+  enableMeshShadows,
+  ModelNormalization,
+  sanitizeClips,
+} from './remoteModelUtils';
 
 interface Props {
   moveSpeed: number;
@@ -21,70 +28,9 @@ interface Props {
   emote: string | null;
 }
 
-const ROOT_RE = /(hips|pelvis|root|armature)/i;
-const TARGET_HEIGHT = 1.2;
-
-function sanitizeClips(animations: THREE.AnimationClip[]): THREE.AnimationClip[] {
-  return animations.map((clip) => {
-    const c = clip.clone();
-    c.tracks = c.tracks.filter((t) => {
-      if (!t.name.endsWith('.position')) return true;
-      return !ROOT_RE.test(t.name.slice(0, t.name.lastIndexOf('.')));
-    });
-    return c;
-  });
-}
-
-function normalizeMaterial(mat: THREE.Material): THREE.Material {
-  const cloned = mat.clone();
-  if (cloned instanceof THREE.MeshStandardMaterial || cloned instanceof THREE.MeshPhysicalMaterial) {
-    // Kill any excessive emissive glow
-    cloned.emissive.set(0x000000);
-    cloned.emissiveIntensity = 0;
-    // Clamp metalness to prevent blown-out reflections without envmap
-    if (cloned.metalness > 0.3) cloned.metalness = 0.1;
-    if (cloned.roughness < 0.3) cloned.roughness = 0.5;
-    // Ensure no transparency artifacts
-    cloned.transparent = false;
-    cloned.opacity = 1;
-    cloned.depthWrite = true;
-    cloned.side = THREE.FrontSide;
-  }
-  return cloned;
-}
-
-function cloneScene(scene: THREE.Group): THREE.Group {
-  const cloned = scene.clone(true);
-  // Clone + normalize materials so remote players don't share material state with local/other remotes
-  cloned.traverse((n) => {
-    const mesh = n as THREE.Mesh;
-    if (mesh.isMesh && mesh.material) {
-      if (Array.isArray(mesh.material)) {
-        mesh.material = mesh.material.map(normalizeMaterial);
-      } else {
-        mesh.material = normalizeMaterial(mesh.material);
-      }
-    }
-  });
-  // Rebind skeletons
-  const skinnedMeshes: THREE.SkinnedMesh[] = [];
-  const origSkinnedMeshes: THREE.SkinnedMesh[] = [];
-  scene.traverse((n) => { if ((n as THREE.SkinnedMesh).isSkinnedMesh) origSkinnedMeshes.push(n as THREE.SkinnedMesh); });
-  cloned.traverse((n) => { if ((n as THREE.SkinnedMesh).isSkinnedMesh) skinnedMeshes.push(n as THREE.SkinnedMesh); });
-  for (let i = 0; i < skinnedMeshes.length && i < origSkinnedMeshes.length; i++) {
-    const cm = skinnedMeshes[i];
-    const os = origSkinnedMeshes[i].skeleton;
-    const bones: THREE.Bone[] = [];
-    for (const ob of os.bones) { const f = cloned.getObjectByName(ob.name) as THREE.Bone; if (f) bones.push(f); }
-    if (bones.length === os.bones.length) {
-      cm.skeleton = new THREE.Skeleton(bones, os.boneInverses.map(m => m.clone()));
-      cm.bind(cm.skeleton, cm.matrixWorld);
-    }
-  }
-  return cloned;
-}
-
 type RemoteState = 'idle' | 'walk' | 'run' | 'jump' | 'fight' | 'hit' | 'dead' | 'emote_hiphop' | 'emote_gangnam';
+
+const TARGET_HEIGHT = 1.2;
 
 export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim, health, emote }: Props) {
   const idleGltf = useGLTF(goblinStandingUrl);
@@ -97,7 +43,6 @@ export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim
   const hiphopGltf = useGLTF(hiphopUrl);
   const gangnamGltf = useGLTF(gangnamUrl);
 
-  // Clone scenes per instance
   const idleScene = useMemo(() => cloneScene(idleGltf.scene), [idleGltf.scene]);
   const walkScene = useMemo(() => cloneScene(walkGltf.scene), [walkGltf.scene]);
   const runScene = useMemo(() => cloneScene(runGltf.scene), [runGltf.scene]);
@@ -108,17 +53,8 @@ export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim
   const hiphopScene = useMemo(() => cloneScene(hiphopGltf.scene), [hiphopGltf.scene]);
   const gangnamScene = useMemo(() => cloneScene(gangnamGltf.scene), [gangnamGltf.scene]);
 
-  const idleRef = useRef<THREE.Group>(null);
-  const walkRef = useRef<THREE.Group>(null);
-  const runRef = useRef<THREE.Group>(null);
-  const hitRef = useRef<THREE.Group>(null);
-  const fightRef = useRef<THREE.Group>(null);
-  const deadRef = useRef<THREE.Group>(null);
-  const jumpRef = useRef<THREE.Group>(null);
-  const hiphopRef = useRef<THREE.Group>(null);
-  const gangnamRef = useRef<THREE.Group>(null);
-
   const stateRef = useRef<RemoteState>('idle');
+  const [renderState, setRenderState] = useState<RemoteState>('idle');
   const prevAttackRef = useRef(0);
   const prevHealthRef = useRef(health);
   const hitTimerRef = useRef(0);
@@ -146,91 +82,95 @@ export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim
   const { actions: hiphopActions } = useAnimations(hiphopClips, hiphopScene);
   const { actions: gangnamActions } = useAnimations(gangnamClips, gangnamScene);
 
-  // Enable shadows
   useEffect(() => {
-    [idleScene, walkScene, runScene, hitScene, fightScene, deadScene, jumpScene, hiphopScene, gangnamScene].forEach(s => {
-      s.traverse(c => { if ((c as THREE.Mesh).isMesh) { c.castShadow = true; c.receiveShadow = true; } });
-    });
+    [idleScene, walkScene, runScene, hitScene, fightScene, deadScene, jumpScene, hiphopScene, gangnamScene].forEach(enableMeshShadows);
   }, [idleScene, walkScene, runScene, hitScene, fightScene, deadScene, jumpScene, hiphopScene, gangnamScene]);
 
-  // Start looping animations
   useEffect(() => {
     const playLoop = (actions: Record<string, THREE.AnimationAction | null>) => {
       const name = Object.keys(actions)[0];
       if (!name || !actions[name]) return;
-      const a = actions[name]!;
-      a.reset(); a.setLoop(THREE.LoopRepeat, Infinity); a.enabled = true; a.play();
-      return () => { a.stop(); };
+      const action = actions[name]!;
+      action.reset();
+      action.setLoop(THREE.LoopRepeat, Infinity);
+      action.enabled = true;
+      action.play();
+      return () => action.stop();
     };
+
     const cleanups = [playLoop(idleActions), playLoop(walkActions), playLoop(runActions), playLoop(jumpActions)];
-    return () => cleanups.forEach(c => c?.());
+    return () => cleanups.forEach((cleanup) => cleanup?.());
   }, [idleActions, walkActions, runActions, jumpActions]);
 
-  // Dead animation setup (play once, paused)
   useEffect(() => {
     const name = Object.keys(deadActions)[0];
     if (!name || !deadActions[name]) return;
-    const a = deadActions[name]!;
-    a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.enabled = true; a.play(); a.paused = true;
-    return () => { a.stop(); };
+    const action = deadActions[name]!;
+    action.reset();
+    action.setLoop(THREE.LoopOnce, 1);
+    action.clampWhenFinished = true;
+    action.enabled = true;
+    action.play();
+    action.paused = true;
+    return () => action.stop();
   }, [deadActions]);
 
-  const setVisible = (state: RemoteState) => {
-    if (idleRef.current) idleRef.current.visible = state === 'idle';
-    if (walkRef.current) walkRef.current.visible = state === 'walk';
-    if (runRef.current) runRef.current.visible = state === 'run';
-    if (hitRef.current) hitRef.current.visible = state === 'hit';
-    if (fightRef.current) fightRef.current.visible = state === 'fight';
-    if (deadRef.current) deadRef.current.visible = state === 'dead';
-    if (jumpRef.current) jumpRef.current.visible = state === 'jump';
-    if (hiphopRef.current) hiphopRef.current.visible = state === 'emote_hiphop';
-    if (gangnamRef.current) gangnamRef.current.visible = state === 'emote_gangnam';
-  };
+  const setRenderFromState = useCallback((state: RemoteState) => {
+    setRenderState((prev) => (prev === state ? prev : state));
+  }, []);
 
-  useEffect(() => { setVisible('idle'); }, []);
+  useEffect(() => {
+    setRenderFromState('idle');
+  }, [setRenderFromState]);
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
     const isDead = health <= 0;
 
-    // === DEATH ===
     if (isDead && stateRef.current !== 'dead') {
       stateRef.current = 'dead';
-      setVisible('dead');
+      setRenderFromState('dead');
       const name = Object.keys(deadActions)[0];
-      if (name && deadActions[name]) { deadActions[name]!.reset(); deadActions[name]!.paused = false; deadActions[name]!.play(); }
+      if (name && deadActions[name]) {
+        deadActions[name]!.reset();
+        deadActions[name]!.paused = false;
+        deadActions[name]!.play();
+      }
       prevHealthRef.current = health;
       return;
     }
     if (isDead) return;
 
-    // === HIT DETECTION (health decreased) ===
     if (health < prevHealthRef.current && stateRef.current !== 'hit' && stateRef.current !== 'fight' && stateRef.current !== 'dead') {
       stateRef.current = 'hit';
       hitTimerRef.current = 0;
-      setVisible('hit');
+      setRenderFromState('hit');
       const name = Object.keys(hitActions)[0];
-      if (name && hitActions[name]) { hitActions[name]!.reset(); hitActions[name]!.play(); }
+      if (name && hitActions[name]) {
+        hitActions[name]!.reset();
+        hitActions[name]!.play();
+      }
     }
     prevHealthRef.current = health;
 
-    // === HIT TIMER ===
     if (stateRef.current === 'hit') {
       hitTimerRef.current += dt;
       if (hitTimerRef.current > 0.8) {
         stateRef.current = 'idle';
-        setVisible('idle');
+        setRenderFromState('idle');
       }
       return;
     }
 
-    // === FIGHT ===
     if (attackAnim > 0 && prevAttackRef.current === 0 && stateRef.current !== 'fight') {
       stateRef.current = 'fight';
       fightTimerRef.current = 0;
-      setVisible('fight');
+      setRenderFromState('fight');
       const name = Object.keys(fightActions)[0];
-      if (name && fightActions[name]) { fightActions[name]!.reset(); fightActions[name]!.play(); }
+      if (name && fightActions[name]) {
+        fightActions[name]!.reset();
+        fightActions[name]!.play();
+      }
     }
     prevAttackRef.current = attackAnim;
 
@@ -238,48 +178,53 @@ export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim
       fightTimerRef.current += dt;
       if (fightTimerRef.current > 0.6) {
         stateRef.current = 'idle';
-        setVisible('idle');
+        setRenderFromState('idle');
       }
       return;
     }
 
-    // === EMOTE ANIMATIONS ===
     if (emote && emote !== prevEmoteRef.current) {
       if (emote === 'hiphop') {
         stateRef.current = 'emote_hiphop';
         emoteTimerRef.current = 0;
-        setVisible('emote_hiphop');
+        setRenderFromState('emote_hiphop');
         const name = Object.keys(hiphopActions)[0];
-        if (name && hiphopActions[name]) { hiphopActions[name]!.reset(); hiphopActions[name]!.setLoop(THREE.LoopOnce, 1); hiphopActions[name]!.clampWhenFinished = true; hiphopActions[name]!.play(); }
+        if (name && hiphopActions[name]) {
+          hiphopActions[name]!.reset();
+          hiphopActions[name]!.setLoop(THREE.LoopOnce, 1);
+          hiphopActions[name]!.clampWhenFinished = true;
+          hiphopActions[name]!.play();
+        }
       } else if (emote === 'gangnam') {
         stateRef.current = 'emote_gangnam';
         emoteTimerRef.current = 0;
-        setVisible('emote_gangnam');
+        setRenderFromState('emote_gangnam');
         const name = Object.keys(gangnamActions)[0];
-        if (name && gangnamActions[name]) { gangnamActions[name]!.reset(); gangnamActions[name]!.setLoop(THREE.LoopOnce, 1); gangnamActions[name]!.clampWhenFinished = true; gangnamActions[name]!.play(); }
+        if (name && gangnamActions[name]) {
+          gangnamActions[name]!.reset();
+          gangnamActions[name]!.setLoop(THREE.LoopOnce, 1);
+          gangnamActions[name]!.clampWhenFinished = true;
+          gangnamActions[name]!.play();
+        }
       }
     }
     prevEmoteRef.current = emote;
 
-    // Emote state: wait for completion or emote cleared
     if (stateRef.current === 'emote_hiphop' || stateRef.current === 'emote_gangnam') {
       emoteTimerRef.current += dt;
-      // Return to idle if emote cleared or timed out (safety)
       if (!emote || emoteTimerRef.current > 8) {
         stateRef.current = 'idle';
-        setVisible('idle');
+        setRenderFromState('idle');
       }
       return;
     }
 
-    // === JUMP ===
     if (!isGrounded && stateRef.current !== 'jump') {
       stateRef.current = 'jump';
-      setVisible('jump');
+      setRenderFromState('jump');
       return;
     }
 
-    // === LOCOMOTION ===
     let target: RemoteState = 'idle';
     if (!isGrounded) {
       target = 'jump';
@@ -289,31 +234,61 @@ export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim
 
     if (target !== stateRef.current) {
       stateRef.current = target;
-      setVisible(target);
+      setRenderFromState(target);
     }
   });
 
-  const { scale, feetOffset } = useMemo(() => {
-    const box = new THREE.Box3().setFromObject(idleGltf.scene);
-    const size = new THREE.Vector3();
-    box.getSize(size);
-    const h = size.y;
-    const s = h > 0.01 ? TARGET_HEIGHT / h : 1;
-    const feetY = box.min.y * s;
-    return { scale: s, feetOffset: -feetY };
-  }, [idleGltf.scene]);
+  const idleNorm = useMemo(() => buildModelNormalization(idleScene, TARGET_HEIGHT, 0), [idleScene]);
+  const walkNorm = useMemo(() => buildModelNormalization(walkScene, TARGET_HEIGHT, idleNorm.yawCorrection), [walkScene, idleNorm.yawCorrection]);
+  const runNorm = useMemo(() => buildModelNormalization(runScene, TARGET_HEIGHT, idleNorm.yawCorrection), [runScene, idleNorm.yawCorrection]);
+  const hitNorm = useMemo(() => buildModelNormalization(hitScene, TARGET_HEIGHT, idleNorm.yawCorrection), [hitScene, idleNorm.yawCorrection]);
+  const fightNorm = useMemo(() => buildModelNormalization(fightScene, TARGET_HEIGHT, idleNorm.yawCorrection), [fightScene, idleNorm.yawCorrection]);
+  const deadNorm = useMemo(() => buildModelNormalization(deadScene, TARGET_HEIGHT, idleNorm.yawCorrection), [deadScene, idleNorm.yawCorrection]);
+  const jumpNorm = useMemo(() => buildModelNormalization(jumpScene, TARGET_HEIGHT, idleNorm.yawCorrection), [jumpScene, idleNorm.yawCorrection]);
+  const hiphopNorm = useMemo(() => buildModelNormalization(hiphopScene, TARGET_HEIGHT, idleNorm.yawCorrection), [hiphopScene, idleNorm.yawCorrection]);
+  const gangnamNorm = useMemo(() => buildModelNormalization(gangnamScene, TARGET_HEIGHT, idleNorm.yawCorrection), [gangnamScene, idleNorm.yawCorrection]);
+
+  const activeScene = useMemo(() => {
+    switch (renderState) {
+      case 'walk': return walkScene;
+      case 'run': return runScene;
+      case 'jump': return jumpScene;
+      case 'fight': return fightScene;
+      case 'hit': return hitScene;
+      case 'dead': return deadScene;
+      case 'emote_hiphop': return hiphopScene;
+      case 'emote_gangnam': return gangnamScene;
+      case 'idle':
+      default:
+        return idleScene;
+    }
+  }, [renderState, idleScene, walkScene, runScene, jumpScene, fightScene, hitScene, deadScene, hiphopScene, gangnamScene]);
+
+  const activeNorm: ModelNormalization = useMemo(() => {
+    switch (renderState) {
+      case 'walk': return walkNorm;
+      case 'run': return runNorm;
+      case 'jump': return jumpNorm;
+      case 'fight': return fightNorm;
+      case 'hit': return hitNorm;
+      case 'dead': return deadNorm;
+      case 'emote_hiphop': return hiphopNorm;
+      case 'emote_gangnam': return gangnamNorm;
+      case 'idle':
+      default:
+        return idleNorm;
+    }
+  }, [renderState, idleNorm, walkNorm, runNorm, jumpNorm, fightNorm, hitNorm, deadNorm, hiphopNorm, gangnamNorm]);
 
   return (
-    <group scale={[scale, scale, scale]} position={[0, feetOffset, 0]}>
-      <group ref={idleRef}><primitive object={idleScene} /></group>
-      <group ref={walkRef} visible={false}><primitive object={walkScene} /></group>
-      <group ref={runRef} visible={false}><primitive object={runScene} /></group>
-      <group ref={hitRef} visible={false}><primitive object={hitScene} /></group>
-      <group ref={fightRef} visible={false}><primitive object={fightScene} /></group>
-      <group ref={deadRef} visible={false}><primitive object={deadScene} /></group>
-      <group ref={jumpRef} visible={false}><primitive object={jumpScene} /></group>
-      <group ref={hiphopRef} visible={false}><primitive object={hiphopScene} /></group>
-      <group ref={gangnamRef} visible={false}><primitive object={gangnamScene} /></group>
+    <group>
+      <group rotation={[0, activeNorm.yawCorrection, 0]}>
+        <group scale={[activeNorm.scale, activeNorm.scale, activeNorm.scale]}>
+          <group position={activeNorm.modelAnchorOffset}>
+            <primitive key={renderState} object={activeScene} dispose={null} />
+          </group>
+        </group>
+      </group>
     </group>
   );
 }
