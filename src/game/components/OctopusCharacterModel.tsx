@@ -21,7 +21,7 @@ interface OctopusGLBModelProps {
   isFightingRef?: React.MutableRefObject<boolean>;
 }
 
-type OctopusState = 'idle' | 'walk' | 'run' | 'jump' | 'hit' | 'emote_dance';
+type OctopusState = 'idle' | 'walk' | 'run' | 'jump' | 'hit' | 'fight' | 'emote_dance';
 
 const HIT_ANIM_DURATION = 0.8;
 const MOVE_START_THRESHOLD = 0.07;
