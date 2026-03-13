@@ -153,6 +153,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const pushupLoopInspection = useMemo(() => inspectModel('pushupLoop', pushupGltf.scene), [pushupGltf.scene]);
   const pushupExitInspection = useMemo(() => inspectModel('pushupExit', pushupToIdleGltf.scene), [pushupToIdleGltf.scene]);
   const agreeInspection = useMemo(() => inspectModel('agree', agreeGltf.scene), [agreeGltf.scene]);
+  const waveInspection = useMemo(() => inspectModel('wave', waveGltf.scene), [waveGltf.scene]);
 
   const canonicalHeight = useMemo(() => {
     if (idleInspection.height > 0.01) return idleInspection.height;
