@@ -131,21 +131,27 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
 
   useEffect(() => {
     const checkInterval = setInterval(() => {
+      const handle = enemiesHandleRef.current;
+      if (!handle) return;
+      const enemyMap = handle.getEnemies();
       for (const [key, poi] of Object.entries(POIS)) {
         if (progression.areasSecured.includes(key)) continue;
-        const nearbyEnemies = enemies.filter(e => {
-          if (e.state === 'dead') return false;
+        let hasAlive = false;
+        enemyMap.forEach(e => {
+          if (e.state === 'dead') return;
           const dx = e.position[0] - poi.x;
           const dz = e.position[2] - poi.z;
-          return dx * dx + dz * dz < POI_ZONE_RADIUS * POI_ZONE_RADIUS;
+          if (dx * dx + dz * dz < POI_ZONE_RADIUS * POI_ZONE_RADIUS) {
+            hasAlive = true;
+          }
         });
-        if (nearbyEnemies.length === 0) {
+        if (!hasAlive) {
           secureArea(key);
         }
       }
     }, 2000);
     return () => clearInterval(checkInterval);
-  }, [enemies, progression.areasSecured, secureArea]);
+  }, [progression.areasSecured, secureArea]);
 
   // Map toggle + debug
   useEffect(() => {
