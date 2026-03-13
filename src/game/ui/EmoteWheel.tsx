@@ -20,6 +20,10 @@ const GOBLIN_EMOTES: EmoteOption[] = [
   { key: 'gangnam', label: 'Gangnam', icon: '🎶' },
 ];
 
+const OCTOPUS_EMOTES: EmoteOption[] = [
+  { key: 'octopusdance', label: 'Dance', icon: '🐙' },
+];
+
 interface EmoteWheelProps {
   onSelectEmote: (emoteKey: string) => void;
   isPlayingEmote: boolean;
@@ -27,7 +31,7 @@ interface EmoteWheelProps {
 
 export function EmoteWheel({ onSelectEmote, isPlayingEmote }: EmoteWheelProps) {
   const { character } = useCharacter();
-  const EMOTE_OPTIONS = character === 'goblin' ? GOBLIN_EMOTES : SOLDIER_EMOTES;
+  const EMOTE_OPTIONS = character === 'goblin' ? GOBLIN_EMOTES : character === 'octopus' ? OCTOPUS_EMOTES : SOLDIER_EMOTES;
   const [open, setOpen] = useState(false);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {

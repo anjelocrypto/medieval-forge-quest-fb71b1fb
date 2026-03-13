@@ -8,6 +8,7 @@ import { Html } from '@react-three/drei';
 
 import { RemoteGoblinModel } from './RemoteGoblinModel';
 import { RemoteSoldierModel } from './RemoteSoldierModel';
+import { RemoteOctopusModel } from './RemoteOctopusModel';
 
 interface Props {
   player: InterpolatedPlayer;
@@ -26,6 +27,7 @@ const goblinHeadMat = new THREE.MeshLambertMaterial({ color: '#7a9a5a' });
 // Nametag heights per character type
 const NAMETAG_HEIGHT_GOBLIN = 2.0;
 const NAMETAG_HEIGHT_SOLDIER = 2.8;
+const NAMETAG_HEIGHT_OCTOPUS = 2.0;
 const NAMETAG_HEIGHT_MOUNTED = 4.5;
 
 const remoteAuditCounts: Record<string, number> = {};
@@ -88,7 +90,9 @@ export function RemotePlayer({ player }: Props) {
   const charType = player.characterType || 'goblin';
   const nametagY = player.isMounted
     ? NAMETAG_HEIGHT_MOUNTED
-    : charType === 'goblin' ? NAMETAG_HEIGHT_GOBLIN : NAMETAG_HEIGHT_SOLDIER;
+    : charType === 'goblin' ? NAMETAG_HEIGHT_GOBLIN
+    : charType === 'octopus' ? NAMETAG_HEIGHT_OCTOPUS
+    : NAMETAG_HEIGHT_SOLDIER;
 
   return (
     <group ref={groupRef}>
@@ -135,6 +139,15 @@ export function RemotePlayer({ player }: Props) {
         <Suspense fallback={null}>
           {charType === 'goblin' ? (
             <RemoteGoblinModel
+              moveSpeed={player.moveSpeed}
+              isRunning={player.isRunning}
+              isGrounded={player.isGrounded}
+              attackAnim={player.attackAnim}
+              health={player.health}
+              emote={player.emote}
+            />
+          ) : charType === 'octopus' ? (
+            <RemoteOctopusModel
               moveSpeed={player.moveSpeed}
               isRunning={player.isRunning}
               isGrounded={player.isGrounded}

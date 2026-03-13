@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import { PlayerGLBModel } from './PlayerCharacterModel';
 import { GoblinGLBModel } from './GoblinCharacterModel';
 import { GoblinDeadModel } from './GoblinDeadModel';
+import { OctopusGLBModel } from './OctopusCharacterModel';
+import { OctopusDeadModel } from './OctopusDeadModel';
 import { useCharacter } from '../context/CharacterContext';
 import { getTerrainHeight } from './Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
@@ -847,6 +849,8 @@ export function Player({
       <group ref={groupRef}>
         {character === 'goblin' ? (
           <GoblinDeadModel />
+        ) : character === 'octopus' ? (
+          <OctopusDeadModel />
         ) : (
           <group rotation={[Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
             <mesh castShadow>
@@ -960,6 +964,8 @@ export function Player({
         >
           {character === 'goblin' ? (
             <GoblinGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={attackAnimRef} isFightingRef={isFightingRef} />
+          ) : character === 'octopus' ? (
+            <OctopusGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={attackAnimRef} isFightingRef={isFightingRef} />
           ) : (
             <PlayerGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={attackAnimRef} isFightingRef={isFightingRef} />
           )}
