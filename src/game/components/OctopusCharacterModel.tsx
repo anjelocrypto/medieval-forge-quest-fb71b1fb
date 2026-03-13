@@ -179,7 +179,7 @@ function buildNormalization(
 }
 
 export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedRef, activeEmote, activeEmoteId, onEmoteComplete, damageFlash, attackAnimRef, isFightingRef }: OctopusGLBModelProps) {
-  // Octopus uses walking as idle (standing still pose)
+  const idleGltf = useGLTF(octopusStandingUrl);
   const walkGltf = useGLTF(octopusWalkingUrl);
   const runGltf = useGLTF(octopusRunningUrl);
   const jumpGltf = useGLTF(octopusJumpUrl);
