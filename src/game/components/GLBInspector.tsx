@@ -8,7 +8,7 @@ export function GLBInspector() {
   const { actions, clips } = useAnimations(gltf.animations, gltf.scene);
 
   useEffect(() => {
-    console.log('=== GLB INSPECTOR: soldierwalking.glb ===');
+    console.log('=== GLB INSPECTOR: soldier.glb (IDLE) ===');
     
     // 1. Animation clips
     console.log(`Animation clips (${clips.length}):`, clips.map(c => ({
