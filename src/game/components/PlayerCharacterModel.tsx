@@ -184,6 +184,14 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     return () => { a.stop(); };
   }, [jumpActions, jumpClipName]);
 
+  // Initialize run (paused looping)
+  useEffect(() => {
+    if (!runClipName) return;
+    const a = runActions[runClipName]; if (!a) return;
+    a.reset(); a.setLoop(THREE.LoopRepeat, Infinity); a.clampWhenFinished = false; a.enabled = true; a.play(); a.paused = true;
+    return () => { a.stop(); };
+  }, [runActions, runClipName]);
+
   // Initialize pushup enter (paused, play once)
   useEffect(() => {
     if (!pushupEnterClipName) return;
