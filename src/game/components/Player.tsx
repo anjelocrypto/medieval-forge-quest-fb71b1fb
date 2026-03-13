@@ -42,7 +42,6 @@ interface PlayerProps {
   cameraAzimuthRef: React.MutableRefObject<number>;
   enemiesHandleRef: React.RefObject<import('./Enemies').EnemiesHandle | null>;
   onRespawn: () => void;
-  onRespawn: () => void;
   buildMode: boolean;
   structures: PlacedStructure[];
   lootPickups: LootPickup[];
