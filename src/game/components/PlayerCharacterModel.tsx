@@ -272,17 +272,15 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     }
 
     if (state === 'emote_pushup_loop') {
-      if (pushupLoopClipName) {
-        const a = pushupLoopActions[pushupLoopClipName];
-        if (a) {
-          const dur = a.getClip().duration;
-          // Count reps by tracking when animation loops
-          const currentRep = Math.floor(a.time / dur);
-          if (currentRep >= PUSHUP_LOOP_REPS) {
-            // Done with reps, transition to exit
-            a.paused = true;
-            stateRef.current = 'emote_pushup_exit';
-            setVisibleState('emote_pushup_exit');
+      const elapsed = (performance.now() - pushupStartTimeRef.current) / 1000;
+      if (elapsed >= PUSHUP_DURATION_SEC) {
+        // Done — transition to exit
+        if (pushupLoopClipName) {
+          const a = pushupLoopActions[pushupLoopClipName];
+          if (a) a.paused = true;
+        }
+        stateRef.current = 'emote_pushup_exit';
+        setVisibleState('emote_pushup_exit');
             if (pushupExitClipName) {
               const ea = pushupExitActions[pushupExitClipName];
               if (ea) { ea.reset(); ea.play(); ea.paused = false; }
