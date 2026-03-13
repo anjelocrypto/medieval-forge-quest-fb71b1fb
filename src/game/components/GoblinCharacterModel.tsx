@@ -329,6 +329,16 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       }
       return;
     }
+    if (activeEmote === 'gangnam' && emoteId !== lastEmoteIdRef.current) {
+      lastEmoteIdRef.current = emoteId;
+      stateRef.current = 'emote_gangnam';
+      setVisibleState('emote_gangnam');
+      if (gangnamClipName) {
+        const a = gangnamActions[gangnamClipName];
+        if (a) { a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.enabled = true; a.play(); a.paused = false; }
+      }
+      return;
+    }
 
     // ===== HIPHOP EMOTE STATE =====
     if (state === 'emote_hiphop') {
