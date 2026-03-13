@@ -255,6 +255,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
 
   return (
     <div className="w-screen h-screen bg-background overflow-hidden cursor-crosshair">
+      <PerfBaselineHUD />
       <SurvivalHUD
         survival={survival}
         inventory={inventory}
