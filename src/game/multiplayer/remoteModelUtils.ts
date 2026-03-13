@@ -61,7 +61,8 @@ function normalizeMaterial(mat: THREE.Material): THREE.Material {
 }
 
 export function cloneScene(scene: THREE.Group): THREE.Group {
-  const cloned = scene.clone(true);
+  // Use SkeletonUtils.clone for skinned meshes; manual name-based rebinding can corrupt rigs
+  const cloned = SkeletonUtils.clone(scene) as THREE.Group;
 
   cloned.traverse((node) => {
     const mesh = node as THREE.Mesh;
@@ -72,40 +73,17 @@ export function cloneScene(scene: THREE.Group): THREE.Group {
     } else {
       mesh.material = normalizeMaterial(mesh.material);
     }
-  });
 
-  const clonedSkinnedMeshes: THREE.SkinnedMesh[] = [];
-  const originalSkinnedMeshes: THREE.SkinnedMesh[] = [];
-  scene.traverse((node) => {
-    if ((node as THREE.SkinnedMesh).isSkinnedMesh) {
-      originalSkinnedMeshes.push(node as THREE.SkinnedMesh);
-    }
-  });
-  cloned.traverse((node) => {
-    if ((node as THREE.SkinnedMesh).isSkinnedMesh) {
-      clonedSkinnedMeshes.push(node as THREE.SkinnedMesh);
+    if ((mesh as THREE.SkinnedMesh).isSkinnedMesh) {
+      const skinned = mesh as THREE.SkinnedMesh;
+      skinned.frustumCulled = true;
+      skinned.bindMode = THREE.AttachedBindMode;
+      skinned.pose();
+      skinned.skeleton?.calculateInverses();
     }
   });
 
-  for (let i = 0; i < clonedSkinnedMeshes.length && i < originalSkinnedMeshes.length; i++) {
-    const clonedMesh = clonedSkinnedMeshes[i];
-    const originalSkeleton = originalSkinnedMeshes[i].skeleton;
-    const bones: THREE.Bone[] = [];
-
-    for (const originalBone of originalSkeleton.bones) {
-      const matchingBone = cloned.getObjectByName(originalBone.name) as THREE.Bone | null;
-      if (matchingBone) bones.push(matchingBone);
-    }
-
-    if (bones.length === originalSkeleton.bones.length) {
-      clonedMesh.skeleton = new THREE.Skeleton(
-        bones,
-        originalSkeleton.boneInverses.map((m) => m.clone()),
-      );
-      clonedMesh.bind(clonedMesh.skeleton, clonedMesh.matrixWorld);
-    }
-  }
-
+  cloned.updateMatrixWorld(true);
   return cloned;
 }
 
