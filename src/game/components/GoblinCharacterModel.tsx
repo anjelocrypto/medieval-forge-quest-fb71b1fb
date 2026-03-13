@@ -22,7 +22,9 @@ interface GoblinGLBModelProps {
   isFightingRef?: React.MutableRefObject<boolean>;
 }
 
-type GoblinState = 'idle' | 'walk' | 'run' | 'jump' | 'emote_hiphop' | 'emote_gangnam';
+type GoblinState = 'idle' | 'walk' | 'run' | 'jump' | 'hit' | 'emote_hiphop' | 'emote_gangnam';
+
+const HIT_ANIM_DURATION = 0.8;
 
 const MOVE_START_THRESHOLD = 0.07;
 const MOVE_STOP_THRESHOLD = 0.04;
