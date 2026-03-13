@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import soldierWalkUrl from '@/assets/soldierwalking.glb?url';
-import soldierIdleUrl from '@/assets/soldier.glb?url';
+import standingUrl from '@/assets/standing.glb?url';
 import jumpUrl from '@/assets/jump.glb?url';
 import runUrl from '@/assets/run.glb?url';
 import gethitUrl from '@/assets/gethit.glb?url';
