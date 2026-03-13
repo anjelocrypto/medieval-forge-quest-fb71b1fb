@@ -40,8 +40,8 @@ interface PlayerProps {
   playerPositionRef: React.MutableRefObject<THREE.Vector3>;
   playerRotationRef: React.MutableRefObject<number>;
   cameraAzimuthRef: React.MutableRefObject<number>;
-  enemies: EnemyData[];
-  onEnemyHit: (id: string, damage: number) => void;
+  enemiesHandleRef: React.RefObject<import('./Enemies').EnemiesHandle | null>;
+  onRespawn: () => void;
   onRespawn: () => void;
   buildMode: boolean;
   structures: PlacedStructure[];
