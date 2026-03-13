@@ -38,6 +38,7 @@ import { EmoteWheel } from './ui/EmoteWheel';
 import { CharacterSelect } from './ui/CharacterSelect';
 import { useCharacter } from './context/CharacterContext';
 import { PerfBaselineR3F, PerfBaselineHUD } from './debug/PerfBaseline';
+import { WebGLRecovery } from './systems/WebGLRecovery';
 
 interface GameSceneProps {
   multiplayer: ReturnType<typeof import('./multiplayer/useMultiplayer').useMultiplayer>;
@@ -320,7 +321,13 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
       />
 
       <Canvas shadows camera={{ fov: 55, near: 0.5, far: 1500, position: [0, 10, 15] }}
-        style={{ width: '100%', height: '100%' }}>
+        style={{ width: '100%', height: '100%' }}
+        gl={{ antialias: true, powerPreference: 'high-performance', failIfMajorPerformanceCaveat: false }}
+        onCreated={({ gl }) => {
+          console.log('[WebGL] GameScene Canvas created', gl.getContext()?.constructor.name);
+        }}>
+
+        <WebGLRecovery />
         <PerfBaselineR3F />
         <InputFlusher />
         <BuildModeController
