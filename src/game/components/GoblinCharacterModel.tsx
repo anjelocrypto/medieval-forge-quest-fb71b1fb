@@ -218,6 +218,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const jumpInspection = useMemo(() => inspectModel('goblin_jump', jumpGltf.scene), [jumpGltf.scene]);
   const hiphopInspection = useMemo(() => inspectModel('goblin_hiphop', hiphopGltf.scene), [hiphopGltf.scene]);
   const gangnamInspection = useMemo(() => inspectModel('goblin_gangnam', gangnamGltf.scene), [gangnamGltf.scene]);
+  const hitInspection = useMemo(() => inspectModel('goblin_hit', getHitGltf.scene), [getHitGltf.scene]);
 
   // Use a shorter canonical height for the goblin (about 1.2m)
   const canonicalHeight = useMemo(() => {
