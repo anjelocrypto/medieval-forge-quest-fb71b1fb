@@ -280,6 +280,14 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     return () => { a.stop(); };
   }, [pushupExitActions, pushupExitClipName]);
 
+  // Initialize agree (paused, play once)
+  useEffect(() => {
+    if (!agreeClipName) return;
+    const a = agreeActions[agreeClipName]; if (!a) return;
+    a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.enabled = true; a.play(); a.paused = true;
+    return () => { a.stop(); };
+  }, [agreeActions, agreeClipName]);
+
   // Audit log
   useEffect(() => {
     if (auditLoggedRef.current) return;
