@@ -419,50 +419,23 @@ export function useMultiplayer() {
     setWorldEvents([]);
   }, [fullCleanup]);
 
-  // ===== Reconnect on mount if session exists =====
-  // NO separate watchdog — relies on subscribeToGlobalWorld's unified SUBSCRIBE_TIMEOUT_MS.
+  // ===== Reconnect on mount — DISABLED =====
+  // Auto-reconnect was silently transitioning lobby→game on page load,
+  // mounting the heavy 3D Canvas while the channel was still negotiating.
+  // This caused WebGL context loss under GPU pressure.
+  // Now: always start in lobby. User clicks Enter World explicitly.
   const hasAttemptedReconnect = useRef(false);
   useEffect(() => {
-    if (hasAttemptedReconnect.current) {
-      console.log('[Multiplayer] Reconnect skipped — already attempted');
-      return;
-    }
+    if (hasAttemptedReconnect.current) return;
     hasAttemptedReconnect.current = true;
 
+    // Clear any stale session so we don't accumulate dead sessions
     const session = loadSession();
-    if (!session) {
-      console.log('[Multiplayer] No session to restore');
-      return;
+    if (session) {
+      console.log('[Multiplayer] Found stale session — clearing (auto-reconnect disabled)');
+      clearSession();
     }
-
-    console.log('[Multiplayer] Attempting reconnect for:', session.displayName);
-    const timings = createTimings();
-    timings.enterWorldClicked = Date.now();
-    timingsRef.current = timings;
-    firstRemoteReceivedRef.current = false;
-    // Reset audit log counts for reconnect
-    for (const k of Object.keys(auditLogCounts)) delete auditLogCounts[k];
-
-    setConnectionStatus('reconnecting');
-
-    (async () => {
-      try {
-        updateDisplayName(session.displayName);
-        const success = await subscribeToGlobalWorld(session.displayName);
-        if (success) {
-          console.log('[Multiplayer] Reconnect successful');
-        } else {
-          console.warn('[Multiplayer] Reconnect subscribe failed or timed out');
-          clearSession();
-          setConnectionStatus('disconnected');
-        }
-      } catch (err) {
-        console.warn('[Multiplayer] Reconnect failed:', err);
-        clearSession();
-        setConnectionStatus('disconnected');
-      }
-    })();
-  }, [subscribeToGlobalWorld, updateDisplayName]);
+  }, []);
 
   // ===== Broadcast local player state =====
   const updateLocalState = useCallback((state: NetworkPlayerState) => {
