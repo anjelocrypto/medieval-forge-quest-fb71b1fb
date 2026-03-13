@@ -458,6 +458,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       {renderModel(runVisibleRef, runNorm, runGltf.scene)}
       {renderModel(jumpVisibleRef, jumpNorm, jumpGltf.scene)}
       {renderModel(hiphopVisibleRef, hiphopNorm, hiphopGltf.scene)}
+      {renderModel(gangnamVisibleRef, gangnamNorm, gangnamGltf.scene)}
     </group>
   );
 }
@@ -467,3 +468,4 @@ useGLTF.preload(goblinWalkingUrl);
 useGLTF.preload(goblinRunningUrl);
 useGLTF.preload(goblinJumpUrl);
 useGLTF.preload(hiphopUrl);
+useGLTF.preload(gangnamUrl);
