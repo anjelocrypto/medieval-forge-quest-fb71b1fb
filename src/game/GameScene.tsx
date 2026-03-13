@@ -38,6 +38,7 @@ import { useProximityVoice } from './multiplayer/useProximityVoice';
 import { EmoteWheel } from './ui/EmoteWheel';
 import { CharacterSelect } from './ui/CharacterSelect';
 import { useCharacter } from './context/CharacterContext';
+import { PerfBaselineR3F, PerfBaselineHUD } from './debug/PerfBaseline';
 
 interface GameSceneProps {
   multiplayer: ReturnType<typeof import('./multiplayer/useMultiplayer').useMultiplayer>;
