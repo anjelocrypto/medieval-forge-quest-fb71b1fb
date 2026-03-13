@@ -45,6 +45,7 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
   const hitScene = useMemo(() => cloneScene(hitGltf.scene), [hitGltf.scene]);
   const deadScene = useMemo(() => cloneScene(deadGltf.scene), [deadGltf.scene]);
   const danceScene = useMemo(() => cloneScene(danceGltf.scene), [danceGltf.scene]);
+  const fightScene = useMemo(() => cloneScene(fightGltf.scene), [fightGltf.scene]);
 
   const stateRef = useRef<RemoteState>('idle');
   const [renderState, setRenderState] = useState<RemoteState>('idle');
