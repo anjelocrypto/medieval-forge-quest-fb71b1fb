@@ -9,6 +9,7 @@ import goblinJumpUrl from '@/assets/goblinjump.glb?url';
 import hiphopUrl from '@/assets/hiphop.glb?url';
 import gangnamUrl from '@/assets/gangnam.glb?url';
 import goblinGetHitUrl from '@/assets/goblingethit.glb?url';
+import goblinFightUrl from '@/assets/goblinfight.glb?url';
 
 interface GoblinGLBModelProps {
   moveSpeedRef: React.MutableRefObject<number>;
@@ -22,7 +23,7 @@ interface GoblinGLBModelProps {
   isFightingRef?: React.MutableRefObject<boolean>;
 }
 
-type GoblinState = 'idle' | 'walk' | 'run' | 'jump' | 'hit' | 'emote_hiphop' | 'emote_gangnam';
+type GoblinState = 'idle' | 'walk' | 'run' | 'jump' | 'hit' | 'fight' | 'emote_hiphop' | 'emote_gangnam';
 
 const HIT_ANIM_DURATION = 0.8;
 
@@ -187,6 +188,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const hiphopGltf = useGLTF(hiphopUrl);
   const gangnamGltf = useGLTF(gangnamUrl);
   const getHitGltf = useGLTF(goblinGetHitUrl);
+  const fightGltf = useGLTF(goblinFightUrl);
 
   const idleVisibleRef = useRef<THREE.Group>(null);
   const walkVisibleRef = useRef<THREE.Group>(null);
@@ -195,10 +197,13 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const hiphopVisibleRef = useRef<THREE.Group>(null);
   const gangnamVisibleRef = useRef<THREE.Group>(null);
   const hitVisibleRef = useRef<THREE.Group>(null);
+  const fightVisibleRef = useRef<THREE.Group>(null);
 
   const lastEmoteIdRef = useRef<number>(0);
   const hitStartTimeRef = useRef(0);
   const prevDamageFlashRef = useRef(0);
+  const prevAttackingRef = useRef(false);
+  const fightStartTimeRef = useRef(0);
 
   const stateRef = useRef<GoblinState>('idle');
 
@@ -210,6 +215,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const sanitizedHiphopClips = useMemo(() => sanitizeClips(hiphopGltf.animations), [hiphopGltf.animations]);
   const sanitizedGangnamClips = useMemo(() => sanitizeClips(gangnamGltf.animations), [gangnamGltf.animations]);
   const sanitizedHitClips = useMemo(() => sanitizeClips(getHitGltf.animations), [getHitGltf.animations]);
+  const sanitizedFightClips = useMemo(() => sanitizeClips(fightGltf.animations), [fightGltf.animations]);
 
   // Inspections
   const idleInspection = useMemo(() => inspectModel('goblin_idle', idleGltf.scene), [idleGltf.scene]);
@@ -219,6 +225,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const hiphopInspection = useMemo(() => inspectModel('goblin_hiphop', hiphopGltf.scene), [hiphopGltf.scene]);
   const gangnamInspection = useMemo(() => inspectModel('goblin_gangnam', gangnamGltf.scene), [gangnamGltf.scene]);
   const hitInspection = useMemo(() => inspectModel('goblin_hit', getHitGltf.scene), [getHitGltf.scene]);
+  const fightInspection = useMemo(() => inspectModel('goblin_fight', fightGltf.scene), [fightGltf.scene]);
 
   // Use a shorter canonical height for the goblin (about 1.2m)
   const canonicalHeight = useMemo(() => {
@@ -239,6 +246,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const hiphopNorm = useMemo(() => buildNormalization(hiphopInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [hiphopInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const gangnamNorm = useMemo(() => buildNormalization(gangnamInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [gangnamInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const hitNorm = useMemo(() => buildNormalization(hitInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [hitInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
+  const fightNorm = useMemo(() => buildNormalization(fightInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [fightInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
 
   // Animation setups
   const { actions: idleActions, clips: idleClips } = useAnimations(sanitizedIdleClips, idleGltf.scene);
@@ -261,6 +269,9 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
 
   const { actions: hitActions, clips: hitClips } = useAnimations(sanitizedHitClips, getHitGltf.scene);
   const hitClipName = useMemo(() => getFirstClipName(hitClips, /hit|hurt|damage/i), [hitClips]);
+
+  const { actions: fightActions, clips: fightClips } = useAnimations(sanitizedFightClips, fightGltf.scene);
+  const fightClipName = useMemo(() => getFirstClipName(fightClips, /fight|attack|punch/i), [fightClips]);
 
   // Enable shadows + debug
   useEffect(() => {
@@ -309,6 +320,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     if (hiphopVisibleRef.current) hiphopVisibleRef.current.visible = false;
     if (gangnamVisibleRef.current) gangnamVisibleRef.current.visible = false;
     if (hitVisibleRef.current) hitVisibleRef.current.visible = false;
+    if (fightVisibleRef.current) fightVisibleRef.current.visible = false;
   }, []);
 
   const setVisibleState = useCallback((state: GoblinState) => {
@@ -317,6 +329,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     const showRun = state === 'run';
     const showJump = state === 'jump';
     const showHit = state === 'hit';
+    const showFight = state === 'fight';
     const showHiphop = state === 'emote_hiphop';
     const showGangnam = state === 'emote_gangnam';
     if (idleVisibleRef.current) idleVisibleRef.current.visible = showIdle;
@@ -324,6 +337,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     if (runVisibleRef.current) runVisibleRef.current.visible = showRun;
     if (jumpVisibleRef.current) jumpVisibleRef.current.visible = showJump;
     if (hitVisibleRef.current) hitVisibleRef.current.visible = showHit;
+    if (fightVisibleRef.current) fightVisibleRef.current.visible = showFight;
     if (hiphopVisibleRef.current) hiphopVisibleRef.current.visible = showHiphop;
     if (gangnamVisibleRef.current) gangnamVisibleRef.current.visible = showGangnam;
   }, []);
@@ -335,7 +349,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
 
     // ===== DAMAGE HIT TRIGGER =====
     const currentFlash = damageFlash ?? 0;
-    if (currentFlash > 0 && prevDamageFlashRef.current === 0 && state !== 'hit') {
+    if (currentFlash > 0 && prevDamageFlashRef.current === 0 && stateRef.current !== 'hit') {
       stateRef.current = 'hit';
       hitStartTimeRef.current = performance.now();
       setVisibleState('hit');
@@ -360,6 +374,41 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
         if (elapsed >= HIT_ANIM_DURATION) {
           stateRef.current = 'idle';
           setVisibleState('idle');
+        }
+      }
+      return;
+    }
+
+    // ===== FIGHT ATTACK TRIGGER =====
+    const currentlyAttacking = (attackAnimRef?.current ?? 0) > 0;
+    if (currentlyAttacking && !prevAttackingRef.current && (stateRef.current as GoblinState) !== 'fight' && (stateRef.current as GoblinState) !== 'hit') {
+      stateRef.current = 'fight';
+      fightStartTimeRef.current = performance.now();
+      setVisibleState('fight');
+      if (isFightingRef) isFightingRef.current = true;
+      if (fightClipName) {
+        const a = fightActions[fightClipName];
+        if (a) { a.reset(); a.play(); a.paused = false; }
+      }
+    }
+    prevAttackingRef.current = currentlyAttacking;
+
+    // ===== FIGHT STATE =====
+    if (stateRef.current === 'fight') {
+      if (fightClipName) {
+        const a = fightActions[fightClipName];
+        if (a && a.time >= a.getClip().duration - 0.05) {
+          a.paused = true;
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+          if (isFightingRef) isFightingRef.current = false;
+        }
+      } else {
+        const elapsed = (performance.now() - fightStartTimeRef.current) / 1000;
+        if (elapsed >= 0.5) {
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+          if (isFightingRef) isFightingRef.current = false;
         }
       }
       return;
@@ -508,6 +557,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       {renderModel(hiphopVisibleRef, hiphopNorm, hiphopGltf.scene)}
       {renderModel(gangnamVisibleRef, gangnamNorm, gangnamGltf.scene)}
       {renderModel(hitVisibleRef, hitNorm, getHitGltf.scene)}
+      {renderModel(fightVisibleRef, fightNorm, fightGltf.scene)}
     </group>
   );
 }
@@ -519,3 +569,4 @@ useGLTF.preload(goblinJumpUrl);
 useGLTF.preload(hiphopUrl);
 useGLTF.preload(gangnamUrl);
 useGLTF.preload(goblinGetHitUrl);
+useGLTF.preload(goblinFightUrl);
