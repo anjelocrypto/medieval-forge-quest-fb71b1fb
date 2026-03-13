@@ -72,6 +72,7 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
   const { actions: hitActions } = useAnimations(hitClips, hitScene);
   const { actions: deadActions } = useAnimations(deadClips, deadScene);
   const { actions: danceActions } = useAnimations(danceClips, danceScene);
+  const { actions: fightActions } = useAnimations(fightClips, fightScene);
 
   useEffect(() => {
     [idleScene, walkScene, runScene, jumpScene, hitScene, deadScene, danceScene].forEach(enableMeshShadows);
