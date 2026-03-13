@@ -331,114 +331,116 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
         <WebGLRecovery />
         <PerfBaselineR3F />
         <InputFlusher />
-        <BuildModeController
-          buildMode={buildMode}
-          onToggle={toggleBuildMode}
-          onCycle={cycleBuild}
-          onCancelBuild={toggleBuildMode}
-        />
-        <Atmosphere playerPositionRef={playerPositionRef} />
-        <Sky />
-        <Terrain />
-        <Water />
-        <Settlements playerPositionRef={playerPositionRef} />
-        <WorldPOIs playerPositionRef={playerPositionRef} />
-        <TownDistrict playerPositionRef={playerPositionRef} />
-        <CivilianNPCs playerPositionRef={playerPositionRef} />
-        <SkyCreatures playerPositionRef={playerPositionRef} />
-        <WildernessStructures playerPositionRef={playerPositionRef} />
-        <Bridges playerPositionRef={playerPositionRef} />
-        <AmbientEffects />
-        <CameraController targetRef={playerPositionRef} azimuthRef={cameraAzimuthRef} isMounted={isMounted} />
-        <Player
-          survival={survival}
-          onSurvivalUpdate={updateSurvival}
-          playerPositionRef={playerPositionRef}
-          playerRotationRef={playerRotationRef}
-          cameraAzimuthRef={cameraAzimuthRef}
-          enemiesHandleRef={enemiesHandleRef}
-
-          onRespawn={handleRespawn}
-          buildMode={buildMode}
-          structures={structures}
-          lootPickups={lootPickups}
-          onCollectLoot={collectLoot}
-          onEatFood={eatFood}
-          horse={horse}
-          isMounted={isMounted}
-          onMountHorse={mountHorse}
-          onDismountHorse={dismountHorse}
-          onCallHorse={callHorse}
-          onSetInteractionText={setInteractionText}
-          onAddResource={addResource}
-          onDepleteResource={handleDepleteResource}
-          onHitResource={handleHitResource}
-          inventory={inventory}
-          shakeResourceRef={shakeResourceRef}
-          highlightedResourceRef={highlightedResourceRef}
-          resources={resources}
-          mountedDebugRef={mountedDebugRef}
-          externalMoveSpeedRef={moveSpeedRef}
-          externalIsRunningRef={isRunningRef}
-          externalIsGroundedRef={isGroundedRef}
-          externalAttackAnimRef={attackAnimRef}
-          activeEmote={activeEmote?.key ?? null}
-          activeEmoteId={activeEmote?.id ?? 0}
-          onEmoteComplete={useCallback(() => setActiveEmote(null), [])}
-          damageFlash={damageFlash}
-        />
-        <WorldObjects
-          resources={resources}
-          playerPositionRef={playerPositionRef}
-          shakeResourceRef={shakeResourceRef}
-          highlightedResourceRef={highlightedResourceRef}
-        />
-        <LootPickups pickups={lootPickups} />
-        <Horse horse={horse} playerPositionRef={playerPositionRef} onUpdateHorse={updateHorse} isMounted={isMounted} />
-        <Enemies
-          ref={enemiesHandleRef}
-          playerPositionRef={playerPositionRef}
-          onEnemyKill={handleEnemyKill}
-          pendingPlayerDamageRef={pendingPlayerDamageRef}
-        />
-        <BuildingSystem
-          buildMode={buildMode}
-          selectedIndex={selectedBuildIndex}
-          playerPositionRef={playerPositionRef}
-          playerRotationRef={playerRotationRef}
-          structures={structures}
-          inventory={inventory}
-          onPlace={handlePlaceStructure}
-          onSetBuildFeedback={setBuildFeedback}
-          availableBuildables={getAvailableBuildables()}
-        />
-        <DebugCollision playerPositionRef={playerPositionRef} isMounted={isMounted} />
-
-        {/* Remote players from multiplayer */}
-        <RemotePlayers remotePlayers={multiplayer.remotePlayers} />
-
-        {/* Multiplayer broadcaster — samples local state and pushes to network hook */}
-        {multiplayer.connected && (
-          <MultiplayerBroadcaster
-            playerId={multiplayer.playerId}
-            displayName={multiplayer.displayName}
-            characterType={character}
+        <SceneDiagnosticsBoundary>
+          <BuildModeController
+            buildMode={buildMode}
+            onToggle={toggleBuildMode}
+            onCycle={cycleBuild}
+            onCancelBuild={toggleBuildMode}
+          />
+          <Atmosphere playerPositionRef={playerPositionRef} />
+          <Sky />
+          <Terrain />
+          <Water />
+          <Settlements playerPositionRef={playerPositionRef} />
+          <WorldPOIs playerPositionRef={playerPositionRef} />
+          <TownDistrict playerPositionRef={playerPositionRef} />
+          <CivilianNPCs playerPositionRef={playerPositionRef} />
+          <SkyCreatures playerPositionRef={playerPositionRef} />
+          <WildernessStructures playerPositionRef={playerPositionRef} />
+          <Bridges playerPositionRef={playerPositionRef} />
+          <AmbientEffects />
+          <CameraController targetRef={playerPositionRef} azimuthRef={cameraAzimuthRef} isMounted={isMounted} />
+          <Player
+            survival={survival}
+            onSurvivalUpdate={updateSurvival}
             playerPositionRef={playerPositionRef}
             playerRotationRef={playerRotationRef}
-            survival={survival}
-            isMounted={isMounted}
-            horse={horse}
-            moveSpeedRef={moveSpeedRef}
-            isRunningRef={isRunningRef}
-            isGroundedRef={isGroundedRef}
-            attackAnimRef={attackAnimRef}
-            mountedDebugRef={mountedDebugRef}
+            cameraAzimuthRef={cameraAzimuthRef}
+            enemiesHandleRef={enemiesHandleRef}
+
+            onRespawn={handleRespawn}
             buildMode={buildMode}
-            emote={activeEmote?.key ?? currentEmote}
-            isSpeaking={voice.isTalking}
-            onUpdateLocalState={multiplayer.updateLocalState}
+            structures={structures}
+            lootPickups={lootPickups}
+            onCollectLoot={collectLoot}
+            onEatFood={eatFood}
+            horse={horse}
+            isMounted={isMounted}
+            onMountHorse={mountHorse}
+            onDismountHorse={dismountHorse}
+            onCallHorse={callHorse}
+            onSetInteractionText={setInteractionText}
+            onAddResource={addResource}
+            onDepleteResource={handleDepleteResource}
+            onHitResource={handleHitResource}
+            inventory={inventory}
+            shakeResourceRef={shakeResourceRef}
+            highlightedResourceRef={highlightedResourceRef}
+            resources={resources}
+            mountedDebugRef={mountedDebugRef}
+            externalMoveSpeedRef={moveSpeedRef}
+            externalIsRunningRef={isRunningRef}
+            externalIsGroundedRef={isGroundedRef}
+            externalAttackAnimRef={attackAnimRef}
+            activeEmote={activeEmote?.key ?? null}
+            activeEmoteId={activeEmote?.id ?? 0}
+            onEmoteComplete={useCallback(() => setActiveEmote(null), [])}
+            damageFlash={damageFlash}
           />
-        )}
+          <WorldObjects
+            resources={resources}
+            playerPositionRef={playerPositionRef}
+            shakeResourceRef={shakeResourceRef}
+            highlightedResourceRef={highlightedResourceRef}
+          />
+          <LootPickups pickups={lootPickups} />
+          <Horse horse={horse} playerPositionRef={playerPositionRef} onUpdateHorse={updateHorse} isMounted={isMounted} />
+          <Enemies
+            ref={enemiesHandleRef}
+            playerPositionRef={playerPositionRef}
+            onEnemyKill={handleEnemyKill}
+            pendingPlayerDamageRef={pendingPlayerDamageRef}
+          />
+          <BuildingSystem
+            buildMode={buildMode}
+            selectedIndex={selectedBuildIndex}
+            playerPositionRef={playerPositionRef}
+            playerRotationRef={playerRotationRef}
+            structures={structures}
+            inventory={inventory}
+            onPlace={handlePlaceStructure}
+            onSetBuildFeedback={setBuildFeedback}
+            availableBuildables={getAvailableBuildables()}
+          />
+          <DebugCollision playerPositionRef={playerPositionRef} isMounted={isMounted} />
+
+          {/* Remote players from multiplayer */}
+          <RemotePlayers remotePlayers={multiplayer.remotePlayers} />
+
+          {/* Multiplayer broadcaster — samples local state and pushes to network hook */}
+          {multiplayer.connected && (
+            <MultiplayerBroadcaster
+              playerId={multiplayer.playerId}
+              displayName={multiplayer.displayName}
+              characterType={character}
+              playerPositionRef={playerPositionRef}
+              playerRotationRef={playerRotationRef}
+              survival={survival}
+              isMounted={isMounted}
+              horse={horse}
+              moveSpeedRef={moveSpeedRef}
+              isRunningRef={isRunningRef}
+              isGroundedRef={isGroundedRef}
+              attackAnimRef={attackAnimRef}
+              mountedDebugRef={mountedDebugRef}
+              buildMode={buildMode}
+              emote={activeEmote?.key ?? currentEmote}
+              isSpeaking={voice.isTalking}
+              onUpdateLocalState={multiplayer.updateLocalState}
+            />
+          )}
+        </SceneDiagnosticsBoundary>
       </Canvas>
 
       {/* Mounted grounding debug overlay */}
