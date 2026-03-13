@@ -186,6 +186,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const jumpGltf = useGLTF(goblinJumpUrl);
   const hiphopGltf = useGLTF(hiphopUrl);
   const gangnamGltf = useGLTF(gangnamUrl);
+  const getHitGltf = useGLTF(goblinGetHitUrl);
 
   const idleVisibleRef = useRef<THREE.Group>(null);
   const walkVisibleRef = useRef<THREE.Group>(null);
