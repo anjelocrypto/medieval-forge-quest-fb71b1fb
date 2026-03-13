@@ -182,12 +182,14 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const runGltf = useGLTF(goblinRunningUrl);
   const jumpGltf = useGLTF(goblinJumpUrl);
   const hiphopGltf = useGLTF(hiphopUrl);
+  const gangnamGltf = useGLTF(gangnamUrl);
 
   const idleVisibleRef = useRef<THREE.Group>(null);
   const walkVisibleRef = useRef<THREE.Group>(null);
   const runVisibleRef = useRef<THREE.Group>(null);
   const jumpVisibleRef = useRef<THREE.Group>(null);
   const hiphopVisibleRef = useRef<THREE.Group>(null);
+  const gangnamVisibleRef = useRef<THREE.Group>(null);
 
   const lastEmoteIdRef = useRef<number>(0);
 
