@@ -320,6 +320,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     if (hiphopVisibleRef.current) hiphopVisibleRef.current.visible = false;
     if (gangnamVisibleRef.current) gangnamVisibleRef.current.visible = false;
     if (hitVisibleRef.current) hitVisibleRef.current.visible = false;
+    if (fightVisibleRef.current) fightVisibleRef.current.visible = false;
   }, []);
 
   const setVisibleState = useCallback((state: GoblinState) => {
