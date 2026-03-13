@@ -308,7 +308,20 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     // Idle animation
     if (idleClipName) {
       const ia = idleActions[idleClipName];
-      if (ia) ia.paused = newState !== 'idle' && newState !== 'jump';
+      if (ia) ia.paused = newState !== 'idle';
+    }
+
+    // Jump animation
+    if (jumpClipName) {
+      const ja = jumpActions[jumpClipName];
+      if (ja) {
+        if (newState === 'jump') {
+          ja.paused = false;
+          ja.setEffectiveTimeScale(1.0);
+        } else {
+          ja.paused = true;
+        }
+      }
     }
 
     // Walk animation speed
