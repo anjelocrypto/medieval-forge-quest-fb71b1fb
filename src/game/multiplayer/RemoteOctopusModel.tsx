@@ -36,6 +36,7 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
   const hitGltf = useGLTF(octopusGetHitUrl);
   const deadGltf = useGLTF(octopusDieUrl);
   const danceGltf = useGLTF(octopusDanceUrl);
+  const fightGltf = useGLTF(octopusKickUrl);
 
   const idleScene = useMemo(() => cloneScene(walkGltf.scene), [walkGltf.scene]);
   const walkScene = useMemo(() => cloneScene(walkGltf.scene), [walkGltf.scene]);
