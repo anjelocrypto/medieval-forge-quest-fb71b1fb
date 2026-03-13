@@ -259,11 +259,20 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     return () => { a.stop(); };
   }, [runActions, runClipName]);
 
+  // Initialize jump (paused looping)
+  useEffect(() => {
+    if (!jumpClipName) return;
+    const a = jumpActions[jumpClipName]; if (!a) return;
+    a.reset(); a.setLoop(THREE.LoopRepeat, Infinity); a.clampWhenFinished = false; a.enabled = true; a.play(); a.paused = true;
+    return () => { a.stop(); };
+  }, [jumpActions, jumpClipName]);
+
   // Initial visibility
   useEffect(() => {
     if (idleVisibleRef.current) idleVisibleRef.current.visible = true;
     if (walkVisibleRef.current) walkVisibleRef.current.visible = false;
     if (runVisibleRef.current) runVisibleRef.current.visible = false;
+    if (jumpVisibleRef.current) jumpVisibleRef.current.visible = false;
   }, []);
 
   const setVisibleState = useCallback((state: GoblinState) => {
