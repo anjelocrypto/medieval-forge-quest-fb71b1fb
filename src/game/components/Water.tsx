@@ -29,7 +29,7 @@ function RiverSegment({ points, width }: { points: [number, number, number][]; w
   return <>{meshes}</>;
 }
 
-export function Water() {
+export const Water = memo(function Water() {
   const frameSkip = useRef(0);
   const groupRef = useRef<THREE.Group>(null);
 
