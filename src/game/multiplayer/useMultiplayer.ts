@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { resetSpawnIndex } from '../systems/SafeSpawn';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import {
   NetworkPlayerState, InterpolatedPlayer, ChatMessage, WorldEvent,
@@ -387,6 +388,7 @@ export function useMultiplayer() {
     // Reset audit log counts for fresh session
     for (const k of Object.keys(auditLogCounts)) delete auditLogCounts[k];
 
+    resetSpawnIndex(); // Reset multiplayer spawn separation counter
     mpAudit('enterWorld start', { name, playerId });
     logTiming('Enter world clicked', timings, 'enterWorldClicked');
 
