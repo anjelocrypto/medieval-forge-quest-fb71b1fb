@@ -8,6 +8,7 @@ export interface EmoteOption {
 
 const EMOTE_OPTIONS: EmoteOption[] = [
   { key: 'pushups', label: 'Pushups', icon: '💪' },
+  { key: 'agree', label: 'Agree', icon: '👍' },
   { key: 'wave', label: 'Wave', icon: '👋' },
   { key: 'cheer', label: 'Cheer', icon: '🎉' },
   { key: 'bow', label: 'Bow', icon: '🙇' },

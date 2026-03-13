@@ -11,6 +11,7 @@ import fightUrl from '@/assets/fight.glb?url';
 import idleToPushupUrl from '@/assets/idletopushup.glb?url';
 import pushupUrl from '@/assets/pushup.glb?url';
 import pushupToIdleUrl from '@/assets/pushuptoidle.glb?url';
+import agreeUrl from '@/assets/agreegesture.glb?url';
 
 interface PlayerGLBModelProps {
   moveSpeedRef: React.MutableRefObject<number>;
@@ -46,6 +47,7 @@ interface ModelNormalization {
   controllerGroundOffset: number;
 }
 
+type CharState = 'idle' | 'walk' | 'run' | 'jump' | 'hit' | 'fight' | 'emote_pushup_enter' | 'emote_pushup_loop' | 'emote_pushup_exit' | 'emote_agree';
 const MOVE_START_THRESHOLD = 0.07;
 const MOVE_STOP_THRESHOLD = 0.04;
 const ROOT_TRANSLATION_NAME_RE = /(hips|pelvis|root|armature)/i;
@@ -65,7 +67,7 @@ const _tmpForwardAlt = new THREE.Vector3();
 const _tmpCenter = new THREE.Vector3();
 const _tmpSize = new THREE.Vector3();
 
-type CharState = 'idle' | 'walk' | 'run' | 'jump' | 'hit' | 'fight' | 'emote_pushup_enter' | 'emote_pushup_loop' | 'emote_pushup_exit';
+
 
 const RUN_THRESHOLD = 0.7; // moveSpeedRef above this = running
 
@@ -103,6 +105,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const idleToPushupGltf = useGLTF(idleToPushupUrl);
   const pushupGltf = useGLTF(pushupUrl);
   const pushupToIdleGltf = useGLTF(pushupToIdleUrl);
+  const agreeGltf = useGLTF(agreeUrl);
 
   const idleVisibleRef = useRef<THREE.Group>(null);
   const walkVisibleRef = useRef<THREE.Group>(null);
@@ -113,6 +116,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const pushupEnterVisibleRef = useRef<THREE.Group>(null);
   const pushupLoopVisibleRef = useRef<THREE.Group>(null);
   const pushupExitVisibleRef = useRef<THREE.Group>(null);
+  const agreeVisibleRef = useRef<THREE.Group>(null);
 
   const stateRef = useRef<CharState>('idle');
   const pushupStartTimeRef = useRef(0);
@@ -132,6 +136,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const sanitizedPushupEnterClips = useMemo(() => sanitizeClips(idleToPushupGltf.animations), [idleToPushupGltf.animations]);
   const sanitizedPushupLoopClips = useMemo(() => sanitizeClips(pushupGltf.animations), [pushupGltf.animations]);
   const sanitizedPushupExitClips = useMemo(() => sanitizeClips(pushupToIdleGltf.animations), [pushupToIdleGltf.animations]);
+  const sanitizedAgreeClips = useMemo(() => sanitizeClips(agreeGltf.animations), [agreeGltf.animations]);
 
   // Inspections
   const walkInspection = useMemo(() => inspectModel('walk', walkGltf.scene), [walkGltf.scene]);
@@ -143,6 +148,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const pushupEnterInspection = useMemo(() => inspectModel('pushupEnter', idleToPushupGltf.scene), [idleToPushupGltf.scene]);
   const pushupLoopInspection = useMemo(() => inspectModel('pushupLoop', pushupGltf.scene), [pushupGltf.scene]);
   const pushupExitInspection = useMemo(() => inspectModel('pushupExit', pushupToIdleGltf.scene), [pushupToIdleGltf.scene]);
+  const agreeInspection = useMemo(() => inspectModel('agree', agreeGltf.scene), [agreeGltf.scene]);
 
   const canonicalHeight = useMemo(() => {
     if (idleInspection.height > 0.01) return idleInspection.height;
@@ -164,6 +170,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const pushupEnterNorm = useMemo(() => buildEmoteNormalization(pushupEnterInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight), [pushupEnterInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight]);
   const pushupLoopNorm = useMemo(() => buildEmoteNormalization(pushupLoopInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight), [pushupLoopInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight]);
   const pushupExitNorm = useMemo(() => buildEmoteNormalization(pushupExitInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight), [pushupExitInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight]);
+  const agreeNorm = useMemo(() => buildNormalization(agreeInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [agreeInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
 
   // Animation setups
   const { actions: idleActions, clips: idleClips } = useAnimations(sanitizedIdleClips, idleGltf.scene);
@@ -193,10 +200,13 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const { actions: pushupExitActions, clips: pushupExitClips } = useAnimations(sanitizedPushupExitClips, pushupToIdleGltf.scene);
   const pushupExitClipName = useMemo(() => getFirstClipName(pushupExitClips), [pushupExitClips]);
 
+  const { actions: agreeActions, clips: agreeClips } = useAnimations(sanitizedAgreeClips, agreeGltf.scene);
+  const agreeClipName = useMemo(() => getFirstClipName(agreeClips, /agree|nod|yes/i), [agreeClips]);
+
   // Enable shadows on all models
   useEffect(() => {
-    [idleGltf.scene, walkGltf.scene, jumpGltf.scene, runGltf.scene, hitGltf.scene, fightGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene].forEach(enableMeshShadows);
-  }, [idleGltf.scene, walkGltf.scene, jumpGltf.scene, runGltf.scene, hitGltf.scene, fightGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene]);
+    [idleGltf.scene, walkGltf.scene, jumpGltf.scene, runGltf.scene, hitGltf.scene, fightGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene, agreeGltf.scene].forEach(enableMeshShadows);
+  }, [idleGltf.scene, walkGltf.scene, jumpGltf.scene, runGltf.scene, hitGltf.scene, fightGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene, agreeGltf.scene]);
 
   // Initialize idle/standing (looping)
   useEffect(() => {
@@ -270,6 +280,14 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     return () => { a.stop(); };
   }, [pushupExitActions, pushupExitClipName]);
 
+  // Initialize agree (paused, play once)
+  useEffect(() => {
+    if (!agreeClipName) return;
+    const a = agreeActions[agreeClipName]; if (!a) return;
+    a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.enabled = true; a.play(); a.paused = true;
+    return () => { a.stop(); };
+  }, [agreeActions, agreeClipName]);
+
   // Audit log
   useEffect(() => {
     if (auditLoggedRef.current) return;
@@ -292,6 +310,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     if (pushupEnterVisibleRef.current) pushupEnterVisibleRef.current.visible = false;
     if (pushupLoopVisibleRef.current) pushupLoopVisibleRef.current.visible = false;
     if (pushupExitVisibleRef.current) pushupExitVisibleRef.current.visible = false;
+    if (agreeVisibleRef.current) agreeVisibleRef.current.visible = false;
   }, []);
 
   const setVisibleState = useCallback((state: CharState) => {
@@ -305,6 +324,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       emote_pushup_enter: pushupEnterVisibleRef,
       emote_pushup_loop: pushupLoopVisibleRef,
       emote_pushup_exit: pushupExitVisibleRef,
+      emote_agree: agreeVisibleRef,
     };
     for (const [key, ref] of Object.entries(map)) {
       if (ref.current) ref.current.visible = key === state;
@@ -325,8 +345,16 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
         if (a) { a.reset(); a.play(); a.paused = false; }
       }
     }
+    if (activeEmote === 'agree' && prevEmoteRef.current !== 'agree') {
+      stateRef.current = 'emote_agree';
+      setVisibleState('emote_agree');
+      if (agreeClipName) {
+        const a = agreeActions[agreeClipName];
+        if (a) { a.reset(); a.play(); a.paused = false; }
+      }
+    }
     prevEmoteRef.current = activeEmote;
-  }, [activeEmote, pushupEnterActions, pushupEnterClipName, setVisibleState]);
+  }, [activeEmote, pushupEnterActions, pushupEnterClipName, agreeActions, agreeClipName, setVisibleState]);
 
   useFrame(() => {
     const state = stateRef.current;
@@ -451,6 +479,24 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       return;
     }
 
+    // ===== AGREE EMOTE STATE =====
+    if (state === 'emote_agree') {
+      if (agreeClipName) {
+        const a = agreeActions[agreeClipName];
+        if (a && a.time >= a.getClip().duration - 0.05) {
+          a.paused = true;
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+          onEmoteComplete();
+        }
+      } else {
+        stateRef.current = 'idle';
+        setVisibleState('idle');
+        onEmoteComplete();
+      }
+      return;
+    }
+
     // ===== NORMAL LOCOMOTION STATES =====
     const speed = moveSpeedRef.current;
     const grounded = isGroundedRef.current;
@@ -538,6 +584,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       {renderModel(pushupEnterVisibleRef, pushupEnterNorm, idleToPushupGltf.scene)}
       {renderModel(pushupLoopVisibleRef, pushupLoopNorm, pushupGltf.scene)}
       {renderModel(pushupExitVisibleRef, pushupExitNorm, pushupToIdleGltf.scene)}
+      {renderModel(agreeVisibleRef, agreeNorm, agreeGltf.scene)}
     </group>
   );
 }
@@ -661,3 +708,4 @@ useGLTF.preload(fightUrl);
 useGLTF.preload(idleToPushupUrl);
 useGLTF.preload(pushupUrl);
 useGLTF.preload(pushupToIdleUrl);
+useGLTF.preload(agreeUrl);
