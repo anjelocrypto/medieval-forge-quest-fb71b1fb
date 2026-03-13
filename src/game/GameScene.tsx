@@ -58,6 +58,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
     addRemoteStructure,
   } = useGameState();
 
+  const { character } = useCharacter();
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
   const [enemies, setEnemies] = useState<EnemyData[]>(() => generateEnemies());
   const [mapOpen, setMapOpen] = useState(false);
