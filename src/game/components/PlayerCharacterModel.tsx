@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import soldierWalkUrl from '@/assets/soldierwalking.glb?url';
 import soldierIdleUrl from '@/assets/soldier.glb?url';
 import jumpUrl from '@/assets/jump.glb?url';
+import runUrl from '@/assets/run.glb?url';
 import idleToPushupUrl from '@/assets/idletopushup.glb?url';
 import pushupUrl from '@/assets/pushup.glb?url';
 import pushupToIdleUrl from '@/assets/pushuptoidle.glb?url';
@@ -59,7 +60,9 @@ const _tmpForwardAlt = new THREE.Vector3();
 const _tmpCenter = new THREE.Vector3();
 const _tmpSize = new THREE.Vector3();
 
-type CharState = 'idle' | 'walk' | 'jump' | 'emote_pushup_enter' | 'emote_pushup_loop' | 'emote_pushup_exit';
+type CharState = 'idle' | 'walk' | 'run' | 'jump' | 'emote_pushup_enter' | 'emote_pushup_loop' | 'emote_pushup_exit';
+
+const RUN_THRESHOLD = 0.7; // moveSpeedRef above this = running
 
 const PUSHUP_DURATION_SEC = 6; // seconds of pushups before getting up
 
@@ -88,6 +91,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const walkGltf = useGLTF(soldierWalkUrl);
   const idleGltf = useGLTF(soldierIdleUrl);
   const jumpGltf = useGLTF(jumpUrl);
+  const runGltf = useGLTF(runUrl);
   const idleToPushupGltf = useGLTF(idleToPushupUrl);
   const pushupGltf = useGLTF(pushupUrl);
   const pushupToIdleGltf = useGLTF(pushupToIdleUrl);
@@ -95,6 +99,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const idleVisibleRef = useRef<THREE.Group>(null);
   const walkVisibleRef = useRef<THREE.Group>(null);
   const jumpVisibleRef = useRef<THREE.Group>(null);
+  const runVisibleRef = useRef<THREE.Group>(null);
   const pushupEnterVisibleRef = useRef<THREE.Group>(null);
   const pushupLoopVisibleRef = useRef<THREE.Group>(null);
   const pushupExitVisibleRef = useRef<THREE.Group>(null);
@@ -106,6 +111,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   // Sanitize clips
   const sanitizedWalkClips = useMemo(() => sanitizeClips(walkGltf.animations), [walkGltf.animations]);
   const sanitizedJumpClips = useMemo(() => sanitizeClips(jumpGltf.animations), [jumpGltf.animations]);
+  const sanitizedRunClips = useMemo(() => sanitizeClips(runGltf.animations), [runGltf.animations]);
   const sanitizedPushupEnterClips = useMemo(() => sanitizeClips(idleToPushupGltf.animations), [idleToPushupGltf.animations]);
   const sanitizedPushupLoopClips = useMemo(() => sanitizeClips(pushupGltf.animations), [pushupGltf.animations]);
   const sanitizedPushupExitClips = useMemo(() => sanitizeClips(pushupToIdleGltf.animations), [pushupToIdleGltf.animations]);
@@ -114,6 +120,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const walkInspection = useMemo(() => inspectModel('walk', walkGltf.scene), [walkGltf.scene]);
   const idleInspection = useMemo(() => inspectModel('idle', idleGltf.scene), [idleGltf.scene]);
   const jumpInspection = useMemo(() => inspectModel('jump', jumpGltf.scene), [jumpGltf.scene]);
+  const runInspection = useMemo(() => inspectModel('run', runGltf.scene), [runGltf.scene]);
   const pushupEnterInspection = useMemo(() => inspectModel('pushupEnter', idleToPushupGltf.scene), [idleToPushupGltf.scene]);
   const pushupLoopInspection = useMemo(() => inspectModel('pushupLoop', pushupGltf.scene), [pushupGltf.scene]);
   const pushupExitInspection = useMemo(() => inspectModel('pushupExit', pushupToIdleGltf.scene), [pushupToIdleGltf.scene]);
@@ -132,6 +139,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const idleNorm = useMemo(() => buildNormalization(idleInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [idleInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const walkNorm = useMemo(() => buildNormalization(walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const jumpNorm = useMemo(() => buildNormalization(jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
+  const runNorm = useMemo(() => buildNormalization(runInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [runInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const pushupEnterNorm = useMemo(() => buildEmoteNormalization(pushupEnterInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight), [pushupEnterInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight]);
   const pushupLoopNorm = useMemo(() => buildEmoteNormalization(pushupLoopInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight), [pushupLoopInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight]);
   const pushupExitNorm = useMemo(() => buildEmoteNormalization(pushupExitInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight), [pushupExitInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight]);
@@ -142,6 +150,9 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
 
   const { actions: jumpActions, clips: jumpClips } = useAnimations(sanitizedJumpClips, jumpGltf.scene);
   const jumpClipName = useMemo(() => getFirstClipName(jumpClips, /jump/i), [jumpClips]);
+
+  const { actions: runActions, clips: runClips } = useAnimations(sanitizedRunClips, runGltf.scene);
+  const runClipName = useMemo(() => getFirstClipName(runClips, /run/i), [runClips]);
 
   const { actions: pushupEnterActions, clips: pushupEnterClips } = useAnimations(sanitizedPushupEnterClips, idleToPushupGltf.scene);
   const pushupEnterClipName = useMemo(() => getFirstClipName(pushupEnterClips), [pushupEnterClips]);
@@ -154,8 +165,8 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
 
   // Enable shadows on all models
   useEffect(() => {
-    [idleGltf.scene, walkGltf.scene, jumpGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene].forEach(enableMeshShadows);
-  }, [idleGltf.scene, walkGltf.scene, jumpGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene]);
+    [idleGltf.scene, walkGltf.scene, jumpGltf.scene, runGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene].forEach(enableMeshShadows);
+  }, [idleGltf.scene, walkGltf.scene, jumpGltf.scene, runGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene]);
 
   // Initialize walk (paused looping)
   useEffect(() => {
@@ -213,6 +224,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     if (idleVisibleRef.current) idleVisibleRef.current.visible = true;
     if (walkVisibleRef.current) walkVisibleRef.current.visible = false;
     if (jumpVisibleRef.current) jumpVisibleRef.current.visible = false;
+    if (runVisibleRef.current) runVisibleRef.current.visible = false;
     if (pushupEnterVisibleRef.current) pushupEnterVisibleRef.current.visible = false;
     if (pushupLoopVisibleRef.current) pushupLoopVisibleRef.current.visible = false;
     if (pushupExitVisibleRef.current) pushupExitVisibleRef.current.visible = false;
@@ -222,6 +234,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     const map: Record<CharState, React.RefObject<THREE.Group | null>> = {
       idle: idleVisibleRef,
       walk: walkVisibleRef,
+      run: runVisibleRef,
       jump: jumpVisibleRef,
       emote_pushup_enter: pushupEnterVisibleRef,
       emote_pushup_loop: pushupLoopVisibleRef,
@@ -311,7 +324,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     if (!grounded) {
       newState = 'jump';
     } else if (state === 'idle' ? speed > MOVE_START_THRESHOLD : speed > MOVE_STOP_THRESHOLD) {
-      newState = 'walk';
+      newState = speed > RUN_THRESHOLD ? 'run' : 'walk';
     } else {
       newState = 'idle';
     }
@@ -338,6 +351,19 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
         }
       }
     }
+
+    // Run animation speed
+    if (runClipName) {
+      const ra = runActions[runClipName];
+      if (ra) {
+        if (newState === 'run') {
+          ra.paused = false;
+          ra.setEffectiveTimeScale(1.0);
+        } else {
+          ra.paused = true;
+        }
+      }
+    }
   });
 
   const renderModel = (ref: React.RefObject<THREE.Group | null>, norm: ModelNormalization, scene: THREE.Object3D) => (
@@ -358,6 +384,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     <group>
       {renderModel(idleVisibleRef, idleNorm, idleGltf.scene)}
       {renderModel(walkVisibleRef, walkNorm, walkGltf.scene)}
+      {renderModel(runVisibleRef, runNorm, runGltf.scene)}
       {renderModel(jumpVisibleRef, jumpNorm, jumpGltf.scene)}
       {renderModel(pushupEnterVisibleRef, pushupEnterNorm, idleToPushupGltf.scene)}
       {renderModel(pushupLoopVisibleRef, pushupLoopNorm, pushupGltf.scene)}
@@ -479,6 +506,7 @@ function findArmatureNode(scene: THREE.Object3D): THREE.Object3D | null {
 useGLTF.preload(soldierIdleUrl);
 useGLTF.preload(soldierWalkUrl);
 useGLTF.preload(jumpUrl);
+useGLTF.preload(runUrl);
 useGLTF.preload(idleToPushupUrl);
 useGLTF.preload(pushupUrl);
 useGLTF.preload(pushupToIdleUrl);
