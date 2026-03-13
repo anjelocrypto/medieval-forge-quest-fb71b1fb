@@ -406,6 +406,9 @@ export function useMultiplayer() {
         else if (!t.channelSubscribed) console.error('  → Stalled at channel subscribe');
         else if (!t.presenceSynced) console.error('  → Stalled at presence sync');
         else if (!t.gameplayReady) console.error('  → Stalled at gameplay ready');
+        // Clear any leaked timers
+        if (broadcastTimerRef.current) { clearInterval(broadcastTimerRef.current); broadcastTimerRef.current = null; }
+        if (staleCleanupRef.current) { clearInterval(staleCleanupRef.current); staleCleanupRef.current = null; }
         clearSession();
         setConnectionStatus('disconnected');
       }
