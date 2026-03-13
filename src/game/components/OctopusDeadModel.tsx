@@ -53,4 +53,4 @@ export function OctopusDeadModel() {
   );
 }
 
-useGLTF.preload(octopusDieUrl);
+
