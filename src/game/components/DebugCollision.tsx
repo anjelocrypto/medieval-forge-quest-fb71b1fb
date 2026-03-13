@@ -22,7 +22,7 @@ const boxGeo = new THREE.BoxGeometry(1, 2, 1);
 const markerGeo = new THREE.CylinderGeometry(0.3, 0.3, 6, 6);
 
 // Spawn and gate coordinates
-const SPAWN_POS: [number, number] = [0, 45];
+const SPAWN_POS: [number, number] = [0, 82];
 const GATE_MARKERS: [number, number][] = [
   [0, 38],     // Capital south gate (gatehouse w=8, towers at ±4)
   [185, -155 + 20],  // Fort south gate (gatehouse w=7, towers at ±3.5)

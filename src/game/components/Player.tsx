@@ -185,10 +185,11 @@ export function Player({
       if (isMounted) onDismountHorse();
       const timer = setTimeout(() => {
         if (groupRef.current) {
-          const y = getTerrainHeight(0, 45) + PLAYER_HEIGHT / 2;
-          console.log('[Player] RESPAWN COMPLETE — teleporting to spawn');
-          groupRef.current.position.set(0, y, 45);
-          playerPositionRef.current.set(0, y, 45);
+          // Use safe spawn for respawn too
+          const spawn = findSafeSpawn(undefined, undefined, PLAYER_HEIGHT);
+          console.log('[Player] RESPAWN COMPLETE — teleporting to', spawn.x.toFixed(1), spawn.z.toFixed(1));
+          groupRef.current.position.set(spawn.x, spawn.y, spawn.z);
+          playerPositionRef.current.set(spawn.x, spawn.y, spawn.z);
           velocityRef.current.set(0, 0, 0);
         }
         onRespawn();
