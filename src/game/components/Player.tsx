@@ -837,12 +837,16 @@ export function Player({
   if (isDead) {
     return (
       <group ref={groupRef}>
-        <group rotation={[Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
-          <mesh castShadow>
-            <boxGeometry args={[0.7, 1, 0.35]} />
-            <meshLambertMaterial color="#4a3520" />
-          </mesh>
-        </group>
+        {character === 'goblin' ? (
+          <GoblinDeadModel />
+        ) : (
+          <group rotation={[Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
+            <mesh castShadow>
+              <boxGeometry args={[0.7, 1, 0.35]} />
+              <meshLambertMaterial color="#4a3520" />
+            </mesh>
+          </group>
+        )}
       </group>
     );
   }
