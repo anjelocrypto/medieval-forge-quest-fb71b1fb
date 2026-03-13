@@ -420,6 +420,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
             horse={horse}
             moveSpeedRef={moveSpeedRef}
             isRunningRef={isRunningRef}
+            isGroundedRef={isGroundedRef}
             attackAnimRef={attackAnimRef}
             mountedDebugRef={mountedDebugRef}
             buildMode={buildMode}
