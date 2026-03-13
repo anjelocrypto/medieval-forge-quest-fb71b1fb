@@ -178,10 +178,12 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const idleGltf = useGLTF(goblinStandingUrl);
   const walkGltf = useGLTF(goblinWalkingUrl);
   const runGltf = useGLTF(goblinRunningUrl);
+  const jumpGltf = useGLTF(goblinJumpUrl);
 
   const idleVisibleRef = useRef<THREE.Group>(null);
   const walkVisibleRef = useRef<THREE.Group>(null);
   const runVisibleRef = useRef<THREE.Group>(null);
+  const jumpVisibleRef = useRef<THREE.Group>(null);
 
   const stateRef = useRef<GoblinState>('idle');
 
