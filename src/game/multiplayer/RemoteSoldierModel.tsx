@@ -90,7 +90,9 @@ export function RemoteSoldierModel({ moveSpeed, isRunning, isGrounded, attackAni
       action.setLoop(THREE.LoopRepeat, Infinity);
       action.enabled = true;
       action.play();
-      return () => action.stop();
+      return () => {
+        action.stop();
+      };
     };
 
     const cleanups = [playLoop(idleActions), playLoop(walkActions), playLoop(runActions), playLoop(jumpActions)];
