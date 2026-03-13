@@ -351,29 +351,32 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     }
   }, []);
 
-  // Handle emote trigger
-  const prevEmoteRef = useRef<string | null>(null);
+  // Handle emote trigger — use activeEmoteId to detect re-triggers of the same emote
+  const prevEmoteIdRef = useRef(0);
   useEffect(() => {
-    if (activeEmote === 'pushups' && prevEmoteRef.current !== 'pushups') {
-      // Start pushup sequence
+    const id = activeEmoteId ?? 0;
+    if (id === prevEmoteIdRef.current || !activeEmote) {
+      prevEmoteIdRef.current = id;
+      return;
+    }
+    prevEmoteIdRef.current = id;
+
+    if (activeEmote === 'pushups') {
       stateRef.current = 'emote_pushup_enter';
       pushupStartTimeRef.current = 0;
       setVisibleState('emote_pushup_enter');
-
       if (pushupEnterClipName) {
         const a = pushupEnterActions[pushupEnterClipName];
         if (a) { a.reset(); a.play(); a.paused = false; }
       }
-    }
-    if (activeEmote === 'agree' && prevEmoteRef.current !== 'agree') {
+    } else if (activeEmote === 'agree') {
       stateRef.current = 'emote_agree';
       setVisibleState('emote_agree');
       if (agreeClipName) {
         const a = agreeActions[agreeClipName];
         if (a) { a.reset(); a.play(); a.paused = false; }
       }
-    }
-    if (activeEmote === 'wave' && prevEmoteRef.current !== 'wave') {
+    } else if (activeEmote === 'wave') {
       stateRef.current = 'emote_wave';
       setVisibleState('emote_wave');
       if (waveClipName) {
@@ -381,8 +384,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
         if (a) { a.reset(); a.play(); a.paused = false; }
       }
     }
-    prevEmoteRef.current = activeEmote;
-  }, [activeEmote, pushupEnterActions, pushupEnterClipName, agreeActions, agreeClipName, waveActions, waveClipName, setVisibleState]);
+  }, [activeEmoteId, activeEmote, pushupEnterActions, pushupEnterClipName, agreeActions, agreeClipName, waveActions, waveClipName, setVisibleState]);
 
   useFrame(() => {
     const state = stateRef.current;
