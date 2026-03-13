@@ -363,6 +363,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
           externalAttackAnimRef={attackAnimRef}
           activeEmote={activeEmote}
           onEmoteComplete={useCallback(() => setActiveEmote(null), [])}
+          damageFlash={damageFlash}
         />
         <WorldObjects
           resources={resources}

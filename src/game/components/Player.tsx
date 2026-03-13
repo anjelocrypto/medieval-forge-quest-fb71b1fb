@@ -939,7 +939,7 @@ export function Player({
             lean + riderLean
           ]}
         >
-          <PlayerGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} onEmoteComplete={onEmoteComplete} />
+          <PlayerGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} />
         </group>
       </group>
     </group>
