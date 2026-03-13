@@ -203,6 +203,7 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   const stateRef = useRef<OctopusState>('idle');
 
   // Sanitize clips
+  const sanitizedIdleClips = useMemo(() => sanitizeClips(idleGltf.animations), [idleGltf.animations]);
   const sanitizedWalkClips = useMemo(() => sanitizeClips(walkGltf.animations), [walkGltf.animations]);
   const sanitizedRunClips = useMemo(() => sanitizeClips(runGltf.animations), [runGltf.animations]);
   const sanitizedJumpClips = useMemo(() => sanitizeClips(jumpGltf.animations), [jumpGltf.animations]);
