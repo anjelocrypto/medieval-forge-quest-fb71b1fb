@@ -102,8 +102,14 @@ export function useMultiplayer() {
   const staleCleanupRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timingsRef = useRef<StartupTimings>(createTimings());
   const firstRemoteReceivedRef = useRef(false);
+  const connectionStatusRef = useRef<ConnectionStatus>('disconnected');
 
   const connected = connectionStatus === 'connected';
+
+  // Keep ref in sync with state for use in timeout callbacks
+  useEffect(() => {
+    connectionStatusRef.current = connectionStatus;
+  }, [connectionStatus]);
 
   // Update display name
   const updateDisplayName = useCallback((name: string) => {
