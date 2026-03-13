@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import goblinStandingUrl from '@/assets/goblinstanding.glb?url';
 import goblinWalkingUrl from '@/assets/goblinwalking.glb?url';
 import goblinRunningUrl from '@/assets/goblinrunning.glb?url';
+import goblinJumpUrl from '@/assets/goblinjump.glb?url';
 
 interface GoblinGLBModelProps {
   moveSpeedRef: React.MutableRefObject<number>;
