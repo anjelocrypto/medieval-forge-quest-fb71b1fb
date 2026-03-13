@@ -35,8 +35,38 @@ function sanitizeClips(animations: THREE.AnimationClip[]): THREE.AnimationClip[]
   });
 }
 
+function normalizeMaterial(mat: THREE.Material): THREE.Material {
+  const cloned = mat.clone();
+  if (cloned instanceof THREE.MeshStandardMaterial || cloned instanceof THREE.MeshPhysicalMaterial) {
+    // Kill any excessive emissive glow
+    cloned.emissive.set(0x000000);
+    cloned.emissiveIntensity = 0;
+    // Clamp metalness to prevent blown-out reflections without envmap
+    if (cloned.metalness > 0.3) cloned.metalness = 0.1;
+    if (cloned.roughness < 0.3) cloned.roughness = 0.5;
+    // Ensure no transparency artifacts
+    cloned.transparent = false;
+    cloned.opacity = 1;
+    cloned.depthWrite = true;
+    cloned.side = THREE.FrontSide;
+  }
+  return cloned;
+}
+
 function cloneScene(scene: THREE.Group): THREE.Group {
   const cloned = scene.clone(true);
+  // Clone + normalize materials so remote players don't share material state with local/other remotes
+  cloned.traverse((n) => {
+    const mesh = n as THREE.Mesh;
+    if (mesh.isMesh && mesh.material) {
+      if (Array.isArray(mesh.material)) {
+        mesh.material = mesh.material.map(normalizeMaterial);
+      } else {
+        mesh.material = normalizeMaterial(mesh.material);
+      }
+    }
+  });
+  // Rebind skeletons
   const skinnedMeshes: THREE.SkinnedMesh[] = [];
   const origSkinnedMeshes: THREE.SkinnedMesh[] = [];
   scene.traverse((n) => { if ((n as THREE.SkinnedMesh).isSkinnedMesh) origSkinnedMeshes.push(n as THREE.SkinnedMesh); });
