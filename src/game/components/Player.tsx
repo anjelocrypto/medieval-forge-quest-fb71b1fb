@@ -835,7 +835,7 @@ export function Player({
     );
   }
 
-  const playerY = isMounted ? -0.35 + riderBounce : bodyBob + idleBreath;
+  const playerY = isMounted ? -0.35 + riderBounce : 0;
 
   return (
     <group ref={groupRef}>
@@ -934,7 +934,7 @@ export function Player({
             lean + riderLean
           ]}
         >
-          <PlayerGLBModel moveSpeedRef={moveSpeedRef} />
+          <PlayerGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} />
         </group>
       </group>
     </group>
