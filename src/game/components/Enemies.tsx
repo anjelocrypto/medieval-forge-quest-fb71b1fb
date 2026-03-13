@@ -57,7 +57,8 @@ const wolfBodyMat = new THREE.MeshLambertMaterial({ color: '#5a4a3a' });
 const wolfLightMat = new THREE.MeshLambertMaterial({ color: '#7a6a5a' });
 const wolfEyeMat = new THREE.MeshBasicMaterial({ color: '#ccaa00' });
 const hitMat = new THREE.MeshLambertMaterial({ color: '#ff4444' });
-const deadMat = new THREE.MeshLambertMaterial({ color: '#4a2020', transparent: true });
+// deadMat is NOT shared — each enemy gets its own instance via deadMatsMap
+const deadMatTemplate = { color: '#4a2020' };
 const hpBgMat = new THREE.MeshBasicMaterial({ color: '#222', transparent: true, opacity: 0.8 });
 const hpGreenMat = new THREE.MeshBasicMaterial({ color: '#44aa44' });
 const hpRedMat = new THREE.MeshBasicMaterial({ color: '#cc4444' });
