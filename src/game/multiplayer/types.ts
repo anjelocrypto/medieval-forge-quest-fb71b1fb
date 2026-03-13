@@ -4,6 +4,7 @@
 export interface NetworkPlayerState {
   playerId: string;
   displayName: string;
+  characterType: 'soldier' | 'goblin';
   position: [number, number, number];
   rotation: number;
   moveSpeed: number;
