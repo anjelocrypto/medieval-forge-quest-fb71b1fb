@@ -164,6 +164,9 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const { actions: runActions, clips: runClips } = useAnimations(sanitizedRunClips, runGltf.scene);
   const runClipName = useMemo(() => getFirstClipName(runClips, /run/i), [runClips]);
 
+  const { actions: hitActions, clips: hitClips } = useAnimations(sanitizedHitClips, hitGltf.scene);
+  const hitClipName = useMemo(() => getFirstClipName(hitClips, /hit|hurt|damage|react/i), [hitClips]);
+
   const { actions: pushupEnterActions, clips: pushupEnterClips } = useAnimations(sanitizedPushupEnterClips, idleToPushupGltf.scene);
   const pushupEnterClipName = useMemo(() => getFirstClipName(pushupEnterClips), [pushupEnterClips]);
 
