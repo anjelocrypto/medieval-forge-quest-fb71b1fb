@@ -1,0 +1,452 @@
+import { useEffect, useMemo, useRef, useCallback } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { useAnimations, useGLTF } from '@react-three/drei';
+import * as THREE from 'three';
+import octopusWalkingUrl from '@/assets/octopuswalking.glb?url';
+import octopusRunningUrl from '@/assets/octopusrunning.glb?url';
+import octopusJumpUrl from '@/assets/octopusjump.glb?url';
+import octopusGetHitUrl from '@/assets/octopusgethit.glb?url';
+import octopusDanceUrl from '@/assets/octopusdance.glb?url';
+
+interface OctopusGLBModelProps {
+  moveSpeedRef: React.MutableRefObject<number>;
+  controllerHalfHeight: number;
+  isGroundedRef: React.MutableRefObject<boolean>;
+  activeEmote: string | null;
+  activeEmoteId?: number;
+  onEmoteComplete: () => void;
+  damageFlash?: number;
+  attackAnimRef?: React.MutableRefObject<number>;
+  isFightingRef?: React.MutableRefObject<boolean>;
+}
+
+type OctopusState = 'idle' | 'walk' | 'run' | 'jump' | 'hit' | 'emote_dance';
+
+const HIT_ANIM_DURATION = 0.8;
+const MOVE_START_THRESHOLD = 0.07;
+const MOVE_STOP_THRESHOLD = 0.04;
+const RUN_THRESHOLD = 0.7;
+const ROOT_TRANSLATION_NAME_RE = /(hips|pelvis|root|armature)/i;
+const BONE_HIPS_RE = /(hips|pelvis)/i;
+const BONE_HEAD_RE = /(head|neck)/i;
+const BONE_LEFT_RE = /(leftshoulder|left_shoulder|shoulder_l|leftarm|left_arm)/i;
+const BONE_RIGHT_RE = /(rightshoulder|right_shoulder|shoulder_r|rightarm|right_arm)/i;
+
+const _tmpVecA = new THREE.Vector3();
+const _tmpVecB = new THREE.Vector3();
+const _tmpVecC = new THREE.Vector3();
+const _tmpVecD = new THREE.Vector3();
+const _tmpUp = new THREE.Vector3();
+const _tmpRight = new THREE.Vector3();
+const _tmpForward = new THREE.Vector3();
+const _tmpForwardAlt = new THREE.Vector3();
+const _tmpCenter = new THREE.Vector3();
+const _tmpSize = new THREE.Vector3();
+
+function sanitizeClips(animations: THREE.AnimationClip[]): THREE.AnimationClip[] {
+  return animations.map((clip) => {
+    const clonedClip = clip.clone();
+    clonedClip.tracks = clonedClip.tracks.filter((track) => {
+      if (!track.name.endsWith('.position')) return true;
+      const target = track.name.slice(0, track.name.lastIndexOf('.'));
+      return !ROOT_TRANSLATION_NAME_RE.test(target);
+    });
+    return clonedClip;
+  });
+}
+
+function getFirstClipName(clips: THREE.AnimationClip[], hint?: RegExp): string | null {
+  if (clips.length === 0) return null;
+  if (hint) {
+    const found = clips.find(c => hint.test(c.name));
+    if (found) return found.name;
+  }
+  return clips[0].name;
+}
+
+interface ModelInspection {
+  label: string;
+  sceneRoot: THREE.Object3D;
+  armature: THREE.Object3D | null;
+  skinnedMesh: THREE.SkinnedMesh | null;
+  hipsBone: THREE.Bone | null;
+  bounds: THREE.Box3;
+  size: THREE.Vector3;
+  center: THREE.Vector3;
+  anchor: THREE.Vector3;
+  footY: number;
+  height: number;
+  facingYaw: number | null;
+  facingYawCandidates: number[];
+}
+
+interface ModelNormalization {
+  modelAnchorOffset: [number, number, number];
+  scale: number;
+  yawCorrection: number;
+  controllerGroundOffset: number;
+}
+
+function inspectModel(label: string, scene: THREE.Object3D): ModelInspection {
+  scene.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(scene);
+  const size = bounds.getSize(_tmpSize.clone());
+  const center = bounds.getCenter(_tmpCenter.clone());
+
+  const skinnedMeshes: THREE.SkinnedMesh[] = [];
+  scene.traverse((child) => {
+    if ((child as THREE.SkinnedMesh).isSkinnedMesh) skinnedMeshes.push(child as THREE.SkinnedMesh);
+  });
+
+  const primarySkinnedMesh = skinnedMeshes[0] ?? null;
+  const skeleton = primarySkinnedMesh?.skeleton ?? null;
+  const hipsBone = skeleton?.bones.find((bone) => BONE_HIPS_RE.test(bone.name)) ?? skeleton?.bones[0] ?? null;
+  const armature = scene.getObjectByName('Armature') ?? findArmatureNode(scene);
+  const facing = inferFacingYawFromSkeleton(skeleton);
+
+  let anchorX = center.x, anchorZ = center.z;
+  if (hipsBone) {
+    hipsBone.getWorldPosition(_tmpVecA);
+    anchorX = _tmpVecA.x;
+    anchorZ = _tmpVecA.z;
+  }
+
+  return {
+    label, sceneRoot: scene, armature, skinnedMesh: primarySkinnedMesh, hipsBone,
+    bounds, size: size.clone(), center: center.clone(),
+    anchor: new THREE.Vector3(anchorX, 0, anchorZ),
+    footY: bounds.min.y, height: size.y,
+    facingYaw: facing.yaw, facingYawCandidates: facing.candidates,
+  };
+}
+
+function inferFacingYawFromSkeleton(skeleton: THREE.Skeleton | null): { yaw: number | null; candidates: number[] } {
+  if (!skeleton || skeleton.bones.length === 0) return { yaw: null, candidates: [] };
+  const hips = skeleton.bones.find((b) => BONE_HIPS_RE.test(b.name)) ?? null;
+  const head = skeleton.bones.find((b) => BONE_HEAD_RE.test(b.name)) ?? null;
+  const left = skeleton.bones.find((b) => BONE_LEFT_RE.test(b.name)) ?? null;
+  const right = skeleton.bones.find((b) => BONE_RIGHT_RE.test(b.name)) ?? null;
+  if (!hips || !head || !left || !right) return { yaw: null, candidates: [] };
+
+  hips.getWorldPosition(_tmpVecA); head.getWorldPosition(_tmpVecB);
+  left.getWorldPosition(_tmpVecC); right.getWorldPosition(_tmpVecD);
+  _tmpUp.subVectors(_tmpVecB, _tmpVecA).normalize();
+  _tmpRight.subVectors(_tmpVecD, _tmpVecC).normalize();
+  _tmpForward.crossVectors(_tmpRight, _tmpUp).normalize();
+  _tmpForwardAlt.crossVectors(_tmpUp, _tmpRight).normalize();
+  if (_tmpForward.lengthSq() < 1e-6 || _tmpForwardAlt.lengthSq() < 1e-6) return { yaw: null, candidates: [] };
+
+  const yawA = Math.atan2(_tmpForward.x, _tmpForward.z);
+  const yawB = Math.atan2(_tmpForwardAlt.x, _tmpForwardAlt.z);
+  const nA = normalizeAngle(yawA), nB = normalizeAngle(yawB);
+  const preferred = Math.abs(nA) <= Math.abs(nB) ? nA : nB;
+  return { yaw: preferred, candidates: [nA, nB] };
+}
+
+function normalizeAngle(v: number): number {
+  let out = v;
+  while (out > Math.PI) out -= Math.PI * 2;
+  while (out < -Math.PI) out += Math.PI * 2;
+  return out;
+}
+
+function enableMeshShadows(scene: THREE.Object3D) {
+  scene.traverse((child) => { if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+}
+
+function findArmatureNode(scene: THREE.Object3D): THREE.Object3D | null {
+  let armature: THREE.Object3D | null = null;
+  scene.traverse((child) => { if (armature) return; if (/armature/i.test(child.name)) armature = child; });
+  return armature;
+}
+
+function buildNormalization(
+  inspection: ModelInspection,
+  canonicalHeight: number,
+  fallbackYawCorrection: number,
+  controllerHalfHeight: number,
+): ModelNormalization {
+  const scale = inspection.height > 0.01 ? canonicalHeight / inspection.height : 1;
+  const yawCorrection = inspection.facingYaw !== null ? -inspection.facingYaw : fallbackYawCorrection;
+  return {
+    modelAnchorOffset: [-inspection.anchor.x, -inspection.footY, -inspection.anchor.z],
+    scale,
+    yawCorrection,
+    controllerGroundOffset: -controllerHalfHeight,
+  };
+}
+
+export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedRef, activeEmote, activeEmoteId, onEmoteComplete, damageFlash, attackAnimRef, isFightingRef }: OctopusGLBModelProps) {
+  // Octopus uses walking as idle (standing still pose)
+  const walkGltf = useGLTF(octopusWalkingUrl);
+  const runGltf = useGLTF(octopusRunningUrl);
+  const jumpGltf = useGLTF(octopusJumpUrl);
+  const hitGltf = useGLTF(octopusGetHitUrl);
+  const danceGltf = useGLTF(octopusDanceUrl);
+
+  const idleVisibleRef = useRef<THREE.Group>(null);
+  const walkVisibleRef = useRef<THREE.Group>(null);
+  const runVisibleRef = useRef<THREE.Group>(null);
+  const jumpVisibleRef = useRef<THREE.Group>(null);
+  const hitVisibleRef = useRef<THREE.Group>(null);
+  const danceVisibleRef = useRef<THREE.Group>(null);
+
+  const lastEmoteIdRef = useRef<number>(0);
+  const hitStartTimeRef = useRef(0);
+  const prevDamageFlashRef = useRef(0);
+  const stateRef = useRef<OctopusState>('idle');
+
+  // Sanitize clips
+  const sanitizedWalkClips = useMemo(() => sanitizeClips(walkGltf.animations), [walkGltf.animations]);
+  const sanitizedRunClips = useMemo(() => sanitizeClips(runGltf.animations), [runGltf.animations]);
+  const sanitizedJumpClips = useMemo(() => sanitizeClips(jumpGltf.animations), [jumpGltf.animations]);
+  const sanitizedHitClips = useMemo(() => sanitizeClips(hitGltf.animations), [hitGltf.animations]);
+  const sanitizedDanceClips = useMemo(() => sanitizeClips(danceGltf.animations), [danceGltf.animations]);
+
+  // Inspections
+  const walkInspection = useMemo(() => inspectModel('octopus_walk', walkGltf.scene), [walkGltf.scene]);
+  const runInspection = useMemo(() => inspectModel('octopus_run', runGltf.scene), [runGltf.scene]);
+  const jumpInspection = useMemo(() => inspectModel('octopus_jump', jumpGltf.scene), [jumpGltf.scene]);
+  const hitInspection = useMemo(() => inspectModel('octopus_hit', hitGltf.scene), [hitGltf.scene]);
+  const danceInspection = useMemo(() => inspectModel('octopus_dance', danceGltf.scene), [danceGltf.scene]);
+
+  const canonicalHeight = useMemo(() => {
+    if (walkInspection.height > 0.01) return walkInspection.height;
+    return 1.0;
+  }, [walkInspection.height]);
+
+  const canonicalYawCorrection = useMemo(() => {
+    return walkInspection.facingYaw !== null ? -walkInspection.facingYaw : 0;
+  }, [walkInspection.facingYaw]);
+
+  // Normalizations
+  const walkNorm = useMemo(() => buildNormalization(walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
+  const runNorm = useMemo(() => buildNormalization(runInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [runInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
+  const jumpNorm = useMemo(() => buildNormalization(jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
+  const hitNorm = useMemo(() => buildNormalization(hitInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [hitInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
+  const danceNorm = useMemo(() => buildNormalization(danceInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [danceInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
+
+  // Animation setups
+  const { actions: walkActions, clips: walkClips } = useAnimations(sanitizedWalkClips, walkGltf.scene);
+  const walkClipName = useMemo(() => getFirstClipName(walkClips, /walk/i), [walkClips]);
+
+  const { actions: runActions, clips: runClips } = useAnimations(sanitizedRunClips, runGltf.scene);
+  const runClipName = useMemo(() => getFirstClipName(runClips, /run/i), [runClips]);
+
+  const { actions: jumpActions, clips: jumpClips } = useAnimations(sanitizedJumpClips, jumpGltf.scene);
+  const jumpClipName = useMemo(() => getFirstClipName(jumpClips, /jump/i), [jumpClips]);
+
+  const { actions: hitActions, clips: hitClips } = useAnimations(sanitizedHitClips, hitGltf.scene);
+  const hitClipName = useMemo(() => getFirstClipName(hitClips, /hit|hurt|damage/i), [hitClips]);
+
+  const { actions: danceActions, clips: danceClips } = useAnimations(sanitizedDanceClips, danceGltf.scene);
+  const danceClipName = useMemo(() => getFirstClipName(danceClips, /dance/i), [danceClips]);
+
+  // Enable shadows
+  useEffect(() => {
+    [walkGltf.scene, runGltf.scene, jumpGltf.scene, hitGltf.scene, danceGltf.scene].forEach(enableMeshShadows);
+    console.log('[Octopus] Clip names — walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName, 'hit:', hitClipName, 'dance:', danceClipName);
+  }, [walkGltf.scene, runGltf.scene, jumpGltf.scene, hitGltf.scene, danceGltf.scene, walkClipName, runClipName, jumpClipName, hitClipName, danceClipName]);
+
+  // Initialize walk/idle (looping)
+  useEffect(() => {
+    if (!walkClipName) return;
+    const a = walkActions[walkClipName]; if (!a) return;
+    a.reset(); a.setLoop(THREE.LoopRepeat, Infinity); a.clampWhenFinished = false; a.enabled = true; a.play();
+    return () => { a.stop(); };
+  }, [walkActions, walkClipName]);
+
+  // Initialize run (paused looping)
+  useEffect(() => {
+    if (!runClipName) return;
+    const a = runActions[runClipName]; if (!a) return;
+    a.reset(); a.setLoop(THREE.LoopRepeat, Infinity); a.clampWhenFinished = false; a.enabled = true; a.play(); a.paused = true;
+    return () => { a.stop(); };
+  }, [runActions, runClipName]);
+
+  // Initialize jump (paused looping)
+  useEffect(() => {
+    if (!jumpClipName) return;
+    const a = jumpActions[jumpClipName]; if (!a) return;
+    a.reset(); a.setLoop(THREE.LoopRepeat, Infinity); a.clampWhenFinished = false; a.enabled = true; a.play(); a.paused = true;
+    return () => { a.stop(); };
+  }, [jumpActions, jumpClipName]);
+
+  // Initial visibility
+  useEffect(() => {
+    if (idleVisibleRef.current) idleVisibleRef.current.visible = true;
+    if (walkVisibleRef.current) walkVisibleRef.current.visible = false;
+    if (runVisibleRef.current) runVisibleRef.current.visible = false;
+    if (jumpVisibleRef.current) jumpVisibleRef.current.visible = false;
+    if (hitVisibleRef.current) hitVisibleRef.current.visible = false;
+    if (danceVisibleRef.current) danceVisibleRef.current.visible = false;
+  }, []);
+
+  const setVisibleState = useCallback((state: OctopusState) => {
+    const showIdle = state === 'idle';
+    const showWalk = state === 'walk';
+    const showRun = state === 'run';
+    const showJump = state === 'jump';
+    const showHit = state === 'hit';
+    const showDance = state === 'emote_dance';
+    if (idleVisibleRef.current) idleVisibleRef.current.visible = showIdle;
+    if (walkVisibleRef.current) walkVisibleRef.current.visible = showWalk;
+    if (runVisibleRef.current) runVisibleRef.current.visible = showRun;
+    if (jumpVisibleRef.current) jumpVisibleRef.current.visible = showJump;
+    if (hitVisibleRef.current) hitVisibleRef.current.visible = showHit;
+    if (danceVisibleRef.current) danceVisibleRef.current.visible = showDance;
+  }, []);
+
+  useFrame(() => {
+    const state = stateRef.current;
+    const speed = moveSpeedRef.current;
+    const grounded = isGroundedRef.current;
+
+    // ===== DAMAGE HIT TRIGGER =====
+    const currentFlash = damageFlash ?? 0;
+    if (currentFlash > 0 && prevDamageFlashRef.current === 0 && stateRef.current !== 'hit') {
+      stateRef.current = 'hit';
+      hitStartTimeRef.current = performance.now();
+      setVisibleState('hit');
+      if (hitClipName) {
+        const a = hitActions[hitClipName];
+        if (a) { a.reset(); a.play(); a.paused = false; }
+      }
+    }
+    prevDamageFlashRef.current = currentFlash;
+
+    // ===== HIT STATE =====
+    if (stateRef.current === 'hit') {
+      const elapsed = (performance.now() - hitStartTimeRef.current) / 1000;
+      if (hitClipName) {
+        const a = hitActions[hitClipName];
+        if (a && (elapsed >= HIT_ANIM_DURATION || a.time >= a.getClip().duration - 0.05)) {
+          a.paused = true;
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+        }
+      } else {
+        if (elapsed >= HIT_ANIM_DURATION) {
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+        }
+      }
+      return;
+    }
+
+    // Handle emote trigger
+    const emoteId = activeEmoteId ?? 0;
+    if (activeEmote === 'octopusdance' && emoteId !== lastEmoteIdRef.current) {
+      lastEmoteIdRef.current = emoteId;
+      stateRef.current = 'emote_dance';
+      setVisibleState('emote_dance');
+      if (danceClipName) {
+        const a = danceActions[danceClipName];
+        if (a) { a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.enabled = true; a.play(); a.paused = false; }
+      }
+      return;
+    }
+
+    // ===== DANCE EMOTE STATE =====
+    if (state === 'emote_dance') {
+      if (danceClipName) {
+        const a = danceActions[danceClipName];
+        if (a && a.time >= a.getClip().duration - 0.05) {
+          a.paused = true;
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+          onEmoteComplete();
+        }
+      } else {
+        stateRef.current = 'idle';
+        setVisibleState('idle');
+        onEmoteComplete();
+      }
+      return;
+    }
+
+    // ===== NORMAL LOCOMOTION =====
+    let newState: OctopusState;
+    if (!grounded) {
+      newState = 'jump';
+    } else if (state === 'idle' ? speed > MOVE_START_THRESHOLD : speed > MOVE_STOP_THRESHOLD) {
+      newState = speed > RUN_THRESHOLD ? 'run' : 'walk';
+    } else {
+      newState = 'idle';
+    }
+
+    if (newState !== state) {
+      stateRef.current = newState;
+      setVisibleState(newState);
+    }
+
+    // Walk animation (also used for idle with slower speed)
+    if (walkClipName) {
+      const wa = walkActions[walkClipName];
+      if (wa) {
+        if (newState === 'idle') {
+          wa.paused = false;
+          wa.setEffectiveTimeScale(0.3); // slow walk = idle breathing
+        } else if (newState === 'walk') {
+          wa.paused = false;
+          wa.setEffectiveTimeScale(Math.max(0.55, THREE.MathUtils.clamp(speed, 0, 1.4) * 1.35));
+        } else {
+          wa.paused = true;
+        }
+      }
+    }
+
+    // Jump animation
+    if (jumpClipName) {
+      const ja = jumpActions[jumpClipName];
+      if (ja) {
+        ja.paused = newState !== 'jump';
+      }
+    }
+
+    // Run animation speed
+    if (runClipName) {
+      const ra = runActions[runClipName];
+      if (ra) {
+        if (newState === 'run') {
+          ra.paused = false;
+          ra.setEffectiveTimeScale(1.0);
+        } else {
+          ra.paused = true;
+        }
+      }
+    }
+  });
+
+  const renderModel = (ref: React.RefObject<THREE.Group | null>, norm: ModelNormalization, scene: THREE.Object3D) => (
+    <group ref={ref}>
+      <group rotation={[0, norm.yawCorrection, 0]}>
+        <group position={[0, norm.controllerGroundOffset, 0]}>
+          <group scale={[norm.scale, norm.scale, norm.scale]}>
+            <group position={norm.modelAnchorOffset}>
+              <primitive object={scene} />
+            </group>
+          </group>
+        </group>
+      </group>
+    </group>
+  );
+
+  return (
+    <group>
+      {/* idle uses walk scene with slow playback */}
+      {renderModel(idleVisibleRef, walkNorm, walkGltf.scene)}
+      {renderModel(walkVisibleRef, walkNorm, walkGltf.scene)}
+      {renderModel(runVisibleRef, runNorm, runGltf.scene)}
+      {renderModel(jumpVisibleRef, jumpNorm, jumpGltf.scene)}
+      {renderModel(hitVisibleRef, hitNorm, hitGltf.scene)}
+      {renderModel(danceVisibleRef, danceNorm, danceGltf.scene)}
+    </group>
+  );
+}
+
+useGLTF.preload(octopusWalkingUrl);
+useGLTF.preload(octopusRunningUrl);
+useGLTF.preload(octopusJumpUrl);
+useGLTF.preload(octopusGetHitUrl);
+useGLTF.preload(octopusDanceUrl);
