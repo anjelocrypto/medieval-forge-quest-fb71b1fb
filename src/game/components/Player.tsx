@@ -65,6 +65,7 @@ interface PlayerProps {
   externalAttackAnimRef?: React.MutableRefObject<number>;
   // Emote
   activeEmote: string | null;
+  activeEmoteId?: number;
   onEmoteComplete: () => void;
   damageFlash?: number;
 }
