@@ -103,7 +103,7 @@ export function Player({
   onAddResource, onDepleteResource, onHitResource, inventory,
   shakeResourceRef, highlightedResourceRef,
   resources, mountedDebugRef,
-  externalMoveSpeedRef, externalIsRunningRef, externalAttackAnimRef,
+  externalMoveSpeedRef, externalIsRunningRef, externalIsGroundedRef, externalAttackAnimRef,
   activeEmote, activeEmoteId, onEmoteComplete, damageFlash,
 }: PlayerProps) {
   const { character } = useCharacter();
