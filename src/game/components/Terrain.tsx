@@ -173,4 +173,4 @@ export const Terrain = memo(function Terrain() {
       <meshLambertMaterial vertexColors />
     </mesh>
   );
-}
+});

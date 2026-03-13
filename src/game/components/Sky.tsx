@@ -39,4 +39,4 @@ export const Sky = memo(function Sky() {
       <meshBasicMaterial map={gradientMap} side={THREE.BackSide} />
     </mesh>
   );
-}
+});

@@ -114,11 +114,11 @@ function Fireflies() {
   );
 }
 
-export function AmbientEffects() {
+export const AmbientEffects = memo(function AmbientEffects() {
   return (
     <group>
       <DustParticles />
       <Fireflies />
     </group>
   );
-}
+});
