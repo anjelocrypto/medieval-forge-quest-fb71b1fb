@@ -389,9 +389,9 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
         <LootPickups pickups={lootPickups} />
         <Horse horse={horse} playerPositionRef={playerPositionRef} onUpdateHorse={updateHorse} isMounted={isMounted} />
         <Enemies
-          enemies={enemies}
+          ref={enemiesHandleRef}
           playerPositionRef={playerPositionRef}
-          onEnemiesUpdate={handleEnemiesUpdate}
+          onEnemyKill={handleEnemyKill}
           pendingPlayerDamageRef={pendingPlayerDamageRef}
         />
         <BuildingSystem
