@@ -183,14 +183,23 @@ export function buildModelNormalization(
   targetHeight: number,
   fallbackYawCorrection = 0,
   fallbackScale?: number,
+  fallbackAnchorOffset?: [number, number, number],
 ): ModelNormalization {
   const inspection = inspectModel(scene);
   const rawScale = inspection.height > 0.01 ? targetHeight / inspection.height : (fallbackScale ?? 1);
   const scale = sanitizeScale(rawScale, fallbackScale);
   const yawCorrection = inspection.facingYaw !== null ? -inspection.facingYaw : fallbackYawCorrection;
 
+  const computedOffset: [number, number, number] = [-inspection.anchor.x, -inspection.footY, -inspection.anchor.z];
+  const offsetMagnitude = Math.hypot(computedOffset[0], computedOffset[2]);
+  const finiteOffset = Number.isFinite(computedOffset[0]) && Number.isFinite(computedOffset[1]) && Number.isFinite(computedOffset[2]);
+  const maxReasonableOffset = Math.max(2.5, targetHeight * 3.5);
+  const modelAnchorOffset = finiteOffset && offsetMagnitude <= maxReasonableOffset
+    ? computedOffset
+    : (fallbackAnchorOffset ?? [0, 0, 0]);
+
   return {
-    modelAnchorOffset: [-inspection.anchor.x, -inspection.footY, -inspection.anchor.z],
+    modelAnchorOffset,
     scale,
     yawCorrection,
   };
