@@ -629,6 +629,7 @@ useGLTF.preload(soldierWalkUrl);
 useGLTF.preload(jumpUrl);
 useGLTF.preload(runUrl);
 useGLTF.preload(gethitUrl);
+useGLTF.preload(fightUrl);
 useGLTF.preload(idleToPushupUrl);
 useGLTF.preload(pushupUrl);
 useGLTF.preload(pushupToIdleUrl);
