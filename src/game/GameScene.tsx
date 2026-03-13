@@ -302,6 +302,12 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
         </button>
       )}
 
+      {/* Emote Wheel */}
+      <EmoteWheel
+        onSelectEmote={(key) => setActiveEmote(key)}
+        isPlayingEmote={activeEmote !== null}
+      />
+
       <Canvas shadows camera={{ fov: 55, near: 0.5, far: 1500, position: [0, 10, 15] }}
         style={{ width: '100%', height: '100%' }}>
         <InputFlusher />
