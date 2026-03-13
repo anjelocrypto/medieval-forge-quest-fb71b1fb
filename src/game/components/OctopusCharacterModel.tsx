@@ -300,12 +300,14 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
     const showRun = state === 'run';
     const showJump = state === 'jump';
     const showHit = state === 'hit';
+    const showFight = state === 'fight';
     const showDance = state === 'emote_dance';
     if (idleVisibleRef.current) idleVisibleRef.current.visible = showIdle;
     if (walkVisibleRef.current) walkVisibleRef.current.visible = showWalk;
     if (runVisibleRef.current) runVisibleRef.current.visible = showRun;
     if (jumpVisibleRef.current) jumpVisibleRef.current.visible = showJump;
     if (hitVisibleRef.current) hitVisibleRef.current.visible = showHit;
+    if (fightVisibleRef.current) fightVisibleRef.current.visible = showFight;
     if (danceVisibleRef.current) danceVisibleRef.current.visible = showDance;
   }, []);
 
