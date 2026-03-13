@@ -181,7 +181,15 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
       }
       if (ev.type === 'enemy_killed') {
         const id = ev.payload.enemyId as string;
-        setEnemies(prev => prev.map(e => e.id === id ? { ...e, health: 0, state: 'dead' as const } : e));
+        const handle = enemiesHandleRef.current;
+        if (handle) {
+          const enemy = handle.getEnemies().get(id);
+          if (enemy && enemy.state !== 'dead') {
+            enemy.health = 0;
+            enemy.state = 'dead';
+            enemy.deathTimer = 0;
+          }
+        }
       }
       if (ev.type === 'building_placed') {
         const structure = ev.payload.structure as Record<string, unknown>;
