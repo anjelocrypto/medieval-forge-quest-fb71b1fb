@@ -6,6 +6,7 @@ import goblinStandingUrl from '@/assets/goblinstanding.glb?url';
 import goblinWalkingUrl from '@/assets/goblinwalking.glb?url';
 import goblinRunningUrl from '@/assets/goblinrunning.glb?url';
 import goblinJumpUrl from '@/assets/goblinjump.glb?url';
+import hiphopUrl from '@/assets/hiphop.glb?url';
 
 interface GoblinGLBModelProps {
   moveSpeedRef: React.MutableRefObject<number>;
@@ -19,7 +20,7 @@ interface GoblinGLBModelProps {
   isFightingRef?: React.MutableRefObject<boolean>;
 }
 
-type GoblinState = 'idle' | 'walk' | 'run' | 'jump';
+type GoblinState = 'idle' | 'walk' | 'run' | 'jump' | 'emote_hiphop';
 
 const MOVE_START_THRESHOLD = 0.07;
 const MOVE_STOP_THRESHOLD = 0.04;
@@ -179,11 +180,15 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const walkGltf = useGLTF(goblinWalkingUrl);
   const runGltf = useGLTF(goblinRunningUrl);
   const jumpGltf = useGLTF(goblinJumpUrl);
+  const hiphopGltf = useGLTF(hiphopUrl);
 
   const idleVisibleRef = useRef<THREE.Group>(null);
   const walkVisibleRef = useRef<THREE.Group>(null);
   const runVisibleRef = useRef<THREE.Group>(null);
   const jumpVisibleRef = useRef<THREE.Group>(null);
+  const hiphopVisibleRef = useRef<THREE.Group>(null);
+
+  const lastEmoteIdRef = useRef<number>(0);
 
   const stateRef = useRef<GoblinState>('idle');
 
@@ -192,12 +197,14 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const sanitizedWalkClips = useMemo(() => sanitizeClips(walkGltf.animations), [walkGltf.animations]);
   const sanitizedRunClips = useMemo(() => sanitizeClips(runGltf.animations), [runGltf.animations]);
   const sanitizedJumpClips = useMemo(() => sanitizeClips(jumpGltf.animations), [jumpGltf.animations]);
+  const sanitizedHiphopClips = useMemo(() => sanitizeClips(hiphopGltf.animations), [hiphopGltf.animations]);
 
   // Inspections
   const idleInspection = useMemo(() => inspectModel('goblin_idle', idleGltf.scene), [idleGltf.scene]);
   const walkInspection = useMemo(() => inspectModel('goblin_walk', walkGltf.scene), [walkGltf.scene]);
   const runInspection = useMemo(() => inspectModel('goblin_run', runGltf.scene), [runGltf.scene]);
   const jumpInspection = useMemo(() => inspectModel('goblin_jump', jumpGltf.scene), [jumpGltf.scene]);
+  const hiphopInspection = useMemo(() => inspectModel('goblin_hiphop', hiphopGltf.scene), [hiphopGltf.scene]);
 
   // Use a shorter canonical height for the goblin (about 1.2m)
   const canonicalHeight = useMemo(() => {
@@ -215,6 +222,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const walkNorm = useMemo(() => buildNormalization(walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const runNorm = useMemo(() => buildNormalization(runInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [runInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const jumpNorm = useMemo(() => buildNormalization(jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
+  const hiphopNorm = useMemo(() => buildNormalization(hiphopInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [hiphopInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
 
   // Animation setups
   const { actions: idleActions, clips: idleClips } = useAnimations(sanitizedIdleClips, idleGltf.scene);
@@ -229,11 +237,14 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const { actions: jumpActions, clips: jumpClips } = useAnimations(sanitizedJumpClips, jumpGltf.scene);
   const jumpClipName = useMemo(() => getFirstClipName(jumpClips, /jump/i), [jumpClips]);
 
+  const { actions: hiphopActions, clips: hiphopClips } = useAnimations(sanitizedHiphopClips, hiphopGltf.scene);
+  const hiphopClipName = useMemo(() => getFirstClipName(hiphopClips, /hip|hop|dance/i), [hiphopClips]);
+
   // Enable shadows + debug
   useEffect(() => {
-    [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene].forEach(enableMeshShadows);
-    console.log('[Goblin] Clip names — idle:', idleClipName, 'walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName);
-  }, [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, idleClipName, walkClipName, runClipName, jumpClipName]);
+    [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hiphopGltf.scene].forEach(enableMeshShadows);
+    console.log('[Goblin] Clip names — idle:', idleClipName, 'walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName, 'hiphop:', hiphopClipName);
+  }, [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hiphopGltf.scene, idleClipName, walkClipName, runClipName, jumpClipName, hiphopClipName]);
 
   // Initialize idle (looping)
   useEffect(() => {
@@ -273,6 +284,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     if (walkVisibleRef.current) walkVisibleRef.current.visible = false;
     if (runVisibleRef.current) runVisibleRef.current.visible = false;
     if (jumpVisibleRef.current) jumpVisibleRef.current.visible = false;
+    if (hiphopVisibleRef.current) hiphopVisibleRef.current.visible = false;
   }, []);
 
   const setVisibleState = useCallback((state: GoblinState) => {
@@ -280,10 +292,12 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     const showWalk = state === 'walk';
     const showRun = state === 'run';
     const showJump = state === 'jump';
+    const showHiphop = state === 'emote_hiphop';
     if (idleVisibleRef.current) idleVisibleRef.current.visible = showIdle;
     if (walkVisibleRef.current) walkVisibleRef.current.visible = showWalk;
     if (runVisibleRef.current) runVisibleRef.current.visible = showRun;
     if (jumpVisibleRef.current) jumpVisibleRef.current.visible = showJump;
+    if (hiphopVisibleRef.current) hiphopVisibleRef.current.visible = showHiphop;
   }, []);
 
   useFrame(() => {
@@ -291,6 +305,38 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     const speed = moveSpeedRef.current;
     const grounded = isGroundedRef.current;
 
+    // Handle emote trigger
+    const emoteId = activeEmoteId ?? 0;
+    if (activeEmote === 'hiphop' && emoteId !== lastEmoteIdRef.current) {
+      lastEmoteIdRef.current = emoteId;
+      stateRef.current = 'emote_hiphop';
+      setVisibleState('emote_hiphop');
+      if (hiphopClipName) {
+        const a = hiphopActions[hiphopClipName];
+        if (a) { a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.enabled = true; a.play(); a.paused = false; }
+      }
+      return;
+    }
+
+    // ===== HIPHOP EMOTE STATE =====
+    if (state === 'emote_hiphop') {
+      if (hiphopClipName) {
+        const a = hiphopActions[hiphopClipName];
+        if (a && a.time >= a.getClip().duration - 0.05) {
+          a.paused = true;
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+          onEmoteComplete();
+        }
+      } else {
+        stateRef.current = 'idle';
+        setVisibleState('idle');
+        onEmoteComplete();
+      }
+      return;
+    }
+
+    // ===== NORMAL LOCOMOTION =====
     let newState: GoblinState;
     if (!grounded) {
       newState = 'jump';
@@ -371,6 +417,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       {renderModel(walkVisibleRef, walkNorm, walkGltf.scene)}
       {renderModel(runVisibleRef, runNorm, runGltf.scene)}
       {renderModel(jumpVisibleRef, jumpNorm, jumpGltf.scene)}
+      {renderModel(hiphopVisibleRef, hiphopNorm, hiphopGltf.scene)}
     </group>
   );
 }
@@ -379,3 +426,4 @@ useGLTF.preload(goblinStandingUrl);
 useGLTF.preload(goblinWalkingUrl);
 useGLTF.preload(goblinRunningUrl);
 useGLTF.preload(goblinJumpUrl);
+useGLTF.preload(hiphopUrl);

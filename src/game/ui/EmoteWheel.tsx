@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useCharacter } from '../context/CharacterContext';
 
 export interface EmoteOption {
   key: string;
@@ -6,12 +7,16 @@ export interface EmoteOption {
   icon: string;
 }
 
-const EMOTE_OPTIONS: EmoteOption[] = [
+const SOLDIER_EMOTES: EmoteOption[] = [
   { key: 'pushups', label: 'Pushups', icon: '💪' },
   { key: 'agree', label: 'Agree', icon: '👍' },
   { key: 'wave', label: 'Wave', icon: '👋' },
   { key: 'cheer', label: 'Cheer', icon: '🎉' },
   { key: 'bow', label: 'Bow', icon: '🙇' },
+];
+
+const GOBLIN_EMOTES: EmoteOption[] = [
+  { key: 'hiphop', label: 'Hip Hop', icon: '🕺' },
 ];
 
 interface EmoteWheelProps {
@@ -20,6 +25,8 @@ interface EmoteWheelProps {
 }
 
 export function EmoteWheel({ onSelectEmote, isPlayingEmote }: EmoteWheelProps) {
+  const { character } = useCharacter();
+  const EMOTE_OPTIONS = character === 'goblin' ? GOBLIN_EMOTES : SOLDIER_EMOTES;
   const [open, setOpen] = useState(false);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
