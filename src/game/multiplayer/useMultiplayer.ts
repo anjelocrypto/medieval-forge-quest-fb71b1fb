@@ -388,6 +388,7 @@ export function useMultiplayer() {
     // Reset audit log counts for fresh session
     for (const k of Object.keys(auditLogCounts)) delete auditLogCounts[k];
 
+    resetSpawnIndex(); // Reset multiplayer spawn separation counter
     mpAudit('enterWorld start', { name, playerId });
     logTiming('Enter world clicked', timings, 'enterWorldClicked');
 
