@@ -47,21 +47,18 @@ function normalizeMaterial(mat: THREE.Material): THREE.Material {
   const cloned = mat.clone();
 
   if (cloned instanceof THREE.MeshStandardMaterial || cloned instanceof THREE.MeshPhysicalMaterial) {
+    // Keep original alpha/transparency flags; only neutralize glow-prone values.
     cloned.emissive.set(0x000000);
     cloned.emissiveIntensity = 0;
-    if (cloned.metalness > 0.3) cloned.metalness = 0.1;
-    if (cloned.roughness < 0.3) cloned.roughness = 0.5;
-    cloned.transparent = false;
-    cloned.opacity = 1;
-    cloned.depthWrite = true;
-    cloned.side = THREE.FrontSide;
+    cloned.metalness = Math.min(cloned.metalness, 0.2);
+    cloned.roughness = Math.max(cloned.roughness, 0.35);
   }
 
   return cloned;
 }
 
 export function cloneScene(scene: THREE.Group): THREE.Group {
-  // Use SkeletonUtils.clone for skinned meshes; manual name-based rebinding can corrupt rigs
+  // Use SkeletonUtils.clone for skinned meshes; manual rebinding can corrupt bone transforms.
   const cloned = cloneSkinnedScene(scene) as THREE.Group;
 
   cloned.traverse((node) => {
@@ -76,10 +73,8 @@ export function cloneScene(scene: THREE.Group): THREE.Group {
 
     if ((mesh as THREE.SkinnedMesh).isSkinnedMesh) {
       const skinned = mesh as THREE.SkinnedMesh;
-      skinned.frustumCulled = true;
-      skinned.bindMode = THREE.AttachedBindMode;
-      skinned.pose();
-      skinned.skeleton?.calculateInverses();
+      // Animated skinned meshes can get incorrect static bounds; avoid partial culling artifacts.
+      skinned.frustumCulled = false;
     }
   });
 
