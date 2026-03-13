@@ -425,7 +425,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
             attackAnimRef={attackAnimRef}
             mountedDebugRef={mountedDebugRef}
             buildMode={buildMode}
-            emote={currentEmote}
+            emote={activeEmote?.key ?? currentEmote}
             isSpeaking={voice.isTalking}
             onUpdateLocalState={multiplayer.updateLocalState}
           />
