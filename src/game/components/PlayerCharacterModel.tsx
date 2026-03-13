@@ -755,3 +755,4 @@ useGLTF.preload(idleToPushupUrl);
 useGLTF.preload(pushupUrl);
 useGLTF.preload(pushupToIdleUrl);
 useGLTF.preload(agreeUrl);
+useGLTF.preload(waveUrl);
