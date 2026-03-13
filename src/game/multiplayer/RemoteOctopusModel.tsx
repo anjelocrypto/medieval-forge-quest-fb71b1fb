@@ -154,6 +154,28 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
       return;
     }
 
+    // ===== FIGHT =====
+    if (attackAnim > 0 && prevAttackRef.current === 0 && stateRef.current !== 'fight') {
+      stateRef.current = 'fight';
+      fightTimerRef.current = 0;
+      setRenderFromState('fight');
+      const name = Object.keys(fightActions)[0];
+      if (name && fightActions[name]) {
+        fightActions[name]!.reset();
+        fightActions[name]!.play();
+      }
+    }
+    prevAttackRef.current = attackAnim;
+
+    if (stateRef.current === 'fight') {
+      fightTimerRef.current += dt;
+      if (fightTimerRef.current > 0.6) {
+        stateRef.current = 'idle';
+        setRenderFromState('idle');
+      }
+      return;
+    }
+
     if (emote && emote !== prevEmoteRef.current) {
       if (emote === 'octopusdance') {
         stateRef.current = 'emote_dance';
