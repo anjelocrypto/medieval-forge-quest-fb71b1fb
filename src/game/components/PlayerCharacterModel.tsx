@@ -238,7 +238,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     if (activeEmote === 'pushups' && prevEmoteRef.current !== 'pushups') {
       // Start pushup sequence
       stateRef.current = 'emote_pushup_enter';
-      pushupRepsRef.current = 0;
+      pushupStartTimeRef.current = 0;
       setVisibleState('emote_pushup_enter');
 
       if (pushupEnterClipName) {
