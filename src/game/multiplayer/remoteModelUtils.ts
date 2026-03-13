@@ -62,7 +62,7 @@ function normalizeMaterial(mat: THREE.Material): THREE.Material {
 
 export function cloneScene(scene: THREE.Group): THREE.Group {
   // Use SkeletonUtils.clone for skinned meshes; manual name-based rebinding can corrupt rigs
-  const cloned = SkeletonUtils.clone(scene) as THREE.Group;
+  const cloned = cloneSkinnedScene(scene) as THREE.Group;
 
   cloned.traverse((node) => {
     const mesh = node as THREE.Mesh;
