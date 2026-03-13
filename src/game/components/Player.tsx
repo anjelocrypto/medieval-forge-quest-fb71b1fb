@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { PlayerGLBModel } from './PlayerCharacterModel';
@@ -18,6 +18,7 @@ import {
 } from '../constants';
 import { PLAYER_ATTACK_COOLDOWN, PLAYER_ATTACK_RANGE, PLAYER_ATTACK_DAMAGE, PLAYER_ATTACK_ARC } from '../systems/EnemyData';
 import { SurvivalState, LootPickup, ResourceInventory } from '../types';
+import { findSafeSpawn } from '../systems/SafeSpawn';
 
 import { PlacedStructure } from '../systems/BuildingData';
 import { HorseData, HORSE_SPEED, HORSE_RUN_SPEED, MOUNT_RANGE, DISMOUNT_OFFSET } from '../systems/HorseData';
@@ -153,20 +154,22 @@ export function Player({
       // Check if playerPositionRef already has a valid position (reconnect case)
       const existingPos = playerPositionRef.current;
       if (existingPos && (existingPos.x !== 0 || existingPos.z !== 0)) {
-        // Restore existing position instead of respawning
-        console.log('[Player] SPAWN RESTORED — using existing position:', existingPos.x.toFixed(1), existingPos.z.toFixed(1));
-        groupRef.current.position.copy(existingPos);
+        // Validate existing position — if inside a building, relocate safely
+        const validated = findSafeSpawn(existingPos.x, existingPos.z, PLAYER_HEIGHT);
+        console.log('[Player] SPAWN RESTORED — validated:', validated.x.toFixed(1), validated.z.toFixed(1),
+          validated.fallbackUsed ? `(relocated from ${existingPos.x.toFixed(1)},${existingPos.z.toFixed(1)})` : '(position OK)');
+        groupRef.current.position.set(validated.x, validated.y, validated.z);
+        playerPositionRef.current.set(validated.x, validated.y, validated.z);
         hasSpawnedRef.current = true;
         return;
       }
       
-      // Fresh spawn near the south gate of Ironhold
-      const spawnX = 0;
-      const spawnZ = 45;
-      const startY = getTerrainHeight(spawnX, spawnZ) + PLAYER_HEIGHT / 2;
-      console.log('[Player] SPAWN FRESH — new game start at', spawnX, spawnZ);
-      groupRef.current.position.set(spawnX, startY, spawnZ);
-      playerPositionRef.current.set(spawnX, startY, spawnZ);
+      // Fresh spawn — use safe spawn system
+      const spawn = findSafeSpawn(undefined, undefined, PLAYER_HEIGHT);
+      console.log('[Player] SPAWN FRESH —', spawn.x.toFixed(1), spawn.z.toFixed(1), 'y=', spawn.y.toFixed(2),
+        spawn.fallbackUsed ? `(fallback: ${spawn.rejectedReason})` : '(canonical)');
+      groupRef.current.position.set(spawn.x, spawn.y, spawn.z);
+      playerPositionRef.current.set(spawn.x, spawn.y, spawn.z);
       hasSpawnedRef.current = true;
     }
   }, [playerPositionRef]);
@@ -182,10 +185,11 @@ export function Player({
       if (isMounted) onDismountHorse();
       const timer = setTimeout(() => {
         if (groupRef.current) {
-          const y = getTerrainHeight(0, 45) + PLAYER_HEIGHT / 2;
-          console.log('[Player] RESPAWN COMPLETE — teleporting to spawn');
-          groupRef.current.position.set(0, y, 45);
-          playerPositionRef.current.set(0, y, 45);
+          // Use safe spawn for respawn too
+          const spawn = findSafeSpawn(undefined, undefined, PLAYER_HEIGHT);
+          console.log('[Player] RESPAWN COMPLETE — teleporting to', spawn.x.toFixed(1), spawn.z.toFixed(1));
+          groupRef.current.position.set(spawn.x, spawn.y, spawn.z);
+          playerPositionRef.current.set(spawn.x, spawn.y, spawn.z);
           velocityRef.current.set(0, 0, 0);
         }
         onRespawn();
