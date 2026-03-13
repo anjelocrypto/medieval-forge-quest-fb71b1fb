@@ -16,26 +16,26 @@ import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import Stats from 'stats.js';
 
-// ─── React Commit Counter (R3F useFrame acts as a proxy for render commits) ───
+// ─── R3F Frame Tick Counter ───
 
-let commitCount = 0;
-let lastCommitLogTime = 0;
+let tickCount = 0;
+let lastTickLogTime = 0;
 
 /**
  * R3F component — mount inside <Canvas>.
- * Counts useFrame ticks (1:1 with React commits in R3F) and logs rate.
+ * Counts useFrame ticks (render loop iterations, NOT React commits).
  */
 export function PerfBaselineR3F() {
   useFrame(() => {
-    commitCount++;
+    tickCount++;
     const now = performance.now();
-    if (lastCommitLogTime === 0) lastCommitLogTime = now;
-    if (now - lastCommitLogTime > 5000) {
-      const elapsed = (now - lastCommitLogTime) / 1000;
-      const rate = commitCount / elapsed;
-      console.log(`[PerfBaseline] React commits/sec: ${rate.toFixed(1)} (${commitCount} commits in ${elapsed.toFixed(1)}s)`);
-      commitCount = 0;
-      lastCommitLogTime = now;
+    if (lastTickLogTime === 0) lastTickLogTime = now;
+    if (now - lastTickLogTime > 5000) {
+      const elapsed = (now - lastTickLogTime) / 1000;
+      const rate = tickCount / elapsed;
+      console.log(`[PerfBaseline] Frame ticks/sec: ${rate.toFixed(1)} (${tickCount} ticks in ${elapsed.toFixed(1)}s)`);
+      tickCount = 0;
+      lastTickLogTime = now;
     }
   });
 
