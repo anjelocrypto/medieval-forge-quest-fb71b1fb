@@ -35,7 +35,7 @@ export function PerfBaselineR3F() {
       const rate = tickCount / elapsed;
       console.log(`[PerfBaseline] Frame ticks/sec: ${rate.toFixed(1)} (${tickCount} ticks in ${elapsed.toFixed(1)}s)`);
       tickCount = 0;
-      lastCommitLogTime = now;
+      lastTickLogTime = now;
     }
   });
 
