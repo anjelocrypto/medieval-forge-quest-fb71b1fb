@@ -35,6 +35,7 @@ import { MultiplayerBroadcaster } from './multiplayer/MultiplayerBroadcaster';
 import { MultiplayerHUD } from './multiplayer/MultiplayerHUD';
 import { ChatPanel } from './multiplayer/ChatPanel';
 import { useProximityVoice } from './multiplayer/useProximityVoice';
+import { EmoteWheel } from './ui/EmoteWheel';
 
 interface GameSceneProps {
   multiplayer: ReturnType<typeof import('./multiplayer/useMultiplayer').useMultiplayer>;
