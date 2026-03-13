@@ -260,6 +260,7 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
       case 'walk': return walkScene;
       case 'run': return runScene;
       case 'jump': return jumpScene;
+      case 'fight': return fightScene;
       case 'hit': return hitScene;
       case 'dead': return deadScene;
       case 'emote_dance': return danceScene;
@@ -267,7 +268,7 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
       default:
         return idleScene;
     }
-  }, [renderState, idleScene, walkScene, runScene, jumpScene, hitScene, deadScene, danceScene]);
+  }, [renderState, idleScene, walkScene, runScene, jumpScene, fightScene, hitScene, deadScene, danceScene]);
 
   const activeNorm: ModelNormalization = useMemo(() => {
     switch (renderState) {
