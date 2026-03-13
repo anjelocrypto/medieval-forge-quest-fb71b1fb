@@ -225,6 +225,14 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     return () => { a.stop(); };
   }, [hitActions, hitClipName]);
 
+  // Initialize fight (paused, play once)
+  useEffect(() => {
+    if (!fightClipName) return;
+    const a = fightActions[fightClipName]; if (!a) return;
+    a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.enabled = true; a.play(); a.paused = true;
+    return () => { a.stop(); };
+  }, [fightActions, fightClipName]);
+
   // Initialize pushup enter (paused, play once)
   useEffect(() => {
     if (!pushupEnterClipName) return;
