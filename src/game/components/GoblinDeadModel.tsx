@@ -53,4 +53,4 @@ export function GoblinDeadModel() {
   );
 }
 
-useGLTF.preload(goblinDeadUrl);
+

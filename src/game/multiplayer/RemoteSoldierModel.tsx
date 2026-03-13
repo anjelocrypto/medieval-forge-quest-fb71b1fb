@@ -307,11 +307,3 @@ export function RemoteSoldierModel({ moveSpeed, isRunning, isGrounded, attackAni
   );
 }
 
-useGLTF.preload(standingUrl);
-useGLTF.preload(soldierWalkUrl);
-useGLTF.preload(runUrl);
-useGLTF.preload(gethitUrl);
-useGLTF.preload(fightUrl);
-useGLTF.preload(jumpUrl);
-useGLTF.preload(waveUrl);
-useGLTF.preload(agreeUrl);

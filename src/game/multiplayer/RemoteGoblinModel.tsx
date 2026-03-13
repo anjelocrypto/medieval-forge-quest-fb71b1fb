@@ -335,12 +335,3 @@ export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim
   );
 }
 
-useGLTF.preload(goblinStandingUrl);
-useGLTF.preload(goblinWalkingUrl);
-useGLTF.preload(goblinRunningUrl);
-useGLTF.preload(goblinGetHitUrl);
-useGLTF.preload(goblinFightUrl);
-useGLTF.preload(goblinDeadUrl);
-useGLTF.preload(goblinJumpUrl);
-useGLTF.preload(hiphopUrl);
-useGLTF.preload(gangnamUrl);

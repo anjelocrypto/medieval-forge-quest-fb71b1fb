@@ -300,10 +300,3 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
   );
 }
 
-useGLTF.preload(octopusWalkingUrl);
-useGLTF.preload(octopusRunningUrl);
-useGLTF.preload(octopusJumpUrl);
-useGLTF.preload(octopusGetHitUrl);
-useGLTF.preload(octopusDieUrl);
-useGLTF.preload(octopusDanceUrl);
-useGLTF.preload(octopusKickUrl);

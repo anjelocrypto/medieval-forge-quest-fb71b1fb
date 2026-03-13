@@ -563,11 +563,3 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   );
 }
 
-useGLTF.preload(goblinStandingUrl);
-useGLTF.preload(goblinWalkingUrl);
-useGLTF.preload(goblinRunningUrl);
-useGLTF.preload(goblinJumpUrl);
-useGLTF.preload(hiphopUrl);
-useGLTF.preload(gangnamUrl);
-useGLTF.preload(goblinGetHitUrl);
-useGLTF.preload(goblinFightUrl);
