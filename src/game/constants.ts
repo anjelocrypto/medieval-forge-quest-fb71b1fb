@@ -6,8 +6,8 @@ export const WORLD_SIZE = 1800;
 export const HALF_WORLD = WORLD_SIZE / 2;
 
 // Player
-export const PLAYER_SPEED = 8;
-export const PLAYER_RUN_SPEED = 14;
+export const PLAYER_SPEED = 5.6;
+export const PLAYER_RUN_SPEED = 9.8;
 export const PLAYER_JUMP_FORCE = 12;
 export const PLAYER_HEIGHT = 1.8;
 export const GRAVITY = 30;
