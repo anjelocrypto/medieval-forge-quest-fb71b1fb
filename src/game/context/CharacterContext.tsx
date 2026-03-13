@@ -15,7 +15,8 @@ const CharacterContext = createContext<CharacterContextValue>({
 export function CharacterProvider({ children }: { children: ReactNode }) {
   const [character, setCharacterState] = useState<CharacterType>(() => {
     const saved = localStorage.getItem('selected-character');
-    return saved === 'goblin' ? 'goblin' : 'soldier';
+    if (saved === 'soldier') return 'soldier';
+    return 'goblin';
   });
 
   const setCharacter = useCallback((c: CharacterType) => {

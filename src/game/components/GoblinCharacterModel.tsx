@@ -257,20 +257,12 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   }, []);
 
   const setVisibleState = useCallback((state: GoblinState) => {
-    const map: Record<GoblinState, React.RefObject<THREE.Group | null>> = {
-      idle: idleVisibleRef,
-      walk: walkVisibleRef,
-      run: runVisibleRef,
-      jump: idleVisibleRef, // fallback to idle for jump (no jump anim)
-    };
-    for (const [key, ref] of Object.entries(map)) {
-      if (ref.current) ref.current.visible = key === state || (state === 'jump' && key === 'idle');
-    }
-    // Ensure only one is visible
-    if (state === 'jump') {
-      if (walkVisibleRef.current) walkVisibleRef.current.visible = false;
-      if (runVisibleRef.current) runVisibleRef.current.visible = false;
-    }
+    const showIdle = state === 'idle' || state === 'jump';
+    const showWalk = state === 'walk';
+    const showRun = state === 'run';
+    if (idleVisibleRef.current) idleVisibleRef.current.visible = showIdle;
+    if (walkVisibleRef.current) walkVisibleRef.current.visible = showWalk;
+    if (runVisibleRef.current) runVisibleRef.current.visible = showRun;
   }, []);
 
   useFrame(() => {

@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useCharacter, CharacterType } from '../context/CharacterContext';
 
 const CHARACTERS: { type: CharacterType; name: string; icon: string; desc: string }[] = [
-  { type: 'soldier', name: 'Soldier', icon: '⚔️', desc: 'Human warrior with full emotes & combat' },
   { type: 'goblin', name: 'Goblin', icon: '👺', desc: 'Small & scrappy with unique animations' },
+  { type: 'soldier', name: 'Soldier', icon: '⚔️', desc: 'Human warrior with full emotes & combat' },
 ];
 
 export function CharacterSelect() {
