@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import octopusStandingUrl from '@/assets/octopusstanding.glb?url';
 import octopusWalkingUrl from '@/assets/octopuswalking.glb?url';
 import octopusRunningUrl from '@/assets/octopusrunning.glb?url';
 import octopusJumpUrl from '@/assets/octopusjump.glb?url';
@@ -30,6 +31,7 @@ interface Props {
 type RemoteState = 'idle' | 'walk' | 'run' | 'jump' | 'fight' | 'hit' | 'dead' | 'emote_dance';
 
 export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAnim, health, emote }: Props) {
+  const standGltf = useGLTF(octopusStandingUrl);
   const walkGltf = useGLTF(octopusWalkingUrl);
   const runGltf = useGLTF(octopusRunningUrl);
   const jumpGltf = useGLTF(octopusJumpUrl);
@@ -38,7 +40,7 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
   const danceGltf = useGLTF(octopusDanceUrl);
   const fightGltf = useGLTF(octopusKickUrl);
 
-  const idleScene = useMemo(() => cloneScene(walkGltf.scene), [walkGltf.scene]);
+  const idleScene = useMemo(() => cloneScene(standGltf.scene), [standGltf.scene]);
   const walkScene = useMemo(() => cloneScene(walkGltf.scene), [walkGltf.scene]);
   const runScene = useMemo(() => cloneScene(runGltf.scene), [runGltf.scene]);
   const jumpScene = useMemo(() => cloneScene(jumpGltf.scene), [jumpGltf.scene]);
@@ -56,7 +58,7 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
   const emoteTimerRef = useRef(0);
   const prevEmoteRef = useRef<string | null>(null);
 
-  const idleClips = useMemo(() => sanitizeClips(walkGltf.animations), [walkGltf.animations]);
+  const idleClips = useMemo(() => sanitizeClips(standGltf.animations), [standGltf.animations]);
   const walkClips = useMemo(() => sanitizeClips(walkGltf.animations), [walkGltf.animations]);
   const runClips = useMemo(() => sanitizeClips(runGltf.animations), [runGltf.animations]);
   const jumpClips = useMemo(() => sanitizeClips(jumpGltf.animations), [jumpGltf.animations]);

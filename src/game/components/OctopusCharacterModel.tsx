@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import octopusStandingUrl from '@/assets/octopusstanding.glb?url';
 import octopusWalkingUrl from '@/assets/octopuswalking.glb?url';
 import octopusRunningUrl from '@/assets/octopusrunning.glb?url';
 import octopusJumpUrl from '@/assets/octopusjump.glb?url';
@@ -178,7 +179,7 @@ function buildNormalization(
 }
 
 export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedRef, activeEmote, activeEmoteId, onEmoteComplete, damageFlash, attackAnimRef, isFightingRef }: OctopusGLBModelProps) {
-  // Octopus uses walking as idle (standing still pose)
+  const idleGltf = useGLTF(octopusStandingUrl);
   const walkGltf = useGLTF(octopusWalkingUrl);
   const runGltf = useGLTF(octopusRunningUrl);
   const jumpGltf = useGLTF(octopusJumpUrl);
@@ -202,6 +203,7 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   const stateRef = useRef<OctopusState>('idle');
 
   // Sanitize clips
+  const sanitizedIdleClips = useMemo(() => sanitizeClips(idleGltf.animations), [idleGltf.animations]);
   const sanitizedWalkClips = useMemo(() => sanitizeClips(walkGltf.animations), [walkGltf.animations]);
   const sanitizedRunClips = useMemo(() => sanitizeClips(runGltf.animations), [runGltf.animations]);
   const sanitizedJumpClips = useMemo(() => sanitizeClips(jumpGltf.animations), [jumpGltf.animations]);
@@ -210,6 +212,7 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   const sanitizedDanceClips = useMemo(() => sanitizeClips(danceGltf.animations), [danceGltf.animations]);
 
   // Inspections
+  const idleInspection = useMemo(() => inspectModel('octopus_idle', idleGltf.scene), [idleGltf.scene]);
   const walkInspection = useMemo(() => inspectModel('octopus_walk', walkGltf.scene), [walkGltf.scene]);
   const runInspection = useMemo(() => inspectModel('octopus_run', runGltf.scene), [runGltf.scene]);
   const jumpInspection = useMemo(() => inspectModel('octopus_jump', jumpGltf.scene), [jumpGltf.scene]);
@@ -227,6 +230,7 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   }, [walkInspection.facingYaw]);
 
   // Normalizations
+  const idleNorm = useMemo(() => buildNormalization(idleInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [idleInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const walkNorm = useMemo(() => buildNormalization(walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const runNorm = useMemo(() => buildNormalization(runInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [runInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const jumpNorm = useMemo(() => buildNormalization(jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
@@ -235,6 +239,9 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   const danceNorm = useMemo(() => buildNormalization(danceInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [danceInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
 
   // Animation setups
+  const { actions: idleActions, clips: idleClips } = useAnimations(sanitizedIdleClips, idleGltf.scene);
+  const idleClipName = useMemo(() => getFirstClipName(idleClips, /stand|idle/i), [idleClips]);
+
   const { actions: walkActions, clips: walkClips } = useAnimations(sanitizedWalkClips, walkGltf.scene);
   const walkClipName = useMemo(() => getFirstClipName(walkClips, /walk/i), [walkClips]);
 
@@ -255,15 +262,23 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
 
   // Enable shadows
   useEffect(() => {
-    [walkGltf.scene, runGltf.scene, jumpGltf.scene, hitGltf.scene, fightGltf.scene, danceGltf.scene].forEach(enableMeshShadows);
-    console.log('[Octopus] Clip names — walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName, 'hit:', hitClipName, 'fight:', fightClipName, 'dance:', danceClipName);
-  }, [walkGltf.scene, runGltf.scene, jumpGltf.scene, hitGltf.scene, fightGltf.scene, danceGltf.scene, walkClipName, runClipName, jumpClipName, hitClipName, fightClipName, danceClipName]);
+    [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hitGltf.scene, fightGltf.scene, danceGltf.scene].forEach(enableMeshShadows);
+    console.log('[Octopus] Clip names — idle:', idleClipName, 'walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName, 'hit:', hitClipName, 'fight:', fightClipName, 'dance:', danceClipName);
+  }, [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hitGltf.scene, fightGltf.scene, danceGltf.scene, idleClipName, walkClipName, runClipName, jumpClipName, hitClipName, fightClipName, danceClipName]);
 
-  // Initialize walk/idle (looping)
+  // Initialize idle (looping)
+  useEffect(() => {
+    if (!idleClipName) return;
+    const a = idleActions[idleClipName]; if (!a) return;
+    a.reset(); a.setLoop(THREE.LoopRepeat, Infinity); a.clampWhenFinished = false; a.enabled = true; a.play();
+    return () => { a.stop(); };
+  }, [idleActions, idleClipName]);
+
+  // Initialize walk (looping, paused)
   useEffect(() => {
     if (!walkClipName) return;
     const a = walkActions[walkClipName]; if (!a) return;
-    a.reset(); a.setLoop(THREE.LoopRepeat, Infinity); a.clampWhenFinished = false; a.enabled = true; a.play();
+    a.reset(); a.setLoop(THREE.LoopRepeat, Infinity); a.clampWhenFinished = false; a.enabled = true; a.play(); a.paused = true;
     return () => { a.stop(); };
   }, [walkActions, walkClipName]);
 
@@ -429,14 +444,17 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
       setVisibleState(newState);
     }
 
-    // Walk animation (also used for idle with slower speed)
+    // Idle animation
+    if (idleClipName) {
+      const ia = idleActions[idleClipName];
+      if (ia) { ia.paused = newState !== 'idle'; }
+    }
+
+    // Walk animation
     if (walkClipName) {
       const wa = walkActions[walkClipName];
       if (wa) {
-        if (newState === 'idle') {
-          wa.paused = false;
-          wa.setEffectiveTimeScale(0.3); // slow walk = idle breathing
-        } else if (newState === 'walk') {
+        if (newState === 'walk') {
           wa.paused = false;
           wa.setEffectiveTimeScale(Math.max(0.55, THREE.MathUtils.clamp(speed, 0, 1.4) * 1.35));
         } else {
@@ -483,8 +501,7 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
 
   return (
     <group>
-      {/* idle uses walk scene with slow playback */}
-      {renderModel(idleVisibleRef, walkNorm, walkGltf.scene)}
+      {renderModel(idleVisibleRef, idleNorm, idleGltf.scene)}
       {renderModel(walkVisibleRef, walkNorm, walkGltf.scene)}
       {renderModel(runVisibleRef, runNorm, runGltf.scene)}
       {renderModel(jumpVisibleRef, jumpNorm, jumpGltf.scene)}
@@ -495,6 +512,7 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   );
 }
 
+useGLTF.preload(octopusStandingUrl);
 useGLTF.preload(octopusWalkingUrl);
 useGLTF.preload(octopusRunningUrl);
 useGLTF.preload(octopusJumpUrl);
