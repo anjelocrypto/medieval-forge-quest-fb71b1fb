@@ -945,7 +945,11 @@ export function Player({
             lean + riderLean
           ]}
         >
-          <PlayerGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={attackAnimRef} isFightingRef={isFightingRef} />
+          {character === 'goblin' ? (
+            <GoblinGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={attackAnimRef} isFightingRef={isFightingRef} />
+          ) : (
+            <PlayerGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={attackAnimRef} isFightingRef={isFightingRef} />
+          )}
         </group>
       </group>
     </group>
