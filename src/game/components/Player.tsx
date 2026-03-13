@@ -943,15 +943,16 @@ export function Player({
   );
 }
 
-/** GLB-based player character model with walk animation */
+/** GLB-based player character — idle (static) + walk (animated) */
 function PlayerGLBModel({ moveSpeed }: { moveSpeed: number }) {
-  const gltf = useGLTF(soldierWalkUrl);
-  const modelRef = useRef<THREE.Group>(null);
+  const walkGltf = useGLTF(soldierWalkUrl);
+  const idleGltf = useGLTF(soldierIdleUrl);
+  const walkGroupRef = useRef<THREE.Group>(null);
+  const isMoving = moveSpeed > 0.05;
 
-  // Fix the model: zero out Armature position offset & enable shadows
+  // Setup walk model: zero out Armature offset, enable shadows
   useEffect(() => {
-    gltf.scene.traverse((child) => {
-      // Zero out the Armature's position — the skeleton has baked-in offsets
+    walkGltf.scene.traverse((child) => {
       if (child.name === 'Armature' || child.type === 'Object3D') {
         child.position.set(0, 0, 0);
       }
@@ -960,29 +961,33 @@ function PlayerGLBModel({ moveSpeed }: { moveSpeed: number }) {
         child.receiveShadow = true;
       }
     });
-    // Force update matrices after repositioning
-    gltf.scene.updateMatrixWorld(true);
-  }, [gltf.scene]);
+    walkGltf.scene.updateMatrixWorld(true);
+  }, [walkGltf.scene]);
 
-  const { actions, clips, mixer } = useAnimations(gltf.animations, gltf.scene);
-  const walkClipName = clips.length > 0 ? clips[0].name : null;
-  const prevMovingRef = useRef(false);
-
-  // Strip root motion from animation — zero out Hips position track
+  // Setup idle model: enable shadows
   useEffect(() => {
-    if (!clips.length) return;
+    idleGltf.scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+  }, [idleGltf.scene]);
+
+  // Walk animation setup
+  const { actions, clips } = useAnimations(walkGltf.animations, walkGltf.scene);
+  const walkClipName = clips.length > 0 ? clips[0].name : null;
+
+  // Strip Hips position track to prevent drift
+  useEffect(() => {
     clips.forEach(clip => {
-      // Remove position tracks from Hips to prevent the model from drifting
       clip.tracks = clip.tracks.filter(track => {
-        if (track.name.includes('Hips') && track.name.endsWith('.position')) {
-          return false; // remove root position track
-        }
-        return true;
+        return !(track.name.includes('Hips') && track.name.endsWith('.position'));
       });
     });
   }, [clips]);
 
-  // Play/stop walk animation based on movement
+  // Start walk animation (paused initially)
   useEffect(() => {
     if (!walkClipName || !actions[walkClipName]) return;
     const action = actions[walkClipName]!;
@@ -992,31 +997,37 @@ function PlayerGLBModel({ moveSpeed }: { moveSpeed: number }) {
     action.paused = true;
   }, [walkClipName, actions]);
 
+  // Control walk animation play/pause
+  const prevMovingRef = useRef(false);
   useFrame(() => {
     if (!walkClipName || !actions[walkClipName]) return;
     const action = actions[walkClipName]!;
-    const isMoving = moveSpeed > 0.05;
 
     if (isMoving && !prevMovingRef.current) {
       action.paused = false;
-      action.setEffectiveTimeScale(1);
     } else if (!isMoving && prevMovingRef.current) {
       action.paused = true;
     }
-
     if (isMoving) {
       action.setEffectiveTimeScale(Math.max(0.5, moveSpeed * 1.5));
     }
-
     prevMovingRef.current = isMoving;
   });
 
-  // Scale to ~1.8m (model is 1.7m native). The model's skeleton uses
-  // centimeter-scale bone positions internally, but the mesh geometry 
-  // is in meters. We scale uniformly and position at feet level.
+  // Idle model: static mesh, centered at Y=0 with min.y=-0.953
+  // so offset Y by +0.953 to place feet at Y=0
+  // Walk model: rigged, 1.7m tall, needs -0.9 Y offset + scale 1.06
   return (
-    <group ref={modelRef} position={[0, -0.9, 0]} scale={[1.06, 1.06, 1.06]} rotation={[0, Math.PI, 0]}>
-      <primitive object={gltf.scene} />
-    </group>
+    <>
+      {/* IDLE — static soldier mesh (visible when not moving) */}
+      <group visible={!isMoving} position={[0, -0.05, 0]} scale={[0.95, 0.95, 0.95]} rotation={[0, Math.PI, 0]}>
+        <primitive object={idleGltf.scene} />
+      </group>
+
+      {/* WALK — rigged animated soldier (visible when moving) */}
+      <group ref={walkGroupRef} visible={isMoving} position={[0, -0.9, 0]} scale={[1.06, 1.06, 1.06]} rotation={[0, Math.PI, 0]}>
+        <primitive object={walkGltf.scene} />
+      </group>
+    </>
   );
 }
