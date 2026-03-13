@@ -696,6 +696,7 @@ export function Player({
     // Sync external refs for multiplayer broadcaster
     if (externalMoveSpeedRef) externalMoveSpeedRef.current = moveSpeedRef.current;
     if (externalIsRunningRef) externalIsRunningRef.current = isMoving && canRun;
+    if (externalIsGroundedRef) externalIsGroundedRef.current = isGroundedRef.current;
     if (externalAttackAnimRef) externalAttackAnimRef.current = attackAnimRef.current;
   });
 
