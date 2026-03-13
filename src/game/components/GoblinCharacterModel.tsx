@@ -277,6 +277,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   useEffect(() => {
     [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hiphopGltf.scene, gangnamGltf.scene, getHitGltf.scene].forEach(enableMeshShadows);
     console.log('[Goblin] Clip names — idle:', idleClipName, 'walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName, 'hiphop:', hiphopClipName, 'gangnam:', gangnamClipName, 'hit:', hitClipName);
+    console.log('[LocalGoblin] canonicalHeight:', canonicalHeight, 'idleScale:', idleNorm.scale, 'idleAnchor:', idleNorm.modelAnchorOffset, 'idleYaw:', idleNorm.yawCorrection, 'controllerGroundOffset:', idleNorm.controllerGroundOffset);
   }, [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hiphopGltf.scene, gangnamGltf.scene, getHitGltf.scene, idleClipName, walkClipName, runClipName, jumpClipName, hiphopClipName, gangnamClipName, hitClipName]);
 
   // Initialize idle (looping)
