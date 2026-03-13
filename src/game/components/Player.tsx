@@ -1,6 +1,8 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
+import soldierWalkUrl from '@/assets/soldierwalking.glb?url';
 import { getTerrainHeight } from './Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
 import { getMovementInput } from '../systems/InputSystem';
@@ -924,7 +926,7 @@ export function Player({
           </group>
         )}
 
-        {/* ===== PLAYER CHARACTER ===== */}
+        {/* ===== PLAYER CHARACTER — GLB MODEL ===== */}
         <group
           position={[hipSway + idleWeightShift, playerY, atkLunge]}
           rotation={[
@@ -933,169 +935,71 @@ export function Player({
             lean + riderLean
           ]}
         >
-          {/* Torso - lower */}
-          <mesh position={[0, -0.05, 0]} castShadow>
-            <boxGeometry args={[0.75, 0.5, 0.4]} />
-            <meshLambertMaterial color="#555555" />
-          </mesh>
-          {/* Torso - upper with shoulder roll */}
-          <group position={[0, 0.3, 0]} rotation={[0, shoulderRoll, 0]}>
-            <mesh castShadow>
-              <boxGeometry args={[0.8, 0.55, 0.42]} />
-              <meshLambertMaterial color="#6a6a72" />
-            </mesh>
-          </group>
-          {/* Belt */}
-          <mesh position={[0, -0.1, 0]} castShadow>
-            <boxGeometry args={[0.82, 0.1, 0.44]} />
-            <meshLambertMaterial color="#3a2810" />
-          </mesh>
-          {/* Pauldrons */}
-          <mesh position={[-0.48, 0.42, 0]} castShadow>
-            <boxGeometry args={[0.22, 0.18, 0.35]} />
-            <meshLambertMaterial color="#6a6a72" />
-          </mesh>
-          <mesh position={[0.48, 0.42, 0]} castShadow>
-            <boxGeometry args={[0.22, 0.18, 0.35]} />
-            <meshLambertMaterial color="#6a6a72" />
-          </mesh>
-          {/* Head + helmet */}
-          <group position={[0, 0.75, 0]}>
-            <mesh position={[0, 0.08, 0]} castShadow>
-              <boxGeometry args={[0.38, 0.4, 0.38]} />
-              <meshLambertMaterial color="#c4a070" />
-            </mesh>
-            <mesh position={[0, 0.15, 0]} castShadow>
-              <boxGeometry args={[0.42, 0.3, 0.42]} />
-              <meshLambertMaterial color="#5a5a62" />
-            </mesh>
-            <mesh position={[0, 0.35, 0]} castShadow>
-              <boxGeometry args={[0.08, 0.12, 0.3]} />
-              <meshLambertMaterial color="#8b2020" />
-            </mesh>
-            <mesh position={[0, 0.12, 0.2]} castShadow>
-              <boxGeometry args={[0.28, 0.06, 0.06]} />
-              <meshLambertMaterial color="#1a1a1a" />
-            </mesh>
-          </group>
-          {/* Left arm — shield side */}
-          <group position={[-0.52, 0.15, 0]}
-            rotation={[
-              isMounted ? -0.3 : (armSwing + airArmRaise + atkSwingL),
-              0,
-              isMounted ? -0.15 : 0
-            ]}>
-            <mesh position={[0, -0.15, 0]} castShadow>
-              <boxGeometry args={[0.2, 0.6, 0.22]} />
-              <meshLambertMaterial color="#555555" />
-            </mesh>
-            <mesh position={[-0.05, -0.2, 0.15]} castShadow>
-              <boxGeometry args={[0.04, 0.45, 0.35]} />
-              <meshLambertMaterial color="#4a3010" />
-            </mesh>
-          </group>
-          {/* Right arm — sword */}
-          <group position={[0.52, 0.15, 0]}
-            rotation={[
-              isMounted ? -0.3 : (armSwingBack + airArmRaise + atkSwingR),
-              0,
-              isMounted ? 0.15 : 0
-            ]}>
-            <mesh position={[0, -0.15, 0]} castShadow>
-              <boxGeometry args={[0.2, 0.6, 0.22]} />
-              <meshLambertMaterial color="#555555" />
-            </mesh>
-            <group position={[0, -0.55, 0.12]}>
-              <mesh position={[0, -0.18, 0]} castShadow>
-                <boxGeometry args={[0.22, 0.04, 0.06]} />
-                <meshLambertMaterial color="#c4a040" />
-              </mesh>
-              <mesh position={[0, -0.55, 0]} castShadow>
-                <boxGeometry args={[0.06, 0.7, 0.02]} />
-                <meshLambertMaterial color="#c0c0c8" />
-              </mesh>
-            </group>
-          </group>
-          {/* Legs */}
-          {isMounted ? (
-            <>
-              {/* Left leg - bent at hip, knee bent, foot in stirrup position */}
-              <group position={[-0.28, -0.25, 0.05]} rotation={[1.1, 0.1, 0.4]}>
-                {/* Upper leg / thigh */}
-                <mesh position={[0, -0.22, 0]} castShadow>
-                  <boxGeometry args={[0.24, 0.48, 0.24]} />
-                  <meshLambertMaterial color="#3a3030" />
-                </mesh>
-                {/* Lower leg - bent down at knee */}
-                <group position={[0, -0.44, 0]} rotation={[-1.8, 0, 0]}>
-                  <mesh position={[0, -0.22, 0]} castShadow>
-                    <boxGeometry args={[0.22, 0.48, 0.22]} />
-                    <meshLambertMaterial color="#3a3030" />
-                  </mesh>
-                  {/* Boot pointing forward */}
-                  <mesh position={[0, -0.48, 0.08]} castShadow>
-                    <boxGeometry args={[0.2, 0.1, 0.28]} />
-                    <meshLambertMaterial color="#4a3520" />
-                  </mesh>
-                </group>
-              </group>
-              {/* Right leg - mirror of left */}
-              <group position={[0.28, -0.25, 0.05]} rotation={[1.1, -0.1, -0.4]}>
-                {/* Upper leg / thigh */}
-                <mesh position={[0, -0.22, 0]} castShadow>
-                  <boxGeometry args={[0.24, 0.48, 0.24]} />
-                  <meshLambertMaterial color="#3a3030" />
-                </mesh>
-                {/* Lower leg - bent down at knee */}
-                <group position={[0, -0.44, 0]} rotation={[-1.8, 0, 0]}>
-                  <mesh position={[0, -0.22, 0]} castShadow>
-                    <boxGeometry args={[0.22, 0.48, 0.22]} />
-                    <meshLambertMaterial color="#3a3030" />
-                  </mesh>
-                  {/* Boot pointing forward */}
-                  <mesh position={[0, -0.48, 0.08]} castShadow>
-                    <boxGeometry args={[0.2, 0.1, 0.28]} />
-                    <meshLambertMaterial color="#4a3520" />
-                  </mesh>
-                </group>
-              </group>
-            </>
-          ) : (
-            <>
-              <group position={[-0.18, -0.5, 0]}
-                rotation={[-legSwing - airLegSpread, 0, 0]}>
-                <mesh position={[0, -0.2, 0]} castShadow>
-                  <boxGeometry args={[0.24, 0.55, 0.24]} />
-                  <meshLambertMaterial color="#3a3030" />
-                </mesh>
-                <mesh position={[0, -0.5, 0]} castShadow>
-                  <boxGeometry args={[0.22, 0.15, 0.26]} />
-                  <meshLambertMaterial color="#4a3520" />
-                </mesh>
-              </group>
-              <group position={[0.18, -0.5, 0]}
-                rotation={[-legSwingBack + airLegSpread, 0, 0]}>
-                <mesh position={[0, -0.2, 0]} castShadow>
-                  <boxGeometry args={[0.24, 0.55, 0.24]} />
-                  <meshLambertMaterial color="#3a3030" />
-                </mesh>
-                <mesh position={[0, -0.5, 0]} castShadow>
-                  <boxGeometry args={[0.22, 0.15, 0.26]} />
-                  <meshLambertMaterial color="#4a3520" />
-                </mesh>
-              </group>
-            </>
-          )}
-          {/* Cape — sways with movement */}
-          <group position={[0, 0.1, -0.24]}
-            rotation={[ms * 0.15 + (isMounted ? ms * 0.3 : 0), Math.sin(t * 0.8) * 0.05 * ms, 0]}>
-            <mesh castShadow>
-              <boxGeometry args={[0.65, 0.9, 0.04]} />
-              <meshLambertMaterial color="#2a1a0a" />
-            </mesh>
-          </group>
+          <PlayerGLBModel moveSpeed={ms} />
         </group>
       </group>
+    </group>
+  );
+}
+
+/** GLB-based player character model with walk animation */
+function PlayerGLBModel({ moveSpeed }: { moveSpeed: number }) {
+  const gltf = useGLTF(soldierWalkUrl);
+  const modelRef = useRef<THREE.Group>(null);
+  
+  // Clone the scene so it doesn't get mutated across re-renders
+  const clonedScene = useMemo(() => {
+    const clone = gltf.scene.clone(true);
+    // Enable shadows on all meshes
+    clone.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    return clone;
+  }, [gltf.scene]);
+
+  const { actions, clips } = useAnimations(gltf.animations, modelRef);
+  const walkClipName = clips.length > 0 ? clips[0].name : null;
+  const prevMovingRef = useRef(false);
+
+  // Play/stop walk animation based on movement
+  useEffect(() => {
+    if (!walkClipName || !actions[walkClipName]) return;
+    const action = actions[walkClipName]!;
+    // Start playing looped
+    action.setLoop(THREE.LoopRepeat, Infinity);
+    action.clampWhenFinished = false;
+    action.play();
+    action.paused = true; // start paused
+  }, [walkClipName, actions]);
+
+  useFrame(() => {
+    if (!walkClipName || !actions[walkClipName]) return;
+    const action = actions[walkClipName]!;
+    const isMoving = moveSpeed > 0.05;
+    
+    if (isMoving && !prevMovingRef.current) {
+      action.paused = false;
+      action.setEffectiveTimeScale(1);
+    } else if (!isMoving && prevMovingRef.current) {
+      action.paused = true;
+    }
+    
+    // Scale animation speed with movement speed
+    if (isMoving) {
+      action.setEffectiveTimeScale(Math.max(0.5, moveSpeed * 1.5));
+    }
+    
+    prevMovingRef.current = isMoving;
+  });
+
+  // Scale: model is 1.7m, we want ~1.8m. Offset: center at feet.
+  // The model's Armature is offset — we need to zero it out.
+  return (
+    <group ref={modelRef} position={[0, -0.9, 0]} scale={[1.06, 1.06, 1.06]} rotation={[0, Math.PI, 0]}>
+      <primitive object={clonedScene} />
     </group>
   );
 }
