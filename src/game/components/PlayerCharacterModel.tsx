@@ -67,7 +67,7 @@ const _tmpForwardAlt = new THREE.Vector3();
 const _tmpCenter = new THREE.Vector3();
 const _tmpSize = new THREE.Vector3();
 
-type CharState = 'idle' | 'walk' | 'run' | 'jump' | 'hit' | 'fight' | 'emote_pushup_enter' | 'emote_pushup_loop' | 'emote_pushup_exit';
+
 
 const RUN_THRESHOLD = 0.7; // moveSpeedRef above this = running
 
