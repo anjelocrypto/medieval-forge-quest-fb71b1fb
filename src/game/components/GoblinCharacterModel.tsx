@@ -194,8 +194,11 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const jumpVisibleRef = useRef<THREE.Group>(null);
   const hiphopVisibleRef = useRef<THREE.Group>(null);
   const gangnamVisibleRef = useRef<THREE.Group>(null);
+  const hitVisibleRef = useRef<THREE.Group>(null);
 
   const lastEmoteIdRef = useRef<number>(0);
+  const hitStartTimeRef = useRef(0);
+  const prevDamageFlashRef = useRef(0);
 
   const stateRef = useRef<GoblinState>('idle');
 
