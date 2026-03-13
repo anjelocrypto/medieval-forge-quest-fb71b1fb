@@ -289,6 +289,7 @@ export function useMultiplayer() {
           if (resolved) return;
           resolved = true;
           clearTimeout(timeoutId);
+          clearAllTimers();
           console.warn('[Multiplayer] Channel error/closed:', status, err);
           setConnectionStatus('disconnected');
           resolve(false);
