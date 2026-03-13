@@ -18,7 +18,7 @@ import {
 } from '../constants';
 import { PLAYER_ATTACK_COOLDOWN, PLAYER_ATTACK_RANGE, PLAYER_ATTACK_DAMAGE, PLAYER_ATTACK_ARC } from '../systems/EnemyData';
 import { SurvivalState, LootPickup, ResourceInventory } from '../types';
-import { EnemyData } from '../systems/EnemyData';
+
 import { PlacedStructure } from '../systems/BuildingData';
 import { HorseData, HORSE_SPEED, HORSE_RUN_SPEED, MOUNT_RANGE, DISMOUNT_OFFSET } from '../systems/HorseData';
 import { resolveCollision, rebuildObstacles } from '../systems/CollisionSystem';
