@@ -305,6 +305,38 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     const speed = moveSpeedRef.current;
     const grounded = isGroundedRef.current;
 
+    // Handle emote trigger
+    const emoteId = activeEmoteId ?? 0;
+    if (activeEmote === 'hiphop' && emoteId !== lastEmoteIdRef.current) {
+      lastEmoteIdRef.current = emoteId;
+      stateRef.current = 'emote_hiphop';
+      setVisibleState('emote_hiphop');
+      if (hiphopClipName) {
+        const a = hiphopActions[hiphopClipName];
+        if (a) { a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.enabled = true; a.play(); a.paused = false; }
+      }
+      return;
+    }
+
+    // ===== HIPHOP EMOTE STATE =====
+    if (state === 'emote_hiphop') {
+      if (hiphopClipName) {
+        const a = hiphopActions[hiphopClipName];
+        if (a && a.time >= a.getClip().duration - 0.05) {
+          a.paused = true;
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+          onEmoteComplete();
+        }
+      } else {
+        stateRef.current = 'idle';
+        setVisibleState('idle');
+        onEmoteComplete();
+      }
+      return;
+    }
+
+    // ===== NORMAL LOCOMOTION =====
     let newState: GoblinState;
     if (!grounded) {
       newState = 'jump';
