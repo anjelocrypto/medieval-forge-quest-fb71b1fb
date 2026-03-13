@@ -212,6 +212,7 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   const sanitizedDanceClips = useMemo(() => sanitizeClips(danceGltf.animations), [danceGltf.animations]);
 
   // Inspections
+  const idleInspection = useMemo(() => inspectModel('octopus_idle', idleGltf.scene), [idleGltf.scene]);
   const walkInspection = useMemo(() => inspectModel('octopus_walk', walkGltf.scene), [walkGltf.scene]);
   const runInspection = useMemo(() => inspectModel('octopus_run', runGltf.scene), [runGltf.scene]);
   const jumpInspection = useMemo(() => inspectModel('octopus_jump', jumpGltf.scene), [jumpGltf.scene]);
