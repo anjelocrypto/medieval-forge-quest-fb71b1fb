@@ -9,6 +9,7 @@ import goblinJumpUrl from '@/assets/goblinjump.glb?url';
 import hiphopUrl from '@/assets/hiphop.glb?url';
 import gangnamUrl from '@/assets/gangnam.glb?url';
 import goblinGetHitUrl from '@/assets/goblingethit.glb?url';
+import goblinFightUrl from '@/assets/goblinfight.glb?url';
 
 interface GoblinGLBModelProps {
   moveSpeedRef: React.MutableRefObject<number>;
