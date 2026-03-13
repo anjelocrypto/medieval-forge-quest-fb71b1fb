@@ -61,7 +61,7 @@ const _tmpSize = new THREE.Vector3();
 
 type CharState = 'idle' | 'walk' | 'jump' | 'emote_pushup_enter' | 'emote_pushup_loop' | 'emote_pushup_exit';
 
-const PUSHUP_LOOP_REPS = 3; // How many pushup cycles before getting up
+const PUSHUP_DURATION_SEC = 6; // seconds of pushups before getting up
 
 function sanitizeClips(animations: THREE.AnimationClip[]): THREE.AnimationClip[] {
   return animations.map((clip) => {
