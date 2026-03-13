@@ -409,6 +409,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
           <MultiplayerBroadcaster
             playerId={multiplayer.playerId}
             displayName={multiplayer.displayName}
+            characterType={character}
             playerPositionRef={playerPositionRef}
             playerRotationRef={playerRotationRef}
             survival={survival}
