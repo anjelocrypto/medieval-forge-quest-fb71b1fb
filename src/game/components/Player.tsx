@@ -372,11 +372,12 @@ export function Player({
     else { baseSpeed = PLAYER_SPEED; runSpeed = PLAYER_RUN_SPEED; }
     const targetSpeed = canRun ? runSpeed : baseSpeed;
     const isMoving = _moveDir.lengthSq() > 0.001;
+    const isAttacking = attackAnimRef.current > 0;
 
     const accel = isMounted ? ACCEL_MOUNTED : (canRun ? ACCEL_GROUND_RUN : ACCEL_GROUND);
     const decel = isMounted ? DECEL_MOUNTED : DECEL_GROUND;
 
-    if (isMoving) {
+    if (isMoving && !isAttacking) {
       _moveDir.normalize();
 
       if (isMounted) {
@@ -485,7 +486,7 @@ export function Player({
     }
 
     // === COMBO ATTACK SYSTEM ===
-    if (!isMounted && !buildMode && input.attack && attackCooldownRef.current <= 0) {
+    if (!isMounted && !buildMode && !isMoving && input.attack && attackCooldownRef.current <= 0) {
       const isCombo = comboRef.current === 1 && comboWindowRef.current > 0;
       const atkDuration = isCombo ? 0.3 : 0.4;
       const atkDamage = isCombo ? PLAYER_ATTACK_DAMAGE * 1.3 : PLAYER_ATTACK_DAMAGE;
