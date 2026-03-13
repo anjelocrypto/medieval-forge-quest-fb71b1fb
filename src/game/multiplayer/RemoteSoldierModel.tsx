@@ -34,8 +34,33 @@ function sanitizeClips(animations: THREE.AnimationClip[]): THREE.AnimationClip[]
   });
 }
 
+function normalizeMaterial(mat: THREE.Material): THREE.Material {
+  const cloned = mat.clone();
+  if (cloned instanceof THREE.MeshStandardMaterial || cloned instanceof THREE.MeshPhysicalMaterial) {
+    cloned.emissive.set(0x000000);
+    cloned.emissiveIntensity = 0;
+    if (cloned.metalness > 0.3) cloned.metalness = 0.1;
+    if (cloned.roughness < 0.3) cloned.roughness = 0.5;
+    cloned.transparent = false;
+    cloned.opacity = 1;
+    cloned.depthWrite = true;
+    cloned.side = THREE.FrontSide;
+  }
+  return cloned;
+}
+
 function cloneScene(scene: THREE.Group): THREE.Group {
   const cloned = scene.clone(true);
+  cloned.traverse((n) => {
+    const mesh = n as THREE.Mesh;
+    if (mesh.isMesh && mesh.material) {
+      if (Array.isArray(mesh.material)) {
+        mesh.material = mesh.material.map(normalizeMaterial);
+      } else {
+        mesh.material = normalizeMaterial(mesh.material);
+      }
+    }
+  });
   const skinnedMeshes: THREE.SkinnedMesh[] = [];
   const origSkinnedMeshes: THREE.SkinnedMesh[] = [];
   scene.traverse((n) => { if ((n as THREE.SkinnedMesh).isSkinnedMesh) origSkinnedMeshes.push(n as THREE.SkinnedMesh); });
