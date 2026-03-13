@@ -20,7 +20,7 @@ interface GoblinGLBModelProps {
   isFightingRef?: React.MutableRefObject<boolean>;
 }
 
-type GoblinState = 'idle' | 'walk' | 'run' | 'jump';
+type GoblinState = 'idle' | 'walk' | 'run' | 'jump' | 'emote_hiphop';
 
 const MOVE_START_THRESHOLD = 0.07;
 const MOVE_STOP_THRESHOLD = 0.04;
