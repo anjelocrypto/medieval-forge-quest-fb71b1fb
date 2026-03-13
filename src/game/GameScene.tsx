@@ -355,6 +355,8 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
           externalMoveSpeedRef={moveSpeedRef}
           externalIsRunningRef={isRunningRef}
           externalAttackAnimRef={attackAnimRef}
+          activeEmote={activeEmote}
+          onEmoteComplete={useCallback(() => setActiveEmote(null), [])}
         />
         <WorldObjects
           resources={resources}
