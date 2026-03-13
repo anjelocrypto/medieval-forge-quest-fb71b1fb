@@ -275,6 +275,7 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
       case 'walk': return walkNorm;
       case 'run': return runNorm;
       case 'jump': return jumpNorm;
+      case 'fight': return fightNorm;
       case 'hit': return hitNorm;
       case 'dead': return deadNorm;
       case 'emote_dance': return danceNorm;
@@ -282,7 +283,7 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
       default:
         return idleNorm;
     }
-  }, [renderState, idleNorm, walkNorm, runNorm, jumpNorm, hitNorm, deadNorm, danceNorm]);
+  }, [renderState, idleNorm, walkNorm, runNorm, jumpNorm, fightNorm, hitNorm, deadNorm, danceNorm]);
 
   return (
     <group>
