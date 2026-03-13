@@ -260,7 +260,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
           // Transition to pushup loop
           a.paused = true;
           stateRef.current = 'emote_pushup_loop';
-          pushupRepsRef.current = 0;
+          pushupStartTimeRef.current = performance.now();
           setVisibleState('emote_pushup_loop');
           if (pushupLoopClipName) {
             const la = pushupLoopActions[pushupLoopClipName];
