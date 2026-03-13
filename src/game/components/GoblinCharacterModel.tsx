@@ -220,10 +220,14 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const { actions: runActions, clips: runClips } = useAnimations(sanitizedRunClips, runGltf.scene);
   const runClipName = useMemo(() => getFirstClipName(runClips, /run/i), [runClips]);
 
-  // Enable shadows
+  // Enable shadows + debug
   useEffect(() => {
     [idleGltf.scene, walkGltf.scene, runGltf.scene].forEach(enableMeshShadows);
-  }, [idleGltf.scene, walkGltf.scene, runGltf.scene]);
+    console.log('[Goblin] Clip names — idle:', idleClipName, 'walk:', walkClipName, 'run:', runClipName);
+    console.log('[Goblin] Idle clips:', idleGltf.animations.map(c => c.name));
+    console.log('[Goblin] Walk clips:', walkGltf.animations.map(c => c.name));
+    console.log('[Goblin] Run clips:', runGltf.animations.map(c => c.name));
+  }, [idleGltf.scene, walkGltf.scene, runGltf.scene, idleClipName, walkClipName, runClipName]);
 
   // Initialize idle (looping)
   useEffect(() => {
@@ -257,20 +261,12 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   }, []);
 
   const setVisibleState = useCallback((state: GoblinState) => {
-    const map: Record<GoblinState, React.RefObject<THREE.Group | null>> = {
-      idle: idleVisibleRef,
-      walk: walkVisibleRef,
-      run: runVisibleRef,
-      jump: idleVisibleRef, // fallback to idle for jump (no jump anim)
-    };
-    for (const [key, ref] of Object.entries(map)) {
-      if (ref.current) ref.current.visible = key === state || (state === 'jump' && key === 'idle');
-    }
-    // Ensure only one is visible
-    if (state === 'jump') {
-      if (walkVisibleRef.current) walkVisibleRef.current.visible = false;
-      if (runVisibleRef.current) runVisibleRef.current.visible = false;
-    }
+    const showIdle = state === 'idle' || state === 'jump';
+    const showWalk = state === 'walk';
+    const showRun = state === 'run';
+    if (idleVisibleRef.current) idleVisibleRef.current.visible = showIdle;
+    if (walkVisibleRef.current) walkVisibleRef.current.visible = showWalk;
+    if (runVisibleRef.current) runVisibleRef.current.visible = showRun;
   }, []);
 
   useFrame(() => {
