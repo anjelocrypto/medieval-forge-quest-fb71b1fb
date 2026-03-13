@@ -304,6 +304,9 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
         </button>
       )}
 
+      {/* Character Select (F4) */}
+      <CharacterSelect />
+
       {/* Emote Wheel */}
       <EmoteWheel
         onSelectEmote={(key) => {
