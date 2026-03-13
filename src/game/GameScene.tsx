@@ -61,7 +61,8 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
   const [mapOpen, setMapOpen] = useState(false);
   const [debugMounted, setDebugMounted] = useState(false);
   const [currentEmote, setCurrentEmote] = useState<string | null>(null);
-  const [activeEmote, setActiveEmote] = useState<string | null>(null);
+  const [activeEmote, setActiveEmote] = useState<{ key: string; id: number } | null>(null);
+  const emoteIdRef = useRef(0);
   const playerPositionRef = useRef(new THREE.Vector3(0, 0, 0));
 
   // Proximity voice chat
@@ -304,7 +305,10 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
 
       {/* Emote Wheel */}
       <EmoteWheel
-        onSelectEmote={(key) => setActiveEmote(key)}
+        onSelectEmote={(key) => {
+          emoteIdRef.current += 1;
+          setActiveEmote({ key, id: emoteIdRef.current });
+        }}
         isPlayingEmote={activeEmote !== null}
       />
 
@@ -361,7 +365,8 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
           externalMoveSpeedRef={moveSpeedRef}
           externalIsRunningRef={isRunningRef}
           externalAttackAnimRef={attackAnimRef}
-          activeEmote={activeEmote}
+          activeEmote={activeEmote?.key ?? null}
+          activeEmoteId={activeEmote?.id ?? 0}
           onEmoteComplete={useCallback(() => setActiveEmote(null), [])}
           damageFlash={damageFlash}
         />
