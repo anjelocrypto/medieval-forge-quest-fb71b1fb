@@ -297,6 +297,14 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     return () => { a.stop(); };
   }, [agreeActions, agreeClipName]);
 
+  // Initialize wave (paused, play once)
+  useEffect(() => {
+    if (!waveClipName) return;
+    const a = waveActions[waveClipName]; if (!a) return;
+    a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.enabled = true; a.play(); a.paused = true;
+    return () => { a.stop(); };
+  }, [waveActions, waveClipName]);
+
   // Audit log
   useEffect(() => {
     if (auditLoggedRef.current) return;
