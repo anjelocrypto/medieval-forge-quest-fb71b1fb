@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { InterpolatedPlayer, BROADCAST_RATE_MS, EMOTES } from './types';
 import { getTerrainHeight } from '../components/Terrain';
 import { Html } from '@react-three/drei';
-import { PLAYER_HEIGHT } from '../constants';
+
 import { RemoteGoblinModel } from './RemoteGoblinModel';
 import { RemoteSoldierModel } from './RemoteSoldierModel';
 
