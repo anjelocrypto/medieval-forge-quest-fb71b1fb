@@ -38,7 +38,7 @@ export function CharacterSelect() {
           Choose Character
         </h2>
         <p className="text-xs mb-4" style={{ color: 'hsl(40,20%,55%)' }}>
-          Press F4 to toggle · Changes apply immediately
+          Press Tab to toggle · Changes apply immediately
         </p>
         <div className="flex gap-3">
           {CHARACTERS.map(c => {
