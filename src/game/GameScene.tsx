@@ -38,6 +38,7 @@ import { EmoteWheel } from './ui/EmoteWheel';
 import { CharacterSelect } from './ui/CharacterSelect';
 import { useCharacter } from './context/CharacterContext';
 import { PerfBaselineR3F, PerfBaselineHUD } from './debug/PerfBaseline';
+import { WebGLRecovery } from './systems/WebGLRecovery';
 
 interface GameSceneProps {
   multiplayer: ReturnType<typeof import('./multiplayer/useMultiplayer').useMultiplayer>;
