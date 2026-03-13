@@ -200,6 +200,9 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const { actions: pushupExitActions, clips: pushupExitClips } = useAnimations(sanitizedPushupExitClips, pushupToIdleGltf.scene);
   const pushupExitClipName = useMemo(() => getFirstClipName(pushupExitClips), [pushupExitClips]);
 
+  const { actions: agreeActions, clips: agreeClips } = useAnimations(sanitizedAgreeClips, agreeGltf.scene);
+  const agreeClipName = useMemo(() => getFirstClipName(agreeClips, /agree|nod|yes/i), [agreeClips]);
+
   // Enable shadows on all models
   useEffect(() => {
     [idleGltf.scene, walkGltf.scene, jumpGltf.scene, runGltf.scene, hitGltf.scene, fightGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene].forEach(enableMeshShadows);
