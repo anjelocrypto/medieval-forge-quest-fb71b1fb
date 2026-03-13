@@ -329,6 +329,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     const showRun = state === 'run';
     const showJump = state === 'jump';
     const showHit = state === 'hit';
+    const showFight = state === 'fight';
     const showHiphop = state === 'emote_hiphop';
     const showGangnam = state === 'emote_gangnam';
     if (idleVisibleRef.current) idleVisibleRef.current.visible = showIdle;
@@ -336,6 +337,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     if (runVisibleRef.current) runVisibleRef.current.visible = showRun;
     if (jumpVisibleRef.current) jumpVisibleRef.current.visible = showJump;
     if (hitVisibleRef.current) hitVisibleRef.current.visible = showHit;
+    if (fightVisibleRef.current) fightVisibleRef.current.visible = showFight;
     if (hiphopVisibleRef.current) hiphopVisibleRef.current.visible = showHiphop;
     if (gangnamVisibleRef.current) gangnamVisibleRef.current.visible = showGangnam;
   }, []);
