@@ -90,11 +90,12 @@ function getFirstClipName(clips: THREE.AnimationClip[], hint?: RegExp): string |
   return clips[0].name;
 }
 
-export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedRef, activeEmote, onEmoteComplete }: PlayerGLBModelProps) {
+export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedRef, activeEmote, onEmoteComplete, damageFlash }: PlayerGLBModelProps) {
   const walkGltf = useGLTF(soldierWalkUrl);
   const idleGltf = useGLTF(soldierIdleUrl);
   const jumpGltf = useGLTF(jumpUrl);
   const runGltf = useGLTF(runUrl);
+  const hitGltf = useGLTF(gethitUrl);
   const idleToPushupGltf = useGLTF(idleToPushupUrl);
   const pushupGltf = useGLTF(pushupUrl);
   const pushupToIdleGltf = useGLTF(pushupToIdleUrl);
