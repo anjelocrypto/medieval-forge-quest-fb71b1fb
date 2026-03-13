@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import soldierWalkUrl from '@/assets/soldierwalking.glb?url';
-import soldierIdleUrl from '@/assets/soldier.glb?url';
+import standingUrl from '@/assets/standing.glb?url';
 import jumpUrl from '@/assets/jump.glb?url';
 import runUrl from '@/assets/run.glb?url';
 import gethitUrl from '@/assets/gethit.glb?url';
@@ -95,7 +95,7 @@ function getFirstClipName(clips: THREE.AnimationClip[], hint?: RegExp): string |
 
 export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedRef, activeEmote, onEmoteComplete, damageFlash, attackAnimRef, isFightingRef }: PlayerGLBModelProps) {
   const walkGltf = useGLTF(soldierWalkUrl);
-  const idleGltf = useGLTF(soldierIdleUrl);
+  const idleGltf = useGLTF(standingUrl);
   const jumpGltf = useGLTF(jumpUrl);
   const runGltf = useGLTF(runUrl);
   const hitGltf = useGLTF(gethitUrl);
@@ -123,6 +123,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const auditLoggedRef = useRef(false);
 
   // Sanitize clips
+  const sanitizedIdleClips = useMemo(() => sanitizeClips(idleGltf.animations), [idleGltf.animations]);
   const sanitizedWalkClips = useMemo(() => sanitizeClips(walkGltf.animations), [walkGltf.animations]);
   const sanitizedJumpClips = useMemo(() => sanitizeClips(jumpGltf.animations), [jumpGltf.animations]);
   const sanitizedRunClips = useMemo(() => sanitizeClips(runGltf.animations), [runGltf.animations]);
@@ -165,6 +166,9 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const pushupExitNorm = useMemo(() => buildEmoteNormalization(pushupExitInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight), [pushupExitInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight]);
 
   // Animation setups
+  const { actions: idleActions, clips: idleClips } = useAnimations(sanitizedIdleClips, idleGltf.scene);
+  const idleClipName = useMemo(() => getFirstClipName(idleClips, /idle|stand/i), [idleClips]);
+
   const { actions: walkActions, clips: walkClips } = useAnimations(sanitizedWalkClips, walkGltf.scene);
   const walkClipName = useMemo(() => getFirstClipName(walkClips, /walk/i), [walkClips]);
 
@@ -193,6 +197,14 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   useEffect(() => {
     [idleGltf.scene, walkGltf.scene, jumpGltf.scene, runGltf.scene, hitGltf.scene, fightGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene].forEach(enableMeshShadows);
   }, [idleGltf.scene, walkGltf.scene, jumpGltf.scene, runGltf.scene, hitGltf.scene, fightGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene]);
+
+  // Initialize idle/standing (looping)
+  useEffect(() => {
+    if (!idleClipName) return;
+    const a = idleActions[idleClipName]; if (!a) return;
+    a.reset(); a.setLoop(THREE.LoopRepeat, Infinity); a.clampWhenFinished = false; a.enabled = true; a.play();
+    return () => { a.stop(); };
+  }, [idleActions, idleClipName]);
 
   // Initialize walk (paused looping)
   useEffect(() => {
@@ -462,6 +474,18 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       }
     }
 
+    // Idle/standing animation
+    if (idleClipName) {
+      const ia = idleActions[idleClipName];
+      if (ia) {
+        if (newState === 'idle') {
+          ia.paused = false;
+        } else {
+          ia.paused = true;
+        }
+      }
+    }
+
     // Walk animation speed
     if (walkClipName) {
       const wa = walkActions[walkClipName];
@@ -628,7 +652,7 @@ function findArmatureNode(scene: THREE.Object3D): THREE.Object3D | null {
   return armature;
 }
 
-useGLTF.preload(soldierIdleUrl);
+useGLTF.preload(standingUrl);
 useGLTF.preload(soldierWalkUrl);
 useGLTF.preload(jumpUrl);
 useGLTF.preload(runUrl);
