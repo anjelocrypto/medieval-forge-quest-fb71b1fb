@@ -1,9 +1,7 @@
-import { useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
-import soldierWalkUrl from '@/assets/soldierwalking.glb?url';
-import soldierIdleUrl from '@/assets/soldier.glb?url';
+import { PlayerGLBModel } from './PlayerCharacterModel';
 import { getTerrainHeight } from './Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
 import { getMovementInput } from '../systems/InputSystem';
