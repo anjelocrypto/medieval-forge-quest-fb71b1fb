@@ -7,7 +7,7 @@ import { Player, MountedDebugData } from './components/Player';
 import { Atmosphere } from './components/Atmosphere';
 import { Sky } from './components/Sky';
 import { WorldObjects } from './components/WorldObjects';
-import { Enemies } from './components/Enemies';
+import { Enemies, EnemiesHandle, EnemyRuntime } from './components/Enemies';
 import { AmbientEffects } from './components/AmbientEffects';
 import { BuildingSystem } from './components/BuildingSystem';
 import { LootPickups } from './components/LootPickups';
