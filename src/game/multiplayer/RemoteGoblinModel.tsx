@@ -252,7 +252,11 @@ export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim
     return h;
   }, [idleScene]);
 
-  const idleNorm = useMemo(() => buildModelNormalization(idleScene, targetHeight, 0), [idleScene, targetHeight]);
+  const idleNorm = useMemo(() => {
+    const norm = buildModelNormalization(idleScene, targetHeight, 0);
+    console.log('[RemoteGoblin] idleScale:', norm.scale, 'idleAnchor:', norm.modelAnchorOffset, 'idleYaw:', norm.yawCorrection);
+    return norm;
+  }, [idleScene, targetHeight]);
   const walkNorm = useMemo(
     () => buildModelNormalization(walkScene, targetHeight, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset),
     [walkScene, targetHeight, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset],
