@@ -65,6 +65,7 @@ interface PlayerProps {
   // Multiplayer: external refs for broadcasting live animation state
   externalMoveSpeedRef?: React.MutableRefObject<number>;
   externalIsRunningRef?: React.MutableRefObject<boolean>;
+  externalIsGroundedRef?: React.MutableRefObject<boolean>;
   externalAttackAnimRef?: React.MutableRefObject<number>;
   // Emote
   activeEmote: string | null;
