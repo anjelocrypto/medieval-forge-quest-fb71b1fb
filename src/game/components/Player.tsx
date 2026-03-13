@@ -486,7 +486,7 @@ export function Player({
     }
 
     // === COMBO ATTACK SYSTEM ===
-    if (!isMounted && !buildMode && input.attack && attackCooldownRef.current <= 0) {
+    if (!isMounted && !buildMode && !isMoving && input.attack && attackCooldownRef.current <= 0) {
       const isCombo = comboRef.current === 1 && comboWindowRef.current > 0;
       const atkDuration = isCombo ? 0.3 : 0.4;
       const atkDamage = isCombo ? PLAYER_ATTACK_DAMAGE * 1.3 : PLAYER_ATTACK_DAMAGE;
