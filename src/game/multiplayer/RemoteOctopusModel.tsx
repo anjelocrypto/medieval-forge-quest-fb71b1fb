@@ -250,6 +250,10 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
     () => buildModelNormalization(danceScene, targetHeight, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset),
     [danceScene, targetHeight, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset],
   );
+  const fightNorm = useMemo(
+    () => buildModelNormalization(fightScene, targetHeight, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset),
+    [fightScene, targetHeight, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset],
+  );
 
   const activeScene = useMemo(() => {
     switch (renderState) {
