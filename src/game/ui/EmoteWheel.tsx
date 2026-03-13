@@ -17,6 +17,7 @@ const SOLDIER_EMOTES: EmoteOption[] = [
 
 const GOBLIN_EMOTES: EmoteOption[] = [
   { key: 'hiphop', label: 'Hip Hop', icon: '🕺' },
+  { key: 'gangnam', label: 'Gangnam', icon: '🎶' },
 ];
 
 interface EmoteWheelProps {
