@@ -26,7 +26,7 @@ import { BuildModeController } from './systems/BuildModeController';
 import { SurvivalHUD } from './ui/SurvivalHUD';
 import { useGameState } from './hooks/useGameState';
 import { generateWorldResources, WorldResource, generateLootDrop } from './systems/WorldResources';
-import { generateEnemies, EnemyData } from './systems/EnemyData';
+import { EnemyData } from './systems/EnemyData';
 import { initInput } from './systems/InputSystem';
 import { POIS, POI_ZONE_RADIUS } from './constants';
 // Multiplayer
