@@ -35,6 +35,7 @@ import { MultiplayerBroadcaster } from './multiplayer/MultiplayerBroadcaster';
 import { MultiplayerHUD } from './multiplayer/MultiplayerHUD';
 import { ChatPanel } from './multiplayer/ChatPanel';
 import { useProximityVoice } from './multiplayer/useProximityVoice';
+import { EmoteWheel } from './ui/EmoteWheel';
 
 interface GameSceneProps {
   multiplayer: ReturnType<typeof import('./multiplayer/useMultiplayer').useMultiplayer>;
@@ -60,6 +61,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
   const [mapOpen, setMapOpen] = useState(false);
   const [debugMounted, setDebugMounted] = useState(false);
   const [currentEmote, setCurrentEmote] = useState<string | null>(null);
+  const [activeEmote, setActiveEmote] = useState<string | null>(null);
   const playerPositionRef = useRef(new THREE.Vector3(0, 0, 0));
 
   // Proximity voice chat
@@ -300,6 +302,12 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
         </button>
       )}
 
+      {/* Emote Wheel */}
+      <EmoteWheel
+        onSelectEmote={(key) => setActiveEmote(key)}
+        isPlayingEmote={activeEmote !== null}
+      />
+
       <Canvas shadows camera={{ fov: 55, near: 0.5, far: 1500, position: [0, 10, 15] }}
         style={{ width: '100%', height: '100%' }}>
         <InputFlusher />
@@ -353,6 +361,8 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
           externalMoveSpeedRef={moveSpeedRef}
           externalIsRunningRef={isRunningRef}
           externalAttackAnimRef={attackAnimRef}
+          activeEmote={activeEmote}
+          onEmoteComplete={useCallback(() => setActiveEmote(null), [])}
         />
         <WorldObjects
           resources={resources}
