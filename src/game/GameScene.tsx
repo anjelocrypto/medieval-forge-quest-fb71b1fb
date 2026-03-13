@@ -371,6 +371,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
           mountedDebugRef={mountedDebugRef}
           externalMoveSpeedRef={moveSpeedRef}
           externalIsRunningRef={isRunningRef}
+          externalIsGroundedRef={isGroundedRef}
           externalAttackAnimRef={attackAnimRef}
           activeEmote={activeEmote?.key ?? null}
           activeEmoteId={activeEmote?.id ?? 0}
