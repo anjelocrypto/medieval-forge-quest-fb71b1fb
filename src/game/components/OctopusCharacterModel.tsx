@@ -239,6 +239,9 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   const danceNorm = useMemo(() => buildNormalization(danceInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [danceInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
 
   // Animation setups
+  const { actions: idleActions, clips: idleClips } = useAnimations(sanitizedIdleClips, idleGltf.scene);
+  const idleClipName = useMemo(() => getFirstClipName(idleClips, /stand|idle/i), [idleClips]);
+
   const { actions: walkActions, clips: walkClips } = useAnimations(sanitizedWalkClips, walkGltf.scene);
   const walkClipName = useMemo(() => getFirstClipName(walkClips, /walk/i), [walkClips]);
 
