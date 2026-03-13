@@ -1,9 +1,7 @@
-import { useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
-import soldierWalkUrl from '@/assets/soldierwalking.glb?url';
-import soldierIdleUrl from '@/assets/soldier.glb?url';
+import { PlayerGLBModel } from './PlayerCharacterModel';
 import { getTerrainHeight } from './Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
 import { getMovementInput } from '../systems/InputSystem';
@@ -936,98 +934,10 @@ export function Player({
             lean + riderLean
           ]}
         >
-          <PlayerGLBModel moveSpeed={ms} />
+          <PlayerGLBModel moveSpeedRef={moveSpeedRef} />
         </group>
       </group>
     </group>
   );
 }
 
-/** GLB-based player character — idle (static) + walk (animated) */
-function PlayerGLBModel({ moveSpeed }: { moveSpeed: number }) {
-  const walkGltf = useGLTF(soldierWalkUrl);
-  const idleGltf = useGLTF(soldierIdleUrl);
-  const walkGroupRef = useRef<THREE.Group>(null);
-  const isMoving = moveSpeed > 0.05;
-
-  // Setup walk model: zero out Armature offset, enable shadows
-  useEffect(() => {
-    walkGltf.scene.traverse((child) => {
-      if (child.name === 'Armature' || child.type === 'Object3D') {
-        child.position.set(0, 0, 0);
-      }
-      if ((child as THREE.Mesh).isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
-    });
-    walkGltf.scene.updateMatrixWorld(true);
-  }, [walkGltf.scene]);
-
-  // Setup idle model: enable shadows
-  useEffect(() => {
-    idleGltf.scene.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
-    });
-  }, [idleGltf.scene]);
-
-  // Walk animation setup
-  const { actions, clips } = useAnimations(walkGltf.animations, walkGltf.scene);
-  const walkClipName = clips.length > 0 ? clips[0].name : null;
-
-  // Strip Hips position track to prevent drift
-  useEffect(() => {
-    clips.forEach(clip => {
-      clip.tracks = clip.tracks.filter(track => {
-        return !(track.name.includes('Hips') && track.name.endsWith('.position'));
-      });
-    });
-  }, [clips]);
-
-  // Start walk animation (paused initially)
-  useEffect(() => {
-    if (!walkClipName || !actions[walkClipName]) return;
-    const action = actions[walkClipName]!;
-    action.setLoop(THREE.LoopRepeat, Infinity);
-    action.clampWhenFinished = false;
-    action.play();
-    action.paused = true;
-  }, [walkClipName, actions]);
-
-  // Control walk animation play/pause
-  const prevMovingRef = useRef(false);
-  useFrame(() => {
-    if (!walkClipName || !actions[walkClipName]) return;
-    const action = actions[walkClipName]!;
-
-    if (isMoving && !prevMovingRef.current) {
-      action.paused = false;
-    } else if (!isMoving && prevMovingRef.current) {
-      action.paused = true;
-    }
-    if (isMoving) {
-      action.setEffectiveTimeScale(Math.max(0.5, moveSpeed * 1.5));
-    }
-    prevMovingRef.current = isMoving;
-  });
-
-  // Idle model: static mesh, centered at Y=0 with min.y=-0.953
-  // so offset Y by +0.953 to place feet at Y=0
-  // Walk model: rigged, 1.7m tall, needs -0.9 Y offset + scale 1.06
-  return (
-    <>
-      {/* IDLE — static soldier mesh (visible when not moving) */}
-      <group visible={!isMoving} position={[0, -0.05, 0]} scale={[0.95, 0.95, 0.95]} rotation={[0, Math.PI, 0]}>
-        <primitive object={idleGltf.scene} />
-      </group>
-
-      {/* WALK — rigged animated soldier (visible when moving) */}
-      <group ref={walkGroupRef} visible={isMoving} position={[0, -0.9, 0]} scale={[1.06, 1.06, 1.06]} rotation={[0, Math.PI, 0]}>
-        <primitive object={walkGltf.scene} />
-      </group>
-    </>
-  );
-}
