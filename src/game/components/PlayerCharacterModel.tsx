@@ -100,7 +100,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const pushupExitVisibleRef = useRef<THREE.Group>(null);
 
   const stateRef = useRef<CharState>('idle');
-  const pushupRepsRef = useRef(0);
+  const pushupStartTimeRef = useRef(0);
   const auditLoggedRef = useRef(false);
 
   // Sanitize clips
