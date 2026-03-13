@@ -98,6 +98,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const jumpGltf = useGLTF(jumpUrl);
   const runGltf = useGLTF(runUrl);
   const hitGltf = useGLTF(gethitUrl);
+  const fightGltf = useGLTF(fightUrl);
   const idleToPushupGltf = useGLTF(idleToPushupUrl);
   const pushupGltf = useGLTF(pushupUrl);
   const pushupToIdleGltf = useGLTF(pushupToIdleUrl);
