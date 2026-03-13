@@ -30,10 +30,9 @@ interface Props {
 
 type RemoteState = 'idle' | 'walk' | 'run' | 'jump' | 'fight' | 'hit' | 'dead' | 'emote_hiphop' | 'emote_gangnam';
 
-// TARGET_HEIGHT must match local goblin's canonicalHeight computation.
-// Local uses: canonicalHeight = idleInspection.height (native idle GLB height).
-// We compute idleNorm first (with targetHeight=0 sentinel), then derive the actual target from the idle scene.
-// This ensures local and remote goblin render at IDENTICAL scale.
+// Target height is derived from the idle scene's native bounding box height,
+// matching the local goblin's canonicalHeight = idleInspection.height exactly.
+// This ensures local and remote goblin render at IDENTICAL scale (1.0 for idle).
 
 export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim, health, emote }: Props) {
   const idleGltf = useGLTF(goblinStandingUrl);
