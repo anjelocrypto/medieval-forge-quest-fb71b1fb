@@ -310,6 +310,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     if (pushupEnterVisibleRef.current) pushupEnterVisibleRef.current.visible = false;
     if (pushupLoopVisibleRef.current) pushupLoopVisibleRef.current.visible = false;
     if (pushupExitVisibleRef.current) pushupExitVisibleRef.current.visible = false;
+    if (agreeVisibleRef.current) agreeVisibleRef.current.visible = false;
   }, []);
 
   const setVisibleState = useCallback((state: CharState) => {
