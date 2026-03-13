@@ -8,6 +8,7 @@ import octopusJumpUrl from '@/assets/octopusjump.glb?url';
 import octopusGetHitUrl from '@/assets/octopusgethit.glb?url';
 import octopusDieUrl from '@/assets/octopusdie.glb?url';
 import octopusDanceUrl from '@/assets/octopusdance.glb?url';
+import octopusKickUrl from '@/assets/octopuskick.glb?url';
 import {
   buildModelNormalization,
   cloneScene,
