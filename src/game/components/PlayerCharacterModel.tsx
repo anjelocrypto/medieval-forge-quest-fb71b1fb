@@ -352,6 +352,37 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       return;
     }
 
+    // ===== FIGHT ATTACK TRIGGER =====
+    const currentlyAttacking = (attackAnimRef?.current ?? 0) > 0;
+    if (currentlyAttacking && !prevAttackingRef.current && stateRef.current !== 'fight' && stateRef.current !== 'hit') {
+      stateRef.current = 'fight';
+      fightStartTimeRef.current = performance.now();
+      setVisibleState('fight');
+      if (fightClipName) {
+        const a = fightActions[fightClipName];
+        if (a) { a.reset(); a.play(); a.paused = false; }
+      }
+    }
+    prevAttackingRef.current = currentlyAttacking;
+
+    // ===== FIGHT STATE =====
+    if (stateRef.current === 'fight') {
+      if (fightClipName) {
+        const a = fightActions[fightClipName];
+        if (a && a.time >= a.getClip().duration - 0.05) {
+          a.paused = true;
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+        }
+      } else {
+        const elapsed = (performance.now() - fightStartTimeRef.current) / 1000;
+        if (elapsed >= 0.5) {
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+        }
+      }
+      return;
+
     // ===== EMOTE STATES =====
     if (state === 'emote_pushup_enter') {
       if (pushupEnterClipName) {
