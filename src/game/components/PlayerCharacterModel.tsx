@@ -4,14 +4,16 @@ import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import soldierWalkUrl from '@/assets/soldierwalking.glb?url';
 import soldierIdleUrl from '@/assets/soldier.glb?url';
+import jumpUrl from '@/assets/jump.glb?url';
 
 interface PlayerGLBModelProps {
   moveSpeedRef: React.MutableRefObject<number>;
   controllerHalfHeight: number;
+  isGroundedRef: React.MutableRefObject<boolean>;
 }
 
 interface ModelInspection {
-  label: 'idle' | 'walk';
+  label: string;
   sceneRoot: THREE.Object3D;
   armature: THREE.Object3D | null;
   skinnedMesh: THREE.SkinnedMesh | null;
@@ -52,15 +54,20 @@ const _tmpForwardAlt = new THREE.Vector3();
 const _tmpCenter = new THREE.Vector3();
 const _tmpSize = new THREE.Vector3();
 
-export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight }: PlayerGLBModelProps) {
+type CharState = 'idle' | 'walk' | 'jump';
+
+export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedRef }: PlayerGLBModelProps) {
   const walkGltf = useGLTF(soldierWalkUrl);
   const idleGltf = useGLTF(soldierIdleUrl);
+  const jumpGltf = useGLTF(jumpUrl);
 
   const idleVisibleRef = useRef<THREE.Group>(null);
   const walkVisibleRef = useRef<THREE.Group>(null);
-  const movingRef = useRef(false);
+  const jumpVisibleRef = useRef<THREE.Group>(null);
+  const stateRef = useRef<CharState>('idle');
   const auditLoggedRef = useRef(false);
 
+  // Sanitize walk clips — strip root translation
   const sanitizedWalkClips = useMemo(() => {
     return walkGltf.animations.map((clip) => {
       const clonedClip = clip.clone();
@@ -73,8 +80,22 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight }: PlayerGLB
     });
   }, [walkGltf.animations]);
 
+  // Sanitize jump clips — strip root translation
+  const sanitizedJumpClips = useMemo(() => {
+    return jumpGltf.animations.map((clip) => {
+      const clonedClip = clip.clone();
+      clonedClip.tracks = clonedClip.tracks.filter((track) => {
+        if (!track.name.endsWith('.position')) return true;
+        const target = track.name.slice(0, track.name.lastIndexOf('.'));
+        return !ROOT_TRANSLATION_NAME_RE.test(target);
+      });
+      return clonedClip;
+    });
+  }, [jumpGltf.animations]);
+
   const walkInspection = useMemo(() => inspectModel('walk', walkGltf.scene), [walkGltf.scene]);
   const idleInspection = useMemo(() => inspectModel('idle', idleGltf.scene), [idleGltf.scene]);
+  const jumpInspection = useMemo(() => inspectModel('jump', jumpGltf.scene), [jumpGltf.scene]);
 
   const canonicalHeight = useMemo(() => {
     if (idleInspection.height > 0.01) return idleInspection.height;
@@ -94,107 +115,129 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight }: PlayerGLB
     return buildNormalization(walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight);
   }, [walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
 
-  const { actions, clips } = useAnimations(sanitizedWalkClips, walkGltf.scene);
+  const jumpNormalization = useMemo(() => {
+    return buildNormalization(jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight);
+  }, [jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
 
+  // Walk animation setup
+  const { actions: walkActions, clips: walkClips } = useAnimations(sanitizedWalkClips, walkGltf.scene);
   const walkClipName = useMemo(() => {
-    if (clips.length === 0) return null;
-    const namedWalk = clips.find((clip) => /walk/i.test(clip.name));
-    return namedWalk?.name ?? clips[0].name;
-  }, [clips]);
+    if (walkClips.length === 0) return null;
+    const namedWalk = walkClips.find((clip) => /walk/i.test(clip.name));
+    return namedWalk?.name ?? walkClips[0].name;
+  }, [walkClips]);
+
+  // Jump animation setup
+  const { actions: jumpActions, clips: jumpClips } = useAnimations(sanitizedJumpClips, jumpGltf.scene);
+  const jumpClipName = useMemo(() => {
+    if (jumpClips.length === 0) return null;
+    const namedJump = jumpClips.find((clip) => /jump/i.test(clip.name));
+    return namedJump?.name ?? jumpClips[0].name;
+  }, [jumpClips]);
 
   useEffect(() => {
     enableMeshShadows(idleGltf.scene);
     enableMeshShadows(walkGltf.scene);
-  }, [idleGltf.scene, walkGltf.scene]);
+    enableMeshShadows(jumpGltf.scene);
+  }, [idleGltf.scene, walkGltf.scene, jumpGltf.scene]);
 
+  // Initialize walk action (paused)
   useEffect(() => {
     if (!walkClipName) return;
-    const action = actions[walkClipName];
+    const action = walkActions[walkClipName];
     if (!action) return;
-
     action.reset();
     action.setLoop(THREE.LoopRepeat, Infinity);
     action.clampWhenFinished = false;
     action.enabled = true;
     action.play();
     action.paused = true;
+    return () => { action.stop(); };
+  }, [walkActions, walkClipName]);
 
-    return () => {
-      action.stop();
-    };
-  }, [actions, walkClipName]);
+  // Initialize jump action (paused, play once)
+  useEffect(() => {
+    if (!jumpClipName) return;
+    const action = jumpActions[jumpClipName];
+    if (!action) return;
+    action.reset();
+    action.setLoop(THREE.LoopOnce, 1);
+    action.clampWhenFinished = true;
+    action.enabled = true;
+    action.play();
+    action.paused = true;
+    return () => { action.stop(); };
+  }, [jumpActions, jumpClipName]);
 
   useEffect(() => {
     if (auditLoggedRef.current) return;
     auditLoggedRef.current = true;
-
-    const rawDrift = summarizeRootMotionDrift(walkGltf.animations);
-    const sanitizedDrift = summarizeRootMotionDrift(sanitizedWalkClips);
-
     console.groupCollapsed('[Character Audit] GLB integration deep audit');
-    console.log('Canonical gameplay rule: move forward = model forward, camera behind, back facing camera');
     console.log('Idle inspection:', serializeInspection(idleInspection));
     console.log('Walk inspection:', serializeInspection(walkInspection));
+    console.log('Jump inspection:', serializeInspection(jumpInspection));
     console.log('Idle normalization:', idleNormalization);
     console.log('Walk normalization:', walkNormalization);
-    console.log('Grounding check:', {
-      controllerHalfHeight,
-      idleFootToGroundError: Number(
-        computeFootGroundError(idleNormalization, idleInspection, controllerHalfHeight).toFixed(6),
-      ),
-      walkFootToGroundError: Number(
-        computeFootGroundError(walkNormalization, walkInspection, controllerHalfHeight).toFixed(6),
-      ),
-    });
-    console.log('Walk clip selected:', walkClipName);
-    console.log('Raw walk root translation drift:', rawDrift);
-    console.log('Sanitized walk root translation drift:', sanitizedDrift);
+    console.log('Jump normalization:', jumpNormalization);
+    console.log('Jump clip:', jumpClipName, 'clips:', jumpClips.map(c => c.name));
     console.groupEnd();
-  }, [
-    controllerHalfHeight,
-    idleInspection,
-    walkInspection,
-    idleNormalization,
-    walkNormalization,
-    walkClipName,
-    walkGltf.animations,
-    sanitizedWalkClips,
-  ]);
+  }, [idleInspection, walkInspection, jumpInspection, idleNormalization, walkNormalization, jumpNormalization, jumpClipName, jumpClips]);
 
+  // Initial visibility
   useEffect(() => {
     if (idleVisibleRef.current) idleVisibleRef.current.visible = true;
     if (walkVisibleRef.current) walkVisibleRef.current.visible = false;
+    if (jumpVisibleRef.current) jumpVisibleRef.current.visible = false;
   }, []);
 
   useFrame(() => {
     const speed = moveSpeedRef.current;
-    const shouldMove = movingRef.current
-      ? speed > MOVE_STOP_THRESHOLD
-      : speed > MOVE_START_THRESHOLD;
+    const grounded = isGroundedRef.current;
 
-    if (shouldMove !== movingRef.current) {
-      movingRef.current = shouldMove;
-      if (idleVisibleRef.current) idleVisibleRef.current.visible = !shouldMove;
-      if (walkVisibleRef.current) walkVisibleRef.current.visible = shouldMove;
+    let newState: CharState;
+    if (!grounded) {
+      newState = 'jump';
+    } else if (stateRef.current === 'idle' ? speed > MOVE_START_THRESHOLD : speed > MOVE_STOP_THRESHOLD) {
+      newState = 'walk';
+    } else {
+      newState = 'idle';
     }
 
-    if (!walkClipName) return;
-    const action = actions[walkClipName];
-    if (!action) return;
+    if (newState !== stateRef.current) {
+      stateRef.current = newState;
+      if (idleVisibleRef.current) idleVisibleRef.current.visible = newState === 'idle';
+      if (walkVisibleRef.current) walkVisibleRef.current.visible = newState === 'walk';
+      if (jumpVisibleRef.current) jumpVisibleRef.current.visible = newState === 'jump';
 
-    if (shouldMove) {
-      action.paused = false;
-      const normalizedSpeed = THREE.MathUtils.clamp(speed, 0, 1.4);
-      action.setEffectiveTimeScale(Math.max(0.55, normalizedSpeed * 1.35));
-      return;
+      // Trigger jump animation from the beginning when entering jump state
+      if (newState === 'jump' && jumpClipName) {
+        const action = jumpActions[jumpClipName];
+        if (action) {
+          action.reset();
+          action.play();
+          action.paused = false;
+        }
+      }
     }
 
-    action.paused = true;
+    // Walk animation speed control
+    if (walkClipName) {
+      const walkAction = walkActions[walkClipName];
+      if (walkAction) {
+        if (newState === 'walk') {
+          walkAction.paused = false;
+          const normalizedSpeed = THREE.MathUtils.clamp(speed, 0, 1.4);
+          walkAction.setEffectiveTimeScale(Math.max(0.55, normalizedSpeed * 1.35));
+        } else {
+          walkAction.paused = true;
+        }
+      }
+    }
   });
 
   return (
     <group>
-      {/* Stable visual stack: gameplay root -> orientation -> controller-ground offset -> scale -> model anchor */}
+      {/* Idle */}
       <group ref={idleVisibleRef}>
         <group rotation={[0, idleNormalization.yawCorrection, 0]}>
           <group position={[0, idleNormalization.controllerGroundOffset, 0]}>
@@ -207,12 +250,26 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight }: PlayerGLB
         </group>
       </group>
 
+      {/* Walk */}
       <group ref={walkVisibleRef}>
         <group rotation={[0, walkNormalization.yawCorrection, 0]}>
           <group position={[0, walkNormalization.controllerGroundOffset, 0]}>
             <group scale={[walkNormalization.scale, walkNormalization.scale, walkNormalization.scale]}>
               <group position={walkNormalization.modelAnchorOffset}>
                 <primitive object={walkGltf.scene} />
+              </group>
+            </group>
+          </group>
+        </group>
+      </group>
+
+      {/* Jump */}
+      <group ref={jumpVisibleRef}>
+        <group rotation={[0, jumpNormalization.yawCorrection, 0]}>
+          <group position={[0, jumpNormalization.controllerGroundOffset, 0]}>
+            <group scale={[jumpNormalization.scale, jumpNormalization.scale, jumpNormalization.scale]}>
+              <group position={jumpNormalization.modelAnchorOffset}>
+                <primitive object={jumpGltf.scene} />
               </group>
             </group>
           </group>
@@ -248,7 +305,7 @@ function buildNormalization(
   };
 }
 
-function inspectModel(label: 'idle' | 'walk', scene: THREE.Object3D): ModelInspection {
+function inspectModel(label: string, scene: THREE.Object3D): ModelInspection {
   scene.updateMatrixWorld(true);
 
   const bounds = new THREE.Box3().setFromObject(scene);
@@ -326,56 +383,11 @@ function inferFacingYawFromSkeleton(skeleton: THREE.Skeleton | null): { yaw: num
   const normalizedA = normalizeAngle(yawA);
   const normalizedB = normalizeAngle(yawB);
 
-  // Choose the candidate requiring the least correction from canonical +Z forward.
   const preferred = Math.abs(normalizedA) <= Math.abs(normalizedB)
     ? normalizedA
     : normalizedB;
 
   return { yaw: preferred, candidates: [normalizedA, normalizedB] };
-}
-
-function computeFootGroundError(
-  normalization: ModelNormalization,
-  inspection: ModelInspection,
-  controllerHalfHeight: number,
-): number {
-  const footWorldFromRoot =
-    normalization.controllerGroundOffset +
-    normalization.scale * (inspection.footY + normalization.modelAnchorOffset[1]);
-
-  const expectedGroundFromRoot = -controllerHalfHeight;
-  return footWorldFromRoot - expectedGroundFromRoot;
-}
-
-function summarizeRootMotionDrift(clips: THREE.AnimationClip[]) {
-  return clips.map((clip) => {
-    const rootTracks = clip.tracks.filter((track) => {
-      if (!track.name.endsWith('.position')) return false;
-      const target = track.name.slice(0, track.name.lastIndexOf('.'));
-      return ROOT_TRANSLATION_NAME_RE.test(target);
-    });
-
-    const driftByTrack = rootTracks.map((track) => {
-      const values = track.values;
-      const firstX = values[0] ?? 0;
-      const firstY = values[1] ?? 0;
-      const firstZ = values[2] ?? 0;
-      const lastX = values[values.length - 3] ?? 0;
-      const lastY = values[values.length - 2] ?? 0;
-      const lastZ = values[values.length - 1] ?? 0;
-      const drift = Math.hypot(lastX - firstX, lastY - firstY, lastZ - firstZ);
-      return {
-        track: track.name,
-        drift: Number(drift.toFixed(5)),
-      };
-    });
-
-    return {
-      clip: clip.name,
-      rootPositionTrackCount: rootTracks.length,
-      driftByTrack,
-    };
-  });
 }
 
 function serializeInspection(inspection: ModelInspection) {
@@ -397,26 +409,16 @@ function serializeInspection(inspection: ModelInspection) {
           scale: toFixedVec3(inspection.armature.scale),
         }
       : null,
-    skinnedMesh: inspection.skinnedMesh
-      ? {
-          name: inspection.skinnedMesh.name,
-          position: toFixedVec3(inspection.skinnedMesh.position),
-          rotation: toFixedVec3(inspection.skinnedMesh.rotation),
-          scale: toFixedVec3(inspection.skinnedMesh.scale),
-        }
-      : null,
     hipsBone: inspection.hipsBone
       ? {
           name: inspection.hipsBone.name,
           position: toFixedVec3(inspection.hipsBone.position),
-          rotation: toFixedVec3(inspection.hipsBone.rotation),
         }
       : null,
     bounds: {
       min: toFixedVec3(inspection.bounds.min),
       max: toFixedVec3(inspection.bounds.max),
       size: toFixedVec3(inspection.size),
-      center: toFixedVec3(inspection.center),
     },
     anchor: {
       x: Number(inspection.anchor.x.toFixed(4)),
@@ -425,7 +427,6 @@ function serializeInspection(inspection: ModelInspection) {
       inferredFacingYaw: inspection.facingYaw !== null
         ? Number(inspection.facingYaw.toFixed(4))
         : null,
-      facingYawCandidates: inspection.facingYawCandidates.map((v) => Number(v.toFixed(4))),
     },
   };
 }
@@ -467,3 +468,4 @@ function findArmatureNode(scene: THREE.Object3D): THREE.Object3D | null {
 
 useGLTF.preload(soldierIdleUrl);
 useGLTF.preload(soldierWalkUrl);
+useGLTF.preload(jumpUrl);
