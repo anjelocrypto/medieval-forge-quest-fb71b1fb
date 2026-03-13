@@ -250,6 +250,9 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   const { actions: danceActions, clips: danceClips } = useAnimations(sanitizedDanceClips, danceGltf.scene);
   const danceClipName = useMemo(() => getFirstClipName(danceClips, /dance/i), [danceClips]);
 
+  const { actions: fightActions, clips: fightClips } = useAnimations(sanitizedFightClips, fightGltf.scene);
+  const fightClipName = useMemo(() => getFirstClipName(fightClips, /kick|fight|attack/i), [fightClips]);
+
   // Enable shadows
   useEffect(() => {
     [walkGltf.scene, runGltf.scene, jumpGltf.scene, hitGltf.scene, danceGltf.scene].forEach(enableMeshShadows);
