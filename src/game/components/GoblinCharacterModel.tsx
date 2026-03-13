@@ -276,12 +276,14 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   }, []);
 
   const setVisibleState = useCallback((state: GoblinState) => {
-    const showIdle = state === 'idle' || state === 'jump';
+    const showIdle = state === 'idle';
     const showWalk = state === 'walk';
     const showRun = state === 'run';
+    const showJump = state === 'jump';
     if (idleVisibleRef.current) idleVisibleRef.current.visible = showIdle;
     if (walkVisibleRef.current) walkVisibleRef.current.visible = showWalk;
     if (runVisibleRef.current) runVisibleRef.current.visible = showRun;
+    if (jumpVisibleRef.current) jumpVisibleRef.current.visible = showJump;
   }, []);
 
   useFrame(() => {
