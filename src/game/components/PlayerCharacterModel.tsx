@@ -343,6 +343,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       emote_pushup_loop: pushupLoopVisibleRef,
       emote_pushup_exit: pushupExitVisibleRef,
       emote_agree: agreeVisibleRef,
+      emote_wave: waveVisibleRef,
     };
     for (const [key, ref] of Object.entries(map)) {
       if (ref.current) ref.current.visible = key === state;
