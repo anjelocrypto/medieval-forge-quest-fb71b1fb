@@ -228,6 +228,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const runNorm = useMemo(() => buildNormalization(runInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [runInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const jumpNorm = useMemo(() => buildNormalization(jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const hiphopNorm = useMemo(() => buildNormalization(hiphopInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [hiphopInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
+  const gangnamNorm = useMemo(() => buildNormalization(gangnamInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [gangnamInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
 
   // Animation setups
   const { actions: idleActions, clips: idleClips } = useAnimations(sanitizedIdleClips, idleGltf.scene);
