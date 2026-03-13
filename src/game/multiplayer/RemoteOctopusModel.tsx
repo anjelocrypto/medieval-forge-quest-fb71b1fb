@@ -51,6 +51,8 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
   const [renderState, setRenderState] = useState<RemoteState>('idle');
   const prevHealthRef = useRef(health);
   const hitTimerRef = useRef(0);
+  const fightTimerRef = useRef(0);
+  const prevAttackRef = useRef(0);
   const emoteTimerRef = useRef(0);
   const prevEmoteRef = useRef<string | null>(null);
 
