@@ -349,8 +349,8 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
           playerPositionRef={playerPositionRef}
           playerRotationRef={playerRotationRef}
           cameraAzimuthRef={cameraAzimuthRef}
-          enemies={enemies}
-          onEnemyHit={handleEnemyHit}
+          enemiesHandleRef={enemiesHandleRef}
+
           onRespawn={handleRespawn}
           buildMode={buildMode}
           structures={structures}
