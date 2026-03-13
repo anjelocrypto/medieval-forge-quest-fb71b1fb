@@ -358,8 +358,8 @@ export function Player({
     _moveDir.set(0, 0, 0);
     if (input.w) _moveDir.add(_camForward);
     if (input.s) _moveDir.sub(_camForward);
-    if (input.a) _moveDir.add(_camRight);
-    if (input.d) _moveDir.sub(_camRight);
+    if (input.a) _moveDir.sub(_camRight);
+    if (input.d) _moveDir.add(_camRight);
 
     const canRun = input.run && survival.stamina > 0;
     let baseSpeed: number, runSpeed: number;
