@@ -27,7 +27,7 @@ interface Props {
   emote: string | null;
 }
 
-type RemoteState = 'idle' | 'walk' | 'run' | 'jump' | 'hit' | 'dead' | 'emote_dance';
+type RemoteState = 'idle' | 'walk' | 'run' | 'jump' | 'fight' | 'hit' | 'dead' | 'emote_dance';
 
 export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAnim, health, emote }: Props) {
   const walkGltf = useGLTF(octopusWalkingUrl);
