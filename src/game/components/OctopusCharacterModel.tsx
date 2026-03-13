@@ -512,6 +512,7 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   );
 }
 
+useGLTF.preload(octopusStandingUrl);
 useGLTF.preload(octopusWalkingUrl);
 useGLTF.preload(octopusRunningUrl);
 useGLTF.preload(octopusJumpUrl);

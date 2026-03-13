@@ -58,7 +58,7 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
   const emoteTimerRef = useRef(0);
   const prevEmoteRef = useRef<string | null>(null);
 
-  const idleClips = useMemo(() => sanitizeClips(walkGltf.animations), [walkGltf.animations]);
+  const idleClips = useMemo(() => sanitizeClips(standGltf.animations), [standGltf.animations]);
   const walkClips = useMemo(() => sanitizeClips(walkGltf.animations), [walkGltf.animations]);
   const runClips = useMemo(() => sanitizeClips(runGltf.animations), [runGltf.animations]);
   const jumpClips = useMemo(() => sanitizeClips(jumpGltf.animations), [jumpGltf.animations]);
