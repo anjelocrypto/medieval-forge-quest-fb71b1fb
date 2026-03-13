@@ -140,6 +140,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const sanitizedPushupLoopClips = useMemo(() => sanitizeClips(pushupGltf.animations), [pushupGltf.animations]);
   const sanitizedPushupExitClips = useMemo(() => sanitizeClips(pushupToIdleGltf.animations), [pushupToIdleGltf.animations]);
   const sanitizedAgreeClips = useMemo(() => sanitizeClips(agreeGltf.animations), [agreeGltf.animations]);
+  const sanitizedWaveClips = useMemo(() => sanitizeClips(waveGltf.animations), [waveGltf.animations]);
 
   // Inspections
   const walkInspection = useMemo(() => inspectModel('walk', walkGltf.scene), [walkGltf.scene]);
