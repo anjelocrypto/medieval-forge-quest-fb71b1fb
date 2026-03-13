@@ -255,9 +255,9 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
 
   // Enable shadows
   useEffect(() => {
-    [walkGltf.scene, runGltf.scene, jumpGltf.scene, hitGltf.scene, danceGltf.scene].forEach(enableMeshShadows);
-    console.log('[Octopus] Clip names — walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName, 'hit:', hitClipName, 'dance:', danceClipName);
-  }, [walkGltf.scene, runGltf.scene, jumpGltf.scene, hitGltf.scene, danceGltf.scene, walkClipName, runClipName, jumpClipName, hitClipName, danceClipName]);
+    [walkGltf.scene, runGltf.scene, jumpGltf.scene, hitGltf.scene, fightGltf.scene, danceGltf.scene].forEach(enableMeshShadows);
+    console.log('[Octopus] Clip names — walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName, 'hit:', hitClipName, 'fight:', fightClipName, 'dance:', danceClipName);
+  }, [walkGltf.scene, runGltf.scene, jumpGltf.scene, hitGltf.scene, fightGltf.scene, danceGltf.scene, walkClipName, runClipName, jumpClipName, hitClipName, fightClipName, danceClipName]);
 
   // Initialize walk/idle (looping)
   useEffect(() => {
