@@ -507,6 +507,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       {renderModel(jumpVisibleRef, jumpNorm, jumpGltf.scene)}
       {renderModel(hiphopVisibleRef, hiphopNorm, hiphopGltf.scene)}
       {renderModel(gangnamVisibleRef, gangnamNorm, gangnamGltf.scene)}
+      {renderModel(hitVisibleRef, hitNorm, getHitGltf.scene)}
     </group>
   );
 }
@@ -517,3 +518,4 @@ useGLTF.preload(goblinRunningUrl);
 useGLTF.preload(goblinJumpUrl);
 useGLTF.preload(hiphopUrl);
 useGLTF.preload(gangnamUrl);
+useGLTF.preload(goblinGetHitUrl);
