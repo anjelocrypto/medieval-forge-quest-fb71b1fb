@@ -61,7 +61,7 @@ const _tmpSize = new THREE.Vector3();
 
 type CharState = 'idle' | 'walk' | 'jump' | 'emote_pushup_enter' | 'emote_pushup_loop' | 'emote_pushup_exit';
 
-const PUSHUP_LOOP_REPS = 3; // How many pushup cycles before getting up
+const PUSHUP_DURATION_SEC = 6; // seconds of pushups before getting up
 
 function sanitizeClips(animations: THREE.AnimationClip[]): THREE.AnimationClip[] {
   return animations.map((clip) => {
@@ -100,7 +100,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const pushupExitVisibleRef = useRef<THREE.Group>(null);
 
   const stateRef = useRef<CharState>('idle');
-  const pushupRepsRef = useRef(0);
+  const pushupStartTimeRef = useRef(0);
   const auditLoggedRef = useRef(false);
 
   // Sanitize clips
@@ -238,7 +238,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     if (activeEmote === 'pushups' && prevEmoteRef.current !== 'pushups') {
       // Start pushup sequence
       stateRef.current = 'emote_pushup_enter';
-      pushupRepsRef.current = 0;
+      pushupStartTimeRef.current = 0;
       setVisibleState('emote_pushup_enter');
 
       if (pushupEnterClipName) {
@@ -260,7 +260,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
           // Transition to pushup loop
           a.paused = true;
           stateRef.current = 'emote_pushup_loop';
-          pushupRepsRef.current = 0;
+          pushupStartTimeRef.current = performance.now();
           setVisibleState('emote_pushup_loop');
           if (pushupLoopClipName) {
             const la = pushupLoopActions[pushupLoopClipName];
@@ -272,22 +272,18 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     }
 
     if (state === 'emote_pushup_loop') {
-      if (pushupLoopClipName) {
-        const a = pushupLoopActions[pushupLoopClipName];
-        if (a) {
-          const dur = a.getClip().duration;
-          // Count reps by tracking when animation loops
-          const currentRep = Math.floor(a.time / dur);
-          if (currentRep >= PUSHUP_LOOP_REPS) {
-            // Done with reps, transition to exit
-            a.paused = true;
-            stateRef.current = 'emote_pushup_exit';
-            setVisibleState('emote_pushup_exit');
-            if (pushupExitClipName) {
-              const ea = pushupExitActions[pushupExitClipName];
-              if (ea) { ea.reset(); ea.play(); ea.paused = false; }
-            }
-          }
+      const elapsed = (performance.now() - pushupStartTimeRef.current) / 1000;
+      if (elapsed >= PUSHUP_DURATION_SEC) {
+        // Done — transition to exit
+        if (pushupLoopClipName) {
+          const a = pushupLoopActions[pushupLoopClipName];
+          if (a) a.paused = true;
+        }
+        stateRef.current = 'emote_pushup_exit';
+        setVisibleState('emote_pushup_exit');
+        if (pushupExitClipName) {
+          const ea = pushupExitActions[pushupExitClipName];
+          if (ea) { ea.reset(); ea.play(); ea.paused = false; }
         }
       }
       return;
