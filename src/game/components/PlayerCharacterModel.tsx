@@ -1,15 +1,20 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import soldierWalkUrl from '@/assets/soldierwalking.glb?url';
 import soldierIdleUrl from '@/assets/soldier.glb?url';
 import jumpUrl from '@/assets/jump.glb?url';
+import idleToPushupUrl from '@/assets/idletopushup.glb?url';
+import pushupUrl from '@/assets/pushup.glb?url';
+import pushupToIdleUrl from '@/assets/pushuptoidle.glb?url';
 
 interface PlayerGLBModelProps {
   moveSpeedRef: React.MutableRefObject<number>;
   controllerHalfHeight: number;
   isGroundedRef: React.MutableRefObject<boolean>;
+  activeEmote: string | null;
+  onEmoteComplete: () => void;
 }
 
 interface ModelInspection {
@@ -54,48 +59,64 @@ const _tmpForwardAlt = new THREE.Vector3();
 const _tmpCenter = new THREE.Vector3();
 const _tmpSize = new THREE.Vector3();
 
-type CharState = 'idle' | 'walk' | 'jump';
+type CharState = 'idle' | 'walk' | 'jump' | 'emote_pushup_enter' | 'emote_pushup_loop' | 'emote_pushup_exit';
 
-export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedRef }: PlayerGLBModelProps) {
+const PUSHUP_LOOP_REPS = 3; // How many pushup cycles before getting up
+
+function sanitizeClips(animations: THREE.AnimationClip[]): THREE.AnimationClip[] {
+  return animations.map((clip) => {
+    const clonedClip = clip.clone();
+    clonedClip.tracks = clonedClip.tracks.filter((track) => {
+      if (!track.name.endsWith('.position')) return true;
+      const target = track.name.slice(0, track.name.lastIndexOf('.'));
+      return !ROOT_TRANSLATION_NAME_RE.test(target);
+    });
+    return clonedClip;
+  });
+}
+
+function getFirstClipName(clips: THREE.AnimationClip[], hint?: RegExp): string | null {
+  if (clips.length === 0) return null;
+  if (hint) {
+    const found = clips.find(c => hint.test(c.name));
+    if (found) return found.name;
+  }
+  return clips[0].name;
+}
+
+export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedRef, activeEmote, onEmoteComplete }: PlayerGLBModelProps) {
   const walkGltf = useGLTF(soldierWalkUrl);
   const idleGltf = useGLTF(soldierIdleUrl);
   const jumpGltf = useGLTF(jumpUrl);
+  const idleToPushupGltf = useGLTF(idleToPushupUrl);
+  const pushupGltf = useGLTF(pushupUrl);
+  const pushupToIdleGltf = useGLTF(pushupToIdleUrl);
 
   const idleVisibleRef = useRef<THREE.Group>(null);
   const walkVisibleRef = useRef<THREE.Group>(null);
   const jumpVisibleRef = useRef<THREE.Group>(null);
+  const pushupEnterVisibleRef = useRef<THREE.Group>(null);
+  const pushupLoopVisibleRef = useRef<THREE.Group>(null);
+  const pushupExitVisibleRef = useRef<THREE.Group>(null);
+
   const stateRef = useRef<CharState>('idle');
+  const pushupRepsRef = useRef(0);
   const auditLoggedRef = useRef(false);
 
-  // Sanitize walk clips — strip root translation
-  const sanitizedWalkClips = useMemo(() => {
-    return walkGltf.animations.map((clip) => {
-      const clonedClip = clip.clone();
-      clonedClip.tracks = clonedClip.tracks.filter((track) => {
-        if (!track.name.endsWith('.position')) return true;
-        const target = track.name.slice(0, track.name.lastIndexOf('.'));
-        return !ROOT_TRANSLATION_NAME_RE.test(target);
-      });
-      return clonedClip;
-    });
-  }, [walkGltf.animations]);
+  // Sanitize clips
+  const sanitizedWalkClips = useMemo(() => sanitizeClips(walkGltf.animations), [walkGltf.animations]);
+  const sanitizedJumpClips = useMemo(() => sanitizeClips(jumpGltf.animations), [jumpGltf.animations]);
+  const sanitizedPushupEnterClips = useMemo(() => sanitizeClips(idleToPushupGltf.animations), [idleToPushupGltf.animations]);
+  const sanitizedPushupLoopClips = useMemo(() => sanitizeClips(pushupGltf.animations), [pushupGltf.animations]);
+  const sanitizedPushupExitClips = useMemo(() => sanitizeClips(pushupToIdleGltf.animations), [pushupToIdleGltf.animations]);
 
-  // Sanitize jump clips — strip root translation
-  const sanitizedJumpClips = useMemo(() => {
-    return jumpGltf.animations.map((clip) => {
-      const clonedClip = clip.clone();
-      clonedClip.tracks = clonedClip.tracks.filter((track) => {
-        if (!track.name.endsWith('.position')) return true;
-        const target = track.name.slice(0, track.name.lastIndexOf('.'));
-        return !ROOT_TRANSLATION_NAME_RE.test(target);
-      });
-      return clonedClip;
-    });
-  }, [jumpGltf.animations]);
-
+  // Inspections
   const walkInspection = useMemo(() => inspectModel('walk', walkGltf.scene), [walkGltf.scene]);
   const idleInspection = useMemo(() => inspectModel('idle', idleGltf.scene), [idleGltf.scene]);
   const jumpInspection = useMemo(() => inspectModel('jump', jumpGltf.scene), [jumpGltf.scene]);
+  const pushupEnterInspection = useMemo(() => inspectModel('pushupEnter', idleToPushupGltf.scene), [idleToPushupGltf.scene]);
+  const pushupLoopInspection = useMemo(() => inspectModel('pushupLoop', pushupGltf.scene), [pushupGltf.scene]);
+  const pushupExitInspection = useMemo(() => inspectModel('pushupExit', pushupToIdleGltf.scene), [pushupToIdleGltf.scene]);
 
   const canonicalHeight = useMemo(() => {
     if (idleInspection.height > 0.01) return idleInspection.height;
@@ -107,177 +128,249 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     return walkInspection.facingYaw !== null ? -walkInspection.facingYaw : 0;
   }, [walkInspection.facingYaw]);
 
-  const idleNormalization = useMemo(() => {
-    return buildNormalization(idleInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight);
-  }, [idleInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
+  // Normalizations
+  const idleNorm = useMemo(() => buildNormalization(idleInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [idleInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
+  const walkNorm = useMemo(() => buildNormalization(walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
+  const jumpNorm = useMemo(() => buildNormalization(jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
+  const pushupEnterNorm = useMemo(() => buildNormalization(pushupEnterInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [pushupEnterInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
+  const pushupLoopNorm = useMemo(() => buildNormalization(pushupLoopInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [pushupLoopInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
+  const pushupExitNorm = useMemo(() => buildNormalization(pushupExitInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [pushupExitInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
 
-  const walkNormalization = useMemo(() => {
-    return buildNormalization(walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight);
-  }, [walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
-
-  const jumpNormalization = useMemo(() => {
-    return buildNormalization(jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight);
-  }, [jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
-
-  // Walk animation setup
+  // Animation setups
   const { actions: walkActions, clips: walkClips } = useAnimations(sanitizedWalkClips, walkGltf.scene);
-  const walkClipName = useMemo(() => {
-    if (walkClips.length === 0) return null;
-    const namedWalk = walkClips.find((clip) => /walk/i.test(clip.name));
-    return namedWalk?.name ?? walkClips[0].name;
-  }, [walkClips]);
+  const walkClipName = useMemo(() => getFirstClipName(walkClips, /walk/i), [walkClips]);
 
-  // Jump animation setup
   const { actions: jumpActions, clips: jumpClips } = useAnimations(sanitizedJumpClips, jumpGltf.scene);
-  const jumpClipName = useMemo(() => {
-    if (jumpClips.length === 0) return null;
-    const namedJump = jumpClips.find((clip) => /jump/i.test(clip.name));
-    return namedJump?.name ?? jumpClips[0].name;
-  }, [jumpClips]);
+  const jumpClipName = useMemo(() => getFirstClipName(jumpClips, /jump/i), [jumpClips]);
 
+  const { actions: pushupEnterActions, clips: pushupEnterClips } = useAnimations(sanitizedPushupEnterClips, idleToPushupGltf.scene);
+  const pushupEnterClipName = useMemo(() => getFirstClipName(pushupEnterClips), [pushupEnterClips]);
+
+  const { actions: pushupLoopActions, clips: pushupLoopClips } = useAnimations(sanitizedPushupLoopClips, pushupGltf.scene);
+  const pushupLoopClipName = useMemo(() => getFirstClipName(pushupLoopClips), [pushupLoopClips]);
+
+  const { actions: pushupExitActions, clips: pushupExitClips } = useAnimations(sanitizedPushupExitClips, pushupToIdleGltf.scene);
+  const pushupExitClipName = useMemo(() => getFirstClipName(pushupExitClips), [pushupExitClips]);
+
+  // Enable shadows on all models
   useEffect(() => {
-    enableMeshShadows(idleGltf.scene);
-    enableMeshShadows(walkGltf.scene);
-    enableMeshShadows(jumpGltf.scene);
-  }, [idleGltf.scene, walkGltf.scene, jumpGltf.scene]);
+    [idleGltf.scene, walkGltf.scene, jumpGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene].forEach(enableMeshShadows);
+  }, [idleGltf.scene, walkGltf.scene, jumpGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene]);
 
-  // Initialize walk action (paused)
+  // Initialize walk (paused looping)
   useEffect(() => {
     if (!walkClipName) return;
-    const action = walkActions[walkClipName];
-    if (!action) return;
-    action.reset();
-    action.setLoop(THREE.LoopRepeat, Infinity);
-    action.clampWhenFinished = false;
-    action.enabled = true;
-    action.play();
-    action.paused = true;
-    return () => { action.stop(); };
+    const a = walkActions[walkClipName]; if (!a) return;
+    a.reset(); a.setLoop(THREE.LoopRepeat, Infinity); a.clampWhenFinished = false; a.enabled = true; a.play(); a.paused = true;
+    return () => { a.stop(); };
   }, [walkActions, walkClipName]);
 
-  // Initialize jump action (paused, play once)
+  // Initialize jump (paused, play once)
   useEffect(() => {
     if (!jumpClipName) return;
-    const action = jumpActions[jumpClipName];
-    if (!action) return;
-    action.reset();
-    action.setLoop(THREE.LoopOnce, 1);
-    action.clampWhenFinished = true;
-    action.enabled = true;
-    action.play();
-    action.paused = true;
-    return () => { action.stop(); };
+    const a = jumpActions[jumpClipName]; if (!a) return;
+    a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.enabled = true; a.play(); a.paused = true;
+    return () => { a.stop(); };
   }, [jumpActions, jumpClipName]);
 
+  // Initialize pushup enter (paused, play once)
+  useEffect(() => {
+    if (!pushupEnterClipName) return;
+    const a = pushupEnterActions[pushupEnterClipName]; if (!a) return;
+    a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.enabled = true; a.play(); a.paused = true;
+    return () => { a.stop(); };
+  }, [pushupEnterActions, pushupEnterClipName]);
+
+  // Initialize pushup loop (paused, looping but we'll count reps manually)
+  useEffect(() => {
+    if (!pushupLoopClipName) return;
+    const a = pushupLoopActions[pushupLoopClipName]; if (!a) return;
+    a.reset(); a.setLoop(THREE.LoopRepeat, Infinity); a.clampWhenFinished = false; a.enabled = true; a.play(); a.paused = true;
+    return () => { a.stop(); };
+  }, [pushupLoopActions, pushupLoopClipName]);
+
+  // Initialize pushup exit (paused, play once)
+  useEffect(() => {
+    if (!pushupExitClipName) return;
+    const a = pushupExitActions[pushupExitClipName]; if (!a) return;
+    a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.enabled = true; a.play(); a.paused = true;
+    return () => { a.stop(); };
+  }, [pushupExitActions, pushupExitClipName]);
+
+  // Audit log
   useEffect(() => {
     if (auditLoggedRef.current) return;
     auditLoggedRef.current = true;
-    console.groupCollapsed('[Character Audit] GLB integration deep audit');
-    console.log('Idle inspection:', serializeInspection(idleInspection));
-    console.log('Walk inspection:', serializeInspection(walkInspection));
-    console.log('Jump inspection:', serializeInspection(jumpInspection));
-    console.log('Idle normalization:', idleNormalization);
-    console.log('Walk normalization:', walkNormalization);
-    console.log('Jump normalization:', jumpNormalization);
-    console.log('Jump clip:', jumpClipName, 'clips:', jumpClips.map(c => c.name));
+    console.groupCollapsed('[Character Audit] GLB integration');
+    console.log('Idle:', idleNorm, 'Walk:', walkNorm, 'Jump:', jumpNorm);
+    console.log('PushupEnter:', pushupEnterNorm, 'PushupLoop:', pushupLoopNorm, 'PushupExit:', pushupExitNorm);
+    console.log('Clips - walk:', walkClipName, 'jump:', jumpClipName, 'pushupEnter:', pushupEnterClipName, 'pushupLoop:', pushupLoopClipName, 'pushupExit:', pushupExitClipName);
     console.groupEnd();
-  }, [idleInspection, walkInspection, jumpInspection, idleNormalization, walkNormalization, jumpNormalization, jumpClipName, jumpClips]);
+  }, [idleNorm, walkNorm, jumpNorm, pushupEnterNorm, pushupLoopNorm, pushupExitNorm, walkClipName, jumpClipName, pushupEnterClipName, pushupLoopClipName, pushupExitClipName]);
 
   // Initial visibility
   useEffect(() => {
     if (idleVisibleRef.current) idleVisibleRef.current.visible = true;
     if (walkVisibleRef.current) walkVisibleRef.current.visible = false;
     if (jumpVisibleRef.current) jumpVisibleRef.current.visible = false;
+    if (pushupEnterVisibleRef.current) pushupEnterVisibleRef.current.visible = false;
+    if (pushupLoopVisibleRef.current) pushupLoopVisibleRef.current.visible = false;
+    if (pushupExitVisibleRef.current) pushupExitVisibleRef.current.visible = false;
   }, []);
 
+  const setVisibleState = useCallback((state: CharState) => {
+    const map: Record<CharState, React.RefObject<THREE.Group | null>> = {
+      idle: idleVisibleRef,
+      walk: walkVisibleRef,
+      jump: jumpVisibleRef,
+      emote_pushup_enter: pushupEnterVisibleRef,
+      emote_pushup_loop: pushupLoopVisibleRef,
+      emote_pushup_exit: pushupExitVisibleRef,
+    };
+    for (const [key, ref] of Object.entries(map)) {
+      if (ref.current) ref.current.visible = key === state;
+    }
+  }, []);
+
+  // Handle emote trigger
+  const prevEmoteRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (activeEmote === 'pushups' && prevEmoteRef.current !== 'pushups') {
+      // Start pushup sequence
+      stateRef.current = 'emote_pushup_enter';
+      pushupRepsRef.current = 0;
+      setVisibleState('emote_pushup_enter');
+
+      if (pushupEnterClipName) {
+        const a = pushupEnterActions[pushupEnterClipName];
+        if (a) { a.reset(); a.play(); a.paused = false; }
+      }
+    }
+    prevEmoteRef.current = activeEmote;
+  }, [activeEmote, pushupEnterActions, pushupEnterClipName, setVisibleState]);
+
   useFrame(() => {
+    const state = stateRef.current;
+
+    // ===== EMOTE STATES =====
+    if (state === 'emote_pushup_enter') {
+      if (pushupEnterClipName) {
+        const a = pushupEnterActions[pushupEnterClipName];
+        if (a && a.time >= a.getClip().duration - 0.05) {
+          // Transition to pushup loop
+          a.paused = true;
+          stateRef.current = 'emote_pushup_loop';
+          pushupRepsRef.current = 0;
+          setVisibleState('emote_pushup_loop');
+          if (pushupLoopClipName) {
+            const la = pushupLoopActions[pushupLoopClipName];
+            if (la) { la.reset(); la.play(); la.paused = false; }
+          }
+        }
+      }
+      return;
+    }
+
+    if (state === 'emote_pushup_loop') {
+      if (pushupLoopClipName) {
+        const a = pushupLoopActions[pushupLoopClipName];
+        if (a) {
+          const dur = a.getClip().duration;
+          // Count reps by tracking when animation loops
+          const currentRep = Math.floor(a.time / dur);
+          if (currentRep >= PUSHUP_LOOP_REPS) {
+            // Done with reps, transition to exit
+            a.paused = true;
+            stateRef.current = 'emote_pushup_exit';
+            setVisibleState('emote_pushup_exit');
+            if (pushupExitClipName) {
+              const ea = pushupExitActions[pushupExitClipName];
+              if (ea) { ea.reset(); ea.play(); ea.paused = false; }
+            }
+          }
+        }
+      }
+      return;
+    }
+
+    if (state === 'emote_pushup_exit') {
+      if (pushupExitClipName) {
+        const a = pushupExitActions[pushupExitClipName];
+        if (a && a.time >= a.getClip().duration - 0.05) {
+          // Done — return to idle
+          a.paused = true;
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+          onEmoteComplete();
+        }
+      }
+      return;
+    }
+
+    // ===== NORMAL LOCOMOTION STATES =====
     const speed = moveSpeedRef.current;
     const grounded = isGroundedRef.current;
 
     let newState: CharState;
     if (!grounded) {
       newState = 'jump';
-    } else if (stateRef.current === 'idle' ? speed > MOVE_START_THRESHOLD : speed > MOVE_STOP_THRESHOLD) {
+    } else if (state === 'idle' ? speed > MOVE_START_THRESHOLD : speed > MOVE_STOP_THRESHOLD) {
       newState = 'walk';
     } else {
       newState = 'idle';
     }
 
-    if (newState !== stateRef.current) {
+    if (newState !== state) {
       stateRef.current = newState;
-      if (idleVisibleRef.current) idleVisibleRef.current.visible = newState === 'idle';
-      if (walkVisibleRef.current) walkVisibleRef.current.visible = newState === 'walk';
-      if (jumpVisibleRef.current) jumpVisibleRef.current.visible = newState === 'jump';
+      setVisibleState(newState);
 
-      // Trigger jump animation from the beginning when entering jump state
       if (newState === 'jump' && jumpClipName) {
-        const action = jumpActions[jumpClipName];
-        if (action) {
-          action.reset();
-          action.play();
-          action.paused = false;
-        }
+        const a = jumpActions[jumpClipName];
+        if (a) { a.reset(); a.play(); a.paused = false; }
       }
     }
 
-    // Walk animation speed control
+    // Walk animation speed
     if (walkClipName) {
-      const walkAction = walkActions[walkClipName];
-      if (walkAction) {
+      const wa = walkActions[walkClipName];
+      if (wa) {
         if (newState === 'walk') {
-          walkAction.paused = false;
-          const normalizedSpeed = THREE.MathUtils.clamp(speed, 0, 1.4);
-          walkAction.setEffectiveTimeScale(Math.max(0.55, normalizedSpeed * 1.35));
+          wa.paused = false;
+          wa.setEffectiveTimeScale(Math.max(0.55, THREE.MathUtils.clamp(speed, 0, 1.4) * 1.35));
         } else {
-          walkAction.paused = true;
+          wa.paused = true;
         }
       }
     }
   });
 
-  return (
-    <group>
-      {/* Idle */}
-      <group ref={idleVisibleRef}>
-        <group rotation={[0, idleNormalization.yawCorrection, 0]}>
-          <group position={[0, idleNormalization.controllerGroundOffset, 0]}>
-            <group scale={[idleNormalization.scale, idleNormalization.scale, idleNormalization.scale]}>
-              <group position={idleNormalization.modelAnchorOffset}>
-                <primitive object={idleGltf.scene} />
-              </group>
-            </group>
-          </group>
-        </group>
-      </group>
-
-      {/* Walk */}
-      <group ref={walkVisibleRef}>
-        <group rotation={[0, walkNormalization.yawCorrection, 0]}>
-          <group position={[0, walkNormalization.controllerGroundOffset, 0]}>
-            <group scale={[walkNormalization.scale, walkNormalization.scale, walkNormalization.scale]}>
-              <group position={walkNormalization.modelAnchorOffset}>
-                <primitive object={walkGltf.scene} />
-              </group>
-            </group>
-          </group>
-        </group>
-      </group>
-
-      {/* Jump */}
-      <group ref={jumpVisibleRef}>
-        <group rotation={[0, jumpNormalization.yawCorrection, 0]}>
-          <group position={[0, jumpNormalization.controllerGroundOffset, 0]}>
-            <group scale={[jumpNormalization.scale, jumpNormalization.scale, jumpNormalization.scale]}>
-              <group position={jumpNormalization.modelAnchorOffset}>
-                <primitive object={jumpGltf.scene} />
-              </group>
+  const renderModel = (ref: React.RefObject<THREE.Group | null>, norm: ModelNormalization, scene: THREE.Object3D) => (
+    <group ref={ref}>
+      <group rotation={[0, norm.yawCorrection, 0]}>
+        <group position={[0, norm.controllerGroundOffset, 0]}>
+          <group scale={[norm.scale, norm.scale, norm.scale]}>
+            <group position={norm.modelAnchorOffset}>
+              <primitive object={scene} />
             </group>
           </group>
         </group>
       </group>
     </group>
   );
+
+  return (
+    <group>
+      {renderModel(idleVisibleRef, idleNorm, idleGltf.scene)}
+      {renderModel(walkVisibleRef, walkNorm, walkGltf.scene)}
+      {renderModel(jumpVisibleRef, jumpNorm, jumpGltf.scene)}
+      {renderModel(pushupEnterVisibleRef, pushupEnterNorm, idleToPushupGltf.scene)}
+      {renderModel(pushupLoopVisibleRef, pushupLoopNorm, pushupGltf.scene)}
+      {renderModel(pushupExitVisibleRef, pushupExitNorm, pushupToIdleGltf.scene)}
+    </group>
+  );
 }
+
+// ===== Utility functions =====
 
 function buildNormalization(
   inspection: ModelInspection,
@@ -285,20 +378,10 @@ function buildNormalization(
   fallbackYawCorrection: number,
   controllerHalfHeight: number,
 ): ModelNormalization {
-  const scale = inspection.height > 0.01
-    ? canonicalHeight / inspection.height
-    : 1;
-
-  const yawCorrection = inspection.facingYaw !== null
-    ? -inspection.facingYaw
-    : fallbackYawCorrection;
-
+  const scale = inspection.height > 0.01 ? canonicalHeight / inspection.height : 1;
+  const yawCorrection = inspection.facingYaw !== null ? -inspection.facingYaw : fallbackYawCorrection;
   return {
-    modelAnchorOffset: [
-      -inspection.anchor.x,
-      -inspection.footY,
-      -inspection.anchor.z,
-    ],
+    modelAnchorOffset: [-inspection.anchor.x, -inspection.footY, -inspection.anchor.z],
     scale,
     yawCorrection,
     controllerGroundOffset: -controllerHalfHeight,
@@ -307,28 +390,22 @@ function buildNormalization(
 
 function inspectModel(label: string, scene: THREE.Object3D): ModelInspection {
   scene.updateMatrixWorld(true);
-
   const bounds = new THREE.Box3().setFromObject(scene);
   const size = bounds.getSize(_tmpSize.clone());
   const center = bounds.getCenter(_tmpCenter.clone());
 
   const skinnedMeshes: THREE.SkinnedMesh[] = [];
   scene.traverse((child) => {
-    if ((child as THREE.SkinnedMesh).isSkinnedMesh) {
-      skinnedMeshes.push(child as THREE.SkinnedMesh);
-    }
+    if ((child as THREE.SkinnedMesh).isSkinnedMesh) skinnedMeshes.push(child as THREE.SkinnedMesh);
   });
 
   const primarySkinnedMesh = skinnedMeshes[0] ?? null;
   const skeleton = primarySkinnedMesh?.skeleton ?? null;
   const hipsBone = skeleton?.bones.find((bone) => BONE_HIPS_RE.test(bone.name)) ?? skeleton?.bones[0] ?? null;
-
   const armature = scene.getObjectByName('Armature') ?? findArmatureNode(scene);
   const facing = inferFacingYawFromSkeleton(skeleton);
 
-  let anchorX = center.x;
-  let anchorZ = center.z;
-
+  let anchorX = center.x, anchorZ = center.z;
   if (hipsBone) {
     hipsBone.getWorldPosition(_tmpVecA);
     anchorX = _tmpVecA.x;
@@ -336,107 +413,35 @@ function inspectModel(label: string, scene: THREE.Object3D): ModelInspection {
   }
 
   return {
-    label,
-    sceneRoot: scene,
-    armature,
-    skinnedMesh: primarySkinnedMesh,
-    hipsBone,
-    bounds,
-    size: size.clone(),
-    center: center.clone(),
+    label, sceneRoot: scene, armature, skinnedMesh: primarySkinnedMesh, hipsBone,
+    bounds, size: size.clone(), center: center.clone(),
     anchor: new THREE.Vector3(anchorX, 0, anchorZ),
-    footY: bounds.min.y,
-    height: size.y,
-    facingYaw: facing.yaw,
-    facingYawCandidates: facing.candidates,
+    footY: bounds.min.y, height: size.y,
+    facingYaw: facing.yaw, facingYawCandidates: facing.candidates,
   };
 }
 
 function inferFacingYawFromSkeleton(skeleton: THREE.Skeleton | null): { yaw: number | null; candidates: number[] } {
   if (!skeleton || skeleton.bones.length === 0) return { yaw: null, candidates: [] };
-
-  const hips = skeleton.bones.find((bone) => BONE_HIPS_RE.test(bone.name)) ?? null;
-  const head = skeleton.bones.find((bone) => BONE_HEAD_RE.test(bone.name)) ?? null;
-  const left = skeleton.bones.find((bone) => BONE_LEFT_RE.test(bone.name)) ?? null;
-  const right = skeleton.bones.find((bone) => BONE_RIGHT_RE.test(bone.name)) ?? null;
-
+  const hips = skeleton.bones.find((b) => BONE_HIPS_RE.test(b.name)) ?? null;
+  const head = skeleton.bones.find((b) => BONE_HEAD_RE.test(b.name)) ?? null;
+  const left = skeleton.bones.find((b) => BONE_LEFT_RE.test(b.name)) ?? null;
+  const right = skeleton.bones.find((b) => BONE_RIGHT_RE.test(b.name)) ?? null;
   if (!hips || !head || !left || !right) return { yaw: null, candidates: [] };
 
-  hips.getWorldPosition(_tmpVecA);
-  head.getWorldPosition(_tmpVecB);
-  left.getWorldPosition(_tmpVecC);
-  right.getWorldPosition(_tmpVecD);
-
+  hips.getWorldPosition(_tmpVecA); head.getWorldPosition(_tmpVecB);
+  left.getWorldPosition(_tmpVecC); right.getWorldPosition(_tmpVecD);
   _tmpUp.subVectors(_tmpVecB, _tmpVecA).normalize();
   _tmpRight.subVectors(_tmpVecD, _tmpVecC).normalize();
-
   _tmpForward.crossVectors(_tmpRight, _tmpUp).normalize();
   _tmpForwardAlt.crossVectors(_tmpUp, _tmpRight).normalize();
-
-  if (_tmpForward.lengthSq() < 1e-6 || _tmpForwardAlt.lengthSq() < 1e-6) {
-    return { yaw: null, candidates: [] };
-  }
+  if (_tmpForward.lengthSq() < 1e-6 || _tmpForwardAlt.lengthSq() < 1e-6) return { yaw: null, candidates: [] };
 
   const yawA = Math.atan2(_tmpForward.x, _tmpForward.z);
   const yawB = Math.atan2(_tmpForwardAlt.x, _tmpForwardAlt.z);
-
-  const normalizedA = normalizeAngle(yawA);
-  const normalizedB = normalizeAngle(yawB);
-
-  const preferred = Math.abs(normalizedA) <= Math.abs(normalizedB)
-    ? normalizedA
-    : normalizedB;
-
-  return { yaw: preferred, candidates: [normalizedA, normalizedB] };
-}
-
-function serializeInspection(inspection: ModelInspection) {
-  const root = inspection.sceneRoot;
-  const rootRotation = new THREE.Euler().setFromQuaternion(root.quaternion, 'YXZ');
-
-  return {
-    model: inspection.label,
-    sceneRoot: {
-      position: toFixedVec3(root.position),
-      rotation: toFixedVec3(rootRotation),
-      scale: toFixedVec3(root.scale),
-    },
-    armature: inspection.armature
-      ? {
-          name: inspection.armature.name,
-          position: toFixedVec3(inspection.armature.position),
-          rotation: toFixedVec3(inspection.armature.rotation),
-          scale: toFixedVec3(inspection.armature.scale),
-        }
-      : null,
-    hipsBone: inspection.hipsBone
-      ? {
-          name: inspection.hipsBone.name,
-          position: toFixedVec3(inspection.hipsBone.position),
-        }
-      : null,
-    bounds: {
-      min: toFixedVec3(inspection.bounds.min),
-      max: toFixedVec3(inspection.bounds.max),
-      size: toFixedVec3(inspection.size),
-    },
-    anchor: {
-      x: Number(inspection.anchor.x.toFixed(4)),
-      z: Number(inspection.anchor.z.toFixed(4)),
-      footY: Number(inspection.footY.toFixed(4)),
-      inferredFacingYaw: inspection.facingYaw !== null
-        ? Number(inspection.facingYaw.toFixed(4))
-        : null,
-    },
-  };
-}
-
-function toFixedVec3(v: THREE.Vector3 | THREE.Euler) {
-  return {
-    x: Number(v.x.toFixed(4)),
-    y: Number(v.y.toFixed(4)),
-    z: Number(v.z.toFixed(4)),
-  };
+  const nA = normalizeAngle(yawA), nB = normalizeAngle(yawB);
+  const preferred = Math.abs(nA) <= Math.abs(nB) ? nA : nB;
+  return { yaw: preferred, candidates: [nA, nB] };
 }
 
 function normalizeAngle(v: number): number {
@@ -447,25 +452,18 @@ function normalizeAngle(v: number): number {
 }
 
 function enableMeshShadows(scene: THREE.Object3D) {
-  scene.traverse((child) => {
-    if ((child as THREE.Mesh).isMesh) {
-      child.castShadow = true;
-      child.receiveShadow = true;
-    }
-  });
+  scene.traverse((child) => { if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; } });
 }
 
 function findArmatureNode(scene: THREE.Object3D): THREE.Object3D | null {
   let armature: THREE.Object3D | null = null;
-  scene.traverse((child) => {
-    if (armature) return;
-    if (/armature/i.test(child.name)) {
-      armature = child;
-    }
-  });
+  scene.traverse((child) => { if (armature) return; if (/armature/i.test(child.name)) armature = child; });
   return armature;
 }
 
 useGLTF.preload(soldierIdleUrl);
 useGLTF.preload(soldierWalkUrl);
 useGLTF.preload(jumpUrl);
+useGLTF.preload(idleToPushupUrl);
+useGLTF.preload(pushupUrl);
+useGLTF.preload(pushupToIdleUrl);
