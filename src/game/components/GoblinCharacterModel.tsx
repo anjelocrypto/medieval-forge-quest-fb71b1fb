@@ -202,6 +202,8 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const lastEmoteIdRef = useRef<number>(0);
   const hitStartTimeRef = useRef(0);
   const prevDamageFlashRef = useRef(0);
+  const prevAttackingRef = useRef(false);
+  const fightStartTimeRef = useRef(0);
 
   const stateRef = useRef<GoblinState>('idle');
 
