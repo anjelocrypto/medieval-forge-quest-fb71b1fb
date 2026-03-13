@@ -184,6 +184,7 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   const jumpGltf = useGLTF(octopusJumpUrl);
   const hitGltf = useGLTF(octopusGetHitUrl);
   const danceGltf = useGLTF(octopusDanceUrl);
+  const fightGltf = useGLTF(octopusKickUrl);
 
   const idleVisibleRef = useRef<THREE.Group>(null);
   const walkVisibleRef = useRef<THREE.Group>(null);
