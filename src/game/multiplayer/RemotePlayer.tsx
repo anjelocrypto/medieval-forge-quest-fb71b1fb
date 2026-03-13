@@ -15,9 +15,18 @@ interface Props {
 
 const horseMat = new THREE.MeshLambertMaterial({ color: '#5a3a1a' });
 const saddleMat = new THREE.MeshLambertMaterial({ color: '#4a2010' });
-const bodyMat = new THREE.MeshLambertMaterial({ color: '#3a5a8a' });
-const headMat = new THREE.MeshLambertMaterial({ color: '#d4a574' });
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+
+// Character-specific rider materials
+const soldierBodyMat = new THREE.MeshLambertMaterial({ color: '#3a5a8a' });
+const soldierHeadMat = new THREE.MeshLambertMaterial({ color: '#d4a574' });
+const goblinBodyMat = new THREE.MeshLambertMaterial({ color: '#4a6a3a' });
+const goblinHeadMat = new THREE.MeshLambertMaterial({ color: '#7a9a5a' });
+
+// Nametag heights per character type
+const NAMETAG_HEIGHT_GOBLIN = 2.0;
+const NAMETAG_HEIGHT_SOLDIER = 2.8;
+const NAMETAG_HEIGHT_MOUNTED = 4.5;
 
 export function RemotePlayer({ player }: Props) {
   const groupRef = useRef<THREE.Group>(null);
@@ -43,7 +52,7 @@ export function RemotePlayer({ player }: Props) {
     const ty = groundY;
 
     currentPos.current.x += (tx - currentPos.current.x) * t;
-    // Separate Y lerp — faster to avoid floating during transitions
+    // Faster Y lerp for snappy grounding
     const yLerp = Math.min(1, dt * lerpSpeed * 0.3);
     currentPos.current.y += (ty - currentPos.current.y) * yLerp;
     currentPos.current.z += (tz - currentPos.current.z) * t;
@@ -60,11 +69,14 @@ export function RemotePlayer({ player }: Props) {
   const healthPct = player.maxHealth > 0 ? player.health / player.maxHealth : 1;
   const emoteText = player.emote ? EMOTES[player.emote] || player.emote : null;
   const charType = player.characterType || 'goblin';
+  const nametagY = player.isMounted
+    ? NAMETAG_HEIGHT_MOUNTED
+    : charType === 'goblin' ? NAMETAG_HEIGHT_GOBLIN : NAMETAG_HEIGHT_SOLDIER;
 
   return (
     <group ref={groupRef}>
       {/* Nametag + health */}
-      <Html position={[0, player.isMounted ? 4.5 : 2.8, 0]} center distanceFactor={20}
+      <Html position={[0, nametagY, 0]} center distanceFactor={20}
         style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div style={{
           textAlign: 'center', whiteSpace: 'nowrap',
@@ -103,7 +115,7 @@ export function RemotePlayer({ player }: Props) {
       {player.isMounted ? (
         <MountedRemoteModel moveSpeed={player.moveSpeed} horsePitch={player.horsePitch} charType={charType} />
       ) : (
-        <Suspense fallback={<FallbackBox />}>
+        <Suspense fallback={<FallbackBox charType={charType} />}>
           {charType === 'goblin' ? (
             <RemoteGoblinModel
               moveSpeed={player.moveSpeed}
@@ -129,16 +141,23 @@ export function RemotePlayer({ player }: Props) {
   );
 }
 
-function FallbackBox() {
+function FallbackBox({ charType }: { charType: string }) {
+  const isGoblin = charType === 'goblin';
+  const bodyColor = isGoblin ? '#4a6a3a' : '#3a5a8a';
+  const headColor = isGoblin ? '#7a9a5a' : '#d4a574';
+  const bodyScale = isGoblin ? 0.45 : 0.55;
+  const headY = isGoblin ? 0.85 : 1.15;
+  const bodyY = isGoblin ? 0.4 : 0.55;
+
   return (
     <group>
-      <mesh position={[0, 0.55, 0]} scale={[0.55, 0.65, 0.35]}>
+      <mesh position={[0, bodyY, 0]} scale={[bodyScale, 0.65, 0.35]}>
         <boxGeometry />
-        <meshLambertMaterial color="#3a5a8a" />
+        <meshLambertMaterial color={bodyColor} />
       </mesh>
-      <mesh position={[0, 1.15, 0]} scale={[0.35, 0.35, 0.35]}>
+      <mesh position={[0, headY, 0]} scale={[0.3, 0.3, 0.3]}>
         <boxGeometry />
-        <meshLambertMaterial color="#d4a574" />
+        <meshLambertMaterial color={headColor} />
       </mesh>
     </group>
   );
@@ -146,6 +165,10 @@ function FallbackBox() {
 
 function MountedRemoteModel({ moveSpeed, horsePitch, charType }: { moveSpeed: number; horsePitch: number; charType: string }) {
   const bobAmount = moveSpeed > 1 ? Math.sin(Date.now() * 0.006) * 0.08 : 0;
+  const isGoblin = charType === 'goblin';
+  const bodyMat = isGoblin ? goblinBodyMat : soldierBodyMat;
+  const headMat = isGoblin ? goblinHeadMat : soldierHeadMat;
+  const riderScale = isGoblin ? 0.7 : 1.0;
 
   return (
     <group rotation={[horsePitch, 0, 0]}>
@@ -160,8 +183,8 @@ function MountedRemoteModel({ moveSpeed, horsePitch, charType }: { moveSpeed: nu
       ))}
       {/* Saddle */}
       <mesh geometry={boxGeo} material={saddleMat} position={[0, 1.35, 0]} scale={[0.6, 0.12, 0.5]} />
-      {/* Rider */}
-      <group position={[0, 1.7 + bobAmount, 0]}>
+      {/* Rider — scaled by character type */}
+      <group position={[0, 1.7 + bobAmount, 0]} scale={[riderScale, riderScale, riderScale]}>
         <mesh geometry={boxGeo} material={bodyMat} position={[0, 0.3, 0]} scale={[0.5, 0.6, 0.35]} />
         <mesh geometry={boxGeo} material={headMat} position={[0, 0.8, 0]} scale={[0.33, 0.33, 0.33]} />
       </group>

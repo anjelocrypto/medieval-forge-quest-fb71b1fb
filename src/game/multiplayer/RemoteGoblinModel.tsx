@@ -9,6 +9,8 @@ import goblinGetHitUrl from '@/assets/goblingethit.glb?url';
 import goblinFightUrl from '@/assets/goblinfight.glb?url';
 import goblinDeadUrl from '@/assets/goblindead.glb?url';
 import goblinJumpUrl from '@/assets/goblinjump.glb?url';
+import hiphopUrl from '@/assets/hiphop.glb?url';
+import gangnamUrl from '@/assets/gangnam.glb?url';
 
 interface Props {
   moveSpeed: number;
@@ -20,7 +22,7 @@ interface Props {
 }
 
 const ROOT_RE = /(hips|pelvis|root|armature)/i;
-const TARGET_HEIGHT = 1.2; // goblin normalized height
+const TARGET_HEIGHT = 1.2;
 
 function sanitizeClips(animations: THREE.AnimationClip[]): THREE.AnimationClip[] {
   return animations.map((clip) => {
@@ -33,48 +35,26 @@ function sanitizeClips(animations: THREE.AnimationClip[]): THREE.AnimationClip[]
   });
 }
 
-/** Clone a GLTF scene deeply so each instance has its own skeleton */
 function cloneScene(scene: THREE.Group): THREE.Group {
   const cloned = scene.clone(true);
-  
-  // Rebuild skeleton bindings for skinned meshes
   const skinnedMeshes: THREE.SkinnedMesh[] = [];
   const origSkinnedMeshes: THREE.SkinnedMesh[] = [];
-  
-  scene.traverse((node) => {
-    if ((node as THREE.SkinnedMesh).isSkinnedMesh) {
-      origSkinnedMeshes.push(node as THREE.SkinnedMesh);
-    }
-  });
-  
-  cloned.traverse((node) => {
-    if ((node as THREE.SkinnedMesh).isSkinnedMesh) {
-      skinnedMeshes.push(node as THREE.SkinnedMesh);
-    }
-  });
-  
-  // Re-bind skeletons in cloned scene
+  scene.traverse((n) => { if ((n as THREE.SkinnedMesh).isSkinnedMesh) origSkinnedMeshes.push(n as THREE.SkinnedMesh); });
+  cloned.traverse((n) => { if ((n as THREE.SkinnedMesh).isSkinnedMesh) skinnedMeshes.push(n as THREE.SkinnedMesh); });
   for (let i = 0; i < skinnedMeshes.length && i < origSkinnedMeshes.length; i++) {
-    const clonedMesh = skinnedMeshes[i];
-    const origSkeleton = origSkinnedMeshes[i].skeleton;
-    
-    // Find corresponding bones in cloned scene by name
-    const clonedBones: THREE.Bone[] = [];
-    for (const origBone of origSkeleton.bones) {
-      const found = cloned.getObjectByName(origBone.name) as THREE.Bone;
-      if (found) clonedBones.push(found);
-    }
-    
-    if (clonedBones.length === origSkeleton.bones.length) {
-      clonedMesh.skeleton = new THREE.Skeleton(clonedBones, origSkeleton.boneInverses.map(m => m.clone()));
-      clonedMesh.bind(clonedMesh.skeleton, clonedMesh.matrixWorld);
+    const cm = skinnedMeshes[i];
+    const os = origSkinnedMeshes[i].skeleton;
+    const bones: THREE.Bone[] = [];
+    for (const ob of os.bones) { const f = cloned.getObjectByName(ob.name) as THREE.Bone; if (f) bones.push(f); }
+    if (bones.length === os.bones.length) {
+      cm.skeleton = new THREE.Skeleton(bones, os.boneInverses.map(m => m.clone()));
+      cm.bind(cm.skeleton, cm.matrixWorld);
     }
   }
-  
   return cloned;
 }
 
-type RemoteState = 'idle' | 'walk' | 'run' | 'jump' | 'fight' | 'hit' | 'dead';
+type RemoteState = 'idle' | 'walk' | 'run' | 'jump' | 'fight' | 'hit' | 'dead' | 'emote_hiphop' | 'emote_gangnam';
 
 export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim, health, emote }: Props) {
   const idleGltf = useGLTF(goblinStandingUrl);
@@ -84,8 +64,10 @@ export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim
   const fightGltf = useGLTF(goblinFightUrl);
   const deadGltf = useGLTF(goblinDeadUrl);
   const jumpGltf = useGLTF(goblinJumpUrl);
+  const hiphopGltf = useGLTF(hiphopUrl);
+  const gangnamGltf = useGLTF(gangnamUrl);
 
-  // Clone scenes per instance to avoid shared scene graph conflicts
+  // Clone scenes per instance
   const idleScene = useMemo(() => cloneScene(idleGltf.scene), [idleGltf.scene]);
   const walkScene = useMemo(() => cloneScene(walkGltf.scene), [walkGltf.scene]);
   const runScene = useMemo(() => cloneScene(runGltf.scene), [runGltf.scene]);
@@ -93,6 +75,8 @@ export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim
   const fightScene = useMemo(() => cloneScene(fightGltf.scene), [fightGltf.scene]);
   const deadScene = useMemo(() => cloneScene(deadGltf.scene), [deadGltf.scene]);
   const jumpScene = useMemo(() => cloneScene(jumpGltf.scene), [jumpGltf.scene]);
+  const hiphopScene = useMemo(() => cloneScene(hiphopGltf.scene), [hiphopGltf.scene]);
+  const gangnamScene = useMemo(() => cloneScene(gangnamGltf.scene), [gangnamGltf.scene]);
 
   const idleRef = useRef<THREE.Group>(null);
   const walkRef = useRef<THREE.Group>(null);
@@ -101,11 +85,16 @@ export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim
   const fightRef = useRef<THREE.Group>(null);
   const deadRef = useRef<THREE.Group>(null);
   const jumpRef = useRef<THREE.Group>(null);
+  const hiphopRef = useRef<THREE.Group>(null);
+  const gangnamRef = useRef<THREE.Group>(null);
 
   const stateRef = useRef<RemoteState>('idle');
   const prevAttackRef = useRef(0);
+  const prevHealthRef = useRef(health);
   const hitTimerRef = useRef(0);
   const fightTimerRef = useRef(0);
+  const emoteTimerRef = useRef(0);
+  const prevEmoteRef = useRef<string | null>(null);
 
   const idleClips = useMemo(() => sanitizeClips(idleGltf.animations), [idleGltf.animations]);
   const walkClips = useMemo(() => sanitizeClips(walkGltf.animations), [walkGltf.animations]);
@@ -114,8 +103,9 @@ export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim
   const fightClips = useMemo(() => sanitizeClips(fightGltf.animations), [fightGltf.animations]);
   const deadClips = useMemo(() => sanitizeClips(deadGltf.animations), [deadGltf.animations]);
   const jumpClips = useMemo(() => sanitizeClips(jumpGltf.animations), [jumpGltf.animations]);
+  const hiphopClips = useMemo(() => sanitizeClips(hiphopGltf.animations), [hiphopGltf.animations]);
+  const gangnamClips = useMemo(() => sanitizeClips(gangnamGltf.animations), [gangnamGltf.animations]);
 
-  // Bind animations to cloned scenes
   const { actions: idleActions } = useAnimations(idleClips, idleScene);
   const { actions: walkActions } = useAnimations(walkClips, walkScene);
   const { actions: runActions } = useAnimations(runClips, runScene);
@@ -123,13 +113,15 @@ export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim
   const { actions: fightActions } = useAnimations(fightClips, fightScene);
   const { actions: deadActions } = useAnimations(deadClips, deadScene);
   const { actions: jumpActions } = useAnimations(jumpClips, jumpScene);
+  const { actions: hiphopActions } = useAnimations(hiphopClips, hiphopScene);
+  const { actions: gangnamActions } = useAnimations(gangnamClips, gangnamScene);
 
-  // Enable shadows on cloned scenes
+  // Enable shadows
   useEffect(() => {
-    [idleScene, walkScene, runScene, hitScene, fightScene, deadScene, jumpScene].forEach(s => {
+    [idleScene, walkScene, runScene, hitScene, fightScene, deadScene, jumpScene, hiphopScene, gangnamScene].forEach(s => {
       s.traverse(c => { if ((c as THREE.Mesh).isMesh) { c.castShadow = true; c.receiveShadow = true; } });
     });
-  }, [idleScene, walkScene, runScene, hitScene, fightScene, deadScene, jumpScene]);
+  }, [idleScene, walkScene, runScene, hitScene, fightScene, deadScene, jumpScene, hiphopScene, gangnamScene]);
 
   // Start looping animations
   useEffect(() => {
@@ -144,7 +136,7 @@ export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim
     return () => cleanups.forEach(c => c?.());
   }, [idleActions, walkActions, runActions, jumpActions]);
 
-  // Dead animation setup (play once)
+  // Dead animation setup (play once, paused)
   useEffect(() => {
     const name = Object.keys(deadActions)[0];
     if (!name || !deadActions[name]) return;
@@ -161,46 +153,38 @@ export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim
     if (fightRef.current) fightRef.current.visible = state === 'fight';
     if (deadRef.current) deadRef.current.visible = state === 'dead';
     if (jumpRef.current) jumpRef.current.visible = state === 'jump';
+    if (hiphopRef.current) hiphopRef.current.visible = state === 'emote_hiphop';
+    if (gangnamRef.current) gangnamRef.current.visible = state === 'emote_gangnam';
   };
 
-  // Initial visibility
   useEffect(() => { setVisible('idle'); }, []);
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
     const isDead = health <= 0;
 
-    // Handle death
+    // === DEATH ===
     if (isDead && stateRef.current !== 'dead') {
       stateRef.current = 'dead';
       setVisible('dead');
       const name = Object.keys(deadActions)[0];
       if (name && deadActions[name]) { deadActions[name]!.reset(); deadActions[name]!.paused = false; deadActions[name]!.play(); }
+      prevHealthRef.current = health;
       return;
     }
     if (isDead) return;
 
-    // Handle fight (attack)
-    if (attackAnim > 0 && prevAttackRef.current === 0 && stateRef.current !== 'fight') {
-      stateRef.current = 'fight';
-      fightTimerRef.current = 0;
-      setVisible('fight');
-      const name = Object.keys(fightActions)[0];
-      if (name && fightActions[name]) { fightActions[name]!.reset(); fightActions[name]!.play(); }
+    // === HIT DETECTION (health decreased) ===
+    if (health < prevHealthRef.current && stateRef.current !== 'hit' && stateRef.current !== 'fight' && stateRef.current !== 'dead') {
+      stateRef.current = 'hit';
+      hitTimerRef.current = 0;
+      setVisible('hit');
+      const name = Object.keys(hitActions)[0];
+      if (name && hitActions[name]) { hitActions[name]!.reset(); hitActions[name]!.play(); }
     }
-    prevAttackRef.current = attackAnim;
+    prevHealthRef.current = health;
 
-    // Fight timer
-    if (stateRef.current === 'fight') {
-      fightTimerRef.current += dt;
-      if (fightTimerRef.current > 0.6) {
-        stateRef.current = 'idle';
-        setVisible('idle');
-      }
-      return;
-    }
-
-    // Hit timer
+    // === HIT TIMER ===
     if (stateRef.current === 'hit') {
       hitTimerRef.current += dt;
       if (hitTimerRef.current > 0.8) {
@@ -210,37 +194,81 @@ export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim
       return;
     }
 
-    // Jump
+    // === FIGHT ===
+    if (attackAnim > 0 && prevAttackRef.current === 0 && stateRef.current !== 'fight') {
+      stateRef.current = 'fight';
+      fightTimerRef.current = 0;
+      setVisible('fight');
+      const name = Object.keys(fightActions)[0];
+      if (name && fightActions[name]) { fightActions[name]!.reset(); fightActions[name]!.play(); }
+    }
+    prevAttackRef.current = attackAnim;
+
+    if (stateRef.current === 'fight') {
+      fightTimerRef.current += dt;
+      if (fightTimerRef.current > 0.6) {
+        stateRef.current = 'idle';
+        setVisible('idle');
+      }
+      return;
+    }
+
+    // === EMOTE ANIMATIONS ===
+    if (emote && emote !== prevEmoteRef.current) {
+      if (emote === 'hiphop') {
+        stateRef.current = 'emote_hiphop';
+        emoteTimerRef.current = 0;
+        setVisible('emote_hiphop');
+        const name = Object.keys(hiphopActions)[0];
+        if (name && hiphopActions[name]) { hiphopActions[name]!.reset(); hiphopActions[name]!.setLoop(THREE.LoopOnce, 1); hiphopActions[name]!.clampWhenFinished = true; hiphopActions[name]!.play(); }
+      } else if (emote === 'gangnam') {
+        stateRef.current = 'emote_gangnam';
+        emoteTimerRef.current = 0;
+        setVisible('emote_gangnam');
+        const name = Object.keys(gangnamActions)[0];
+        if (name && gangnamActions[name]) { gangnamActions[name]!.reset(); gangnamActions[name]!.setLoop(THREE.LoopOnce, 1); gangnamActions[name]!.clampWhenFinished = true; gangnamActions[name]!.play(); }
+      }
+    }
+    prevEmoteRef.current = emote;
+
+    // Emote state: wait for completion or emote cleared
+    if (stateRef.current === 'emote_hiphop' || stateRef.current === 'emote_gangnam') {
+      emoteTimerRef.current += dt;
+      // Return to idle if emote cleared or timed out (safety)
+      if (!emote || emoteTimerRef.current > 8) {
+        stateRef.current = 'idle';
+        setVisible('idle');
+      }
+      return;
+    }
+
+    // === JUMP ===
     if (!isGrounded && stateRef.current !== 'jump') {
       stateRef.current = 'jump';
       setVisible('jump');
       return;
     }
 
-    // Locomotion (only when grounded)
-    if (isGrounded || stateRef.current === 'jump') {
-      let target: RemoteState = 'idle';
-      if (!isGrounded) {
-        target = 'jump';
-      } else if (moveSpeed > 0.07) {
-        target = isRunning || moveSpeed > 0.7 ? 'run' : 'walk';
-      }
+    // === LOCOMOTION ===
+    let target: RemoteState = 'idle';
+    if (!isGrounded) {
+      target = 'jump';
+    } else if (moveSpeed > 0.07) {
+      target = isRunning || moveSpeed > 0.7 ? 'run' : 'walk';
+    }
 
-      if (target !== stateRef.current) {
-        stateRef.current = target;
-        setVisible(target);
-      }
+    if (target !== stateRef.current) {
+      stateRef.current = target;
+      setVisible(target);
     }
   });
 
-  // Compute scale and feet offset to normalize goblin to ~1.2m with feet at Y=0
   const { scale, feetOffset } = useMemo(() => {
     const box = new THREE.Box3().setFromObject(idleGltf.scene);
     const size = new THREE.Vector3();
     box.getSize(size);
     const h = size.y;
     const s = h > 0.01 ? TARGET_HEIGHT / h : 1;
-    // After scaling, the model's minY should be at 0
     const feetY = box.min.y * s;
     return { scale: s, feetOffset: -feetY };
   }, [idleGltf.scene]);
@@ -254,6 +282,8 @@ export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim
       <group ref={fightRef} visible={false}><primitive object={fightScene} /></group>
       <group ref={deadRef} visible={false}><primitive object={deadScene} /></group>
       <group ref={jumpRef} visible={false}><primitive object={jumpScene} /></group>
+      <group ref={hiphopRef} visible={false}><primitive object={hiphopScene} /></group>
+      <group ref={gangnamRef} visible={false}><primitive object={gangnamScene} /></group>
     </group>
   );
 }
@@ -265,3 +295,5 @@ useGLTF.preload(goblinGetHitUrl);
 useGLTF.preload(goblinFightUrl);
 useGLTF.preload(goblinDeadUrl);
 useGLTF.preload(goblinJumpUrl);
+useGLTF.preload(hiphopUrl);
+useGLTF.preload(gangnamUrl);
