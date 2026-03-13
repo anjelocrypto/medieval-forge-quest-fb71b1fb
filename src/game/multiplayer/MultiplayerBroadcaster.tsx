@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { NetworkPlayerState } from './types';
@@ -26,12 +27,11 @@ interface Props {
   onUpdateLocalState: (state: NetworkPlayerState) => void;
 }
 
-export function MultiplayerBroadcaster({
+export const MultiplayerBroadcaster = forwardRef<THREE.Object3D, Props>(function MultiplayerBroadcaster({
   playerId, displayName, characterType, playerPositionRef, playerRotationRef,
   survival, isMounted, horse, moveSpeedRef, isRunningRef, isGroundedRef, attackAnimRef,
   mountedDebugRef, buildMode, emote, isSpeaking, onUpdateLocalState,
-}: Props) {
-
+}, _ref) {
   useFrame(() => {
     const pos = playerPositionRef.current;
     const rot = playerRotationRef.current;
@@ -66,4 +66,4 @@ export function MultiplayerBroadcaster({
   });
 
   return null;
-}
+});
