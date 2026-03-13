@@ -58,6 +58,7 @@ export interface InterpolatedPlayer {
   // State
   moveSpeed: number;
   isRunning: boolean;
+  isGrounded: boolean;
   isMounted: boolean;
   health: number;
   maxHealth: number;
