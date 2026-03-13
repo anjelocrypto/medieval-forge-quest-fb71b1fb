@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SkeletonUtils } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { clone as cloneSkinnedScene } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 const ROOT_TRANSLATION_NAME_RE = /(hips|pelvis|root|armature)/i;
 const BONE_HIPS_RE = /(hips|pelvis)/i;
