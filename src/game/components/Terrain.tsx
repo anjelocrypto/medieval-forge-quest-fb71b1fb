@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import * as THREE from 'three';
 import { WORLD_SIZE, COLORS } from '../constants';
 import { ROADS, REGIONS, SETTLEMENTS } from '../world/RegionData';
@@ -99,7 +99,7 @@ function getRoadFactor(x: number, z: number): number {
   return best;
 }
 
-export function Terrain() {
+export const Terrain = memo(function Terrain() {
   const geometry = useMemo(() => {
     const segments = 300;
     const geo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, segments, segments);
@@ -173,4 +173,4 @@ export function Terrain() {
       <meshLambertMaterial vertexColors />
     </mesh>
   );
-}
+});

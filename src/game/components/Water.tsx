@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, memo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { COLORS } from '../constants';
@@ -29,7 +29,7 @@ function RiverSegment({ points, width }: { points: [number, number, number][]; w
   return <>{meshes}</>;
 }
 
-export function Water() {
+export const Water = memo(function Water() {
   const frameSkip = useRef(0);
   const groupRef = useRef<THREE.Group>(null);
 
@@ -57,4 +57,4 @@ export function Water() {
       ))}
     </group>
   );
-}
+});

@@ -7,7 +7,7 @@ import { Player, MountedDebugData } from './components/Player';
 import { Atmosphere } from './components/Atmosphere';
 import { Sky } from './components/Sky';
 import { WorldObjects } from './components/WorldObjects';
-import { Enemies } from './components/Enemies';
+import { Enemies, EnemiesHandle, EnemyRuntime } from './components/Enemies';
 import { AmbientEffects } from './components/AmbientEffects';
 import { BuildingSystem } from './components/BuildingSystem';
 import { LootPickups } from './components/LootPickups';
@@ -26,7 +26,6 @@ import { BuildModeController } from './systems/BuildModeController';
 import { SurvivalHUD } from './ui/SurvivalHUD';
 import { useGameState } from './hooks/useGameState';
 import { generateWorldResources, WorldResource, generateLootDrop } from './systems/WorldResources';
-import { generateEnemies, EnemyData } from './systems/EnemyData';
 import { initInput } from './systems/InputSystem';
 import { POIS, POI_ZONE_RADIUS } from './constants';
 // Multiplayer
@@ -61,7 +60,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
 
   const { character } = useCharacter();
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
-  const [enemies, setEnemies] = useState<EnemyData[]>(() => generateEnemies());
+  const enemiesHandleRef = useRef<EnemiesHandle>(null);
   const [mapOpen, setMapOpen] = useState(false);
   const [debugMounted, setDebugMounted] = useState(false);
   const [currentEmote, setCurrentEmote] = useState<string | null>(null);
@@ -131,21 +130,27 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
 
   useEffect(() => {
     const checkInterval = setInterval(() => {
+      const handle = enemiesHandleRef.current;
+      if (!handle) return;
+      const enemyMap = handle.getEnemies();
       for (const [key, poi] of Object.entries(POIS)) {
         if (progression.areasSecured.includes(key)) continue;
-        const nearbyEnemies = enemies.filter(e => {
-          if (e.state === 'dead') return false;
+        let hasAlive = false;
+        enemyMap.forEach(e => {
+          if (e.state === 'dead') return;
           const dx = e.position[0] - poi.x;
           const dz = e.position[2] - poi.z;
-          return dx * dx + dz * dz < POI_ZONE_RADIUS * POI_ZONE_RADIUS;
+          if (dx * dx + dz * dz < POI_ZONE_RADIUS * POI_ZONE_RADIUS) {
+            hasAlive = true;
+          }
         });
-        if (nearbyEnemies.length === 0) {
+        if (!hasAlive) {
           secureArea(key);
         }
       }
     }, 2000);
     return () => clearInterval(checkInterval);
-  }, [enemies, progression.areasSecured, secureArea]);
+  }, [progression.areasSecured, secureArea]);
 
   // Map toggle + debug
   useEffect(() => {
@@ -175,7 +180,15 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
       }
       if (ev.type === 'enemy_killed') {
         const id = ev.payload.enemyId as string;
-        setEnemies(prev => prev.map(e => e.id === id ? { ...e, health: 0, state: 'dead' as const } : e));
+        const handle = enemiesHandleRef.current;
+        if (handle) {
+          const enemy = handle.getEnemies().get(id);
+          if (enemy && enemy.state !== 'dead') {
+            enemy.health = 0;
+            enemy.state = 'dead';
+            enemy.deathTimer = 0;
+          }
+        }
       }
       if (ev.type === 'building_placed') {
         const structure = ev.payload.structure as Record<string, unknown>;
@@ -203,30 +216,18 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
     setResources(prev => prev.map(r => r.id === id ? { ...r, health: r.health - 1 } : r));
   }, []);
 
-  const handleEnemyHit = useCallback((id: string, damage: number) => {
-    setEnemies(prev => prev.map(e => {
-      if (e.id !== id) return e;
-      const newHealth = e.health - damage;
-      if (newHealth <= 0) {
-        const drops = generateLootDrop(e.position, e.type);
-        if (drops.length > 0) addLootPickups(drops);
-        recordEnemyKill(e.type);
-        if (multiplayer.connected) {
-          multiplayer.broadcastWorldEvent({
-            type: 'enemy_killed',
-            payload: { enemyId: id, killerName: multiplayer.displayName },
-            playerId: multiplayer.playerId,
-            timestamp: Date.now(),
-          });
-        }
-      }
-      return {
-        ...e,
-        health: Math.max(0, newHealth),
-        hitFlash: 0.25,
-        state: newHealth <= 0 ? 'dead' as const : e.state,
-      };
-    }));
+  const handleEnemyKill = useCallback((enemy: EnemyRuntime) => {
+    const drops = generateLootDrop(enemy.position, enemy.type);
+    if (drops.length > 0) addLootPickups(drops);
+    recordEnemyKill(enemy.type);
+    if (multiplayer.connected) {
+      multiplayer.broadcastWorldEvent({
+        type: 'enemy_killed',
+        payload: { enemyId: enemy.id, killerName: multiplayer.displayName },
+        playerId: multiplayer.playerId,
+        timestamp: Date.now(),
+      });
+    }
   }, [addLootPickups, recordEnemyKill, multiplayer]);
 
   const handleRespawn = useCallback(() => {
@@ -234,9 +235,6 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
     pendingPlayerDamageRef.current = 0;
   }, [updateSurvival]);
 
-  const handleEnemiesUpdate = useCallback((updated: EnemyData[]) => {
-    setEnemies(updated);
-  }, []);
 
   // Wrap placeStructure to broadcast building placement
   const handlePlaceStructure = useCallback((structure: any) => {
@@ -350,8 +348,8 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
           playerPositionRef={playerPositionRef}
           playerRotationRef={playerRotationRef}
           cameraAzimuthRef={cameraAzimuthRef}
-          enemies={enemies}
-          onEnemyHit={handleEnemyHit}
+          enemiesHandleRef={enemiesHandleRef}
+
           onRespawn={handleRespawn}
           buildMode={buildMode}
           structures={structures}
@@ -390,9 +388,9 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
         <LootPickups pickups={lootPickups} />
         <Horse horse={horse} playerPositionRef={playerPositionRef} onUpdateHorse={updateHorse} isMounted={isMounted} />
         <Enemies
-          enemies={enemies}
+          ref={enemiesHandleRef}
           playerPositionRef={playerPositionRef}
-          onEnemiesUpdate={handleEnemiesUpdate}
+          onEnemyKill={handleEnemyKill}
           pendingPlayerDamageRef={pendingPlayerDamageRef}
         />
         <BuildingSystem
