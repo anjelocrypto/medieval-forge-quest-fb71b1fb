@@ -143,6 +143,15 @@ export function RemotePlayer({ player }: Props) {
               health={player.health}
               emote={player.emote}
             />
+          ) : charType === 'octopus' ? (
+            <RemoteOctopusModel
+              moveSpeed={player.moveSpeed}
+              isRunning={player.isRunning}
+              isGrounded={player.isGrounded}
+              attackAnim={player.attackAnim}
+              health={player.health}
+              emote={player.emote}
+            />
           ) : (
             <RemoteSoldierModel
               moveSpeed={player.moveSpeed}

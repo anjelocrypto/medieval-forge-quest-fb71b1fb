@@ -16,6 +16,7 @@ export function CharacterProvider({ children }: { children: ReactNode }) {
   const [character, setCharacterState] = useState<CharacterType>(() => {
     const saved = localStorage.getItem('selected-character');
     if (saved === 'soldier') return 'soldier';
+    if (saved === 'octopus') return 'octopus';
     return 'goblin';
   });
 

@@ -4,6 +4,7 @@ import { useCharacter, CharacterType } from '../context/CharacterContext';
 const CHARACTERS: { type: CharacterType; name: string; icon: string; desc: string }[] = [
   { type: 'goblin', name: 'Goblin', icon: '👺', desc: 'Small & scrappy with unique animations' },
   { type: 'soldier', name: 'Soldier', icon: '⚔️', desc: 'Human warrior with full emotes & combat' },
+  { type: 'octopus', name: 'Octopus', icon: '🐙', desc: 'Tentacled sea creature with dance moves' },
 ];
 
 export function CharacterSelect() {
