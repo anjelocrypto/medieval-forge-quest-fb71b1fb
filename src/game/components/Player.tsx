@@ -934,7 +934,7 @@ export function Player({
             lean + riderLean
           ]}
         >
-          <PlayerGLBModel moveSpeed={ms} />
+          <PlayerGLBModel moveSpeedRef={moveSpeedRef} />
         </group>
       </group>
     </group>
