@@ -113,14 +113,24 @@ function inspectModel(scene: THREE.Object3D): ModelInspection {
 
   if (hipsBone) {
     hipsBone.getWorldPosition(_tmpVecA);
-    anchorX = _tmpVecA.x;
-    anchorZ = _tmpVecA.z;
+    const finiteHips = Number.isFinite(_tmpVecA.x) && Number.isFinite(_tmpVecA.z);
+    if (finiteHips) {
+      const maxAnchorDrift = Math.max(1.5, size.length() * 0.75);
+      const drift = Math.hypot(_tmpVecA.x - center.x, _tmpVecA.z - center.z);
+      if (drift <= maxAnchorDrift) {
+        anchorX = _tmpVecA.x;
+        anchorZ = _tmpVecA.z;
+      }
+    }
   }
+
+  const safeFootY = Number.isFinite(bounds.min.y) ? bounds.min.y : 0;
+  const safeHeight = Number.isFinite(size.y) && size.y > 0.001 ? size.y : 1;
 
   return {
     anchor: new THREE.Vector3(anchorX, 0, anchorZ),
-    footY: bounds.min.y,
-    height: size.y,
+    footY: safeFootY,
+    height: safeHeight,
     facingYaw,
   };
 }
