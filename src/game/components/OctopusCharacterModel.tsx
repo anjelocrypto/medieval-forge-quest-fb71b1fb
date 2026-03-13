@@ -7,6 +7,7 @@ import octopusRunningUrl from '@/assets/octopusrunning.glb?url';
 import octopusJumpUrl from '@/assets/octopusjump.glb?url';
 import octopusGetHitUrl from '@/assets/octopusgethit.glb?url';
 import octopusDanceUrl from '@/assets/octopusdance.glb?url';
+import octopusKickUrl from '@/assets/octopuskick.glb?url';
 
 interface OctopusGLBModelProps {
   moveSpeedRef: React.MutableRefObject<number>;
