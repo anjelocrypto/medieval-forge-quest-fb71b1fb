@@ -7,6 +7,7 @@ import soldierIdleUrl from '@/assets/soldier.glb?url';
 import jumpUrl from '@/assets/jump.glb?url';
 import runUrl from '@/assets/run.glb?url';
 import gethitUrl from '@/assets/gethit.glb?url';
+import fightUrl from '@/assets/fight.glb?url';
 import idleToPushupUrl from '@/assets/idletopushup.glb?url';
 import pushupUrl from '@/assets/pushup.glb?url';
 import pushupToIdleUrl from '@/assets/pushuptoidle.glb?url';
