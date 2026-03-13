@@ -20,6 +20,7 @@ import { SkyCreatures } from './components/SkyCreatures';
 import { WildernessStructures } from './components/WildernessStructures';
 import { Bridges } from './components/Bridges';
 import { DebugCollision } from './components/DebugCollision';
+import { GLBInspector } from './components/GLBInspector';
 import { CameraController } from './systems/CameraController';
 import { InputFlusher } from './systems/InputFlusher';
 import { BuildModeController } from './systems/BuildModeController';
