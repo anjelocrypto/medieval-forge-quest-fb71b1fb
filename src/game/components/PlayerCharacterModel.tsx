@@ -116,6 +116,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const pushupEnterVisibleRef = useRef<THREE.Group>(null);
   const pushupLoopVisibleRef = useRef<THREE.Group>(null);
   const pushupExitVisibleRef = useRef<THREE.Group>(null);
+  const agreeVisibleRef = useRef<THREE.Group>(null);
 
   const stateRef = useRef<CharState>('idle');
   const pushupStartTimeRef = useRef(0);
