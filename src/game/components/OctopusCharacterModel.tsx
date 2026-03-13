@@ -206,6 +206,7 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   const sanitizedRunClips = useMemo(() => sanitizeClips(runGltf.animations), [runGltf.animations]);
   const sanitizedJumpClips = useMemo(() => sanitizeClips(jumpGltf.animations), [jumpGltf.animations]);
   const sanitizedHitClips = useMemo(() => sanitizeClips(hitGltf.animations), [hitGltf.animations]);
+  const sanitizedFightClips = useMemo(() => sanitizeClips(fightGltf.animations), [fightGltf.animations]);
   const sanitizedDanceClips = useMemo(() => sanitizeClips(danceGltf.animations), [danceGltf.animations]);
 
   // Inspections
