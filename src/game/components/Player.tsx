@@ -947,20 +947,39 @@ function PlayerGLBModel({ moveSpeed }: { moveSpeed: number }) {
   const gltf = useGLTF(soldierWalkUrl);
   const modelRef = useRef<THREE.Group>(null);
 
-  // Use the original scene directly (useGLTF caches it)
-  // Enable shadows
+  // Fix the model: zero out Armature position offset & enable shadows
   useEffect(() => {
     gltf.scene.traverse((child) => {
+      // Zero out the Armature's position — the skeleton has baked-in offsets
+      if (child.name === 'Armature' || child.type === 'Object3D') {
+        child.position.set(0, 0, 0);
+      }
       if ((child as THREE.Mesh).isMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
       }
     });
+    // Force update matrices after repositioning
+    gltf.scene.updateMatrixWorld(true);
   }, [gltf.scene]);
 
-  const { actions, clips } = useAnimations(gltf.animations, gltf.scene);
+  const { actions, clips, mixer } = useAnimations(gltf.animations, gltf.scene);
   const walkClipName = clips.length > 0 ? clips[0].name : null;
   const prevMovingRef = useRef(false);
+
+  // Strip root motion from animation — zero out Hips position track
+  useEffect(() => {
+    if (!clips.length) return;
+    clips.forEach(clip => {
+      // Remove position tracks from Hips to prevent the model from drifting
+      clip.tracks = clip.tracks.filter(track => {
+        if (track.name.includes('Hips') && track.name.endsWith('.position')) {
+          return false; // remove root position track
+        }
+        return true;
+      });
+    });
+  }, [clips]);
 
   // Play/stop walk animation based on movement
   useEffect(() => {
@@ -991,6 +1010,9 @@ function PlayerGLBModel({ moveSpeed }: { moveSpeed: number }) {
     prevMovingRef.current = isMoving;
   });
 
+  // Scale to ~1.8m (model is 1.7m native). The model's skeleton uses
+  // centimeter-scale bone positions internally, but the mesh geometry 
+  // is in meters. We scale uniformly and position at feet level.
   return (
     <group ref={modelRef} position={[0, -0.9, 0]} scale={[1.06, 1.06, 1.06]} rotation={[0, Math.PI, 0]}>
       <primitive object={gltf.scene} />
