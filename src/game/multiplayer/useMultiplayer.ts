@@ -10,6 +10,40 @@ import {
 const GLOBAL_WORLD_KEY = 'global_world_1';
 const SESSION_KEY = 'global_world_session';
 
+// Timeouts
+const SUBSCRIBE_TIMEOUT_MS = 10_000;
+const RECONNECT_TIMEOUT_MS = 8_000;
+
+// ===== Startup instrumentation =====
+interface StartupTimings {
+  enterWorldClicked: number;
+  connectStart: number;
+  channelCreated: number;
+  channelSubscribed: number;
+  presenceSynced: number;
+  firstRemoteReceived: number;
+  gameplayReady: number;
+}
+
+function createTimings(): StartupTimings {
+  return {
+    enterWorldClicked: 0,
+    connectStart: 0,
+    channelCreated: 0,
+    channelSubscribed: 0,
+    presenceSynced: 0,
+    firstRemoteReceived: 0,
+    gameplayReady: 0,
+  };
+}
+
+function logTiming(label: string, timings: StartupTimings, stage: keyof StartupTimings) {
+  const now = Date.now();
+  (timings as any)[stage] = now;
+  const elapsed = timings.enterWorldClicked > 0 ? now - timings.enterWorldClicked : 0;
+  console.log(`[MP-Startup] ${label} — ${elapsed}ms from start`);
+}
+
 // ===== Stable player ID per browser session =====
 function getOrCreatePlayerId(): string {
   let id = sessionStorage.getItem('mp_player_id');
@@ -66,6 +100,8 @@ export function useMultiplayer() {
   const broadcastTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const localStateRef = useRef<NetworkPlayerState | null>(null);
   const staleCleanupRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timingsRef = useRef<StartupTimings>(createTimings());
+  const firstRemoteReceivedRef = useRef(false);
 
   const connected = connectionStatus === 'connected';
 
@@ -77,20 +113,33 @@ export function useMultiplayer() {
   }, []);
 
   // ===== Internal: subscribe to global world channel =====
-  const subscribeToGlobalWorld = useCallback(async (playerName: string) => {
+  const subscribeToGlobalWorld = useCallback(async (playerName: string): Promise<boolean> => {
+    const timings = timingsRef.current;
+
     // Cleanup any existing channel
     if (channelRef.current) {
       await channelRef.current.unsubscribe();
       channelRef.current = null;
     }
 
+    logTiming('Channel creating', timings, 'connectStart');
+
     const channel = supabase.channel(`world:${GLOBAL_WORLD_KEY}`, {
       config: { broadcast: { self: false }, presence: { key: playerId } },
     });
 
+    logTiming('Channel created', timings, 'channelCreated');
+
     // Player state broadcast handler
     channel.on('broadcast', { event: 'player_state' }, ({ payload }: { payload: NetworkPlayerState }) => {
       if (payload.playerId === playerId) return;
+
+      // Log first remote player received
+      if (!firstRemoteReceivedRef.current) {
+        firstRemoteReceivedRef.current = true;
+        logTiming('First remote player received', timingsRef.current, 'firstRemoteReceived');
+      }
+
       setRemotePlayers(prev => {
         const next = new Map(prev);
         const existing = next.get(payload.playerId);
@@ -181,56 +230,88 @@ export function useMultiplayer() {
       }]);
     });
 
-    await channel.subscribe(async (status, err) => {
-      console.log('[Multiplayer] Channel status:', status, err ? err : '');
-      if (status === 'SUBSCRIBED') {
-        await channel.track({ playerId, displayName: playerName, joinedAt: Date.now() });
-        console.log('[Multiplayer] Connected successfully, status → connected');
-        setConnectionStatus('connected');
-        channelRef.current = channel;
-
-        setChatMessages(prev => [...prev, {
-          id: crypto.randomUUID(),
-          playerId: 'system',
-          displayName: 'System',
-          text: 'You joined the world.',
-          timestamp: Date.now(),
-          type: 'system',
-        }]);
-      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-        console.warn('[Multiplayer] Channel error/closed:', status, err);
+    // Subscribe with timeout
+    return new Promise<boolean>((resolve) => {
+      let resolved = false;
+      const timeoutId = setTimeout(() => {
+        if (resolved) return;
+        resolved = true;
+        console.error(`[MP-Startup] SUBSCRIBE TIMEOUT after ${SUBSCRIBE_TIMEOUT_MS}ms — channel never reached SUBSCRIBED`);
+        try { channel.unsubscribe(); } catch {}
         setConnectionStatus('disconnected');
-      }
-    });
+        resolve(false);
+      }, SUBSCRIBE_TIMEOUT_MS);
 
-    // Start broadcast timer
-    if (broadcastTimerRef.current) clearInterval(broadcastTimerRef.current);
-    broadcastTimerRef.current = setInterval(() => {
-      if (localStateRef.current && channelRef.current) {
-        channelRef.current.send({
-          type: 'broadcast',
-          event: 'player_state',
-          payload: localStateRef.current,
-        });
-      }
-    }, BROADCAST_RATE_MS);
+      channel.subscribe(async (status, err) => {
+        console.log('[Multiplayer] Channel status:', status, err ? err : '');
+        if (status === 'SUBSCRIBED') {
+          if (resolved) return;
+          resolved = true;
+          clearTimeout(timeoutId);
 
-    // Stale player cleanup
-    if (staleCleanupRef.current) clearInterval(staleCleanupRef.current);
-    staleCleanupRef.current = setInterval(() => {
-      const now = Date.now();
-      setRemotePlayers(prev => {
-        let changed = false;
-        const next = new Map(prev);
-        for (const [id, rp] of next) {
-          if (now - rp.lastUpdateTime > STALE_PLAYER_TIMEOUT_MS) {
-            next.delete(id);
-            changed = true;
-          }
+          logTiming('Channel subscribed', timings, 'channelSubscribed');
+
+          await channel.track({ playerId, displayName: playerName, joinedAt: Date.now() });
+          logTiming('Presence synced', timings, 'presenceSynced');
+
+          console.log('[Multiplayer] Connected successfully, status → connected');
+          setConnectionStatus('connected');
+          channelRef.current = channel;
+
+          // Mark gameplay ready
+          logTiming('Gameplay ready', timings, 'gameplayReady');
+          const totalMs = timings.gameplayReady - timings.enterWorldClicked;
+          console.log(`[MP-Startup] TOTAL STARTUP: ${totalMs}ms`);
+
+          setChatMessages(prev => [...prev, {
+            id: crypto.randomUUID(),
+            playerId: 'system',
+            displayName: 'System',
+            text: 'You joined the world.',
+            timestamp: Date.now(),
+            type: 'system',
+          }]);
+
+          resolve(true);
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          if (resolved) return;
+          resolved = true;
+          clearTimeout(timeoutId);
+          console.warn('[Multiplayer] Channel error/closed:', status, err);
+          setConnectionStatus('disconnected');
+          resolve(false);
         }
-        return changed ? next : prev;
       });
-    }, 2000);
+
+      // Start broadcast timer (non-blocking — ok to start before SUBSCRIBED)
+      if (broadcastTimerRef.current) clearInterval(broadcastTimerRef.current);
+      broadcastTimerRef.current = setInterval(() => {
+        if (localStateRef.current && channelRef.current) {
+          channelRef.current.send({
+            type: 'broadcast',
+            event: 'player_state',
+            payload: localStateRef.current,
+          });
+        }
+      }, BROADCAST_RATE_MS);
+
+      // Stale player cleanup
+      if (staleCleanupRef.current) clearInterval(staleCleanupRef.current);
+      staleCleanupRef.current = setInterval(() => {
+        const now = Date.now();
+        setRemotePlayers(prev => {
+          let changed = false;
+          const next = new Map(prev);
+          for (const [id, rp] of next) {
+            if (now - rp.lastUpdateTime > STALE_PLAYER_TIMEOUT_MS) {
+              next.delete(id);
+              changed = true;
+            }
+          }
+          return changed ? next : prev;
+        });
+      }, 2000);
+    });
   }, [playerId]);
 
   // ===== Enter the global world =====
@@ -239,9 +320,22 @@ export function useMultiplayer() {
     updateDisplayName(name);
     setConnectionStatus('connecting');
 
+    // Reset timings
+    const timings = createTimings();
+    timings.enterWorldClicked = Date.now();
+    timingsRef.current = timings;
+    firstRemoteReceivedRef.current = false;
+    logTiming('Enter world clicked', timings, 'enterWorldClicked');
+
     try {
       persistSession(name);
-      await subscribeToGlobalWorld(name);
+      const success = await subscribeToGlobalWorld(name);
+      if (!success) {
+        console.warn('[Multiplayer] Subscribe failed or timed out');
+        setConnectionStatus('disconnected');
+        clearSession();
+        throw new Error('Failed to connect to world — try again');
+      }
     } catch (err: any) {
       console.error('Failed to enter world:', err);
       setConnectionStatus('disconnected');
@@ -265,7 +359,7 @@ export function useMultiplayer() {
     setWorldEvents([]);
   }, []);
 
-  // ===== Reconnect on mount if session exists =====
+  // ===== Reconnect on mount if session exists (with timeout) =====
   const hasAttemptedReconnect = useRef(false);
   useEffect(() => {
     if (hasAttemptedReconnect.current) {
@@ -280,15 +374,44 @@ export function useMultiplayer() {
       return;
     }
 
-    // Reconnect directly to global world
+    // Reconnect directly to global world with timeout
     console.log('[Multiplayer] Attempting reconnect for:', session.displayName);
+    const timings = createTimings();
+    timings.enterWorldClicked = Date.now();
+    timingsRef.current = timings;
+    firstRemoteReceivedRef.current = false;
+
+    setConnectionStatus('reconnecting');
+
+    // Startup watchdog — if not connected within RECONNECT_TIMEOUT_MS, give up
+    const watchdogId = setTimeout(() => {
+      if (connectionStatus !== 'connected') {
+        console.error(`[MP-Startup] RECONNECT WATCHDOG: Not connected after ${RECONNECT_TIMEOUT_MS}ms. Stalled stages:`);
+        const t = timingsRef.current;
+        if (!t.connectStart) console.error('  → Stalled BEFORE connect start');
+        else if (!t.channelCreated) console.error('  → Stalled at channel creation');
+        else if (!t.channelSubscribed) console.error('  → Stalled at channel subscribe');
+        else if (!t.presenceSynced) console.error('  → Stalled at presence sync');
+        else if (!t.gameplayReady) console.error('  → Stalled at gameplay ready');
+        clearSession();
+        setConnectionStatus('disconnected');
+      }
+    }, RECONNECT_TIMEOUT_MS);
+
     (async () => {
-      setConnectionStatus('reconnecting');
       try {
         updateDisplayName(session.displayName);
-        await subscribeToGlobalWorld(session.displayName);
-        console.log('[Multiplayer] Reconnect successful');
+        const success = await subscribeToGlobalWorld(session.displayName);
+        clearTimeout(watchdogId);
+        if (success) {
+          console.log('[Multiplayer] Reconnect successful');
+        } else {
+          console.warn('[Multiplayer] Reconnect subscribe failed');
+          clearSession();
+          setConnectionStatus('disconnected');
+        }
       } catch (err) {
+        clearTimeout(watchdogId);
         console.warn('[Multiplayer] Reconnect failed:', err);
         clearSession();
         setConnectionStatus('disconnected');

@@ -7,6 +7,9 @@
  * - Establishes direct WebRTC peer connections for audio between players.
  * - Uses Web Audio API GainNodes for distance-based attenuation.
  * - Push-to-talk on K key: mic track is muted/unmuted (not re-acquired).
+ *
+ * IMPORTANT: Mic acquisition is DEFERRED by VOICE_INIT_DELAY_MS after connection
+ * to prevent blocking gameplay startup.
  */
 
 import { useRef, useCallback, useEffect, useState } from 'react';
@@ -18,6 +21,7 @@ import * as THREE from 'three';
 const VOICE_MAX_RANGE = 60;        // world units — silent beyond this
 const VOICE_FULL_RANGE = 8;        // world units — full volume inside this
 const VOICE_GAIN = 1.8;            // master gain multiplier
+const VOICE_INIT_DELAY_MS = 3000;  // defer mic acquisition after connect
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
@@ -54,6 +58,7 @@ export function useProximityVoice(
   const micReadyRef = useRef(false);
   const isTalkingRef = useRef(false);
   const cleanupListenersRef = useRef<(() => void) | null>(null);
+  const voiceInitDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── Audio context lazy init ───
   const getAudioCtx = useCallback(() => {
@@ -253,8 +258,6 @@ export function useProximityVoice(
     channel.on('broadcast', { event: 'voice_speaking' }, handleSpeaking);
 
     cleanupListenersRef.current = () => {
-      // Supabase channels don't have removeListener — handlers live until unsubscribe
-      // We just null the ref so we know to re-setup
       cleanupListenersRef.current = null;
     };
   }, [playerId, createPeer]);
@@ -407,6 +410,7 @@ export function useProximityVoice(
   // ─── Cleanup on disconnect/unmount ───
   useEffect(() => {
     return () => {
+      if (voiceInitDelayRef.current) clearTimeout(voiceInitDelayRef.current);
       for (const [id] of peersRef.current) {
         destroyPeer(id);
       }
@@ -419,10 +423,20 @@ export function useProximityVoice(
     };
   }, [destroyPeer]);
 
-  // ─── Init mic on first connect (pre-acquire for low latency) ───
+  // ─── DEFERRED mic init — wait VOICE_INIT_DELAY_MS after connect ───
   useEffect(() => {
     if (connected && !localStreamRef.current && micPermission === 'prompt') {
-      acquireMic();
+      console.log(`[Voice] Deferring mic acquisition by ${VOICE_INIT_DELAY_MS}ms to avoid blocking startup`);
+      voiceInitDelayRef.current = setTimeout(() => {
+        console.log('[Voice] Deferred mic init starting now');
+        acquireMic();
+      }, VOICE_INIT_DELAY_MS);
+      return () => {
+        if (voiceInitDelayRef.current) {
+          clearTimeout(voiceInitDelayRef.current);
+          voiceInitDelayRef.current = null;
+        }
+      };
     }
   }, [connected, acquireMic, micPermission]);
 
