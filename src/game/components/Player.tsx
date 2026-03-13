@@ -2,6 +2,8 @@ import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { PlayerGLBModel } from './PlayerCharacterModel';
+import { GoblinGLBModel } from './GoblinCharacterModel';
+import { useCharacter } from '../context/CharacterContext';
 import { getTerrainHeight } from './Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
 import { getMovementInput } from '../systems/InputSystem';
