@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
-export type CharacterType = 'soldier' | 'goblin';
+export type CharacterType = 'soldier' | 'goblin' | 'octopus';
 
 interface CharacterContextValue {
   character: CharacterType;
