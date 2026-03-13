@@ -349,7 +349,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
 
     // ===== DAMAGE HIT TRIGGER =====
     const currentFlash = damageFlash ?? 0;
-    if (currentFlash > 0 && prevDamageFlashRef.current === 0 && state !== 'hit') {
+    if (currentFlash > 0 && prevDamageFlashRef.current === 0 && stateRef.current !== 'hit') {
       stateRef.current = 'hit';
       hitStartTimeRef.current = performance.now();
       setVisibleState('hit');
