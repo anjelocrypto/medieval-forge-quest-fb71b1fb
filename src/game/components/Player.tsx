@@ -66,6 +66,7 @@ interface PlayerProps {
   // Emote
   activeEmote: string | null;
   onEmoteComplete: () => void;
+  damageFlash?: number;
 }
 
 const _camForward = new THREE.Vector3();
