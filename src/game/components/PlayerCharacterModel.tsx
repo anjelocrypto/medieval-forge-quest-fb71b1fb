@@ -382,6 +382,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
         }
       }
       return;
+    }
 
     // ===== EMOTE STATES =====
     if (state === 'emote_pushup_enter') {
