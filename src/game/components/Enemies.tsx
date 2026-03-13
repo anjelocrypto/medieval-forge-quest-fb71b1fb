@@ -107,6 +107,8 @@ export const Enemies = forwardRef<EnemiesHandle, EnemiesProps>(function Enemies(
   const nodeRefsMap = useRef<Map<string, EnemyNodeRefs>>(new Map());
   // Render tick — only increments on spawn/despawn
   const [renderTick, setRenderTick] = useState(0);
+  // Per-enemy dead material instances (allocated on death, not per-frame)
+  const deadMatsMap = useRef<Map<string, THREE.MeshLambertMaterial>>(new Map());
   // Track IDs to despawn
   const pendingDespawns = useRef<string[]>([]);
 
