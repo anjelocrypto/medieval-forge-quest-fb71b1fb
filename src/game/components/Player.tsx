@@ -377,7 +377,7 @@ export function Player({
     const accel = isMounted ? ACCEL_MOUNTED : (canRun ? ACCEL_GROUND_RUN : ACCEL_GROUND);
     const decel = isMounted ? DECEL_MOUNTED : DECEL_GROUND;
 
-    if (isMoving) {
+    if (isMoving && !isAttacking) {
       _moveDir.normalize();
 
       if (isMounted) {
