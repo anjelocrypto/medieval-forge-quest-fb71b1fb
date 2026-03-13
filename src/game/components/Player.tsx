@@ -110,6 +110,7 @@ export function Player({
   const attackAnimRef = useRef(0);
   const comboRef = useRef(0); // 0 = no combo, 1 = first swing done, can chain
   const comboWindowRef = useRef(0);
+  const isFightingRef = useRef(false);
   const moveSpeedRef = useRef(0);
   const currentSpeedRef = useRef(0); // actual interpolated speed for acceleration feel
   const survivalAccumRef = useRef(0);
@@ -372,7 +373,7 @@ export function Player({
     else { baseSpeed = PLAYER_SPEED; runSpeed = PLAYER_RUN_SPEED; }
     const targetSpeed = canRun ? runSpeed : baseSpeed;
     const isMoving = _moveDir.lengthSq() > 0.001;
-    const isAttacking = attackAnimRef.current > 0;
+    const isAttacking = attackAnimRef.current > 0 || isFightingRef.current;
 
     const accel = isMounted ? ACCEL_MOUNTED : (canRun ? ACCEL_GROUND_RUN : ACCEL_GROUND);
     const decel = isMounted ? DECEL_MOUNTED : DECEL_GROUND;
@@ -940,7 +941,7 @@ export function Player({
             lean + riderLean
           ]}
         >
-          <PlayerGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={attackAnimRef} />
+          <PlayerGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={attackAnimRef} isFightingRef={isFightingRef} />
         </group>
       </group>
     </group>

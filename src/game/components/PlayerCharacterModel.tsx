@@ -20,6 +20,7 @@ interface PlayerGLBModelProps {
   onEmoteComplete: () => void;
   damageFlash?: number;
   attackAnimRef?: React.MutableRefObject<number>;
+  isFightingRef?: React.MutableRefObject<boolean>;
 }
 
 interface ModelInspection {
@@ -92,7 +93,7 @@ function getFirstClipName(clips: THREE.AnimationClip[], hint?: RegExp): string |
   return clips[0].name;
 }
 
-export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedRef, activeEmote, onEmoteComplete, damageFlash, attackAnimRef }: PlayerGLBModelProps) {
+export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedRef, activeEmote, onEmoteComplete, damageFlash, attackAnimRef, isFightingRef }: PlayerGLBModelProps) {
   const walkGltf = useGLTF(soldierWalkUrl);
   const idleGltf = useGLTF(soldierIdleUrl);
   const jumpGltf = useGLTF(jumpUrl);
@@ -358,6 +359,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       stateRef.current = 'fight';
       fightStartTimeRef.current = performance.now();
       setVisibleState('fight');
+      if (isFightingRef) isFightingRef.current = true;
       if (fightClipName) {
         const a = fightActions[fightClipName];
         if (a) { a.reset(); a.play(); a.paused = false; }
@@ -373,12 +375,14 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
           a.paused = true;
           stateRef.current = 'idle';
           setVisibleState('idle');
+          if (isFightingRef) isFightingRef.current = false;
         }
       } else {
         const elapsed = (performance.now() - fightStartTimeRef.current) / 1000;
         if (elapsed >= 0.5) {
           stateRef.current = 'idle';
           setVisibleState('idle');
+          if (isFightingRef) isFightingRef.current = false;
         }
       }
       return;
