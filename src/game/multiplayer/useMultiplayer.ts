@@ -104,6 +104,7 @@ export function useMultiplayer() {
             targetRotation: payload.rotation,
             moveSpeed: payload.moveSpeed,
             isRunning: payload.isRunning,
+            isGrounded: payload.isGrounded ?? true,
             isMounted: payload.isMounted,
             health: payload.health,
             maxHealth: payload.maxHealth,
@@ -118,13 +119,13 @@ export function useMultiplayer() {
             lastUpdateTime: now,
             interpolationT: 0,
             displayName: payload.displayName,
-            characterType: payload.characterType ?? 'goblin',
+            characterType: payload.characterType || 'goblin',
           });
         } else {
           next.set(payload.playerId, {
             playerId: payload.playerId,
             displayName: payload.displayName,
-            characterType: payload.characterType ?? 'goblin',
+            characterType: payload.characterType || 'goblin',
             prevPosition: payload.position,
             targetPosition: payload.position,
             prevRotation: payload.rotation,
@@ -133,6 +134,7 @@ export function useMultiplayer() {
             renderRotation: payload.rotation,
             moveSpeed: payload.moveSpeed,
             isRunning: payload.isRunning,
+            isGrounded: payload.isGrounded ?? true,
             isMounted: payload.isMounted,
             health: payload.health,
             maxHealth: payload.maxHealth,

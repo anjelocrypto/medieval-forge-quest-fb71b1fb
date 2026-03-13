@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { InterpolatedPlayer, BROADCAST_RATE_MS, EMOTES } from './types';
 import { getTerrainHeight } from '../components/Terrain';
+import { getBridgeHeight } from '../world/BridgeData';
 import { Html } from '@react-three/drei';
 
 import { RemoteGoblinModel } from './RemoteGoblinModel';
@@ -32,11 +33,19 @@ export function RemotePlayer({ player }: Props) {
 
     const tx = player.targetPosition[0];
     const tz = player.targetPosition[2];
-    const terrainY = getTerrainHeight(tx, tz);
-    const ty = terrainY; // GLB models have feet at Y=0, no offset needed
+    
+    // Use bridge height if available, otherwise terrain height
+    const bridgeY = getBridgeHeight(tx, tz);
+    const rawTerrainY = getTerrainHeight(tx, tz);
+    const groundY = bridgeY !== null ? bridgeY : rawTerrainY;
+    
+    // GLB models have feet at Y=0, so ground level is the target Y
+    const ty = groundY;
 
     currentPos.current.x += (tx - currentPos.current.x) * t;
-    currentPos.current.y += (ty - currentPos.current.y) * t;
+    // Separate Y lerp — faster to avoid floating during transitions
+    const yLerp = Math.min(1, dt * lerpSpeed * 0.3);
+    currentPos.current.y += (ty - currentPos.current.y) * yLerp;
     currentPos.current.z += (tz - currentPos.current.z) * t;
 
     let rotDiff = player.targetRotation - currentRot.current;
@@ -50,7 +59,7 @@ export function RemotePlayer({ player }: Props) {
 
   const healthPct = player.maxHealth > 0 ? player.health / player.maxHealth : 1;
   const emoteText = player.emote ? EMOTES[player.emote] || player.emote : null;
-  const charType = player.characterType || 'soldier';
+  const charType = player.characterType || 'goblin';
 
   return (
     <group ref={groupRef}>
@@ -99,6 +108,7 @@ export function RemotePlayer({ player }: Props) {
             <RemoteGoblinModel
               moveSpeed={player.moveSpeed}
               isRunning={player.isRunning}
+              isGrounded={player.isGrounded}
               attackAnim={player.attackAnim}
               health={player.health}
               emote={player.emote}
@@ -107,6 +117,7 @@ export function RemotePlayer({ player }: Props) {
             <RemoteSoldierModel
               moveSpeed={player.moveSpeed}
               isRunning={player.isRunning}
+              isGrounded={player.isGrounded}
               attackAnim={player.attackAnim}
               health={player.health}
               emote={player.emote}
@@ -121,11 +132,11 @@ export function RemotePlayer({ player }: Props) {
 function FallbackBox() {
   return (
     <group>
-      <mesh position={[0, 1.1, 0]} scale={[0.55, 0.65, 0.35]}>
+      <mesh position={[0, 0.55, 0]} scale={[0.55, 0.65, 0.35]}>
         <boxGeometry />
         <meshLambertMaterial color="#3a5a8a" />
       </mesh>
-      <mesh position={[0, 1.7, 0]} scale={[0.35, 0.35, 0.35]}>
+      <mesh position={[0, 1.15, 0]} scale={[0.35, 0.35, 0.35]}>
         <boxGeometry />
         <meshLambertMaterial color="#d4a574" />
       </mesh>
