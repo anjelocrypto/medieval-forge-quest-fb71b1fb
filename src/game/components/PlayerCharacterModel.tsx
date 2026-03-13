@@ -324,7 +324,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     if (!grounded) {
       newState = 'jump';
     } else if (state === 'idle' ? speed > MOVE_START_THRESHOLD : speed > MOVE_STOP_THRESHOLD) {
-      newState = 'walk';
+      newState = speed > RUN_THRESHOLD ? 'run' : 'walk';
     } else {
       newState = 'idle';
     }
@@ -348,6 +348,19 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
           wa.setEffectiveTimeScale(Math.max(0.55, THREE.MathUtils.clamp(speed, 0, 1.4) * 1.35));
         } else {
           wa.paused = true;
+        }
+      }
+    }
+
+    // Run animation speed
+    if (runClipName) {
+      const ra = runActions[runClipName];
+      if (ra) {
+        if (newState === 'run') {
+          ra.paused = false;
+          ra.setEffectiveTimeScale(1.0);
+        } else {
+          ra.paused = true;
         }
       }
     }
