@@ -584,6 +584,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       {renderModel(pushupEnterVisibleRef, pushupEnterNorm, idleToPushupGltf.scene)}
       {renderModel(pushupLoopVisibleRef, pushupLoopNorm, pushupGltf.scene)}
       {renderModel(pushupExitVisibleRef, pushupExitNorm, pushupToIdleGltf.scene)}
+      {renderModel(agreeVisibleRef, agreeNorm, agreeGltf.scene)}
     </group>
   );
 }
