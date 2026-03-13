@@ -849,6 +849,8 @@ export function Player({
       <group ref={groupRef}>
         {character === 'goblin' ? (
           <GoblinDeadModel />
+        ) : character === 'octopus' ? (
+          <OctopusDeadModel />
         ) : (
           <group rotation={[Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
             <mesh castShadow>

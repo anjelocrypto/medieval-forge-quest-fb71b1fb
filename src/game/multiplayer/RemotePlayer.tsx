@@ -90,7 +90,9 @@ export function RemotePlayer({ player }: Props) {
   const charType = player.characterType || 'goblin';
   const nametagY = player.isMounted
     ? NAMETAG_HEIGHT_MOUNTED
-    : charType === 'goblin' ? NAMETAG_HEIGHT_GOBLIN : NAMETAG_HEIGHT_SOLDIER;
+    : charType === 'goblin' ? NAMETAG_HEIGHT_GOBLIN
+    : charType === 'octopus' ? NAMETAG_HEIGHT_OCTOPUS
+    : NAMETAG_HEIGHT_SOLDIER;
 
   return (
     <group ref={groupRef}>
