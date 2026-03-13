@@ -198,6 +198,14 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     [idleGltf.scene, walkGltf.scene, jumpGltf.scene, runGltf.scene, hitGltf.scene, fightGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene].forEach(enableMeshShadows);
   }, [idleGltf.scene, walkGltf.scene, jumpGltf.scene, runGltf.scene, hitGltf.scene, fightGltf.scene, idleToPushupGltf.scene, pushupGltf.scene, pushupToIdleGltf.scene]);
 
+  // Initialize idle/standing (looping)
+  useEffect(() => {
+    if (!idleClipName) return;
+    const a = idleActions[idleClipName]; if (!a) return;
+    a.reset(); a.setLoop(THREE.LoopRepeat, Infinity); a.clampWhenFinished = false; a.enabled = true; a.play();
+    return () => { a.stop(); };
+  }, [idleActions, idleClipName]);
+
   // Initialize walk (paused looping)
   useEffect(() => {
     if (!walkClipName) return;
