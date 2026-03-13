@@ -322,6 +322,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
 
       <Canvas shadows camera={{ fov: 55, near: 0.5, far: 1500, position: [0, 10, 15] }}
         style={{ width: '100%', height: '100%' }}>
+        <PerfBaselineR3F />
         <InputFlusher />
         <BuildModeController
           buildMode={buildMode}
