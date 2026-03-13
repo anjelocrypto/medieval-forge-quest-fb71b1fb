@@ -176,6 +176,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const pushupLoopNorm = useMemo(() => buildEmoteNormalization(pushupLoopInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight), [pushupLoopInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight]);
   const pushupExitNorm = useMemo(() => buildEmoteNormalization(pushupExitInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight), [pushupExitInspection, idleNorm.scale, canonicalYawCorrection, controllerHalfHeight]);
   const agreeNorm = useMemo(() => buildNormalization(agreeInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [agreeInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
+  const waveNorm = useMemo(() => buildNormalization(waveInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [waveInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
 
   // Animation setups
   const { actions: idleActions, clips: idleClips } = useAnimations(sanitizedIdleClips, idleGltf.scene);
