@@ -259,11 +259,14 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const { actions: gangnamActions, clips: gangnamClips } = useAnimations(sanitizedGangnamClips, gangnamGltf.scene);
   const gangnamClipName = useMemo(() => getFirstClipName(gangnamClips, /gangnam|dance/i), [gangnamClips]);
 
+  const { actions: hitActions, clips: hitClips } = useAnimations(sanitizedHitClips, getHitGltf.scene);
+  const hitClipName = useMemo(() => getFirstClipName(hitClips, /hit|hurt|damage/i), [hitClips]);
+
   // Enable shadows + debug
   useEffect(() => {
-    [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hiphopGltf.scene, gangnamGltf.scene].forEach(enableMeshShadows);
-    console.log('[Goblin] Clip names — idle:', idleClipName, 'walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName, 'hiphop:', hiphopClipName, 'gangnam:', gangnamClipName);
-  }, [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hiphopGltf.scene, gangnamGltf.scene, idleClipName, walkClipName, runClipName, jumpClipName, hiphopClipName, gangnamClipName]);
+    [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hiphopGltf.scene, gangnamGltf.scene, getHitGltf.scene].forEach(enableMeshShadows);
+    console.log('[Goblin] Clip names — idle:', idleClipName, 'walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName, 'hiphop:', hiphopClipName, 'gangnam:', gangnamClipName, 'hit:', hitClipName);
+  }, [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hiphopGltf.scene, gangnamGltf.scene, getHitGltf.scene, idleClipName, walkClipName, runClipName, jumpClipName, hiphopClipName, gangnamClipName, hitClipName]);
 
   // Initialize idle (looping)
   useEffect(() => {
