@@ -243,14 +243,38 @@ export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim
   });
 
   const idleNorm = useMemo(() => buildModelNormalization(idleScene, TARGET_HEIGHT, 0), [idleScene]);
-  const walkNorm = useMemo(() => buildModelNormalization(walkScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale), [walkScene, idleNorm.yawCorrection, idleNorm.scale]);
-  const runNorm = useMemo(() => buildModelNormalization(runScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale), [runScene, idleNorm.yawCorrection, idleNorm.scale]);
-  const hitNorm = useMemo(() => buildModelNormalization(hitScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale), [hitScene, idleNorm.yawCorrection, idleNorm.scale]);
-  const fightNorm = useMemo(() => buildModelNormalization(fightScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale), [fightScene, idleNorm.yawCorrection, idleNorm.scale]);
-  const deadNorm = useMemo(() => buildModelNormalization(deadScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale), [deadScene, idleNorm.yawCorrection, idleNorm.scale]);
-  const jumpNorm = useMemo(() => buildModelNormalization(jumpScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale), [jumpScene, idleNorm.yawCorrection, idleNorm.scale]);
-  const hiphopNorm = useMemo(() => buildModelNormalization(hiphopScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale), [hiphopScene, idleNorm.yawCorrection, idleNorm.scale]);
-  const gangnamNorm = useMemo(() => buildModelNormalization(gangnamScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale), [gangnamScene, idleNorm.yawCorrection, idleNorm.scale]);
+  const walkNorm = useMemo(
+    () => buildModelNormalization(walkScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset),
+    [walkScene, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset],
+  );
+  const runNorm = useMemo(
+    () => buildModelNormalization(runScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset),
+    [runScene, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset],
+  );
+  const hitNorm = useMemo(
+    () => buildModelNormalization(hitScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset),
+    [hitScene, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset],
+  );
+  const fightNorm = useMemo(
+    () => buildModelNormalization(fightScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset),
+    [fightScene, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset],
+  );
+  const deadNorm = useMemo(
+    () => buildModelNormalization(deadScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset),
+    [deadScene, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset],
+  );
+  const jumpNorm = useMemo(
+    () => buildModelNormalization(jumpScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset),
+    [jumpScene, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset],
+  );
+  const hiphopNorm = useMemo(
+    () => buildModelNormalization(hiphopScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset),
+    [hiphopScene, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset],
+  );
+  const gangnamNorm = useMemo(
+    () => buildModelNormalization(gangnamScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset),
+    [gangnamScene, idleNorm.yawCorrection, idleNorm.scale, idleNorm.modelAnchorOffset],
+  );
 
   const activeScene = useMemo(() => {
     switch (renderState) {

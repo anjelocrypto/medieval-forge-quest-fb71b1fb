@@ -47,21 +47,18 @@ function normalizeMaterial(mat: THREE.Material): THREE.Material {
   const cloned = mat.clone();
 
   if (cloned instanceof THREE.MeshStandardMaterial || cloned instanceof THREE.MeshPhysicalMaterial) {
+    // Keep original alpha/transparency flags; only neutralize glow-prone values.
     cloned.emissive.set(0x000000);
     cloned.emissiveIntensity = 0;
-    if (cloned.metalness > 0.3) cloned.metalness = 0.1;
-    if (cloned.roughness < 0.3) cloned.roughness = 0.5;
-    cloned.transparent = false;
-    cloned.opacity = 1;
-    cloned.depthWrite = true;
-    cloned.side = THREE.FrontSide;
+    cloned.metalness = Math.min(cloned.metalness, 0.2);
+    cloned.roughness = Math.max(cloned.roughness, 0.35);
   }
 
   return cloned;
 }
 
 export function cloneScene(scene: THREE.Group): THREE.Group {
-  // Use SkeletonUtils.clone for skinned meshes; manual name-based rebinding can corrupt rigs
+  // Use SkeletonUtils.clone for skinned meshes; manual rebinding can corrupt bone transforms.
   const cloned = cloneSkinnedScene(scene) as THREE.Group;
 
   cloned.traverse((node) => {
@@ -76,10 +73,8 @@ export function cloneScene(scene: THREE.Group): THREE.Group {
 
     if ((mesh as THREE.SkinnedMesh).isSkinnedMesh) {
       const skinned = mesh as THREE.SkinnedMesh;
-      skinned.frustumCulled = true;
-      skinned.bindMode = THREE.AttachedBindMode;
-      skinned.pose();
-      skinned.skeleton?.calculateInverses();
+      // Animated skinned meshes can get incorrect static bounds; avoid partial culling artifacts.
+      skinned.frustumCulled = false;
     }
   });
 
@@ -118,14 +113,24 @@ function inspectModel(scene: THREE.Object3D): ModelInspection {
 
   if (hipsBone) {
     hipsBone.getWorldPosition(_tmpVecA);
-    anchorX = _tmpVecA.x;
-    anchorZ = _tmpVecA.z;
+    const finiteHips = Number.isFinite(_tmpVecA.x) && Number.isFinite(_tmpVecA.z);
+    if (finiteHips) {
+      const maxAnchorDrift = Math.max(1.5, size.length() * 0.75);
+      const drift = Math.hypot(_tmpVecA.x - center.x, _tmpVecA.z - center.z);
+      if (drift <= maxAnchorDrift) {
+        anchorX = _tmpVecA.x;
+        anchorZ = _tmpVecA.z;
+      }
+    }
   }
+
+  const safeFootY = Number.isFinite(bounds.min.y) ? bounds.min.y : 0;
+  const safeHeight = Number.isFinite(size.y) && size.y > 0.001 ? size.y : 1;
 
   return {
     anchor: new THREE.Vector3(anchorX, 0, anchorZ),
-    footY: bounds.min.y,
-    height: size.y,
+    footY: safeFootY,
+    height: safeHeight,
     facingYaw,
   };
 }
@@ -178,14 +183,23 @@ export function buildModelNormalization(
   targetHeight: number,
   fallbackYawCorrection = 0,
   fallbackScale?: number,
+  fallbackAnchorOffset?: [number, number, number],
 ): ModelNormalization {
   const inspection = inspectModel(scene);
   const rawScale = inspection.height > 0.01 ? targetHeight / inspection.height : (fallbackScale ?? 1);
   const scale = sanitizeScale(rawScale, fallbackScale);
   const yawCorrection = inspection.facingYaw !== null ? -inspection.facingYaw : fallbackYawCorrection;
 
+  const computedOffset: [number, number, number] = [-inspection.anchor.x, -inspection.footY, -inspection.anchor.z];
+  const offsetMagnitude = Math.hypot(computedOffset[0], computedOffset[2]);
+  const finiteOffset = Number.isFinite(computedOffset[0]) && Number.isFinite(computedOffset[1]) && Number.isFinite(computedOffset[2]);
+  const maxReasonableOffset = Math.max(2.5, targetHeight * 3.5);
+  const modelAnchorOffset = finiteOffset && offsetMagnitude <= maxReasonableOffset
+    ? computedOffset
+    : (fallbackAnchorOffset ?? [0, 0, 0]);
+
   return {
-    modelAnchorOffset: [-inspection.anchor.x, -inspection.footY, -inspection.anchor.z],
+    modelAnchorOffset,
     scale,
     yawCorrection,
   };
