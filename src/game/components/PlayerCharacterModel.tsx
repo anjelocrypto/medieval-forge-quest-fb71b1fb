@@ -281,11 +281,9 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
         }
         stateRef.current = 'emote_pushup_exit';
         setVisibleState('emote_pushup_exit');
-            if (pushupExitClipName) {
-              const ea = pushupExitActions[pushupExitClipName];
-              if (ea) { ea.reset(); ea.play(); ea.paused = false; }
-            }
-          }
+        if (pushupExitClipName) {
+          const ea = pushupExitActions[pushupExitClipName];
+          if (ea) { ea.reset(); ea.play(); ea.paused = false; }
         }
       }
       return;
