@@ -47,6 +47,7 @@ interface ModelNormalization {
   controllerGroundOffset: number;
 }
 
+type CharState = 'idle' | 'walk' | 'run' | 'jump' | 'hit' | 'fight' | 'emote_pushup_enter' | 'emote_pushup_loop' | 'emote_pushup_exit' | 'emote_agree';
 const MOVE_START_THRESHOLD = 0.07;
 const MOVE_STOP_THRESHOLD = 0.04;
 const ROOT_TRANSLATION_NAME_RE = /(hips|pelvis|root|armature)/i;
