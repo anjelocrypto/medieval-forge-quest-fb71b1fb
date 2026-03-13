@@ -290,6 +290,7 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
     if (runVisibleRef.current) runVisibleRef.current.visible = false;
     if (jumpVisibleRef.current) jumpVisibleRef.current.visible = false;
     if (hitVisibleRef.current) hitVisibleRef.current.visible = false;
+    if (fightVisibleRef.current) fightVisibleRef.current.visible = false;
     if (danceVisibleRef.current) danceVisibleRef.current.visible = false;
   }, []);
 
