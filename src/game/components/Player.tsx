@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import { PlayerGLBModel } from './PlayerCharacterModel';
 import { GoblinGLBModel } from './GoblinCharacterModel';
 import { GoblinDeadModel } from './GoblinDeadModel';
+import { OctopusGLBModel } from './OctopusCharacterModel';
+import { OctopusDeadModel } from './OctopusDeadModel';
 import { useCharacter } from '../context/CharacterContext';
 import { getTerrainHeight } from './Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
