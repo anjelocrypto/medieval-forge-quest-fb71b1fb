@@ -90,6 +90,14 @@ export function enableMeshShadows(scene: THREE.Object3D) {
   });
 }
 
+/** Get native bounding box height of a scene — used to match local canonicalHeight */
+export function getSceneHeight(scene: THREE.Object3D): number {
+  scene.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(scene);
+  const size = bounds.getSize(_tmpSize.clone());
+  return Number.isFinite(size.y) && size.y > 0.001 ? size.y : 1;
+}
+
 function inspectModel(scene: THREE.Object3D): ModelInspection {
   scene.updateMatrixWorld(true);
   const bounds = new THREE.Box3().setFromObject(scene);
