@@ -10,9 +10,20 @@ import {
 const GLOBAL_WORLD_KEY = 'global_world_1';
 const SESSION_KEY = 'global_world_session';
 
-// Timeouts
+// Single unified timeout for all subscribe paths (fresh + reconnect)
 const SUBSCRIBE_TIMEOUT_MS = 10_000;
-const RECONNECT_TIMEOUT_MS = 8_000;
+
+// ===== MP-Audit rate-limited logger =====
+const auditLogCounts: Record<string, number> = {};
+const AUDIT_LOG_LIMIT = 5; // only log first N per label per session
+
+function mpAudit(label: string, data?: Record<string, unknown>) {
+  const count = auditLogCounts[label] ?? 0;
+  if (count >= AUDIT_LOG_LIMIT) return;
+  auditLogCounts[label] = count + 1;
+  const suffix = data ? ' — ' + JSON.stringify(data) : '';
+  console.log(`[MP-Audit] ${label}${suffix}`);
+}
 
 // ===== Startup instrumentation =====
 interface StartupTimings {
@@ -20,7 +31,7 @@ interface StartupTimings {
   connectStart: number;
   channelCreated: number;
   channelSubscribed: number;
-  presenceSynced: number;
+  presenceTrackSent: number;
   firstRemoteReceived: number;
   gameplayReady: number;
 }
@@ -31,7 +42,7 @@ function createTimings(): StartupTimings {
     connectStart: 0,
     channelCreated: 0,
     channelSubscribed: 0,
-    presenceSynced: 0,
+    presenceTrackSent: 0,
     firstRemoteReceived: 0,
     gameplayReady: 0,
   };
@@ -102,14 +113,8 @@ export function useMultiplayer() {
   const staleCleanupRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timingsRef = useRef<StartupTimings>(createTimings());
   const firstRemoteReceivedRef = useRef(false);
-  const connectionStatusRef = useRef<ConnectionStatus>('disconnected');
 
   const connected = connectionStatus === 'connected';
-
-  // Keep ref in sync with state for use in timeout callbacks
-  useEffect(() => {
-    connectionStatusRef.current = connectionStatus;
-  }, [connectionStatus]);
 
   // Update display name
   const updateDisplayName = useCallback((name: string) => {
@@ -118,14 +123,41 @@ export function useMultiplayer() {
     sessionStorage.setItem('mp_display_name', trimmed);
   }, []);
 
+  // ===== Canonical cleanup helper =====
+  // One function for ALL cleanup paths: leaveWorld, unmount, timeout, error, reconnect pre-cleanup.
+  const fullCleanup = useCallback(async (channel: RealtimeChannel | null) => {
+    // 1. Clear timers
+    if (broadcastTimerRef.current) { clearInterval(broadcastTimerRef.current); broadcastTimerRef.current = null; }
+    if (staleCleanupRef.current) { clearInterval(staleCleanupRef.current); staleCleanupRef.current = null; }
+
+    // 2. Unsubscribe + remove from Supabase SDK registry
+    if (channel) {
+      try {
+        await supabase.removeChannel(channel);
+        mpAudit('channel removed from SDK registry');
+      } catch (e) {
+        console.warn('[MP-Audit] removeChannel error:', e);
+      }
+    }
+
+    // 3. Null the ref (if it was the active channel)
+    if (channelRef.current === channel || channel === null) {
+      channelRef.current = null;
+    }
+  }, []);
+
   // ===== Internal: subscribe to global world channel =====
   const subscribeToGlobalWorld = useCallback(async (playerName: string): Promise<boolean> => {
     const timings = timingsRef.current;
 
-    // Cleanup any existing channel
-    if (channelRef.current) {
-      await channelRef.current.unsubscribe();
-      channelRef.current = null;
+    mpAudit('subscribeToGlobalWorld start', { playerId });
+
+    // Cleanup any existing channel using canonical helper
+    const oldChannel = channelRef.current;
+    channelRef.current = null;
+    if (oldChannel) {
+      mpAudit('cleaning up old channel before new subscribe');
+      await fullCleanup(oldChannel);
     }
 
     logTiming('Channel creating', timings, 'connectStart');
@@ -135,10 +167,18 @@ export function useMultiplayer() {
     });
 
     logTiming('Channel created', timings, 'channelCreated');
+    mpAudit('channel created', { topic: `world:${GLOBAL_WORLD_KEY}` });
 
     // Player state broadcast handler
     channel.on('broadcast', { event: 'player_state' }, ({ payload }: { payload: NetworkPlayerState }) => {
       if (payload.playerId === playerId) return;
+
+      mpAudit('player_state received', {
+        from: payload.playerId,
+        localId: playerId,
+        charType: payload.characterType,
+        pos: payload.position,
+      });
 
       // Log first remote player received
       if (!firstRemoteReceivedRef.current) {
@@ -205,6 +245,7 @@ export function useMultiplayer() {
             interpolationT: 0,
           });
         }
+        mpAudit('remotePlayers size after insert', { size: next.size });
         return next;
       });
     });
@@ -221,6 +262,7 @@ export function useMultiplayer() {
 
     // Presence tracking — leave
     channel.on('presence', { event: 'leave' }, ({ key }: { key: string }) => {
+      mpAudit('presence leave removed', { key });
       setRemotePlayers(prev => {
         const next = new Map(prev);
         next.delete(key);
@@ -236,20 +278,15 @@ export function useMultiplayer() {
       }]);
     });
 
-    // Subscribe with timeout
+    // Subscribe with single unified timeout
     return new Promise<boolean>((resolve) => {
       let resolved = false;
-      const clearAllTimers = () => {
-        if (broadcastTimerRef.current) { clearInterval(broadcastTimerRef.current); broadcastTimerRef.current = null; }
-        if (staleCleanupRef.current) { clearInterval(staleCleanupRef.current); staleCleanupRef.current = null; }
-      };
 
-      const timeoutId = setTimeout(() => {
+      const timeoutId = setTimeout(async () => {
         if (resolved) return;
         resolved = true;
         console.error(`[MP-Startup] SUBSCRIBE TIMEOUT after ${SUBSCRIBE_TIMEOUT_MS}ms — channel never reached SUBSCRIBED`);
-        clearAllTimers();
-        try { channel.unsubscribe(); } catch {}
+        await fullCleanup(channel);
         setConnectionStatus('disconnected');
         resolve(false);
       }, SUBSCRIBE_TIMEOUT_MS);
@@ -262,13 +299,15 @@ export function useMultiplayer() {
           clearTimeout(timeoutId);
 
           logTiming('Channel subscribed', timings, 'channelSubscribed');
+          mpAudit('channel subscribe success');
 
           await channel.track({ playerId, displayName: playerName, joinedAt: Date.now() });
-          logTiming('Presence track sent', timings, 'presenceSynced');
+          logTiming('Presence track sent', timings, 'presenceTrackSent');
 
           console.log('[Multiplayer] Connected successfully, status → connected');
           setConnectionStatus('connected');
           channelRef.current = channel;
+          mpAudit('channelRef assigned', { nonNull: true });
 
           // Mark gameplay ready
           logTiming('Gameplay ready', timings, 'gameplayReady');
@@ -289,17 +328,22 @@ export function useMultiplayer() {
           if (resolved) return;
           resolved = true;
           clearTimeout(timeoutId);
-          clearAllTimers();
           console.warn('[Multiplayer] Channel error/closed:', status, err);
+          await fullCleanup(channel);
           setConnectionStatus('disconnected');
           resolve(false);
         }
       });
 
-      // Start broadcast timer (non-blocking — ok to start before SUBSCRIBED)
+      // Start broadcast timer (non-blocking — sends only when channelRef is set)
       if (broadcastTimerRef.current) clearInterval(broadcastTimerRef.current);
       broadcastTimerRef.current = setInterval(() => {
         if (localStateRef.current && channelRef.current) {
+          mpAudit('player_state send', {
+            playerId: localStateRef.current.playerId,
+            charType: localStateRef.current.characterType,
+            pos: localStateRef.current.position,
+          });
           channelRef.current.send({
             type: 'broadcast',
             event: 'player_state',
@@ -307,6 +351,7 @@ export function useMultiplayer() {
           });
         }
       }, BROADCAST_RATE_MS);
+      mpAudit('broadcast timer started');
 
       // Stale player cleanup
       if (staleCleanupRef.current) clearInterval(staleCleanupRef.current);
@@ -317,6 +362,7 @@ export function useMultiplayer() {
           const next = new Map(prev);
           for (const [id, rp] of next) {
             if (now - rp.lastUpdateTime > STALE_PLAYER_TIMEOUT_MS) {
+              mpAudit('stale cleanup removed', { playerId: id });
               next.delete(id);
               changed = true;
             }
@@ -325,7 +371,7 @@ export function useMultiplayer() {
         });
       }, 2000);
     });
-  }, [playerId]);
+  }, [playerId, fullCleanup]);
 
   // ===== Enter the global world =====
   const enterWorld = useCallback(async (playerName?: string) => {
@@ -333,11 +379,15 @@ export function useMultiplayer() {
     updateDisplayName(name);
     setConnectionStatus('connecting');
 
-    // Reset timings
+    // Reset timings & audit counts
     const timings = createTimings();
     timings.enterWorldClicked = Date.now();
     timingsRef.current = timings;
     firstRemoteReceivedRef.current = false;
+    // Reset audit log counts for fresh session
+    for (const k of Object.keys(auditLogCounts)) delete auditLogCounts[k];
+
+    mpAudit('enterWorld start', { name, playerId });
     logTiming('Enter world clicked', timings, 'enterWorldClicked');
 
     try {
@@ -356,23 +406,21 @@ export function useMultiplayer() {
     }
   }, [displayName, updateDisplayName, subscribeToGlobalWorld]);
 
-  // ===== Leave world =====
+  // ===== Leave world (canonical cleanup) =====
   const leaveWorld = useCallback(async () => {
-    if (broadcastTimerRef.current) { clearInterval(broadcastTimerRef.current); broadcastTimerRef.current = null; }
-    if (staleCleanupRef.current) { clearInterval(staleCleanupRef.current); staleCleanupRef.current = null; }
-
-    if (channelRef.current) {
-      await channelRef.current.unsubscribe();
-      channelRef.current = null;
-    }
+    mpAudit('leaveWorld called');
+    const ch = channelRef.current;
+    channelRef.current = null;
+    await fullCleanup(ch);
     clearSession();
     setConnectionStatus('disconnected');
     setRemotePlayers(new Map());
     setChatMessages([]);
     setWorldEvents([]);
-  }, []);
+  }, [fullCleanup]);
 
-  // ===== Reconnect on mount if session exists (with timeout) =====
+  // ===== Reconnect on mount if session exists =====
+  // NO separate watchdog — relies on subscribeToGlobalWorld's unified SUBSCRIBE_TIMEOUT_MS.
   const hasAttemptedReconnect = useRef(false);
   useEffect(() => {
     if (hasAttemptedReconnect.current) {
@@ -387,47 +435,28 @@ export function useMultiplayer() {
       return;
     }
 
-    // Reconnect directly to global world with timeout
     console.log('[Multiplayer] Attempting reconnect for:', session.displayName);
     const timings = createTimings();
     timings.enterWorldClicked = Date.now();
     timingsRef.current = timings;
     firstRemoteReceivedRef.current = false;
+    // Reset audit log counts for reconnect
+    for (const k of Object.keys(auditLogCounts)) delete auditLogCounts[k];
 
     setConnectionStatus('reconnecting');
-
-    // Startup watchdog — if not connected within RECONNECT_TIMEOUT_MS, give up
-    const watchdogId = setTimeout(() => {
-      if (connectionStatusRef.current !== 'connected') {
-        console.error(`[MP-Startup] RECONNECT WATCHDOG: Not connected after ${RECONNECT_TIMEOUT_MS}ms. Stalled stages:`);
-        const t = timingsRef.current;
-        if (!t.connectStart) console.error('  → Stalled BEFORE connect start');
-        else if (!t.channelCreated) console.error('  → Stalled at channel creation');
-        else if (!t.channelSubscribed) console.error('  → Stalled at channel subscribe');
-        else if (!t.presenceSynced) console.error('  → Stalled at presence sync');
-        else if (!t.gameplayReady) console.error('  → Stalled at gameplay ready');
-        // Clear any leaked timers
-        if (broadcastTimerRef.current) { clearInterval(broadcastTimerRef.current); broadcastTimerRef.current = null; }
-        if (staleCleanupRef.current) { clearInterval(staleCleanupRef.current); staleCleanupRef.current = null; }
-        clearSession();
-        setConnectionStatus('disconnected');
-      }
-    }, RECONNECT_TIMEOUT_MS);
 
     (async () => {
       try {
         updateDisplayName(session.displayName);
         const success = await subscribeToGlobalWorld(session.displayName);
-        clearTimeout(watchdogId);
         if (success) {
           console.log('[Multiplayer] Reconnect successful');
         } else {
-          console.warn('[Multiplayer] Reconnect subscribe failed');
+          console.warn('[Multiplayer] Reconnect subscribe failed or timed out');
           clearSession();
           setConnectionStatus('disconnected');
         }
       } catch (err) {
-        clearTimeout(watchdogId);
         console.warn('[Multiplayer] Reconnect failed:', err);
         clearSession();
         setConnectionStatus('disconnected');
@@ -479,12 +508,17 @@ export function useMultiplayer() {
     setWorldEvents(prev => [...prev.slice(-49), event]);
   }, []);
 
-  // Cleanup on unmount
+  // Cleanup on unmount (canonical)
   useEffect(() => {
     return () => {
-      if (broadcastTimerRef.current) clearInterval(broadcastTimerRef.current);
-      if (staleCleanupRef.current) clearInterval(staleCleanupRef.current);
-      if (channelRef.current) channelRef.current.unsubscribe();
+      // Sync cleanup: clear timers immediately, channel removal is fire-and-forget
+      if (broadcastTimerRef.current) { clearInterval(broadcastTimerRef.current); broadcastTimerRef.current = null; }
+      if (staleCleanupRef.current) { clearInterval(staleCleanupRef.current); staleCleanupRef.current = null; }
+      const ch = channelRef.current;
+      channelRef.current = null;
+      if (ch) {
+        supabase.removeChannel(ch).catch(() => {});
+      }
     };
   }, []);
 
