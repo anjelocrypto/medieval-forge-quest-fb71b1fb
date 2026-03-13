@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -10,6 +10,13 @@ import fightUrl from '@/assets/fight.glb?url';
 import jumpUrl from '@/assets/jump.glb?url';
 import waveUrl from '@/assets/wave.glb?url';
 import agreeUrl from '@/assets/agreegesture.glb?url';
+import {
+  buildModelNormalization,
+  cloneScene,
+  enableMeshShadows,
+  ModelNormalization,
+  sanitizeClips,
+} from './remoteModelUtils';
 
 interface Props {
   moveSpeed: number;
@@ -20,65 +27,9 @@ interface Props {
   emote: string | null;
 }
 
-const ROOT_RE = /(hips|pelvis|root|armature)/i;
-const TARGET_HEIGHT = 1.8;
-
-function sanitizeClips(animations: THREE.AnimationClip[]): THREE.AnimationClip[] {
-  return animations.map((clip) => {
-    const c = clip.clone();
-    c.tracks = c.tracks.filter((t) => {
-      if (!t.name.endsWith('.position')) return true;
-      return !ROOT_RE.test(t.name.slice(0, t.name.lastIndexOf('.')));
-    });
-    return c;
-  });
-}
-
-function normalizeMaterial(mat: THREE.Material): THREE.Material {
-  const cloned = mat.clone();
-  if (cloned instanceof THREE.MeshStandardMaterial || cloned instanceof THREE.MeshPhysicalMaterial) {
-    cloned.emissive.set(0x000000);
-    cloned.emissiveIntensity = 0;
-    if (cloned.metalness > 0.3) cloned.metalness = 0.1;
-    if (cloned.roughness < 0.3) cloned.roughness = 0.5;
-    cloned.transparent = false;
-    cloned.opacity = 1;
-    cloned.depthWrite = true;
-    cloned.side = THREE.FrontSide;
-  }
-  return cloned;
-}
-
-function cloneScene(scene: THREE.Group): THREE.Group {
-  const cloned = scene.clone(true);
-  cloned.traverse((n) => {
-    const mesh = n as THREE.Mesh;
-    if (mesh.isMesh && mesh.material) {
-      if (Array.isArray(mesh.material)) {
-        mesh.material = mesh.material.map(normalizeMaterial);
-      } else {
-        mesh.material = normalizeMaterial(mesh.material);
-      }
-    }
-  });
-  const skinnedMeshes: THREE.SkinnedMesh[] = [];
-  const origSkinnedMeshes: THREE.SkinnedMesh[] = [];
-  scene.traverse((n) => { if ((n as THREE.SkinnedMesh).isSkinnedMesh) origSkinnedMeshes.push(n as THREE.SkinnedMesh); });
-  cloned.traverse((n) => { if ((n as THREE.SkinnedMesh).isSkinnedMesh) skinnedMeshes.push(n as THREE.SkinnedMesh); });
-  for (let i = 0; i < skinnedMeshes.length && i < origSkinnedMeshes.length; i++) {
-    const cm = skinnedMeshes[i];
-    const os = origSkinnedMeshes[i].skeleton;
-    const bones: THREE.Bone[] = [];
-    for (const ob of os.bones) { const f = cloned.getObjectByName(ob.name) as THREE.Bone; if (f) bones.push(f); }
-    if (bones.length === os.bones.length) {
-      cm.skeleton = new THREE.Skeleton(bones, os.boneInverses.map(m => m.clone()));
-      cm.bind(cm.skeleton, cm.matrixWorld);
-    }
-  }
-  return cloned;
-}
-
 type RemoteState = 'idle' | 'walk' | 'run' | 'jump' | 'fight' | 'hit' | 'dead' | 'emote_wave' | 'emote_agree';
+
+const TARGET_HEIGHT = 1.8;
 
 export function RemoteSoldierModel({ moveSpeed, isRunning, isGrounded, attackAnim, health, emote }: Props) {
   const idleGltf = useGLTF(standingUrl);
@@ -90,7 +41,6 @@ export function RemoteSoldierModel({ moveSpeed, isRunning, isGrounded, attackAni
   const waveGltf = useGLTF(waveUrl);
   const agreeGltf = useGLTF(agreeUrl);
 
-  // Clone scenes per instance
   const idleScene = useMemo(() => cloneScene(idleGltf.scene), [idleGltf.scene]);
   const walkScene = useMemo(() => cloneScene(walkGltf.scene), [walkGltf.scene]);
   const runScene = useMemo(() => cloneScene(runGltf.scene), [runGltf.scene]);
@@ -100,17 +50,8 @@ export function RemoteSoldierModel({ moveSpeed, isRunning, isGrounded, attackAni
   const waveScene = useMemo(() => cloneScene(waveGltf.scene), [waveGltf.scene]);
   const agreeScene = useMemo(() => cloneScene(agreeGltf.scene), [agreeGltf.scene]);
 
-  const idleRef = useRef<THREE.Group>(null);
-  const walkRef = useRef<THREE.Group>(null);
-  const runRef = useRef<THREE.Group>(null);
-  const hitRef = useRef<THREE.Group>(null);
-  const fightRef = useRef<THREE.Group>(null);
-  const deadRef = useRef<THREE.Group>(null);
-  const jumpRef = useRef<THREE.Group>(null);
-  const waveRef = useRef<THREE.Group>(null);
-  const agreeRef = useRef<THREE.Group>(null);
-
   const stateRef = useRef<RemoteState>('idle');
+  const [renderState, setRenderState] = useState<RemoteState>('idle');
   const prevAttackRef = useRef(0);
   const prevHealthRef = useRef(health);
   const hitTimerRef = useRef(0);
@@ -136,80 +77,78 @@ export function RemoteSoldierModel({ moveSpeed, isRunning, isGrounded, attackAni
   const { actions: waveActions } = useAnimations(waveClips, waveScene);
   const { actions: agreeActions } = useAnimations(agreeClips, agreeScene);
 
-  // Enable shadows
   useEffect(() => {
-    [idleScene, walkScene, runScene, hitScene, fightScene, jumpScene, waveScene, agreeScene].forEach(s => {
-      s.traverse(c => { if ((c as THREE.Mesh).isMesh) { c.castShadow = true; c.receiveShadow = true; } });
-    });
+    [idleScene, walkScene, runScene, hitScene, fightScene, jumpScene, waveScene, agreeScene].forEach(enableMeshShadows);
   }, [idleScene, walkScene, runScene, hitScene, fightScene, jumpScene, waveScene, agreeScene]);
 
-  // Start looping animations
   useEffect(() => {
     const playLoop = (actions: Record<string, THREE.AnimationAction | null>) => {
       const name = Object.keys(actions)[0];
       if (!name || !actions[name]) return;
-      const a = actions[name]!;
-      a.reset(); a.setLoop(THREE.LoopRepeat, Infinity); a.enabled = true; a.play();
-      return () => { a.stop(); };
+      const action = actions[name]!;
+      action.reset();
+      action.setLoop(THREE.LoopRepeat, Infinity);
+      action.enabled = true;
+      action.play();
+      return () => {
+        action.stop();
+      };
     };
+
     const cleanups = [playLoop(idleActions), playLoop(walkActions), playLoop(runActions), playLoop(jumpActions)];
-    return () => cleanups.forEach(c => c?.());
+    return () => cleanups.forEach((cleanup) => cleanup?.());
   }, [idleActions, walkActions, runActions, jumpActions]);
 
-  const setVisible = (state: RemoteState) => {
-    if (idleRef.current) idleRef.current.visible = state === 'idle';
-    if (walkRef.current) walkRef.current.visible = state === 'walk';
-    if (runRef.current) runRef.current.visible = state === 'run';
-    if (hitRef.current) hitRef.current.visible = state === 'hit';
-    if (fightRef.current) fightRef.current.visible = state === 'fight';
-    if (deadRef.current) deadRef.current.visible = state === 'dead';
-    if (jumpRef.current) jumpRef.current.visible = state === 'jump';
-    if (waveRef.current) waveRef.current.visible = state === 'emote_wave';
-    if (agreeRef.current) agreeRef.current.visible = state === 'emote_agree';
-  };
+  const setRenderFromState = useCallback((state: RemoteState) => {
+    setRenderState((prev) => (prev === state ? prev : state));
+  }, []);
 
-  useEffect(() => { setVisible('idle'); }, []);
+  useEffect(() => {
+    setRenderFromState('idle');
+  }, [setRenderFromState]);
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
     const isDead = health <= 0;
 
-    // === DEATH ===
     if (isDead && stateRef.current !== 'dead') {
       stateRef.current = 'dead';
-      setVisible('dead');
+      setRenderFromState('dead');
       prevHealthRef.current = health;
       return;
     }
     if (isDead) return;
 
-    // === HIT DETECTION (health decreased) ===
     if (health < prevHealthRef.current && stateRef.current !== 'hit' && stateRef.current !== 'fight' && stateRef.current !== 'dead') {
       stateRef.current = 'hit';
       hitTimerRef.current = 0;
-      setVisible('hit');
+      setRenderFromState('hit');
       const name = Object.keys(hitActions)[0];
-      if (name && hitActions[name]) { hitActions[name]!.reset(); hitActions[name]!.play(); }
+      if (name && hitActions[name]) {
+        hitActions[name]!.reset();
+        hitActions[name]!.play();
+      }
     }
     prevHealthRef.current = health;
 
-    // === HIT TIMER ===
     if (stateRef.current === 'hit') {
       hitTimerRef.current += dt;
       if (hitTimerRef.current > 0.6) {
         stateRef.current = 'idle';
-        setVisible('idle');
+        setRenderFromState('idle');
       }
       return;
     }
 
-    // === FIGHT ===
     if (attackAnim > 0 && prevAttackRef.current === 0 && stateRef.current !== 'fight') {
       stateRef.current = 'fight';
       fightTimerRef.current = 0;
-      setVisible('fight');
+      setRenderFromState('fight');
       const name = Object.keys(fightActions)[0];
-      if (name && fightActions[name]) { fightActions[name]!.reset(); fightActions[name]!.play(); }
+      if (name && fightActions[name]) {
+        fightActions[name]!.reset();
+        fightActions[name]!.play();
+      }
     }
     prevAttackRef.current = attackAnim;
 
@@ -217,25 +156,34 @@ export function RemoteSoldierModel({ moveSpeed, isRunning, isGrounded, attackAni
       fightTimerRef.current += dt;
       if (fightTimerRef.current > 0.6) {
         stateRef.current = 'idle';
-        setVisible('idle');
+        setRenderFromState('idle');
       }
       return;
     }
 
-    // === EMOTE ANIMATIONS ===
     if (emote && emote !== prevEmoteRef.current) {
       if (emote === 'wave') {
         stateRef.current = 'emote_wave';
         emoteTimerRef.current = 0;
-        setVisible('emote_wave');
+        setRenderFromState('emote_wave');
         const name = Object.keys(waveActions)[0];
-        if (name && waveActions[name]) { waveActions[name]!.reset(); waveActions[name]!.setLoop(THREE.LoopOnce, 1); waveActions[name]!.clampWhenFinished = true; waveActions[name]!.play(); }
+        if (name && waveActions[name]) {
+          waveActions[name]!.reset();
+          waveActions[name]!.setLoop(THREE.LoopOnce, 1);
+          waveActions[name]!.clampWhenFinished = true;
+          waveActions[name]!.play();
+        }
       } else if (emote === 'agree') {
         stateRef.current = 'emote_agree';
         emoteTimerRef.current = 0;
-        setVisible('emote_agree');
+        setRenderFromState('emote_agree');
         const name = Object.keys(agreeActions)[0];
-        if (name && agreeActions[name]) { agreeActions[name]!.reset(); agreeActions[name]!.setLoop(THREE.LoopOnce, 1); agreeActions[name]!.clampWhenFinished = true; agreeActions[name]!.play(); }
+        if (name && agreeActions[name]) {
+          agreeActions[name]!.reset();
+          agreeActions[name]!.setLoop(THREE.LoopOnce, 1);
+          agreeActions[name]!.clampWhenFinished = true;
+          agreeActions[name]!.play();
+        }
       }
     }
     prevEmoteRef.current = emote;
@@ -244,19 +192,17 @@ export function RemoteSoldierModel({ moveSpeed, isRunning, isGrounded, attackAni
       emoteTimerRef.current += dt;
       if (!emote || emoteTimerRef.current > 8) {
         stateRef.current = 'idle';
-        setVisible('idle');
+        setRenderFromState('idle');
       }
       return;
     }
 
-    // === JUMP ===
     if (!isGrounded && stateRef.current !== 'jump') {
       stateRef.current = 'jump';
-      setVisible('jump');
+      setRenderFromState('jump');
       return;
     }
 
-    // === LOCOMOTION ===
     let target: RemoteState = 'idle';
     if (!isGrounded) {
       target = 'jump';
@@ -266,38 +212,69 @@ export function RemoteSoldierModel({ moveSpeed, isRunning, isGrounded, attackAni
 
     if (target !== stateRef.current) {
       stateRef.current = target;
-      setVisible(target);
+      setRenderFromState(target);
     }
   });
 
-  // Compute scale and feet offset
-  const { scale, feetOffset } = useMemo(() => {
-    const box = new THREE.Box3().setFromObject(idleGltf.scene);
-    const size = new THREE.Vector3();
-    box.getSize(size);
-    const h = size.y;
-    const s = h > 0.01 ? TARGET_HEIGHT / h : 1;
-    const feetY = box.min.y * s;
-    return { scale: s, feetOffset: -feetY };
-  }, [idleGltf.scene]);
+  const idleNorm = useMemo(() => buildModelNormalization(idleScene, TARGET_HEIGHT, 0), [idleScene]);
+  const walkNorm = useMemo(() => buildModelNormalization(walkScene, TARGET_HEIGHT, idleNorm.yawCorrection), [walkScene, idleNorm.yawCorrection]);
+  const runNorm = useMemo(() => buildModelNormalization(runScene, TARGET_HEIGHT, idleNorm.yawCorrection), [runScene, idleNorm.yawCorrection]);
+  const hitNorm = useMemo(() => buildModelNormalization(hitScene, TARGET_HEIGHT, idleNorm.yawCorrection), [hitScene, idleNorm.yawCorrection]);
+  const fightNorm = useMemo(() => buildModelNormalization(fightScene, TARGET_HEIGHT, idleNorm.yawCorrection), [fightScene, idleNorm.yawCorrection]);
+  const jumpNorm = useMemo(() => buildModelNormalization(jumpScene, TARGET_HEIGHT, idleNorm.yawCorrection), [jumpScene, idleNorm.yawCorrection]);
+  const waveNorm = useMemo(() => buildModelNormalization(waveScene, TARGET_HEIGHT, idleNorm.yawCorrection), [waveScene, idleNorm.yawCorrection]);
+  const agreeNorm = useMemo(() => buildModelNormalization(agreeScene, TARGET_HEIGHT, idleNorm.yawCorrection), [agreeScene, idleNorm.yawCorrection]);
+
+  const activeScene = useMemo(() => {
+    switch (renderState) {
+      case 'walk': return walkScene;
+      case 'run': return runScene;
+      case 'jump': return jumpScene;
+      case 'fight': return fightScene;
+      case 'hit': return hitScene;
+      case 'emote_wave': return waveScene;
+      case 'emote_agree': return agreeScene;
+      case 'dead':
+      case 'idle':
+      default:
+        return idleScene;
+    }
+  }, [renderState, idleScene, walkScene, runScene, jumpScene, fightScene, hitScene, waveScene, agreeScene]);
+
+  const activeNorm: ModelNormalization = useMemo(() => {
+    switch (renderState) {
+      case 'walk': return walkNorm;
+      case 'run': return runNorm;
+      case 'jump': return jumpNorm;
+      case 'fight': return fightNorm;
+      case 'hit': return hitNorm;
+      case 'emote_wave': return waveNorm;
+      case 'emote_agree': return agreeNorm;
+      case 'dead':
+      case 'idle':
+      default:
+        return idleNorm;
+    }
+  }, [renderState, idleNorm, walkNorm, runNorm, jumpNorm, fightNorm, hitNorm, waveNorm, agreeNorm]);
 
   return (
-    <group scale={[scale, scale, scale]} position={[0, feetOffset, 0]}>
-      <group ref={idleRef}><primitive object={idleScene} /></group>
-      <group ref={walkRef} visible={false}><primitive object={walkScene} /></group>
-      <group ref={runRef} visible={false}><primitive object={runScene} /></group>
-      <group ref={hitRef} visible={false}><primitive object={hitScene} /></group>
-      <group ref={fightRef} visible={false}><primitive object={fightScene} /></group>
-      <group ref={jumpRef} visible={false}><primitive object={jumpScene} /></group>
-      <group ref={waveRef} visible={false}><primitive object={waveScene} /></group>
-      <group ref={agreeRef} visible={false}><primitive object={agreeScene} /></group>
-      {/* Dead fallback — no soldier death GLB available */}
-      <group ref={deadRef} visible={false}>
-        <mesh position={[0, 0.15, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <boxGeometry args={[0.5, 1.6, 0.3]} />
-          <meshLambertMaterial color="#3a5a8a" />
-        </mesh>
-      </group>
+    <group>
+      {renderState === 'dead' ? (
+        <group>
+          <mesh position={[0, 0.15, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <boxGeometry args={[0.5, 1.6, 0.3]} />
+            <meshLambertMaterial color="#3a5a8a" />
+          </mesh>
+        </group>
+      ) : (
+        <group rotation={[0, activeNorm.yawCorrection, 0]}>
+          <group scale={[activeNorm.scale, activeNorm.scale, activeNorm.scale]}>
+            <group position={activeNorm.modelAnchorOffset}>
+              <primitive key={renderState} object={activeScene} dispose={null} />
+            </group>
+          </group>
+        </group>
+      )}
     </group>
   );
 }
