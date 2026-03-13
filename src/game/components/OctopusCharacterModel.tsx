@@ -501,8 +501,7 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
 
   return (
     <group>
-      {/* idle uses walk scene with slow playback */}
-      {renderModel(idleVisibleRef, walkNorm, walkGltf.scene)}
+      {renderModel(idleVisibleRef, idleNorm, idleGltf.scene)}
       {renderModel(walkVisibleRef, walkNorm, walkGltf.scene)}
       {renderModel(runVisibleRef, runNorm, runGltf.scene)}
       {renderModel(jumpVisibleRef, jumpNorm, jumpGltf.scene)}
