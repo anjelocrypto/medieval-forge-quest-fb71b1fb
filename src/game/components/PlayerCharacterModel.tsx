@@ -19,6 +19,7 @@ interface PlayerGLBModelProps {
   controllerHalfHeight: number;
   isGroundedRef: React.MutableRefObject<boolean>;
   activeEmote: string | null;
+  activeEmoteId?: number;
   onEmoteComplete: () => void;
   damageFlash?: number;
   attackAnimRef?: React.MutableRefObject<number>;
