@@ -38,6 +38,7 @@ import { useProximityVoice } from './multiplayer/useProximityVoice';
 import { EmoteWheel } from './ui/EmoteWheel';
 import { CharacterSelect } from './ui/CharacterSelect';
 import { useCharacter } from './context/CharacterContext';
+import { PerfBaselineR3F, PerfBaselineHUD } from './debug/PerfBaseline';
 
 interface GameSceneProps {
   multiplayer: ReturnType<typeof import('./multiplayer/useMultiplayer').useMultiplayer>;
@@ -254,6 +255,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
 
   return (
     <div className="w-screen h-screen bg-background overflow-hidden cursor-crosshair">
+      <PerfBaselineHUD />
       <SurvivalHUD
         survival={survival}
         inventory={inventory}
@@ -321,6 +323,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
 
       <Canvas shadows camera={{ fov: 55, near: 0.5, far: 1500, position: [0, 10, 15] }}
         style={{ width: '100%', height: '100%' }}>
+        <PerfBaselineR3F />
         <InputFlusher />
         <BuildModeController
           buildMode={buildMode}
