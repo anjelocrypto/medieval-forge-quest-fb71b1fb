@@ -177,24 +177,36 @@ export const Enemies = forwardRef<EnemiesHandle, EnemiesProps>(function Enemies(
       const nodes = nodeRefsMap.current.get(id);
       if (!nodes) return;
 
-      // ── Distance culling via visibility toggle ──
-      const cullDx = px - e.position[0];
-      const cullDz = pz - e.position[2];
-      const cullDistSq = cullDx * cullDx + cullDz * cullDz;
-      if (cullDistSq > 120 * 120) {
-        nodes.root.visible = false;
-        return;
-      }
-      nodes.root.visible = true;
-
-      // ── Dead state ──
+      // ── Dead state (process BEFORE culling so timers advance even when invisible) ──
       if (e.state === 'dead') {
         e.deathTimer += dt;
         if (e.deathTimer >= ENEMY_DESPAWN_TIME) {
           pendingDespawns.current.push(id);
           needsRenderTick = true;
+          // Clean up per-enemy dead material
+          const dm = deadMatsMap.current.get(id);
+          if (dm) { dm.dispose(); deadMatsMap.current.delete(id); }
+          nodes.root.visible = false;
           return;
         }
+
+        // Distance culling for dead enemies (still advance timer above)
+        const cullDx = px - e.position[0];
+        const cullDz = pz - e.position[2];
+        const cullDistSq = cullDx * cullDx + cullDz * cullDz;
+        if (cullDistSq > 120 * 120) {
+          nodes.root.visible = false;
+          return;
+        }
+        nodes.root.visible = true;
+
+        // Get or create per-enemy dead material
+        let deadMat = deadMatsMap.current.get(id);
+        if (!deadMat) {
+          deadMat = new THREE.MeshLambertMaterial({ color: deadMatTemplate.color, transparent: true });
+          deadMatsMap.current.set(id, deadMat);
+        }
+
         // Dead visual: fade, tumble, drop
         const fade = Math.max(0, 1 - e.deathTimer / ENEMY_DESPAWN_TIME);
         deadMat.opacity = fade;
@@ -207,14 +219,11 @@ export const Enemies = forwardRef<EnemiesHandle, EnemiesProps>(function Enemies(
         );
         nodes.rotGroup.rotation.set(0, 0, 0);
         nodes.bodyTilt.rotation.set(deathRoll, 0, deathRoll * 0.3);
-        // Set all body meshes to dead material
         for (let i = 0; i < nodes.bodyMeshes.length; i++) {
           nodes.bodyMeshes[i].material = deadMat;
         }
-        // Hide HP bar and aggro
         nodes.hpGroup.visible = false;
         nodes.aggroMesh.visible = false;
-        // Hide limbs for dead (just show body tilt)
         if (e.type === 'bandit') {
           if (nodes.leftArm) nodes.leftArm.visible = false;
           if (nodes.rightArm) nodes.rightArm.visible = false;
@@ -230,6 +239,16 @@ export const Enemies = forwardRef<EnemiesHandle, EnemiesProps>(function Enemies(
         }
         return;
       }
+
+      // ── Distance culling for alive enemies ──
+      const cullDx = px - e.position[0];
+      const cullDz = pz - e.position[2];
+      const cullDistSq = cullDx * cullDx + cullDz * cullDz;
+      if (cullDistSq > 120 * 120) {
+        nodes.root.visible = false;
+        return;
+      }
+      nodes.root.visible = true;
 
       // ── Alive state: ensure limbs visible ──
       if (e.type === 'bandit') {
