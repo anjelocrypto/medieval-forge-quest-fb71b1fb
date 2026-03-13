@@ -381,7 +381,7 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
 
     // ===== FIGHT ATTACK TRIGGER =====
     const currentlyAttacking = (attackAnimRef?.current ?? 0) > 0;
-    if (currentlyAttacking && !prevAttackingRef.current && stateRef.current !== 'fight' && stateRef.current !== 'hit') {
+    if (currentlyAttacking && !prevAttackingRef.current && (stateRef.current as GoblinState) !== 'fight' && (stateRef.current as GoblinState) !== 'hit') {
       stateRef.current = 'fight';
       fightStartTimeRef.current = performance.now();
       setVisibleState('fight');
