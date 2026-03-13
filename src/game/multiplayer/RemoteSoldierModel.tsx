@@ -217,13 +217,13 @@ export function RemoteSoldierModel({ moveSpeed, isRunning, isGrounded, attackAni
   });
 
   const idleNorm = useMemo(() => buildModelNormalization(idleScene, TARGET_HEIGHT, 0), [idleScene]);
-  const walkNorm = useMemo(() => buildModelNormalization(walkScene, TARGET_HEIGHT, idleNorm.yawCorrection), [walkScene, idleNorm.yawCorrection]);
-  const runNorm = useMemo(() => buildModelNormalization(runScene, TARGET_HEIGHT, idleNorm.yawCorrection), [runScene, idleNorm.yawCorrection]);
-  const hitNorm = useMemo(() => buildModelNormalization(hitScene, TARGET_HEIGHT, idleNorm.yawCorrection), [hitScene, idleNorm.yawCorrection]);
-  const fightNorm = useMemo(() => buildModelNormalization(fightScene, TARGET_HEIGHT, idleNorm.yawCorrection), [fightScene, idleNorm.yawCorrection]);
-  const jumpNorm = useMemo(() => buildModelNormalization(jumpScene, TARGET_HEIGHT, idleNorm.yawCorrection), [jumpScene, idleNorm.yawCorrection]);
-  const waveNorm = useMemo(() => buildModelNormalization(waveScene, TARGET_HEIGHT, idleNorm.yawCorrection), [waveScene, idleNorm.yawCorrection]);
-  const agreeNorm = useMemo(() => buildModelNormalization(agreeScene, TARGET_HEIGHT, idleNorm.yawCorrection), [agreeScene, idleNorm.yawCorrection]);
+  const walkNorm = useMemo(() => buildModelNormalization(walkScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale), [walkScene, idleNorm.yawCorrection, idleNorm.scale]);
+  const runNorm = useMemo(() => buildModelNormalization(runScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale), [runScene, idleNorm.yawCorrection, idleNorm.scale]);
+  const hitNorm = useMemo(() => buildModelNormalization(hitScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale), [hitScene, idleNorm.yawCorrection, idleNorm.scale]);
+  const fightNorm = useMemo(() => buildModelNormalization(fightScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale), [fightScene, idleNorm.yawCorrection, idleNorm.scale]);
+  const jumpNorm = useMemo(() => buildModelNormalization(jumpScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale), [jumpScene, idleNorm.yawCorrection, idleNorm.scale]);
+  const waveNorm = useMemo(() => buildModelNormalization(waveScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale), [waveScene, idleNorm.yawCorrection, idleNorm.scale]);
+  const agreeNorm = useMemo(() => buildModelNormalization(agreeScene, TARGET_HEIGHT, idleNorm.yawCorrection, idleNorm.scale), [agreeScene, idleNorm.yawCorrection, idleNorm.scale]);
 
   const activeScene = useMemo(() => {
     switch (renderState) {

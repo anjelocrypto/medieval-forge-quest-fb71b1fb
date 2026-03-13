@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { clone as cloneSkinnedScene } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 const ROOT_TRANSLATION_NAME_RE = /(hips|pelvis|root|armature)/i;
 const BONE_HIPS_RE = /(hips|pelvis)/i;
@@ -60,7 +61,8 @@ function normalizeMaterial(mat: THREE.Material): THREE.Material {
 }
 
 export function cloneScene(scene: THREE.Group): THREE.Group {
-  const cloned = scene.clone(true);
+  // Use SkeletonUtils.clone for skinned meshes; manual name-based rebinding can corrupt rigs
+  const cloned = cloneSkinnedScene(scene) as THREE.Group;
 
   cloned.traverse((node) => {
     const mesh = node as THREE.Mesh;
@@ -71,40 +73,17 @@ export function cloneScene(scene: THREE.Group): THREE.Group {
     } else {
       mesh.material = normalizeMaterial(mesh.material);
     }
-  });
 
-  const clonedSkinnedMeshes: THREE.SkinnedMesh[] = [];
-  const originalSkinnedMeshes: THREE.SkinnedMesh[] = [];
-  scene.traverse((node) => {
-    if ((node as THREE.SkinnedMesh).isSkinnedMesh) {
-      originalSkinnedMeshes.push(node as THREE.SkinnedMesh);
-    }
-  });
-  cloned.traverse((node) => {
-    if ((node as THREE.SkinnedMesh).isSkinnedMesh) {
-      clonedSkinnedMeshes.push(node as THREE.SkinnedMesh);
+    if ((mesh as THREE.SkinnedMesh).isSkinnedMesh) {
+      const skinned = mesh as THREE.SkinnedMesh;
+      skinned.frustumCulled = true;
+      skinned.bindMode = THREE.AttachedBindMode;
+      skinned.pose();
+      skinned.skeleton?.calculateInverses();
     }
   });
 
-  for (let i = 0; i < clonedSkinnedMeshes.length && i < originalSkinnedMeshes.length; i++) {
-    const clonedMesh = clonedSkinnedMeshes[i];
-    const originalSkeleton = originalSkinnedMeshes[i].skeleton;
-    const bones: THREE.Bone[] = [];
-
-    for (const originalBone of originalSkeleton.bones) {
-      const matchingBone = cloned.getObjectByName(originalBone.name) as THREE.Bone | null;
-      if (matchingBone) bones.push(matchingBone);
-    }
-
-    if (bones.length === originalSkeleton.bones.length) {
-      clonedMesh.skeleton = new THREE.Skeleton(
-        bones,
-        originalSkeleton.boneInverses.map((m) => m.clone()),
-      );
-      clonedMesh.bind(clonedMesh.skeleton, clonedMesh.matrixWorld);
-    }
-  }
-
+  cloned.updateMatrixWorld(true);
   return cloned;
 }
 
@@ -184,13 +163,25 @@ function normalizeAngle(v: number): number {
   return out;
 }
 
+function sanitizeScale(rawScale: number, fallbackScale?: number): number {
+  const reference = Number.isFinite(fallbackScale) && (fallbackScale ?? 0) > 0
+    ? (fallbackScale as number)
+    : 1;
+  const finiteRaw = Number.isFinite(rawScale) && rawScale > 0 ? rawScale : reference;
+  const min = Math.max(0.05, reference * 0.35);
+  const max = Math.min(4, reference * 2.5);
+  return THREE.MathUtils.clamp(finiteRaw, min, max);
+}
+
 export function buildModelNormalization(
   scene: THREE.Object3D,
   targetHeight: number,
   fallbackYawCorrection = 0,
+  fallbackScale?: number,
 ): ModelNormalization {
   const inspection = inspectModel(scene);
-  const scale = inspection.height > 0.01 ? targetHeight / inspection.height : 1;
+  const rawScale = inspection.height > 0.01 ? targetHeight / inspection.height : (fallbackScale ?? 1);
+  const scale = sanitizeScale(rawScale, fallbackScale);
   const yawCorrection = inspection.facingYaw !== null ? -inspection.facingYaw : fallbackYawCorrection;
 
   return {
