@@ -19,6 +19,7 @@ interface PlayerGLBModelProps {
   activeEmote: string | null;
   onEmoteComplete: () => void;
   damageFlash?: number;
+  attackAnimRef?: React.MutableRefObject<number>;
 }
 
 interface ModelInspection {
