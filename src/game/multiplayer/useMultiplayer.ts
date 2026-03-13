@@ -118,7 +118,7 @@ export function useMultiplayer() {
             lastUpdateTime: now,
             interpolationT: 0,
             displayName: payload.displayName,
-            characterType: payload.characterType || 'soldier',
+            characterType: payload.characterType ?? 'goblin',
           });
         } else {
           next.set(payload.playerId, {
