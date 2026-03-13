@@ -489,6 +489,7 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
       {renderModel(runVisibleRef, runNorm, runGltf.scene)}
       {renderModel(jumpVisibleRef, jumpNorm, jumpGltf.scene)}
       {renderModel(hitVisibleRef, hitNorm, hitGltf.scene)}
+      {renderModel(fightVisibleRef, fightNorm, fightGltf.scene)}
       {renderModel(danceVisibleRef, danceNorm, danceGltf.scene)}
     </group>
   );
@@ -498,4 +499,5 @@ useGLTF.preload(octopusWalkingUrl);
 useGLTF.preload(octopusRunningUrl);
 useGLTF.preload(octopusJumpUrl);
 useGLTF.preload(octopusGetHitUrl);
+useGLTF.preload(octopusKickUrl);
 useGLTF.preload(octopusDanceUrl);
