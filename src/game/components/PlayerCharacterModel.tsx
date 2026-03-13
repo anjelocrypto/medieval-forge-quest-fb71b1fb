@@ -108,6 +108,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const jumpVisibleRef = useRef<THREE.Group>(null);
   const runVisibleRef = useRef<THREE.Group>(null);
   const hitVisibleRef = useRef<THREE.Group>(null);
+  const fightVisibleRef = useRef<THREE.Group>(null);
   const pushupEnterVisibleRef = useRef<THREE.Group>(null);
   const pushupLoopVisibleRef = useRef<THREE.Group>(null);
   const pushupExitVisibleRef = useRef<THREE.Group>(null);
