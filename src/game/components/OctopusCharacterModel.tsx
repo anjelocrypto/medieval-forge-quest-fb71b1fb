@@ -191,6 +191,7 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   const runVisibleRef = useRef<THREE.Group>(null);
   const jumpVisibleRef = useRef<THREE.Group>(null);
   const hitVisibleRef = useRef<THREE.Group>(null);
+  const fightVisibleRef = useRef<THREE.Group>(null);
   const danceVisibleRef = useRef<THREE.Group>(null);
 
   const lastEmoteIdRef = useRef<number>(0);
