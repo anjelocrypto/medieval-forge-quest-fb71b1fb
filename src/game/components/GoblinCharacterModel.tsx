@@ -220,10 +220,14 @@ export function GoblinGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
   const { actions: runActions, clips: runClips } = useAnimations(sanitizedRunClips, runGltf.scene);
   const runClipName = useMemo(() => getFirstClipName(runClips, /run/i), [runClips]);
 
-  // Enable shadows
+  // Enable shadows + debug
   useEffect(() => {
     [idleGltf.scene, walkGltf.scene, runGltf.scene].forEach(enableMeshShadows);
-  }, [idleGltf.scene, walkGltf.scene, runGltf.scene]);
+    console.log('[Goblin] Clip names — idle:', idleClipName, 'walk:', walkClipName, 'run:', runClipName);
+    console.log('[Goblin] Idle clips:', idleGltf.animations.map(c => c.name));
+    console.log('[Goblin] Walk clips:', walkGltf.animations.map(c => c.name));
+    console.log('[Goblin] Run clips:', runGltf.animations.map(c => c.name));
+  }, [idleGltf.scene, walkGltf.scene, runGltf.scene, idleClipName, walkClipName, runClipName]);
 
   // Initialize idle (looping)
   useEffect(() => {
