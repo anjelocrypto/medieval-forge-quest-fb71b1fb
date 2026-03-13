@@ -350,7 +350,7 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
 
     // ===== FIGHT ATTACK TRIGGER =====
     const currentlyAttacking = (attackAnimRef?.current ?? 0) > 0;
-    if (currentlyAttacking && !prevAttackingRef.current && stateRef.current !== 'fight' && stateRef.current !== 'hit') {
+    if (currentlyAttacking && !prevAttackingRef.current && (stateRef.current as string) !== 'fight' && (stateRef.current as string) !== 'hit') {
       stateRef.current = 'fight';
       fightStartTimeRef.current = performance.now();
       setVisibleState('fight');
