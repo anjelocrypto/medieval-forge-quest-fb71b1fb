@@ -479,6 +479,24 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
       return;
     }
 
+    // ===== AGREE EMOTE STATE =====
+    if (state === 'emote_agree') {
+      if (agreeClipName) {
+        const a = agreeActions[agreeClipName];
+        if (a && a.time >= a.getClip().duration - 0.05) {
+          a.paused = true;
+          stateRef.current = 'idle';
+          setVisibleState('idle');
+          onEmoteComplete();
+        }
+      } else {
+        stateRef.current = 'idle';
+        setVisibleState('idle');
+        onEmoteComplete();
+      }
+      return;
+    }
+
     // ===== NORMAL LOCOMOTION STATES =====
     const speed = moveSpeedRef.current;
     const grounded = isGroundedRef.current;
