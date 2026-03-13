@@ -372,8 +372,16 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
         if (a) { a.reset(); a.play(); a.paused = false; }
       }
     }
+    if (activeEmote === 'wave' && prevEmoteRef.current !== 'wave') {
+      stateRef.current = 'emote_wave';
+      setVisibleState('emote_wave');
+      if (waveClipName) {
+        const a = waveActions[waveClipName];
+        if (a) { a.reset(); a.play(); a.paused = false; }
+      }
+    }
     prevEmoteRef.current = activeEmote;
-  }, [activeEmote, pushupEnterActions, pushupEnterClipName, agreeActions, agreeClipName, setVisibleState]);
+  }, [activeEmote, pushupEnterActions, pushupEnterClipName, agreeActions, agreeClipName, waveActions, waveClipName, setVisibleState]);
 
   useFrame(() => {
     const state = stateRef.current;
