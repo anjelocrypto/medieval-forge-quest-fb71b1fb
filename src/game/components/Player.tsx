@@ -65,6 +65,7 @@ interface PlayerProps {
   // Multiplayer: external refs for broadcasting live animation state
   externalMoveSpeedRef?: React.MutableRefObject<number>;
   externalIsRunningRef?: React.MutableRefObject<boolean>;
+  externalIsGroundedRef?: React.MutableRefObject<boolean>;
   externalAttackAnimRef?: React.MutableRefObject<number>;
   // Emote
   activeEmote: string | null;
@@ -102,7 +103,7 @@ export function Player({
   onAddResource, onDepleteResource, onHitResource, inventory,
   shakeResourceRef, highlightedResourceRef,
   resources, mountedDebugRef,
-  externalMoveSpeedRef, externalIsRunningRef, externalAttackAnimRef,
+  externalMoveSpeedRef, externalIsRunningRef, externalIsGroundedRef, externalAttackAnimRef,
   activeEmote, activeEmoteId, onEmoteComplete, damageFlash,
 }: PlayerProps) {
   const { character } = useCharacter();
@@ -695,6 +696,7 @@ export function Player({
     // Sync external refs for multiplayer broadcaster
     if (externalMoveSpeedRef) externalMoveSpeedRef.current = moveSpeedRef.current;
     if (externalIsRunningRef) externalIsRunningRef.current = isMoving && canRun;
+    if (externalIsGroundedRef) externalIsGroundedRef.current = isGroundedRef.current;
     if (externalAttackAnimRef) externalAttackAnimRef.current = attackAnimRef.current;
   });
 

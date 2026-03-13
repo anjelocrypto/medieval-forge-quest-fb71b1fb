@@ -9,6 +9,7 @@ export interface NetworkPlayerState {
   rotation: number;
   moveSpeed: number;
   isRunning: boolean;
+  isGrounded: boolean;
   isMounted: boolean;
   health: number;
   maxHealth: number;
@@ -57,6 +58,7 @@ export interface InterpolatedPlayer {
   // State
   moveSpeed: number;
   isRunning: boolean;
+  isGrounded: boolean;
   isMounted: boolean;
   health: number;
   maxHealth: number;

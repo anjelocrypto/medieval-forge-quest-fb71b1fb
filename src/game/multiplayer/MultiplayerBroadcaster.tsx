@@ -17,6 +17,7 @@ interface Props {
   horse: HorseData;
   moveSpeedRef: React.RefObject<number>;
   isRunningRef: React.RefObject<boolean>;
+  isGroundedRef: React.RefObject<boolean>;
   attackAnimRef: React.RefObject<number>;
   mountedDebugRef: React.RefObject<MountedDebugData>;
   buildMode: boolean;
@@ -27,7 +28,7 @@ interface Props {
 
 export function MultiplayerBroadcaster({
   playerId, displayName, characterType, playerPositionRef, playerRotationRef,
-  survival, isMounted, horse, moveSpeedRef, isRunningRef, attackAnimRef,
+  survival, isMounted, horse, moveSpeedRef, isRunningRef, isGroundedRef, attackAnimRef,
   mountedDebugRef, buildMode, emote, isSpeaking, onUpdateLocalState,
 }: Props) {
 
@@ -44,6 +45,7 @@ export function MultiplayerBroadcaster({
       rotation: rot ?? 0,
       moveSpeed: moveSpeedRef.current ?? 0,
       isRunning: isRunningRef.current ?? false,
+      isGrounded: isGroundedRef.current ?? true,
       isMounted,
       health: survival.health,
       maxHealth: 100,

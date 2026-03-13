@@ -84,6 +84,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
   const mountedDebugRef = useRef({ terrainY: 0, horseY: 0, riderY: 0, delta: 0, pitch: 0, pushX: 0, pushZ: 0 });
   const moveSpeedRef = useRef(0);
   const isRunningRef = useRef(false);
+  const isGroundedRef = useRef(true);
   const attackAnimRef = useRef(0);
 
   // Debug: track GameScene mount/unmount
@@ -370,6 +371,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
           mountedDebugRef={mountedDebugRef}
           externalMoveSpeedRef={moveSpeedRef}
           externalIsRunningRef={isRunningRef}
+          externalIsGroundedRef={isGroundedRef}
           externalAttackAnimRef={attackAnimRef}
           activeEmote={activeEmote?.key ?? null}
           activeEmoteId={activeEmote?.id ?? 0}
@@ -419,6 +421,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
             horse={horse}
             moveSpeedRef={moveSpeedRef}
             isRunningRef={isRunningRef}
+            isGroundedRef={isGroundedRef}
             attackAnimRef={attackAnimRef}
             mountedDebugRef={mountedDebugRef}
             buildMode={buildMode}
