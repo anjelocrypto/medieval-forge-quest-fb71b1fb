@@ -258,7 +258,7 @@ export function useMultiplayer() {
           logTiming('Channel subscribed', timings, 'channelSubscribed');
 
           await channel.track({ playerId, displayName: playerName, joinedAt: Date.now() });
-          logTiming('Presence synced', timings, 'presenceSynced');
+          logTiming('Presence track sent', timings, 'presenceSynced');
 
           console.log('[Multiplayer] Connected successfully, status → connected');
           setConnectionStatus('connected');
