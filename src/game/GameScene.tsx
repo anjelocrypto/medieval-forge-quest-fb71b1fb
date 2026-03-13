@@ -217,30 +217,18 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
     setResources(prev => prev.map(r => r.id === id ? { ...r, health: r.health - 1 } : r));
   }, []);
 
-  const handleEnemyHit = useCallback((id: string, damage: number) => {
-    setEnemies(prev => prev.map(e => {
-      if (e.id !== id) return e;
-      const newHealth = e.health - damage;
-      if (newHealth <= 0) {
-        const drops = generateLootDrop(e.position, e.type);
-        if (drops.length > 0) addLootPickups(drops);
-        recordEnemyKill(e.type);
-        if (multiplayer.connected) {
-          multiplayer.broadcastWorldEvent({
-            type: 'enemy_killed',
-            payload: { enemyId: id, killerName: multiplayer.displayName },
-            playerId: multiplayer.playerId,
-            timestamp: Date.now(),
-          });
-        }
-      }
-      return {
-        ...e,
-        health: Math.max(0, newHealth),
-        hitFlash: 0.25,
-        state: newHealth <= 0 ? 'dead' as const : e.state,
-      };
-    }));
+  const handleEnemyKill = useCallback((enemy: EnemyRuntime) => {
+    const drops = generateLootDrop(enemy.position, enemy.type);
+    if (drops.length > 0) addLootPickups(drops);
+    recordEnemyKill(enemy.type);
+    if (multiplayer.connected) {
+      multiplayer.broadcastWorldEvent({
+        type: 'enemy_killed',
+        payload: { enemyId: enemy.id, killerName: multiplayer.displayName },
+        playerId: multiplayer.playerId,
+        timestamp: Date.now(),
+      });
+    }
   }, [addLootPickups, recordEnemyKill, multiplayer]);
 
   const handleRespawn = useCallback(() => {
