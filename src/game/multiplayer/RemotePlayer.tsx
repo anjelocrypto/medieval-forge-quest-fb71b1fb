@@ -8,6 +8,7 @@ import { Html } from '@react-three/drei';
 
 import { RemoteGoblinModel } from './RemoteGoblinModel';
 import { RemoteSoldierModel } from './RemoteSoldierModel';
+import { RemoteOctopusModel } from './RemoteOctopusModel';
 
 interface Props {
   player: InterpolatedPlayer;
