@@ -2,7 +2,7 @@ import { useMemo, useRef, memo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-export function Sky() {
+export const Sky = memo(function Sky() {
   const meshRef = useRef<THREE.Mesh>(null);
   const gradientMap = useMemo(() => {
     const canvas = document.createElement('canvas');
