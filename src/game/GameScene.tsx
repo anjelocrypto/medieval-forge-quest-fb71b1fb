@@ -61,7 +61,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
 
   const { character } = useCharacter();
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
-  const [enemies, setEnemies] = useState<EnemyData[]>(() => generateEnemies());
+  const enemiesHandleRef = useRef<EnemiesHandle>(null);
   const [mapOpen, setMapOpen] = useState(false);
   const [debugMounted, setDebugMounted] = useState(false);
   const [currentEmote, setCurrentEmote] = useState<string | null>(null);
