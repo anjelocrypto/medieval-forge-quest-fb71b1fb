@@ -67,6 +67,7 @@ type CharState = 'idle' | 'walk' | 'run' | 'jump' | 'hit' | 'emote_pushup_enter'
 const RUN_THRESHOLD = 0.7; // moveSpeedRef above this = running
 
 const PUSHUP_DURATION_SEC = 6; // seconds of pushups before getting up
+const HIT_ANIM_DURATION = 0.6; // seconds to play hit animation before returning to locomotion
 
 function sanitizeClips(animations: THREE.AnimationClip[]): THREE.AnimationClip[] {
   return animations.map((clip) => {
