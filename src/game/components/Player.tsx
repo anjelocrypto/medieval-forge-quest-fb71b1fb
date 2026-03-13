@@ -512,18 +512,21 @@ export function Player({
       _forward.set(Math.sin(playerAngle), 0, Math.cos(playerAngle));
       const cosArc = Math.cos(PLAYER_ATTACK_ARC);
 
-      for (let i = 0; i < enemies.length; i++) {
-        const enemy = enemies[i];
-        if (enemy.state === 'dead') continue;
-        const dx = enemy.position[0] - pos.x;
-        const dz = enemy.position[2] - pos.z;
-        const distSq = dx * dx + dz * dz;
-        if (distSq > PLAYER_ATTACK_RANGE * PLAYER_ATTACK_RANGE) continue;
-        const dist = Math.sqrt(distSq);
-        _toEnemy.set(dx / dist, 0, dz / dist);
-        if (_forward.dot(_toEnemy) > cosArc) {
-          onEnemyHit(enemy.id, atkDamage);
-        }
+      const handle = enemiesHandleRef.current;
+      if (handle) {
+        const enemyMap = handle.getEnemies();
+        enemyMap.forEach((enemy) => {
+          if (enemy.state === 'dead') return;
+          const dx = enemy.position[0] - pos.x;
+          const dz = enemy.position[2] - pos.z;
+          const distSq = dx * dx + dz * dz;
+          if (distSq > PLAYER_ATTACK_RANGE * PLAYER_ATTACK_RANGE) return;
+          const dist = Math.sqrt(distSq);
+          _toEnemy.set(dx / dist, 0, dz / dist);
+          if (_forward.dot(_toEnemy) > cosArc) {
+            handle.hitEnemy(enemy.id, atkDamage);
+          }
+        });
       }
     }
 
