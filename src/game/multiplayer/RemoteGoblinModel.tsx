@@ -114,7 +114,9 @@ export function RemoteGoblinModel({ moveSpeed, isRunning, isGrounded, attackAnim
     action.enabled = true;
     action.play();
     action.paused = true;
-    return () => action.stop();
+    return () => {
+      action.stop();
+    };
   }, [deadActions]);
 
   const setRenderFromState = useCallback((state: RemoteState) => {
