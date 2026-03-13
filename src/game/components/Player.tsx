@@ -99,7 +99,7 @@ export function Player({
   shakeResourceRef, highlightedResourceRef,
   resources, mountedDebugRef,
   externalMoveSpeedRef, externalIsRunningRef, externalAttackAnimRef,
-  activeEmote, onEmoteComplete,
+  activeEmote, onEmoteComplete, damageFlash,
 }: PlayerProps) {
   const groupRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Group>(null);

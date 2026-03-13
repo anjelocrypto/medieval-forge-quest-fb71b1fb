@@ -6,6 +6,7 @@ import soldierWalkUrl from '@/assets/soldierwalking.glb?url';
 import soldierIdleUrl from '@/assets/soldier.glb?url';
 import jumpUrl from '@/assets/jump.glb?url';
 import runUrl from '@/assets/run.glb?url';
+import gethitUrl from '@/assets/gethit.glb?url';
 import idleToPushupUrl from '@/assets/idletopushup.glb?url';
 import pushupUrl from '@/assets/pushup.glb?url';
 import pushupToIdleUrl from '@/assets/pushuptoidle.glb?url';
@@ -16,6 +17,7 @@ interface PlayerGLBModelProps {
   isGroundedRef: React.MutableRefObject<boolean>;
   activeEmote: string | null;
   onEmoteComplete: () => void;
+  damageFlash?: number;
 }
 
 interface ModelInspection {
