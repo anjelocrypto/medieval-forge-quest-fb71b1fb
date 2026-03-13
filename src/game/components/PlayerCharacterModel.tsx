@@ -384,6 +384,25 @@ function buildNormalization(
   };
 }
 
+/**
+ * For emote/prone animations: use the idle model's scale (not height-derived)
+ * and ground the model by its bounding box min Y so it sits on the terrain.
+ */
+function buildEmoteNormalization(
+  inspection: ModelInspection,
+  idleScale: number,
+  fallbackYawCorrection: number,
+  controllerHalfHeight: number,
+): ModelNormalization {
+  const yawCorrection = inspection.facingYaw !== null ? -inspection.facingYaw : fallbackYawCorrection;
+  return {
+    modelAnchorOffset: [-inspection.anchor.x, -inspection.footY, -inspection.anchor.z],
+    scale: idleScale,
+    yawCorrection,
+    controllerGroundOffset: -controllerHalfHeight,
+  };
+}
+
 function inspectModel(label: string, scene: THREE.Object3D): ModelInspection {
   scene.updateMatrixWorld(true);
   const bounds = new THREE.Box3().setFromObject(scene);
