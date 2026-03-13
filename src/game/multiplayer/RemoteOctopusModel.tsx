@@ -63,6 +63,7 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
   const hitClips = useMemo(() => sanitizeClips(hitGltf.animations), [hitGltf.animations]);
   const deadClips = useMemo(() => sanitizeClips(deadGltf.animations), [deadGltf.animations]);
   const danceClips = useMemo(() => sanitizeClips(danceGltf.animations), [danceGltf.animations]);
+  const fightClips = useMemo(() => sanitizeClips(fightGltf.animations), [fightGltf.animations]);
 
   const { actions: idleActions } = useAnimations(idleClips, idleScene);
   const { actions: walkActions } = useAnimations(walkClips, walkScene);
