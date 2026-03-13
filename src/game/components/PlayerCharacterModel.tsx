@@ -234,6 +234,7 @@ export function PlayerGLBModel({ moveSpeedRef, controllerHalfHeight, isGroundedR
     const map: Record<CharState, React.RefObject<THREE.Group | null>> = {
       idle: idleVisibleRef,
       walk: walkVisibleRef,
+      run: runVisibleRef,
       jump: jumpVisibleRef,
       emote_pushup_enter: pushupEnterVisibleRef,
       emote_pushup_loop: pushupLoopVisibleRef,
