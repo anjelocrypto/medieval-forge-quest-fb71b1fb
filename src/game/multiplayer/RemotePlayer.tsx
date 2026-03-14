@@ -85,6 +85,7 @@ export function RemotePlayer({ player }: Props) {
     ? NAMETAG_HEIGHT_MOUNTED
     : charType === 'goblin' ? NAMETAG_HEIGHT_GOBLIN
     : charType === 'octopus' ? NAMETAG_HEIGHT_OCTOPUS
+    : charType === 'nemoclaw' ? NAMETAG_HEIGHT_NEMOCLAW
     : NAMETAG_HEIGHT_SOLDIER;
 
   return (
