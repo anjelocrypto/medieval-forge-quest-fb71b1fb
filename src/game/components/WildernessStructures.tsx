@@ -209,7 +209,7 @@ function WildernessShed({ pos, rot }: { pos: [number, number, number]; rot: numb
   return (
     <group position={pos} rotation={[0, rot, 0]}>
       <mesh position={[0, 0.8, 0]} geometry={GEO.box} scale={[2, 1.6, 2.5]} material={MAT.woodWeathered} castShadow />
-      <mesh position={[0, 1.9, 0]} geometry={GEO.cone4} scale={[1.5, 1, 1.8]} material={MAT.roofThatch} castShadow />
+      <mesh position={[0, 1.6 + 0.5, 0]} rotation={[0, Math.PI / 4, 0]} geometry={GEO.cone4} scale={[1.5, 1, 1.8]} material={MAT.roofThatch} castShadow />
       <mesh position={[0, 0.6, 1.26]} geometry={GEO.box} scale={[0.6, 1, 0.06]} material={MAT.door} />
       <mesh position={[1.5, 0.2, 0]} geometry={GEO.box} scale={[0.6, 0.4, 1]} material={MAT.woodDark} castShadow />
     </group>
