@@ -4,11 +4,12 @@
  * Performance: distance-culled, shared geometry/materials, lightweight state machine.
  * Covers central town + all 5 new kingdoms.
  */
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, Suspense } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { getTerrainHeight } from './Terrain';
 import { SETTLEMENTS } from '../world/RegionData';
+import { VillagerMan1Model, VillagerMan1Def } from './VillagerMan1Model';
 
 type CivilianBehavior = 'idle' | 'patrol' | 'talking';
 type CivilianRole = 'villager' | 'merchant' | 'guard' | 'worker';
@@ -436,6 +437,91 @@ function Civilian({ def, playerPos }: { def: CivilianDef; playerPos: THREE.Vecto
   );
 }
 
+// ========== GLB VILLAGER NPC DEFINITIONS ==========
+function generateGLBVillagers(): VillagerMan1Def[] {
+  const rng = seededRng(77777);
+  const defs: VillagerMan1Def[] = [];
+  let id = 0;
+
+  const add = (x: number, z: number, opts?: Partial<VillagerMan1Def>) => {
+    const y = getTerrainHeight(x, z);
+    defs.push({
+      id: `vm1-${id++}`,
+      homePos: [x, y, z],
+      patrolRadius: 4 + rng() * 5,
+      patrolSpeed: 0.5 + rng() * 0.4,
+      facingAngle: rng() * Math.PI * 2,
+      standDuration: 30 + rng() * 40,
+      walkDuration: 20 + rng() * 30,
+      ...opts,
+    });
+  };
+
+  // Ironhold village — scattered around central town
+  add(15, 50);
+  add(-12, 55);
+  add(25, 60);
+  add(-8, 48);
+  add(5, 65);
+  add(30, 55);
+
+  // Thornwall
+  add(-495, -445);
+  add(-510, -440);
+
+  // Rivermoor
+  add(445, 355);
+  add(455, 345);
+
+  // Stonepeak
+  add(-395, 505);
+
+  // Darkhollow
+  add(545, -395);
+
+  // Goldenvale
+  add(-545, 105);
+  add(-555, 95);
+
+  return defs;
+}
+
+const GLB_VILLAGERS = generateGLBVillagers();
+
+// Group GLB villagers by kingdom for culling
+interface GLBVillagerGroup {
+  cx: number; cz: number;
+  cullRadius: number;
+  villagers: VillagerMan1Def[];
+}
+
+function buildGLBVillagerGroups(): GLBVillagerGroup[] {
+  const groups: GLBVillagerGroup[] = [
+    { cx: 0, cz: 50, cullRadius: 120, villagers: [] },
+    { cx: -500, cz: -450, cullRadius: 100, villagers: [] },
+    { cx: 450, cz: 350, cullRadius: 100, villagers: [] },
+    { cx: -400, cz: 500, cullRadius: 100, villagers: [] },
+    { cx: 550, cz: -400, cullRadius: 100, villagers: [] },
+    { cx: -550, cz: 100, cullRadius: 100, villagers: [] },
+  ];
+
+  for (const v of GLB_VILLAGERS) {
+    let bestGroup = groups[0];
+    let bestDist = Infinity;
+    for (const g of groups) {
+      const dx = v.homePos[0] - g.cx;
+      const dz = v.homePos[2] - g.cz;
+      const d = dx * dx + dz * dz;
+      if (d < bestDist) { bestDist = d; bestGroup = g; }
+    }
+    bestGroup.villagers.push(v);
+  }
+
+  return groups;
+}
+
+const GLB_VILLAGER_GROUPS = buildGLBVillagerGroups();
+
 // ========== MAIN COMPONENT ==========
 interface CivilianNPCsProps {
   playerPositionRef: React.RefObject<THREE.Vector3>;
@@ -446,8 +532,8 @@ export function CivilianNPCs({ playerPositionRef }: CivilianNPCsProps) {
 
   return (
     <group>
+      {/* Procedural box NPCs */}
       {KINGDOM_GROUPS.map((group, gi) => {
-        // Kingdom-level distance cull
         if (playerPos) {
           const dx = playerPos.x - group.cx;
           const dz = playerPos.z - group.cz;
@@ -461,6 +547,24 @@ export function CivilianNPCs({ playerPositionRef }: CivilianNPCsProps) {
           </group>
         );
       })}
+
+      {/* GLB-based VillagerMan1 NPCs */}
+      <Suspense fallback={null}>
+        {GLB_VILLAGER_GROUPS.map((group, gi) => {
+          if (playerPos) {
+            const dx = playerPos.x - group.cx;
+            const dz = playerPos.z - group.cz;
+            if (dx * dx + dz * dz > group.cullRadius * group.cullRadius) return null;
+          }
+          return (
+            <group key={`vm1-group-${gi}`}>
+              {group.villagers.map(v => (
+                <VillagerMan1Model key={v.id} def={v} playerPos={playerPos} />
+              ))}
+            </group>
+          );
+        })}
+      </Suspense>
     </group>
   );
 }
