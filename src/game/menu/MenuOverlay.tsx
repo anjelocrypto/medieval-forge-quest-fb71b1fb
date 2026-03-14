@@ -294,7 +294,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
               fontSize: '1rem',
             }}
           >
-            {isBusy && menuMode === 'main' ? '⏳ Connecting...' : '⚔️ Play as Guest'}
+            {isBusy && menuMode === 'main' ? '⏳ Connecting...' : 'Play as Guest'}
           </button>
 
           {/* Wallet action row */}
@@ -309,7 +309,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
                 border: '1px solid rgba(138,100,200,0.3)',
               }}
             >
-              {isBusy && menuMode === 'create' ? '⏳...' : '🔮 Create Account'}
+              {isBusy && menuMode === 'create' ? '⏳...' : 'Create Account'}
             </button>
             <button
               onClick={() => { setMenuMode('login'); handleLogin(); }}
@@ -321,7 +321,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
                 border: '1px solid rgba(100,160,220,0.25)',
               }}
             >
-              {isBusy && menuMode === 'login' ? '⏳...' : '🔑 Log In'}
+              {isBusy && menuMode === 'login' ? '⏳...' : 'Log In'}
             </button>
           </div>
         </div>
