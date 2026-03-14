@@ -53,6 +53,48 @@ export type Database = {
         }
         Relationships: []
       }
+      player_accounts: {
+        Row: {
+          character_type: string
+          community_name: string | null
+          created_at: string
+          display_name: string
+          id: string
+          last_login_at: string
+          last_position_x: number | null
+          last_position_y: number | null
+          last_position_z: number | null
+          updated_at: string
+          wallet_address: string
+        }
+        Insert: {
+          character_type?: string
+          community_name?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          last_login_at?: string
+          last_position_x?: number | null
+          last_position_y?: number | null
+          last_position_z?: number | null
+          updated_at?: string
+          wallet_address: string
+        }
+        Update: {
+          character_type?: string
+          community_name?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          last_login_at?: string
+          last_position_x?: number | null
+          last_position_y?: number | null
+          last_position_z?: number | null
+          updated_at?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       room_players: {
         Row: {
           display_name: string
@@ -109,10 +151,20 @@ export type Database = {
         }
         Returns: string
       }
+      create_wallet_account: {
+        Args: {
+          _character_type?: string
+          _community_name?: string
+          _display_name?: string
+          _wallet_address: string
+        }
+        Returns: string
+      }
       heartbeat_room_player: {
         Args: { _player_id: string; _room_id: string }
         Returns: undefined
       }
+      is_valid_character_type: { Args: { _type: string }; Returns: boolean }
       join_game_room: {
         Args: { _display_name: string; _player_id: string; _room_code: string }
         Returns: string
@@ -121,8 +173,27 @@ export type Database = {
         Args: { _player_id: string; _room_id: string }
         Returns: undefined
       }
+      login_wallet_account: { Args: { _wallet_address: string }; Returns: Json }
       refresh_game_room_state: {
         Args: { _room_id: string }
+        Returns: undefined
+      }
+      update_wallet_last_position: {
+        Args: {
+          _last_position_x: number
+          _last_position_y: number
+          _last_position_z: number
+          _wallet_address: string
+        }
+        Returns: undefined
+      }
+      update_wallet_profile: {
+        Args: {
+          _character_type?: string
+          _community_name?: string
+          _display_name?: string
+          _wallet_address: string
+        }
         Returns: undefined
       }
     }
