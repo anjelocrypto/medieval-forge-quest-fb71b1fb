@@ -8,6 +8,7 @@ import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { clone as cloneSkinnedScene } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { getTerrainHeight } from './Terrain';
+import { resolveCollision } from '../systems/CollisionSystem';
 
 import walkingUrl from '@/assets/villagerwomen1walking.glb';
 import standingUrl from '@/assets/villagerwomen1standing.glb';
