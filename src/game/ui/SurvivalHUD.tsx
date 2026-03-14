@@ -233,7 +233,7 @@ export function SurvivalHUD({
       </div>
 
       {/* ═══ TOP RIGHT — Progression panel ═══ */}
-      <div className="absolute top-4 right-4 rounded-lg overflow-hidden" style={{ ...panelStyle, maxWidth: 240 }}>
+      <div className="absolute top-4 right-4 rounded-lg overflow-hidden" style={{ ...panelStyle, maxWidth: 200 }}>
         {/* Header */}
         <div className="px-4 py-2.5" style={{
           background: 'linear-gradient(90deg, hsla(35,60%,45%,0.2), transparent)',
