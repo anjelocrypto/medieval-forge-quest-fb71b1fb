@@ -121,6 +121,7 @@ export function Player({
   const comboWindowRef = useRef(0);
   const isFightingRef = useRef(false);
   const moveSpeedRef = useRef(0);
+  const mountedZeroRef = useRef(0); // always 0 — used to suppress player anim when mounted
   const currentSpeedRef = useRef(0); // actual interpolated speed for acceleration feel
   const survivalAccumRef = useRef(0);
   const lootCheckRef = useRef(0);
