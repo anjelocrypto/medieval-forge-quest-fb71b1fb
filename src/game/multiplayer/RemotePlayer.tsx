@@ -5,6 +5,7 @@ import { InterpolatedPlayer, BROADCAST_RATE_MS, EMOTES } from './types';
 import { getTerrainHeight } from '../components/Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
 import { Html } from '@react-three/drei';
+import { HorseGLBModel } from '../components/HorseGLBModel';
 
 import { RemoteGoblinModel } from './RemoteGoblinModel';
 import { RemoteSoldierModel } from './RemoteSoldierModel';
