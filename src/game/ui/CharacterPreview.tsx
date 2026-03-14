@@ -71,7 +71,7 @@ function ModelViewer({ url }: { url: string }) {
   }, [actions]);
 
   return (
-    <group position={[0, yOffset - 0.6, 0]} scale={[scale, scale, scale]}>
+    <group position={[offset.x, offset.y, offset.z]} scale={[scale, scale, scale]}>
       <primitive object={scene} dispose={null} />
     </group>
   );
