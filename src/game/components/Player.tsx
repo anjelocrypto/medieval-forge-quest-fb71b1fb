@@ -828,9 +828,7 @@ export function Player({
   const airArmRaise = airT * -0.4;
   const airBodyCurl = airT * -0.05; // slight forward curl
 
-  // Horse animation path:
-  // - visible mesh: horsestanding.glb
-  // - walk clip source: horseiswalking.glb
+  // Horse animation: driven by horse.glb (single bundled file with all clips)
   // Only rider lean/sway is procedural polish.
   const riderLean = isMounted ? lean * 0.6 : 0;
   const horsePitch = horsePitchRef.current;
