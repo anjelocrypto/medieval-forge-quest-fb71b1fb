@@ -321,7 +321,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
                 border: '1px solid rgba(100,160,220,0.25)',
               }}
             >
-              {isBusy && menuMode === 'login' ? '⏳...' : '🔑 Log In'}
+              {isBusy && menuMode === 'login' ? '⏳...' : 'Log In'}
             </button>
           </div>
         </div>
