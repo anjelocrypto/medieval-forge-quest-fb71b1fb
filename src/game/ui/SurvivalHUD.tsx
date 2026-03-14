@@ -160,8 +160,6 @@ export function SurvivalHUD({
   isMounted = false, playerX, playerZ, playerRotation, horseX, horseZ,
   mapOpen, onCloseMap, isSpeaking = false,
 }: HUDProps) {
-  const lowHunger = survival.hunger < 20;
-  const lowTemp = survival.temperature < 25;
   const lowHealth = survival.health < 25;
 
   return (
@@ -170,12 +168,6 @@ export function SurvivalHUD({
       {damageFlash > 0 && (
         <div className="absolute inset-0"
           style={{ background: 'radial-gradient(ellipse at center, transparent 40%, hsla(0,70%,40%,0.35) 100%)' }} />
-      )}
-
-      {/* Cold overlay */}
-      {lowTemp && (
-        <div className="absolute inset-0"
-          style={{ background: 'radial-gradient(ellipse at center, transparent 50%, hsla(210,50%,50%,0.12) 100%)' }} />
       )}
 
       {/* Notification banner */}
@@ -202,13 +194,9 @@ export function SurvivalHUD({
       <div className="absolute bottom-6 left-6 flex flex-col gap-2 p-4 rounded-lg" style={panelStyle}>
         <StatBar label="HP" icon="❤️" value={survival.health} max={100} color="hsl(0,70%,50%)" warning={lowHealth} />
         <StatBar label="STA" icon="⚡" value={survival.stamina} max={100} color="hsl(45,80%,50%)" />
-        <StatBar label="FD" icon="🍖" value={survival.hunger} max={100} color="hsl(25,70%,50%)" warning={lowHunger} />
-        <StatBar label="TMP" icon="🌡️" value={survival.temperature} max={100} color="hsl(200,70%,50%)" warning={lowTemp} />
 
-        {(lowHunger || lowTemp || lowHealth || isMounted) && (
+        {(lowHealth || isMounted) && (
           <div className="flex flex-wrap gap-1.5 mt-1 pt-2" style={{ borderTop: '1px solid hsla(40,30%,45%,0.2)' }}>
-            {lowHunger && <StatusBadge icon="🍖" text="Hungry" hue="25,70%,55%" />}
-            {lowTemp && <StatusBadge icon="❄️" text="Cold" hue="210,60%,60%" />}
             {lowHealth && <StatusBadge icon="💔" text="Wounded" hue="0,70%,60%" />}
             {isMounted && <StatusBadge icon="🐴" text="Mounted" hue="35,40%,55%" />}
           </div>
@@ -224,12 +212,6 @@ export function SurvivalHUD({
           <div style={{ width: 1, background: 'hsla(40,30%,45%,0.25)' }} />
           <ResourceSlot icon="🍖" value={inventory.food} label="Food" />
         </div>
-        {inventory.food > 0 && lowHunger && (
-          <div className="px-3 py-1.5 rounded-md text-xs font-semibold animate-pulse"
-            style={{ ...panelStyle, color: 'hsl(40,30%,85%)' }}>
-            Press <Key>F</Key> to eat
-          </div>
-        )}
       </div>
 
       {/* ═══ TOP RIGHT — Progression panel ═══ */}

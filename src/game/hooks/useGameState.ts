@@ -108,7 +108,7 @@ export function useGameState() {
       setSurvival(s => ({
         ...s,
         hunger: Math.min(MAX_HUNGER, s.hunger + 25),
-        health: Math.min(MAX_HEALTH, s.health + 5),
+        // HP is combat-only — no healing from food
       }));
       showNotification('🍖 Ate food — hunger restored');
       return { ...prev, food: prev.food - 1 };
