@@ -4,11 +4,12 @@
  * Performance: distance-culled, shared geometry/materials, lightweight state machine.
  * Covers central town + all 5 new kingdoms.
  */
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, Suspense } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { getTerrainHeight } from './Terrain';
 import { SETTLEMENTS } from '../world/RegionData';
+import { VillagerMan1Model, VillagerMan1Def } from './VillagerMan1Model';
 
 type CivilianBehavior = 'idle' | 'patrol' | 'talking';
 type CivilianRole = 'villager' | 'merchant' | 'guard' | 'worker';
