@@ -8,6 +8,7 @@ import { useRef, useMemo, Suspense } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { getTerrainHeight } from './Terrain';
+import { resolveCollision } from '../systems/CollisionSystem';
 import { SETTLEMENTS } from '../world/RegionData';
 import { VillagerMan1Model, VillagerMan1Def } from './VillagerMan1Model';
 import { VillagerWoman1Model } from './VillagerWoman1Model';
