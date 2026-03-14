@@ -336,6 +336,18 @@ export function useMultiplayer() {
         }
       });
 
+      // Fire immediate first broadcast (don't wait for interval tick)
+      setTimeout(() => {
+        if (localStateRef.current && channelRef.current) {
+          mpAudit('immediate first broadcast');
+          channelRef.current.send({
+            type: 'broadcast',
+            event: 'player_state',
+            payload: localStateRef.current,
+          });
+        }
+      }, 0);
+
       // Start broadcast timer (non-blocking — sends only when channelRef is set)
       if (broadcastTimerRef.current) clearInterval(broadcastTimerRef.current);
       broadcastTimerRef.current = setInterval(() => {
