@@ -1,12 +1,19 @@
 /**
- * NewKingdomRenderers — Settlement renderers for the 5 new kingdom types:
- * fortified_city, river_town, mountain_hold, frontier_camp, trade_city
- * Each has unique architecture, collision-registered via CollisionSystem.
+ * NewKingdomRenderers — Settlement renderers for the 5 new kingdom types.
+ * Houses are read from KingdomBuildingData (shared source of truth with collision).
  */
 import * as THREE from 'three';
 import { SettlementDef } from '../world/RegionData';
-import { GEO, MAT, seededRng } from '../world/SettlementPieces';
+import { GEO, MAT } from '../world/SettlementPieces';
 import { getTerrainHeight } from './Terrain';
+import {
+  FORTIFIED_CITY_HOUSES,
+  RIVER_TOWN_HOUSES,
+  MOUNTAIN_HOLD_HOUSES,
+  FRONTIER_CAMP_HOUSES,
+  TRADE_CITY_HOUSES,
+  KingdomHouseDef,
+} from '../world/KingdomBuildingData';
 
 // ========== SHARED BUILDING HELPERS ==========
 function SimpleHouse({ pos, rot, w, d, h, mat, roofMat }: {
@@ -40,7 +47,6 @@ function SimpleWall({ from, to, h, mat }: {
     <group>
       <mesh position={[cx, h / 2, cz]} rotation={[0, angle, 0]}
         geometry={GEO.box} scale={[2, h, len]} material={wallMat} castShadow />
-      {/* Battlements */}
       {len > 5 && Array.from({ length: Math.floor(len / 3) }).map((_, i) => {
         const t = (i + 0.5) / Math.floor(len / 3);
         return (
@@ -67,11 +73,27 @@ function SimpleTower({ pos, h, r, mat }: {
   );
 }
 
+// Material lookup helpers for kingdom houses
+const FC_MATS = [[MAT.stone, MAT.stoneWarm], [MAT.roofSlate]] as const;
+const RT_MATS = [[MAT.daub, MAT.plasterWarm], [MAT.roofThatch, MAT.roofTile]] as const;
+const MH_MATS = [[MAT.stoneDark], [MAT.roofSlate]] as const;
+const FRONT_MATS = [[MAT.stoneRuin, MAT.woodWeathered], [MAT.tentRagged, MAT.roofThatch]] as const;
+const TC_MATS = [[MAT.plasterWarm, MAT.stoneWarm], [MAT.roofTile]] as const;
+
+function renderHouses(houses: KingdomHouseDef[], wallMats: readonly THREE.Material[], roofMats: readonly THREE.Material[], prefix: string, yOffset = 0) {
+  return houses.map((h, i) => (
+    <SimpleHouse key={`${prefix}-${i}`}
+      pos={[h.x, yOffset, h.z]} rot={h.rot}
+      w={h.w} d={h.d} h={h.h}
+      mat={wallMats[h.matIndex % wallMats.length]}
+      roofMat={roofMats[h.roofMatIndex % roofMats.length]} />
+  ));
+}
+
 // ========== FORTIFIED CITY (Thornwall) ==========
 export function FortifiedCity({ def }: { def: SettlementDef }) {
   const [cx, cz] = def.position;
   const y = getTerrainHeight(cx, cz);
-  const rng = seededRng(11111);
 
   return (
     <group position={[cx, y, cz]}>
@@ -108,24 +130,8 @@ export function FortifiedCity({ def }: { def: SettlementDef }) {
       <mesh position={[0.5, 23, -10]} geometry={GEO.box}
         scale={[0.8, 1.2, 0.04]} material={MAT.banner} castShadow />
 
-      {/* Barracks row */}
-      {[-20, -10, 10, 20].map((xOff, i) => (
-        <SimpleHouse key={`bar-${i}`} pos={[xOff, 0, 15]} rot={0}
-          w={5} d={4} h={3} mat={MAT.stone} roofMat={MAT.roofSlate} />
-      ))}
-
-      {/* Houses ring */}
-      {Array.from({ length: 12 }).map((_, i) => {
-        const angle = (i / 12) * Math.PI * 2;
-        const r = 22 + rng() * 10;
-        const hx = Math.cos(angle) * r;
-        const hz = Math.sin(angle) * r;
-        return <SimpleHouse key={`h-${i}`}
-          pos={[hx, 0, hz]} rot={angle + Math.PI + rng() * 0.4}
-          w={4 + rng() * 2} d={4.5 + rng() * 2} h={3 + rng()}
-          mat={rng() > 0.5 ? MAT.stone : MAT.stoneWarm}
-          roofMat={MAT.roofSlate} />;
-      })}
+      {/* Houses from shared data */}
+      {renderHouses(FORTIFIED_CITY_HOUSES, [MAT.stone, MAT.stoneWarm], [MAT.roofSlate], 'fc')}
 
       {/* Smithy */}
       <mesh position={[-25, 1.2, 5]} geometry={GEO.box}
@@ -154,7 +160,6 @@ export function FortifiedCity({ def }: { def: SettlementDef }) {
 export function RiverTown({ def }: { def: SettlementDef }) {
   const [cx, cz] = def.position;
   const y = getTerrainHeight(cx, cz);
-  const rng = seededRng(22222);
 
   return (
     <group position={[cx, y, cz]}>
@@ -176,24 +181,8 @@ export function RiverTown({ def }: { def: SettlementDef }) {
       <mesh position={[0, 14, -5]} geometry={GEO.cone8}
         scale={[2.2, 3, 2.2]} material={MAT.roofSlate} castShadow />
 
-      {/* Waterfront houses — half-timber style */}
-      {[-20, -12, 12, 20].map((xOff, i) => (
-        <SimpleHouse key={`wf-${i}`} pos={[xOff, 0, -20]} rot={Math.PI}
-          w={4 + rng()} d={4.5 + rng()} h={3 + rng() * 0.5}
-          mat={MAT.daub} roofMat={MAT.roofThatch} />
-      ))}
-
-      {/* Market houses */}
-      {Array.from({ length: 10 }).map((_, i) => {
-        const angle = (i / 10) * Math.PI * 2;
-        const r = 15 + rng() * 10;
-        return <SimpleHouse key={`mh-${i}`}
-          pos={[Math.cos(angle) * r, 0, Math.sin(angle) * r + 5]}
-          rot={angle + Math.PI + rng() * 0.3}
-          w={3.5 + rng() * 2} d={4 + rng() * 2} h={2.5 + rng() * 1.5}
-          mat={rng() > 0.4 ? MAT.daub : MAT.plasterWarm}
-          roofMat={rng() > 0.5 ? MAT.roofThatch : MAT.roofTile} />;
-      })}
+      {/* Houses from shared data */}
+      {renderHouses(RIVER_TOWN_HOUSES, [MAT.daub, MAT.plasterWarm], [MAT.roofThatch, MAT.roofTile], 'rt')}
 
       {/* Market stalls near dock */}
       {[-8, -2, 4, 10].map((xOff, i) => (
@@ -207,7 +196,7 @@ export function RiverTown({ def }: { def: SettlementDef }) {
 
       {/* Fishing boats */}
       {[-15, 5].map((xOff, i) => (
-        <mesh key={`boat-${i}`} position={[xOff, -0.3, -36]} rotation={[0, rng() * 0.5, 0]}
+        <mesh key={`boat-${i}`} position={[xOff, -0.3, -36]} rotation={[0, 0.3, 0]}
           geometry={GEO.box} scale={[1.5, 0.4, 3.5]} material={MAT.woodWeathered} castShadow />
       ))}
 
@@ -234,7 +223,6 @@ export function RiverTown({ def }: { def: SettlementDef }) {
 export function MountainHold({ def }: { def: SettlementDef }) {
   const [cx, cz] = def.position;
   const y = getTerrainHeight(cx, cz);
-  const rng = seededRng(33333);
 
   return (
     <group position={[cx, y, cz]}>
@@ -269,16 +257,8 @@ export function MountainHold({ def }: { def: SettlementDef }) {
       <SimpleTower pos={[-4, 3, 25]} h={9} r={1.8} mat={MAT.stoneDark} />
       <SimpleTower pos={[4, 3, 25]} h={9} r={1.8} mat={MAT.stoneDark} />
 
-      {/* Inner buildings */}
-      {Array.from({ length: 8 }).map((_, i) => {
-        const angle = (i / 8) * Math.PI * 2;
-        const r = 14 + rng() * 6;
-        return <SimpleHouse key={`sh-${i}`}
-          pos={[Math.cos(angle) * r, 3, Math.sin(angle) * r]}
-          rot={angle + Math.PI + rng() * 0.3}
-          w={3.5 + rng()} d={4 + rng()} h={2.5 + rng() * 0.5}
-          mat={MAT.stoneDark} roofMat={MAT.roofSlate} />;
-      })}
+      {/* Inner buildings from shared data */}
+      {renderHouses(MOUNTAIN_HOLD_HOUSES, [MAT.stoneDark], [MAT.roofSlate], 'mh', 3)}
 
       {/* Mine entrance */}
       <mesh position={[-20, 4, -5]} geometry={GEO.box}
@@ -299,7 +279,6 @@ export function MountainHold({ def }: { def: SettlementDef }) {
 export function FrontierCamp({ def }: { def: SettlementDef }) {
   const [cx, cz] = def.position;
   const y = getTerrainHeight(cx, cz);
-  const rng = seededRng(44444);
 
   return (
     <group position={[cx, y, cz]}>
@@ -311,17 +290,8 @@ export function FrontierCamp({ def }: { def: SettlementDef }) {
       <mesh position={[0, 2.5, -30]} geometry={GEO.box}
         scale={[30, 5, 2]} material={MAT.stoneRuin} castShadow />
 
-      {/* Patched buildings — ruins with tents/repairs */}
-      {Array.from({ length: 10 }).map((_, i) => {
-        const angle = (i / 10) * Math.PI * 2 + rng() * 0.4;
-        const r = 10 + rng() * 12;
-        return <SimpleHouse key={`fh-${i}`}
-          pos={[Math.cos(angle) * r, 0, Math.sin(angle) * r]}
-          rot={angle + Math.PI + rng() * 0.5}
-          w={3 + rng() * 2} d={3.5 + rng() * 2} h={2 + rng()}
-          mat={rng() > 0.4 ? MAT.stoneRuin : MAT.woodWeathered}
-          roofMat={rng() > 0.5 ? MAT.tentRagged : MAT.roofThatch} />;
-      })}
+      {/* Houses from shared data */}
+      {renderHouses(FRONTIER_CAMP_HOUSES, [MAT.stoneRuin, MAT.woodWeathered], [MAT.tentRagged, MAT.roofThatch], 'front')}
 
       {/* Central gathering fire */}
       <mesh position={[0, 0.04, 0]} geometry={GEO.box}
@@ -372,7 +342,6 @@ export function FrontierCamp({ def }: { def: SettlementDef }) {
 export function TradeCity({ def }: { def: SettlementDef }) {
   const [cx, cz] = def.position;
   const y = getTerrainHeight(cx, cz);
-  const rng = seededRng(55555);
 
   return (
     <group position={[cx, y, cz]}>
@@ -385,9 +354,7 @@ export function TradeCity({ def }: { def: SettlementDef }) {
 
       {/* Corner towers with gold-tipped roofs */}
       {[[-40, -35], [40, -35], [40, 35], [-40, 35]].map(([tx, tz], i) => (
-        <group key={`ct-${i}`}>
-          <SimpleTower pos={[tx, 0, tz]} h={10} r={2.5} mat={MAT.stoneWarm} />
-        </group>
+        <SimpleTower key={`ct-${i}`} pos={[tx, 0, tz]} h={10} r={2.5} mat={MAT.stoneWarm} />
       ))}
 
       {/* Gatehouse towers */}
@@ -420,17 +387,8 @@ export function TradeCity({ def }: { def: SettlementDef }) {
         </group>
       ))}
 
-      {/* Wealthy houses */}
-      {Array.from({ length: 14 }).map((_, i) => {
-        const angle = (i / 14) * Math.PI * 2;
-        const r = 18 + rng() * 12;
-        return <SimpleHouse key={`wh-${i}`}
-          pos={[Math.cos(angle) * r, 0, Math.sin(angle) * r]}
-          rot={angle + Math.PI + rng() * 0.4}
-          w={4 + rng() * 2} d={4.5 + rng() * 2} h={3 + rng() * 1.5}
-          mat={rng() > 0.5 ? MAT.plasterWarm : MAT.stoneWarm}
-          roofMat={MAT.roofTile} />;
-      })}
+      {/* Houses from shared data */}
+      {renderHouses(TRADE_CITY_HOUSES, [MAT.plasterWarm, MAT.stoneWarm], [MAT.roofTile], 'tc')}
 
       {/* Fountain in market center */}
       <mesh position={[0, 0.5, 12]} geometry={GEO.cyl8}
