@@ -9,8 +9,9 @@ import { VillagerMan1Model, VillagerMan1Def } from './VillagerMan1Model';
 import { VillagerWoman1Model } from './VillagerWoman1Model';
 import { GardenerWomanModel } from './GardenerWomanModel';
 import { ElderManModel } from './ElderManModel';
+import { GuardianModel } from './GuardianModel';
 
-type GLBVillagerType = 'man1' | 'woman1' | 'gardener' | 'elder';
+type GLBVillagerType = 'man1' | 'woman1' | 'gardener' | 'elder' | 'guardian';
 
 interface GLBVillagerDef extends VillagerMan1Def {
   villagerType: GLBVillagerType;
