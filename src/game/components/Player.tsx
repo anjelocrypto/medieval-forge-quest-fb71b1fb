@@ -869,19 +869,19 @@ export function Player({
 
         {/* ===== PLAYER CHARACTER — GLB MODEL ===== */}
         <group
-          position={[hipSway + idleWeightShift, playerY, atkLunge]}
+          position={[isMounted ? 0 : hipSway + idleWeightShift, playerY, isMounted ? 0 : atkLunge]}
           rotation={[
-            bodyForwardLean + idleSway + airBodyCurl + riderSlopeComp,
-            torsoTwist + atkBodyTwist + (isMounted ? riderSway : 0) + idleHeadLook,
-            lean + riderLean
+            isMounted ? riderSlopeComp : bodyForwardLean + idleSway + airBodyCurl + riderSlopeComp,
+            isMounted ? 0 : torsoTwist + atkBodyTwist + idleHeadLook,
+            isMounted ? riderLean : lean + riderLean
           ]}
         >
           {character === 'goblin' ? (
-            <GoblinGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={attackAnimRef} isFightingRef={isFightingRef} />
+            <GoblinGLBModel moveSpeedRef={isMounted ? mountedZeroRef : moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={isMounted ? mountedZeroRef : attackAnimRef} isFightingRef={isFightingRef} />
           ) : character === 'octopus' ? (
-            <OctopusGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={attackAnimRef} isFightingRef={isFightingRef} />
+            <OctopusGLBModel moveSpeedRef={isMounted ? mountedZeroRef : moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={isMounted ? mountedZeroRef : attackAnimRef} isFightingRef={isFightingRef} />
           ) : (
-            <PlayerGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={attackAnimRef} isFightingRef={isFightingRef} />
+            <PlayerGLBModel moveSpeedRef={isMounted ? mountedZeroRef : moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={isMounted ? mountedZeroRef : attackAnimRef} isFightingRef={isFightingRef} />
           )}
         </group>
       </group>
