@@ -84,11 +84,20 @@ const sunset = {
 
 const night = {
   sunColor: new THREE.Color('#334466'),
-  ambientColor: new THREE.Color('#223344'),
-  fogColor: new THREE.Color('#1a2030'),
-  sunIntensity: 0.15,
-  ambientIntensity: 0.1,
+  ambientColor: new THREE.Color('#2a3850'),
+  fogColor: new THREE.Color('#1a2535'),
+  sunIntensity: 0.18,
+  ambientIntensity: 0.14,
 };
+
+/** Returns 0 during day, 1 at full night. Smooth transition. */
+export function getNightFactor(): number {
+  const t = timeOfDay;
+  if (t < 0.2 || t > 0.85) return 1;
+  if (t < 0.3) return 1 - (t - 0.2) / 0.1;
+  if (t > 0.7) return (t - 0.7) / 0.15;
+  return 0;
+}
 
 const tmpColor = new THREE.Color();
 
