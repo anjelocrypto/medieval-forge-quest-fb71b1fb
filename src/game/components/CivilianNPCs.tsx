@@ -498,11 +498,10 @@ function generateGLBVillagers(): GLBVillagerDef[] {
 
 const GLB_VILLAGERS = generateGLBVillagers();
 
-// Group GLB villagers by kingdom for culling
 interface GLBVillagerGroup {
   cx: number; cz: number;
   cullRadius: number;
-  villagers: VillagerMan1Def[];
+  villagers: GLBVillagerDef[];
 }
 
 function buildGLBVillagerGroups(): GLBVillagerGroup[] {
