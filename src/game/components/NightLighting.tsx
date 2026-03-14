@@ -125,7 +125,8 @@ function LampPost({ x, z, y, glowIntensity }: { x: number; z: number; y: number;
       {/* Glow core — emissive, always visible at night */}
       <mesh position={[0.35, 2.6, 0]} geometry={GEO.box}
         scale={[0.12, 0.18, 0.12]}
-        material={glowIntensity > 0.1 ? emissiveMat : emissiveDimMat} />
+        material={emissiveDimMat}
+        userData={{ isGlow: true }} />
       {/* Lantern top cap */}
       <mesh position={[0.35, 2.8, 0]} geometry={GEO.cone4}
         scale={[0.14, 0.12, 0.14]} material={bracketMat} />
@@ -143,6 +144,8 @@ export const NightLighting = memo(function NightLighting({ playerPositionRef }: 
   const pointLightRef = useRef<THREE.PointLight>(null);
   const frameSkip = useRef(0);
   const nearestRef = useRef<{ x: number; z: number; y: number }>({ x: 0, z: 0, y: 0 });
+  const glowMeshesRef = useRef<THREE.Mesh[]>([]);
+  const wasNight = useRef(false);
 
   // Pre-compute terrain heights for all lamps
   const lampData = useMemo(() => {
@@ -152,13 +155,40 @@ export const NightLighting = memo(function NightLighting({ playerPositionRef }: 
     }));
   }, []);
 
+  // Collect glow mesh refs via callback
+  const groupRef = useRef<THREE.Group>(null);
+  const glowCollected = useRef(false);
+
   useFrame(({ clock }) => {
     const nightFactor = getNightFactor();
+    const isNight = nightFactor > 0.05;
+
+    // Collect glow meshes once on first night
+    if (isNight && !glowCollected.current && groupRef.current) {
+      const meshes: THREE.Mesh[] = [];
+      groupRef.current.traverse((obj) => {
+        if ((obj as any).userData?.isGlow) {
+          meshes.push(obj as THREE.Mesh);
+        }
+      });
+      if (meshes.length > 0) {
+        glowMeshesRef.current = meshes;
+        glowCollected.current = true;
+      }
+    }
+
+    // Toggle emissive materials when night state changes
+    if (isNight !== wasNight.current) {
+      wasNight.current = isNight;
+      const mat = isNight ? emissiveMat : emissiveDimMat;
+      for (const mesh of glowMeshesRef.current) {
+        mesh.material = mat;
+      }
+    }
 
     // Update point light
     if (pointLightRef.current) {
-      if (nightFactor < 0.05) {
-        // Daytime — disable
+      if (!isNight) {
         pointLightRef.current.intensity = 0;
         return;
       }
@@ -197,13 +227,11 @@ export const NightLighting = memo(function NightLighting({ playerPositionRef }: 
     }
   });
 
-  const nightFactor = getNightFactor();
-
   return (
-    <group>
-      {/* Lamp props — distance-culled */}
+    <group ref={groupRef}>
+      {/* Lamp props */}
       {lampData.map(lamp => (
-        <LampPost key={lamp.id} x={lamp.x} z={lamp.z} y={lamp.y} glowIntensity={nightFactor} />
+        <LampPost key={lamp.id} x={lamp.x} z={lamp.z} y={lamp.y} glowIntensity={0} />
       ))}
 
       {/* Single real PointLight — nearest to player */}
