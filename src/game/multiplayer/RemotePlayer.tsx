@@ -19,12 +19,6 @@ const horseMat = new THREE.MeshLambertMaterial({ color: '#5a3a1a' });
 const saddleMat = new THREE.MeshLambertMaterial({ color: '#4a2010' });
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 
-// Character-specific rider materials
-const soldierBodyMat = new THREE.MeshLambertMaterial({ color: '#3a5a8a' });
-const soldierHeadMat = new THREE.MeshLambertMaterial({ color: '#d4a574' });
-const goblinBodyMat = new THREE.MeshLambertMaterial({ color: '#4a6a3a' });
-const goblinHeadMat = new THREE.MeshLambertMaterial({ color: '#7a9a5a' });
-
 // Nametag heights per character type
 const NAMETAG_HEIGHT_GOBLIN = 2.0;
 const NAMETAG_HEIGHT_SOLDIER = 2.8;
