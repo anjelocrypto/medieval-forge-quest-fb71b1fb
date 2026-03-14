@@ -1,5 +1,5 @@
 /**
- * CivilianNPCs — GLB-based townspeople (VillagerMan1, VillagerWoman1, GardenerWoman & ElderMan).
+ * CivilianNPCs — GLB-based townspeople (VillagerMan1, VillagerWoman1, GardenerWoman, ElderMan & Guardian).
  * Distance-culled by kingdom group for performance.
  */
 import { Suspense } from 'react';
@@ -9,8 +9,9 @@ import { VillagerMan1Model, VillagerMan1Def } from './VillagerMan1Model';
 import { VillagerWoman1Model } from './VillagerWoman1Model';
 import { GardenerWomanModel } from './GardenerWomanModel';
 import { ElderManModel } from './ElderManModel';
+import { GuardianModel } from './GuardianModel';
 
-type GLBVillagerType = 'man1' | 'woman1' | 'gardener' | 'elder';
+type GLBVillagerType = 'man1' | 'woman1' | 'gardener' | 'elder' | 'guardian';
 
 interface GLBVillagerDef extends VillagerMan1Def {
   villagerType: GLBVillagerType;
@@ -30,10 +31,11 @@ function generateGLBVillagers(): GLBVillagerDef[] {
 
   const pickType = (): GLBVillagerType => {
     const r = rng();
-    if (r < 0.25) return 'man1';
-    if (r < 0.50) return 'woman1';
-    if (r < 0.75) return 'gardener';
-    return 'elder';
+    if (r < 0.20) return 'man1';
+    if (r < 0.40) return 'woman1';
+    if (r < 0.60) return 'gardener';
+    if (r < 0.80) return 'elder';
+    return 'guardian';
   };
 
   const add = (x: number, z: number, opts?: Partial<GLBVillagerDef>) => {
@@ -159,6 +161,8 @@ export function CivilianNPCs({ playerPositionRef }: CivilianNPCsProps) {
         return (
           <group key={`glb-v-group-${gi}`}>
             {group.villagers.map(v => {
+              if (v.villagerType === 'guardian')
+                return <GuardianModel key={v.id} def={v} playerPos={playerPos} />;
               if (v.villagerType === 'elder')
                 return <ElderManModel key={v.id} def={v} playerPos={playerPos} />;
               if (v.villagerType === 'gardener')
