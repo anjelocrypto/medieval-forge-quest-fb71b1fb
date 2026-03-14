@@ -212,12 +212,6 @@ export function SurvivalHUD({
           <div style={{ width: 1, background: 'hsla(40,30%,45%,0.25)' }} />
           <ResourceSlot icon="🍖" value={inventory.food} label="Food" />
         </div>
-        {inventory.food > 0 && lowHunger && (
-          <div className="px-3 py-1.5 rounded-md text-xs font-semibold animate-pulse"
-            style={{ ...panelStyle, color: 'hsl(40,30%,85%)' }}>
-            Press <Key>F</Key> to eat
-          </div>
-        )}
       </div>
 
       {/* ═══ TOP RIGHT — Progression panel ═══ */}
