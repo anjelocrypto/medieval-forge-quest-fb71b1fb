@@ -35,8 +35,8 @@ function generateGLBVillagers(): GLBVillagerDef[] {
       patrolRadius: 4 + rng() * 5,
       patrolSpeed: 0.5 + rng() * 0.4,
       facingAngle: rng() * Math.PI * 2,
-      standDuration: 30 + rng() * 40,
-      walkDuration: 20 + rng() * 30,
+      standDuration: 5 + rng() * 10,
+      walkDuration: 30 + rng() * 40,
       villagerType,
       ...opts,
     });
