@@ -827,22 +827,10 @@ export function Player({
   const airArmRaise = airT * -0.4;
   const airBodyCurl = airT * -0.05; // slight forward curl
 
-  // Horse animation — gallop rhythm
-  const horseGaitFreq = ms > 0.7 ? 1.15 : 1; // gallop has different rhythm
-  const ht = t * horseGaitFreq;
-  const horseLegFL = isMounted ? Math.sin(ht) * 0.55 * ms : 0;
-  const horseLegFR = isMounted ? Math.sin(ht + Math.PI * 0.5) * 0.55 * ms : 0;
-  const horseLegBL = isMounted ? Math.sin(ht + Math.PI) * 0.6 * ms : 0;
-  const horseLegBR = isMounted ? Math.sin(ht + Math.PI * 1.5) * 0.6 * ms : 0;
-  const horseBodyBob = isMounted ? Math.abs(Math.sin(ht * 2)) * 0.12 * ms : 0;
-  const horseNeckBob = isMounted ? Math.sin(ht * 2 + 0.5) * 0.1 * ms : 0;
-  const horseHeadNod = isMounted ? Math.sin(ht * 2 + 1) * 0.06 * ms : 0;
-  // Rider syncs with horse bounce but slightly delayed (body absorbs)
-  const riderBounce = isMounted ? Math.abs(Math.sin(ht * 2 + 0.3)) * 0.08 * ms : 0;
-  const riderSway = isMounted ? Math.sin(ht + 0.2) * 0.04 * ms : 0;
-  const riderLean = isMounted ? lean * 0.6 : 0; // rider leans into turns
+  // Horse — all animation is handled by HorseGLBModel via horsewalk.glb / horsestanding.glb
+  // Only rider lean/sway for visual polish, NO procedural horse leg/bob
+  const riderLean = isMounted ? lean * 0.6 : 0;
   const horsePitch = horsePitchRef.current;
-  // Rider compensates on slopes — leans back uphill, forward downhill
   const riderSlopeComp = isMounted ? -horsePitch * 0.35 : 0;
 
   if (isDead) {
