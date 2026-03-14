@@ -1,7 +1,7 @@
 import { useMemo, useRef, memo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { getTimeOfDay } from '../systems/TimeOfDay';
+import { getTimeOfDay, getSunDirection, getSunElevation } from '../systems/TimeOfDay';
 
 // Pre-defined sky palettes for different times
 const palettes = {
