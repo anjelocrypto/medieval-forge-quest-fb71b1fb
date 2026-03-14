@@ -309,7 +309,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
                 border: '1px solid rgba(138,100,200,0.3)',
               }}
             >
-              {isBusy && menuMode === 'create' ? '⏳...' : '🔮 Create Account'}
+              {isBusy && menuMode === 'create' ? '⏳...' : 'Create Account'}
             </button>
             <button
               onClick={() => { setMenuMode('login'); handleLogin(); }}
