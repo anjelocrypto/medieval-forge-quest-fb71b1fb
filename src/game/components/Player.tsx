@@ -873,7 +873,7 @@ export function Player({
         {isMounted && (
           <group position={[riderLean * 0.1, horseBodyBob, 0]} rotation={[horsePitch, 0, 0]}>
             <Suspense fallback={null}>
-              <HorseGLBModel moveSpeed={currentSpeedRef.current} />
+              <HorseGLBModel moveSpeed={currentSpeedRef} />
             </Suspense>
           </group>
         )}
