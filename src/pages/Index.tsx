@@ -1,9 +1,11 @@
 import { useState, useCallback } from 'react';
 import { GameScene } from '../game/GameScene';
 import { CinematicMenu } from '../game/menu/CinematicMenu';
+import { MenuScene3D } from '../game/menu/MenuScene3D';
+import { LoadingScreen } from '../game/menu/LoadingScreen';
 import { useMultiplayer } from '../game/multiplayer/useMultiplayer';
 
-type AppMode = 'lobby' | 'game';
+type AppMode = 'lobby' | 'loading' | 'game';
 
 const Index = () => {
   const [appMode, setAppMode] = useState<AppMode>('lobby');
@@ -11,8 +13,12 @@ const Index = () => {
 
   const handleEnterWorld = useCallback(async (playerName: string) => {
     await multiplayer.enterWorld(playerName);
-    setAppMode('game');
+    setAppMode('loading');
   }, [multiplayer.enterWorld]);
+
+  const handleLoadingReady = useCallback(() => {
+    setAppMode('game');
+  }, []);
 
   const handleLeave = useCallback(async () => {
     await multiplayer.leaveWorld();
@@ -25,6 +31,16 @@ const Index = () => {
         onEnterWorld={handleEnterWorld}
         isReconnecting={false}
       />
+    );
+  }
+
+  if (appMode === 'loading') {
+    return (
+      <div className="w-screen h-screen relative overflow-hidden">
+        {/* Keep the cinematic 3D world as background during loading */}
+        <MenuScene3D />
+        <LoadingScreen onReady={handleLoadingReady} />
+      </div>
     );
   }
 
