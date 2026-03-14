@@ -148,7 +148,7 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse, isMounted }: Pr
   return (
     <group ref={groupRef}>
       <Suspense fallback={null}>
-        <HorseGLBModel moveSpeed={moveSpeedRef} />
+        <HorseGLBModel moveSpeed={moveSpeedRef} renderPath="called-horse" />
       </Suspense>
     </group>
   );
