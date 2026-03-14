@@ -1,113 +1,75 @@
-import { Suspense, useMemo, useEffect } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { useGLTF, useAnimations, OrbitControls } from '@react-three/drei';
+import { useMemo, useRef } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-import goblinStandingUrl from '@/assets/goblinstanding.glb?url';
-import soldierStandingUrl from '@/assets/standing.glb?url';
-import octopusStandingUrl from '@/assets/octopusstanding.glb?url';
-import nemoStandingUrl from '@/assets/nemostanding.glb?url';
-
-const STANDING_URLS: Record<string, string> = {
-  goblin: goblinStandingUrl,
-  soldier: soldierStandingUrl,
-  octopus: octopusStandingUrl,
-  nemoclaw: nemoStandingUrl,
-};
-
-// Preload all
-Object.values(STANDING_URLS).forEach((url) => useGLTF.preload(url));
-
-function ModelViewer({ url }: { url: string }) {
-  const gltf = useGLTF(url);
-
-  const scene = useMemo(() => {
-    const clone = gltf.scene.clone(true);
-    clone.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) {
-        child.castShadow = false;
-        child.receiveShadow = false;
-      }
-    });
-    return clone;
-  }, [gltf.scene]);
-
-  // Compute scale & offset to perfectly center model in preview
-  const { scale, offset } = useMemo(() => {
-    const box = new THREE.Box3().setFromObject(scene);
-    const size = new THREE.Vector3();
-    box.getSize(size);
-    const center = new THREE.Vector3();
-    box.getCenter(center);
-    const maxDim = Math.max(size.x, size.y, size.z);
-    // If bounding box is degenerate (empty mesh), use fallback
-    const s = maxDim > 0.01 ? 1.8 / maxDim : 1;
-    // Center the model: offset so bounding box center is at origin
-    return {
-      scale: s,
-      offset: new THREE.Vector3(-center.x * s, -center.y * s, -center.z * s),
-    };
-  }, [scene]);
-
-  // Play idle animation if available
-  const clips = useMemo(() => {
-    return gltf.animations.map((clip) => {
-      const c = clip.clone();
-      c.name = clip.name || 'idle';
-      return c;
-    });
-  }, [gltf.animations]);
-
-  const { actions } = useAnimations(clips, scene);
-
-  useEffect(() => {
-    const name = Object.keys(actions)[0];
-    if (name && actions[name]) {
-      actions[name]!.reset().setLoop(THREE.LoopRepeat, Infinity).play();
-    }
-    return () => {
-      Object.values(actions).forEach((a) => a?.stop());
-    };
-  }, [actions]);
-
-  return (
-    <group position={[offset.x, offset.y, offset.z]} scale={[scale, scale, scale]}>
-      <primitive object={scene} dispose={null} />
-    </group>
-  );
-}
+import { GoblinGLBModel } from '../components/GoblinCharacterModel';
+import { PlayerGLBModel } from '../components/PlayerCharacterModel';
+import { OctopusGLBModel } from '../components/OctopusCharacterModel';
+import { NemoClawGLBModel } from '../components/NemoClawCharacterModel';
 
 interface CharacterPreviewProps {
   characterType: string;
   selected: boolean;
 }
 
-export function CharacterPreview({ characterType, selected }: CharacterPreviewProps) {
-  const url = STANDING_URLS[characterType];
-  if (!url) return null;
+function Turntable({ selected, children }: { selected: boolean; children: React.ReactNode }) {
+  const groupRef = useRef<THREE.Group>(null);
 
+  useFrame((_, delta) => {
+    if (!groupRef.current) return;
+    if (selected) groupRef.current.rotation.y += delta * 0.9;
+  });
+
+  return <group ref={groupRef}>{children}</group>;
+}
+
+function PreviewModel({ characterType }: { characterType: string }) {
+  const moveSpeedRef = useRef(0);
+  const isGroundedRef = useRef(true);
+  const attackAnimRef = useRef(0);
+  const noop = useMemo(() => () => {}, []);
+
+  const commonProps = {
+    moveSpeedRef,
+    controllerHalfHeight: 0.9,
+    isGroundedRef,
+    activeEmote: null,
+    activeEmoteId: 0,
+    onEmoteComplete: noop,
+    attackAnimRef,
+  };
+
+  switch (characterType) {
+    case 'goblin':
+      return <GoblinGLBModel {...commonProps} />;
+    case 'octopus':
+      return <OctopusGLBModel {...commonProps} />;
+    case 'nemoclaw':
+      return <NemoClawGLBModel {...commonProps} />;
+    case 'soldier':
+    default:
+      return <PlayerGLBModel {...commonProps} />;
+  }
+}
+
+export function CharacterPreview({ characterType, selected }: CharacterPreviewProps) {
   return (
-    <div style={{ width: '100%', height: 160, position: 'relative' }}>
+    <div style={{ width: '100%', height: 170, position: 'relative' }}>
       <Canvas
         gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
-        camera={{ position: [0, 0.5, 2.8], fov: 35 }}
+        camera={{ position: [0, 1.35, 3.2], fov: 34 }}
         style={{ background: 'transparent' }}
         dpr={[1, 1.5]}
       >
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[2, 3, 2]} intensity={1.2} />
-        <directionalLight position={[-2, 1, -1]} intensity={0.3} />
-        <Suspense fallback={null}>
-          <ModelViewer url={url} />
-        </Suspense>
-        <OrbitControls
-          enableZoom={false}
-          enablePan={false}
-          autoRotate={selected}
-          autoRotateSpeed={3}
-          minPolarAngle={Math.PI / 2.5}
-          maxPolarAngle={Math.PI / 1.8}
-        />
+        <ambientLight intensity={0.55} />
+        <directionalLight position={[2, 4, 2]} intensity={1.1} />
+        <directionalLight position={[-2, 2, -2]} intensity={0.35} />
+
+        <Turntable selected={selected}>
+          <group rotation={[0, Math.PI, 0]} position={[0, -0.3, 0]}>
+            <PreviewModel characterType={characterType} />
+          </group>
+        </Turntable>
       </Canvas>
     </div>
   );
