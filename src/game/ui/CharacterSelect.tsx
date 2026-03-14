@@ -5,6 +5,7 @@ const CHARACTERS: { type: CharacterType; name: string; icon: string; desc: strin
   { type: 'goblin', name: 'Goblin', icon: '👺', desc: 'Small & scrappy with unique animations' },
   { type: 'soldier', name: 'Soldier', icon: '⚔️', desc: 'Human warrior with full emotes & combat' },
   { type: 'octopus', name: 'Octopus', icon: '🐙', desc: 'Tentacled sea creature with dance moves' },
+  { type: 'nemoclaw', name: 'NemoClaw', icon: '🦀', desc: 'Fierce claw creature with dual dances' },
 ];
 
 export function CharacterSelect() {

@@ -10,6 +10,7 @@ import { HorseGLBModel } from '../components/HorseGLBModel';
 import { RemoteGoblinModel } from './RemoteGoblinModel';
 import { RemoteSoldierModel } from './RemoteSoldierModel';
 import { RemoteOctopusModel } from './RemoteOctopusModel';
+import { RemoteNemoClawModel } from './RemoteNemoClawModel';
 
 interface Props {
   player: InterpolatedPlayer;
@@ -19,6 +20,7 @@ interface Props {
 const NAMETAG_HEIGHT_GOBLIN = 2.0;
 const NAMETAG_HEIGHT_SOLDIER = 2.8;
 const NAMETAG_HEIGHT_OCTOPUS = 2.0;
+const NAMETAG_HEIGHT_NEMOCLAW = 2.4;
 const NAMETAG_HEIGHT_MOUNTED = 4.5;
 
 const remoteAuditCounts: Record<string, number> = {};
@@ -83,6 +85,7 @@ export function RemotePlayer({ player }: Props) {
     ? NAMETAG_HEIGHT_MOUNTED
     : charType === 'goblin' ? NAMETAG_HEIGHT_GOBLIN
     : charType === 'octopus' ? NAMETAG_HEIGHT_OCTOPUS
+    : charType === 'nemoclaw' ? NAMETAG_HEIGHT_NEMOCLAW
     : NAMETAG_HEIGHT_SOLDIER;
 
   return (
@@ -139,6 +142,15 @@ export function RemotePlayer({ player }: Props) {
             />
           ) : charType === 'octopus' ? (
             <RemoteOctopusModel
+              moveSpeed={player.moveSpeed}
+              isRunning={player.isRunning}
+              isGrounded={player.isGrounded}
+              attackAnim={player.attackAnim}
+              health={player.health}
+              emote={player.emote}
+            />
+          ) : charType === 'nemoclaw' ? (
+            <RemoteNemoClawModel
               moveSpeed={player.moveSpeed}
               isRunning={player.isRunning}
               isGrounded={player.isGrounded}
