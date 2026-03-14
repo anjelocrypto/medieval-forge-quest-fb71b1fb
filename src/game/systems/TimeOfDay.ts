@@ -1,12 +1,12 @@
 /**
  * Shared time-of-day state.
  * One global clock drives sun position, sky color, fog, and light.
- * Day length is ~10 real minutes by default.
+ * Day length is 1 real hour (3600s).
  */
 import * as THREE from 'three';
 
-// Full cycle = 600 seconds (10 min)
-const DAY_LENGTH = 600;
+// Full cycle = 3600 seconds (1 hour)
+const DAY_LENGTH = 3600;
 
 /** 0 = midnight, 0.25 = sunrise, 0.5 = noon, 0.75 = sunset */
 let timeOfDay = 0.72; // start at golden hour / early sunset
@@ -84,11 +84,20 @@ const sunset = {
 
 const night = {
   sunColor: new THREE.Color('#334466'),
-  ambientColor: new THREE.Color('#223344'),
-  fogColor: new THREE.Color('#1a2030'),
-  sunIntensity: 0.15,
-  ambientIntensity: 0.1,
+  ambientColor: new THREE.Color('#2a3850'),
+  fogColor: new THREE.Color('#1a2535'),
+  sunIntensity: 0.18,
+  ambientIntensity: 0.14,
 };
+
+/** Returns 0 during day, 1 at full night. Smooth transition. */
+export function getNightFactor(): number {
+  const t = timeOfDay;
+  if (t < 0.2 || t > 0.85) return 1;
+  if (t < 0.3) return 1 - (t - 0.2) / 0.1;
+  if (t > 0.7) return (t - 0.7) / 0.15;
+  return 0;
+}
 
 const tmpColor = new THREE.Color();
 
