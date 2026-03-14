@@ -15,10 +15,6 @@ interface Props {
   player: InterpolatedPlayer;
 }
 
-const horseMat = new THREE.MeshLambertMaterial({ color: '#5a3a1a' });
-const saddleMat = new THREE.MeshLambertMaterial({ color: '#4a2010' });
-const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-
 // Nametag heights per character type
 const NAMETAG_HEIGHT_GOBLIN = 2.0;
 const NAMETAG_HEIGHT_SOLDIER = 2.8;
@@ -56,12 +52,12 @@ export function RemotePlayer({ player }: Props) {
 
     const tx = player.targetPosition[0];
     const tz = player.targetPosition[2];
-    
+
     // Use bridge height if available, otherwise terrain height
     const bridgeY = getBridgeHeight(tx, tz);
     const rawTerrainY = getTerrainHeight(tx, tz);
     const groundY = bridgeY !== null ? bridgeY : rawTerrainY;
-    
+
     // GLB models have feet at Y=0, so ground level is the target Y
     const ty = groundY;
 
@@ -129,7 +125,7 @@ export function RemotePlayer({ player }: Props) {
       </Html>
 
       {player.isMounted ? (
-        <MountedRemoteModel moveSpeed={player.moveSpeed} horsePitch={player.horsePitch} charType={charType} />
+        <MountedRemoteModel moveSpeed={player.moveSpeed} horsePitch={player.horsePitch} />
       ) : (
         <Suspense fallback={null}>
           {charType === 'goblin' ? (
@@ -166,33 +162,11 @@ export function RemotePlayer({ player }: Props) {
   );
 }
 
-function FallbackBox({ charType }: { charType: string }) {
-  const isGoblin = charType === 'goblin';
-  const bodyColor = isGoblin ? '#4a6a3a' : '#3a5a8a';
-  const headColor = isGoblin ? '#7a9a5a' : '#d4a574';
-  const bodyScale = isGoblin ? 0.45 : 0.55;
-  const headY = isGoblin ? 0.85 : 1.15;
-  const bodyY = isGoblin ? 0.4 : 0.55;
-
-  return (
-    <group>
-      <mesh position={[0, bodyY, 0]} scale={[bodyScale, 0.65, 0.35]}>
-        <boxGeometry />
-        <meshLambertMaterial color={bodyColor} />
-      </mesh>
-      <mesh position={[0, headY, 0]} scale={[0.3, 0.3, 0.3]}>
-        <boxGeometry />
-        <meshLambertMaterial color={headColor} />
-      </mesh>
-    </group>
-  );
-}
-
-function MountedRemoteModel({ moveSpeed, horsePitch, charType }: { moveSpeed: number; horsePitch: number; charType: string }) {
+function MountedRemoteModel({ moveSpeed, horsePitch }: { moveSpeed: number; horsePitch: number }) {
   return (
     <group rotation={[horsePitch, 0, 0]}>
       <Suspense fallback={null}>
-        <HorseGLBModel moveSpeed={moveSpeed} />
+        <HorseGLBModel moveSpeed={moveSpeed} renderPath="mounted-remote" />
       </Suspense>
     </group>
   );

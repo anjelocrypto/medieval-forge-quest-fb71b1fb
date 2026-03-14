@@ -828,41 +828,20 @@ export function Player({
   const airArmRaise = airT * -0.4;
   const airBodyCurl = airT * -0.05; // slight forward curl
 
-  // Horse — all animation is handled by HorseGLBModel via horsewalk.glb / horsestanding.glb
-  // Only rider lean/sway for visual polish, NO procedural horse leg/bob
+  // Horse animation path:
+  // - visible mesh: horsestanding.glb
+  // - walk clip source: horseiswalking.glb
+  // Only rider lean/sway is procedural polish.
   const riderLean = isMounted ? lean * 0.6 : 0;
   const horsePitch = horsePitchRef.current;
   const riderSlopeComp = isMounted ? -horsePitch * 0.35 : 0;
 
   if (isDead) {
-    return (
-      <group ref={groupRef}>
-        {character === 'goblin' ? (
-          <GoblinDeadModel />
-        ) : character === 'octopus' ? (
-          <OctopusDeadModel />
-        ) : (
-          <group rotation={[Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
-            <mesh castShadow>
-              <boxGeometry args={[0.7, 1, 0.35]} />
-              <meshLambertMaterial color="#4a3520" />
-            </mesh>
-          </group>
-        )}
-      </group>
-    );
-  }
-
-  const playerY = isMounted ? 1.2 : 0;
-
-  return (
-    <group ref={groupRef}>
-      <group ref={bodyRef}>
-        {/* ===== MOUNTED HORSE (GLB) ===== */}
+...
         {isMounted && (
           <group position={[riderLean * 0.1, 0, 0]} rotation={[horsePitch, 0, 0]}>
             <Suspense fallback={null}>
-              <HorseGLBModel moveSpeed={currentSpeedRef} />
+              <HorseGLBModel moveSpeed={currentSpeedRef} renderPath="mounted-local" />
             </Suspense>
           </group>
         )}
