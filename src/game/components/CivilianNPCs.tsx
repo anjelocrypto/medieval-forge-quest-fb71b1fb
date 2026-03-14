@@ -1,5 +1,5 @@
 /**
- * CivilianNPCs — GLB-based townspeople (VillagerMan1 & VillagerWoman1).
+ * CivilianNPCs — GLB-based townspeople (VillagerMan1, VillagerWoman1 & GardenerWoman).
  * Distance-culled by kingdom group for performance.
  */
 import { Suspense } from 'react';
@@ -7,8 +7,9 @@ import * as THREE from 'three';
 import { getTerrainHeight } from './Terrain';
 import { VillagerMan1Model, VillagerMan1Def } from './VillagerMan1Model';
 import { VillagerWoman1Model } from './VillagerWoman1Model';
+import { GardenerWomanModel } from './GardenerWomanModel';
 
-type GLBVillagerType = 'man1' | 'woman1';
+type GLBVillagerType = 'man1' | 'woman1' | 'gardener';
 
 interface GLBVillagerDef extends VillagerMan1Def {
   villagerType: GLBVillagerType;
@@ -26,9 +27,16 @@ function generateGLBVillagers(): GLBVillagerDef[] {
   const defs: GLBVillagerDef[] = [];
   let id = 0;
 
+  const pickType = (): GLBVillagerType => {
+    const r = rng();
+    if (r < 0.33) return 'man1';
+    if (r < 0.66) return 'woman1';
+    return 'gardener';
+  };
+
   const add = (x: number, z: number, opts?: Partial<GLBVillagerDef>) => {
     const y = getTerrainHeight(x, z);
-    const villagerType: GLBVillagerType = rng() > 0.5 ? 'woman1' : 'man1';
+    const villagerType = opts?.villagerType ?? pickType();
     defs.push({
       id: `glb-v-${id++}`,
       homePos: [x, y, z],
@@ -148,11 +156,13 @@ export function CivilianNPCs({ playerPositionRef }: CivilianNPCsProps) {
         }
         return (
           <group key={`glb-v-group-${gi}`}>
-            {group.villagers.map(v =>
-              v.villagerType === 'woman1'
-                ? <VillagerWoman1Model key={v.id} def={v} playerPos={playerPos} />
-                : <VillagerMan1Model key={v.id} def={v} playerPos={playerPos} />
-            )}
+            {group.villagers.map(v => {
+              if (v.villagerType === 'gardener')
+                return <GardenerWomanModel key={v.id} def={v} playerPos={playerPos} />;
+              if (v.villagerType === 'woman1')
+                return <VillagerWoman1Model key={v.id} def={v} playerPos={playerPos} />;
+              return <VillagerMan1Model key={v.id} def={v} playerPos={playerPos} />;
+            })}
           </group>
         );
       })}
