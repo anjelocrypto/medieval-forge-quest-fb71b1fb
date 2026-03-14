@@ -837,7 +837,30 @@ export function Player({
   const riderSlopeComp = isMounted ? -horsePitch * 0.35 : 0;
 
   if (isDead) {
-...
+    return (
+      <group ref={groupRef}>
+        {character === 'goblin' ? (
+          <GoblinDeadModel />
+        ) : character === 'octopus' ? (
+          <OctopusDeadModel />
+        ) : (
+          <group rotation={[Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
+            <mesh castShadow>
+              <boxGeometry args={[0.7, 1, 0.35]} />
+              <meshLambertMaterial color="#4a3520" />
+            </mesh>
+          </group>
+        )}
+      </group>
+    );
+  }
+
+  const playerY = isMounted ? 1.2 : 0;
+
+  return (
+    <group ref={groupRef}>
+      <group ref={bodyRef}>
+        {/* ===== MOUNTED HORSE (GLB) ===== */}
         {isMounted && (
           <group position={[riderLean * 0.1, 0, 0]} rotation={[horsePitch, 0, 0]}>
             <Suspense fallback={null}>
