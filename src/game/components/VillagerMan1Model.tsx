@@ -217,6 +217,11 @@ export function VillagerMan1Model({ def, playerPos }: Props) {
       tz = def.homePos[2] + Math.sin(pa) * def.patrolRadius;
     }
 
+    // Resolve collision with buildings
+    const resolved = resolveCollision(tx, tz, 0.5);
+    tx = resolved.x;
+    tz = resolved.z;
+
     const ty = getTerrainHeight(tx, tz);
     groupRef.current.position.set(tx, ty, tz);
     groupRef.current.rotation.y = facingRef.current;
