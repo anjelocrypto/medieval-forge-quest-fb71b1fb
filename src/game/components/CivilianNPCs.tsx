@@ -557,7 +557,7 @@ export function CivilianNPCs({ playerPositionRef }: CivilianNPCsProps) {
         );
       })}
 
-      {/* GLB-based VillagerMan1 NPCs */}
+      {/* GLB-based Villager NPCs (mixed man/woman) */}
       <Suspense fallback={null}>
         {GLB_VILLAGER_GROUPS.map((group, gi) => {
           if (playerPos) {
@@ -566,10 +566,12 @@ export function CivilianNPCs({ playerPositionRef }: CivilianNPCsProps) {
             if (dx * dx + dz * dz > group.cullRadius * group.cullRadius) return null;
           }
           return (
-            <group key={`vm1-group-${gi}`}>
-              {group.villagers.map(v => (
-                <VillagerMan1Model key={v.id} def={v} playerPos={playerPos} />
-              ))}
+            <group key={`glb-v-group-${gi}`}>
+              {group.villagers.map(v =>
+                v.villagerType === 'woman1'
+                  ? <VillagerWoman1Model key={v.id} def={v} playerPos={playerPos} />
+                  : <VillagerMan1Model key={v.id} def={v} playerPos={playerPos} />
+              )}
             </group>
           );
         })}
