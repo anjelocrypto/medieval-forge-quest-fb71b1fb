@@ -1,7 +1,7 @@
 import { useMemo, useRef, memo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { getTimeOfDay } from '../systems/TimeOfDay';
+import { getTimeOfDay, getSunDirection, getSunElevation } from '../systems/TimeOfDay';
 
 // Pre-defined sky palettes for different times
 const palettes = {
@@ -96,9 +96,80 @@ export const Sky = memo(function Sky() {
   });
 
   return (
-    <mesh ref={meshRef}>
-      <sphereGeometry args={[400, 32, 16]} />
-      <meshBasicMaterial ref={matRef} map={texture} side={THREE.BackSide} />
-    </mesh>
+    <group>
+      <mesh ref={meshRef}>
+        <sphereGeometry args={[400, 32, 16]} />
+        <meshBasicMaterial ref={matRef} map={texture} side={THREE.BackSide} />
+      </mesh>
+      <SunDisc />
+    </group>
+  );
+});
+
+/** Lightweight sun disc — a simple circle mesh positioned on the sky sphere. */
+const sunDir = new THREE.Vector3();
+const sunColorTmp = new THREE.Color();
+
+const SunDisc = memo(function SunDisc() {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const matRef = useRef<THREE.MeshBasicMaterial>(null);
+  const glowRef = useRef<THREE.Mesh>(null);
+  const glowMatRef = useRef<THREE.MeshBasicMaterial>(null);
+
+  useFrame(({ camera }) => {
+    const elev = getSunElevation();
+    // Hide when sun is below horizon
+    if (elev < -0.02) {
+      if (meshRef.current) meshRef.current.visible = false;
+      if (glowRef.current) glowRef.current.visible = false;
+      return;
+    }
+
+    getSunDirection(sunDir);
+    const dist = 380; // just inside sky sphere
+    const pos = sunDir.clone().multiplyScalar(dist).add(camera.position);
+
+    if (meshRef.current) {
+      meshRef.current.visible = true;
+      meshRef.current.position.copy(pos);
+      meshRef.current.lookAt(camera.position);
+    }
+    if (glowRef.current) {
+      glowRef.current.visible = true;
+      glowRef.current.position.copy(pos);
+      glowRef.current.lookAt(camera.position);
+    }
+
+    // Color: warm at low elevation, whiter at high
+    const warmth = 1 - Math.min(1, elev / 1.2);
+    sunColorTmp.setRGB(1, 0.85 + warmth * 0.05, 0.5 + (1 - warmth) * 0.4);
+
+    if (matRef.current) matRef.current.color.copy(sunColorTmp);
+    if (glowMatRef.current) {
+      glowMatRef.current.color.copy(sunColorTmp);
+      glowMatRef.current.opacity = 0.15 + warmth * 0.15; // stronger glow at sunset
+    }
+  });
+
+  return (
+    <>
+      {/* Core sun disc */}
+      <mesh ref={meshRef}>
+        <circleGeometry args={[12, 24]} />
+        <meshBasicMaterial ref={matRef} color="#ffe080" fog={false} />
+      </mesh>
+      {/* Soft glow ring */}
+      <mesh ref={glowRef}>
+        <circleGeometry args={[30, 24]} />
+        <meshBasicMaterial
+          ref={glowMatRef}
+          color="#ffe080"
+          transparent
+          opacity={0.2}
+          fog={false}
+          depthWrite={false}
+        />
+      </mesh>
+    </>
   );
 });
