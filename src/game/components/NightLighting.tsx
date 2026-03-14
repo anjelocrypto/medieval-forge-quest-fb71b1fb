@@ -1,7 +1,7 @@
 /**
  * NightLighting — Medieval lamp/torch props placed at settlements, roads, bridges.
- * All lamps are emissive meshes (zero light cost). Only the 1 nearest lamp to the
- * player gets a real non-shadow-casting PointLight for local illumination.
+ * All lamps are emissive meshes (zero light cost). The nearest 3 lamps to the
+ * player get real non-shadow-casting PointLights for local illumination.
  * Active only at night — zero cost during daytime.
  */
 import { useRef, useMemo, memo } from 'react';
@@ -13,6 +13,13 @@ import { SETTLEMENTS } from '../world/RegionData';
 import { BRIDGES } from '../world/BridgeData';
 import { ROADS } from '../world/RegionData';
 import { GEO, MAT } from '../world/SettlementPieces';
+
+// ========== CONFIGURATION ==========
+const NUM_ACTIVE_LIGHTS = 3;
+const LIGHT_INTENSITY = 14;
+const LIGHT_DISTANCE = 35;
+const LIGHT_DECAY = 1;
+const LIGHT_COLOR = '#ff9930';
 
 // ========== LAMP POSITION DATA ==========
 
@@ -49,13 +56,11 @@ function generateLampPositions(): LampDef[] {
   }
 
   // --- Road junction lamps: selected key crossroads ---
-  // Pick road midpoints for longer roads
   for (const road of ROADS) {
     const dx = road.to[0] - road.from[0];
     const dz = road.to[1] - road.from[1];
     const len = Math.sqrt(dx * dx + dz * dz);
     if (len > 60) {
-      // Place lamp at midpoint
       lamps.push({
         x: (road.from[0] + road.to[0]) / 2,
         z: (road.from[1] + road.to[1]) / 2,
@@ -63,7 +68,6 @@ function generateLampPositions(): LampDef[] {
       });
     }
     if (len > 150) {
-      // Place lamps at quarter points for very long roads
       lamps.push({
         x: road.from[0] + dx * 0.25,
         z: road.from[1] + dz * 0.25,
@@ -82,19 +86,33 @@ function generateLampPositions(): LampDef[] {
     const cos = Math.cos(bridge.rotation);
     const sin = Math.sin(bridge.rotation);
     const halfLen = bridge.length / 2;
-    // Near end
     lamps.push({
       x: bridge.position[0] + sin * halfLen,
       z: bridge.position[2] + cos * halfLen,
       id: `lamp-${id++}`,
     });
-    // Far end
     lamps.push({
       x: bridge.position[0] - sin * halfLen,
       z: bridge.position[2] - cos * halfLen,
       id: `lamp-${id++}`,
     });
   }
+
+  // --- SPAWN AREA & IRONHOLD APPROACH LAMPS ---
+  // Spawn is at [0, 82]. Ironhold gate at [0, ~48]. Road runs [0,38]→[0,55].
+  // Fill the gap from spawn down to Ironhold gate.
+  lamps.push({ x: -4, z: 80, id: `lamp-${id++}` });  // Near spawn (left side)
+  lamps.push({ x: 4,  z: 72, id: `lamp-${id++}` });  // Approach road (right)
+  lamps.push({ x: -4, z: 63, id: `lamp-${id++}` });  // Midway to gate (left)
+  lamps.push({ x: 4,  z: 55, id: `lamp-${id++}` });  // Gate approach (right)
+
+  // Ironhold inner town area (near center [0,0])
+  lamps.push({ x: -10, z: 15, id: `lamp-${id++}` }); // Town north road
+  lamps.push({ x: 10,  z: 15, id: `lamp-${id++}` }); // Town north road
+  lamps.push({ x: -12, z: -5, id: `lamp-${id++}` }); // Town center west
+  lamps.push({ x: 12,  z: -5, id: `lamp-${id++}` }); // Town center east
+  lamps.push({ x: 0,   z: 30, id: `lamp-${id++}` }); // Main road inside gate
+  lamps.push({ x: 0,   z: 20, id: `lamp-${id++}` }); // Inner approach
 
   return lamps;
 }
@@ -103,33 +121,33 @@ const ALL_LAMPS = generateLampPositions();
 
 // ========== MATERIALS ==========
 
-const emissiveMat = new THREE.MeshBasicMaterial({ color: '#ff9930' });
+const emissiveMat = new THREE.MeshBasicMaterial({ color: '#ffaa44' });
 const emissiveDimMat = new THREE.MeshBasicMaterial({ color: '#553310' });
 const postMat = MAT.iron;
 const bracketMat = MAT.iron;
 
 // ========== LAMP MESH COMPONENT ==========
 
-function LampPost({ x, z, y, glowIntensity }: { x: number; z: number; y: number; glowIntensity: number }) {
+function LampPost({ x, z, y }: { x: number; z: number; y: number }) {
   return (
     <group position={[x, y, z]}>
       {/* Iron post */}
       <mesh position={[0, 1.5, 0]} geometry={GEO.box}
-        scale={[0.08, 3, 0.08]} material={postMat} castShadow />
+        scale={[0.1, 3, 0.1]} material={postMat} castShadow />
       {/* Bracket arm */}
-      <mesh position={[0.2, 2.8, 0]} geometry={GEO.box}
-        scale={[0.35, 0.06, 0.06]} material={bracketMat} />
+      <mesh position={[0.25, 2.8, 0]} geometry={GEO.box}
+        scale={[0.4, 0.07, 0.07]} material={bracketMat} />
       {/* Lantern housing */}
-      <mesh position={[0.35, 2.6, 0]} geometry={GEO.box}
-        scale={[0.2, 0.3, 0.2]} material={bracketMat} castShadow />
-      {/* Glow core — emissive, always visible at night */}
-      <mesh position={[0.35, 2.6, 0]} geometry={GEO.box}
-        scale={[0.12, 0.18, 0.12]}
+      <mesh position={[0.4, 2.55, 0]} geometry={GEO.box}
+        scale={[0.25, 0.35, 0.25]} material={bracketMat} castShadow />
+      {/* Glow core — enlarged for visibility */}
+      <mesh position={[0.4, 2.55, 0]} geometry={GEO.box}
+        scale={[0.22, 0.3, 0.22]}
         material={emissiveDimMat}
         userData={{ isGlow: true }} />
       {/* Lantern top cap */}
-      <mesh position={[0.35, 2.8, 0]} geometry={GEO.cone4}
-        scale={[0.14, 0.12, 0.14]} material={bracketMat} />
+      <mesh position={[0.4, 2.78, 0]} geometry={GEO.cone4}
+        scale={[0.16, 0.14, 0.16]} material={bracketMat} />
     </group>
   );
 }
@@ -140,31 +158,45 @@ interface NightLightingProps {
   playerPositionRef: React.RefObject<THREE.Vector3>;
 }
 
+interface NearestLamp {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export const NightLighting = memo(function NightLighting({ playerPositionRef }: NightLightingProps) {
-  const pointLightRef = useRef<THREE.PointLight>(null);
+  const lightRefs = useRef<(THREE.PointLight | null)[]>([]);
   const frameSkip = useRef(0);
-  const nearestRef = useRef<{ x: number; z: number; y: number }>({ x: 0, z: 0, y: 0 });
+  const nearestLamps = useRef<NearestLamp[]>(
+    Array.from({ length: NUM_ACTIVE_LIGHTS }, () => ({ x: 0, y: 0, z: 0 }))
+  );
   const glowMeshesRef = useRef<THREE.Mesh[]>([]);
   const wasNight = useRef(false);
+  const groupRef = useRef<THREE.Group>(null);
+  const glowCollected = useRef(false);
+  const auditLogged = useRef(false);
 
   // Pre-compute terrain heights for all lamps
   const lampData = useMemo(() => {
-    return ALL_LAMPS.map(lamp => ({
+    const data = ALL_LAMPS.map(lamp => ({
       ...lamp,
       y: getTerrainHeight(lamp.x, lamp.z),
     }));
+    // One-time audit log
+    console.log(`[NightLamp] Total lamps generated: ${data.length}`);
+    return data;
   }, []);
 
-  // Collect glow mesh refs via callback
-  const groupRef = useRef<THREE.Group>(null);
-  const glowCollected = useRef(false);
+  const setLightRef = (index: number) => (el: THREE.PointLight | null) => {
+    lightRefs.current[index] = el;
+  };
 
   useFrame(({ clock }) => {
     const nightFactor = getNightFactor();
     const isNight = nightFactor > 0.05;
 
-    // Collect glow meshes once on first night
-    if (isNight && !glowCollected.current && groupRef.current) {
+    // Collect glow meshes once
+    if (!glowCollected.current && groupRef.current) {
       const meshes: THREE.Mesh[] = [];
       groupRef.current.traverse((obj) => {
         if ((obj as any).userData?.isGlow) {
@@ -174,6 +206,7 @@ export const NightLighting = memo(function NightLighting({ playerPositionRef }: 
       if (meshes.length > 0) {
         glowMeshesRef.current = meshes;
         glowCollected.current = true;
+        console.log(`[NightLamp] Collected ${meshes.length} glow meshes`);
       }
     }
 
@@ -184,46 +217,73 @@ export const NightLighting = memo(function NightLighting({ playerPositionRef }: 
       for (const mesh of glowMeshesRef.current) {
         mesh.material = mat;
       }
+      console.log(`[NightLamp] Glow ${isNight ? 'ON' : 'OFF'}, nightFactor=${nightFactor.toFixed(3)}`);
     }
 
-    // Update point light
-    if (pointLightRef.current) {
-      if (!isNight) {
-        pointLightRef.current.intensity = 0;
-        return;
+    // Update point lights
+    const lights = lightRefs.current;
+    
+    if (!isNight) {
+      for (let i = 0; i < NUM_ACTIVE_LIGHTS; i++) {
+        if (lights[i]) lights[i]!.intensity = 0;
       }
+      return;
+    }
 
-      // Find nearest lamp every 30 frames (~0.5s)
-      frameSkip.current++;
-      if (frameSkip.current % 30 === 0) {
-        const pp = playerPositionRef.current;
-        if (pp) {
-          let bestDist = Infinity;
-          let bestLamp = lampData[0];
-          for (const lamp of lampData) {
-            const dx = pp.x - lamp.x;
-            const dz = pp.z - lamp.z;
-            const d2 = dx * dx + dz * dz;
-            if (d2 < bestDist) {
-              bestDist = d2;
-              bestLamp = lamp;
+    // Find nearest N lamps every 15 frames (~0.25s)
+    frameSkip.current++;
+    if (frameSkip.current % 15 === 0) {
+      const pp = playerPositionRef.current;
+      if (pp) {
+        // Compute distances for all lamps
+        const scored = lampData.map(lamp => {
+          const dx = pp.x - lamp.x;
+          const dz = pp.z - lamp.z;
+          return { lamp, dist2: dx * dx + dz * dz };
+        });
+
+        // Partial sort: find top N nearest
+        scored.sort((a, b) => a.dist2 - b.dist2);
+
+        for (let i = 0; i < NUM_ACTIVE_LIGHTS; i++) {
+          const s = scored[i];
+          if (s) {
+            nearestLamps.current[i] = {
+              x: s.lamp.x + 0.4,
+              y: s.lamp.y + 2.55,
+              z: s.lamp.z,
+            };
+          }
+        }
+
+        // Rate-limited audit log
+        if (!auditLogged.current) {
+          auditLogged.current = true;
+          console.log(`[NightLamp] Player at [${pp.x.toFixed(1)}, ${pp.z.toFixed(1)}]`);
+          for (let i = 0; i < NUM_ACTIVE_LIGHTS; i++) {
+            const s = scored[i];
+            if (s) {
+              console.log(`[NightLamp] Light ${i}: lamp ${s.lamp.id} at [${s.lamp.x}, ${s.lamp.z}], dist=${Math.sqrt(s.dist2).toFixed(1)}`);
             }
           }
-          nearestRef.current = { x: bestLamp.x + 0.35, z: bestLamp.z, y: bestLamp.y + 2.6 };
+          // Reset after 60s for next check
+          setTimeout(() => { auditLogged.current = false; }, 60000);
         }
       }
+    }
 
-      // Position light at nearest lamp
-      pointLightRef.current.position.set(
-        nearestRef.current.x,
-        nearestRef.current.y,
-        nearestRef.current.z
-      );
+    // Position and intensity for each light
+    for (let i = 0; i < NUM_ACTIVE_LIGHTS; i++) {
+      const light = lights[i];
+      if (!light) continue;
+      const nearest = nearestLamps.current[i];
 
-      // Subtle flicker
-      const flicker = 0.9 + Math.sin(clock.elapsedTime * 8.5) * 0.05
-        + Math.sin(clock.elapsedTime * 13.2) * 0.05;
-      pointLightRef.current.intensity = nightFactor * 1.8 * flicker;
+      light.position.set(nearest.x, nearest.y, nearest.z);
+
+      // Subtle per-light flicker variation
+      const flicker = 0.92 + Math.sin(clock.elapsedTime * (7.5 + i * 2.3)) * 0.04
+        + Math.sin(clock.elapsedTime * (12.1 + i * 3.7)) * 0.04;
+      light.intensity = nightFactor * LIGHT_INTENSITY * flicker;
     }
   });
 
@@ -231,18 +291,21 @@ export const NightLighting = memo(function NightLighting({ playerPositionRef }: 
     <group ref={groupRef}>
       {/* Lamp props */}
       {lampData.map(lamp => (
-        <LampPost key={lamp.id} x={lamp.x} z={lamp.z} y={lamp.y} glowIntensity={0} />
+        <LampPost key={lamp.id} x={lamp.x} z={lamp.z} y={lamp.y} />
       ))}
 
-      {/* Single real PointLight — nearest to player */}
-      <pointLight
-        ref={pointLightRef}
-        color="#ff9930"
-        intensity={0}
-        distance={18}
-        decay={2}
-        castShadow={false}
-      />
+      {/* 3 real PointLights — nearest to player */}
+      {Array.from({ length: NUM_ACTIVE_LIGHTS }, (_, i) => (
+        <pointLight
+          key={`lamp-light-${i}`}
+          ref={setLightRef(i)}
+          color={LIGHT_COLOR}
+          intensity={0}
+          distance={LIGHT_DISTANCE}
+          decay={LIGHT_DECAY}
+          castShadow={false}
+        />
+      ))}
     </group>
   );
 });
