@@ -9,6 +9,7 @@ import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { clone as cloneSkinnedScene } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { getTerrainHeight } from './Terrain';
+import { resolveCollision } from '../systems/CollisionSystem';
 
 import walkingUrl from '@/assets/villagerman1walking.glb';
 import standingUrl from '@/assets/villagerman1standing.glb';
@@ -215,6 +216,11 @@ export function VillagerMan1Model({ def, playerPos }: Props) {
       tx = def.homePos[0] + Math.cos(pa) * def.patrolRadius;
       tz = def.homePos[2] + Math.sin(pa) * def.patrolRadius;
     }
+
+    // Resolve collision with buildings
+    const resolved = resolveCollision(tx, tz, 0.5);
+    tx = resolved.x;
+    tz = resolved.z;
 
     const ty = getTerrainHeight(tx, tz);
     groupRef.current.position.set(tx, ty, tz);

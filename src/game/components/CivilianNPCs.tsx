@@ -8,6 +8,7 @@ import { useRef, useMemo, Suspense } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { getTerrainHeight } from './Terrain';
+import { resolveCollision } from '../systems/CollisionSystem';
 import { SETTLEMENTS } from '../world/RegionData';
 import { VillagerMan1Model, VillagerMan1Def } from './VillagerMan1Model';
 import { VillagerWoman1Model } from './VillagerWoman1Model';
@@ -309,8 +310,11 @@ function Civilian({ def, playerPos }: { def: CivilianDef; playerPos: THREE.Vecto
     if (def.behavior === 'patrol') {
       patrolAngleRef.current += dt * def.patrolSpeed * 0.3;
       const pa = patrolAngleRef.current;
-      const tx = def.homePos[0] + Math.cos(pa) * def.patrolRadius;
-      const tz = def.homePos[2] + Math.sin(pa) * def.patrolRadius;
+      const rawTx = def.homePos[0] + Math.cos(pa) * def.patrolRadius;
+      const rawTz = def.homePos[2] + Math.sin(pa) * def.patrolRadius;
+      const resolved = resolveCollision(rawTx, rawTz, 0.5);
+      const tx = resolved.x;
+      const tz = resolved.z;
       const ty = getTerrainHeight(tx, tz);
       groupRef.current.position.set(tx, ty, tz);
       const targetAngle = pa + Math.PI / 2;
