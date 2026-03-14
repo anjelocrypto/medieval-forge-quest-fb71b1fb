@@ -240,108 +240,118 @@ export function PerfBaselineHUD() {
     return '#888';
   };
 
+  const [collapsed, setCollapsed] = useState(false);
+
   return (
     <div style={{
       position: 'fixed',
-      top: 8,
+      bottom: 8,
       right: 8,
       zIndex: 99999,
       background: 'rgba(0,0,0,0.88)',
       color: '#0f0',
       fontFamily: 'monospace',
-      fontSize: 14,
-      padding: '12px 16px',
+      fontSize: collapsed ? 11 : 14,
+      padding: collapsed ? '6px 10px' : '12px 16px',
       borderRadius: 8,
       border: '1px solid #333',
-      minWidth: 280,
+      minWidth: collapsed ? 120 : 260,
       pointerEvents: 'auto',
       userSelect: 'none',
     }}>
-      <div style={{ fontWeight: 'bold', color: '#fff', marginBottom: 8, fontSize: 13 }}>
-        📊 PERF BASELINE
-      </div>
-
-      {/* Live metrics */}
-      <div style={{ marginBottom: 6 }}>
-        <span style={{ color: '#aaa' }}>FPS: </span>
-        <span style={{ color: displayFps < 30 ? '#f44' : displayFps < 50 ? '#ff0' : '#0f0', fontWeight: 'bold', fontSize: 16 }}>
-          {displayFps}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+        onClick={() => setCollapsed(!collapsed)}>
+        <span style={{ fontWeight: 'bold', color: '#fff', fontSize: 11 }}>
+          📊 PERF {collapsed ? `${displayFps} FPS` : 'BASELINE'}
         </span>
-        <span style={{ color: '#666', marginLeft: 8 }}>avg30s: {avgFps}</span>
-      </div>
-      <div style={{ marginBottom: 6 }}>
-        <span style={{ color: '#aaa' }}>Ticks/s: </span>
-        <span style={{ fontWeight: 'bold' }}>{displayTicks}</span>
-        <span style={{ color: '#666', marginLeft: 8 }}>avg30s: {avgTicks}</span>
-      </div>
-      <div style={{ marginBottom: 10 }}>
-        <span style={{ color: '#aaa' }}>Heap: </span>
-        <span>{heapMB} MB</span>
-        <span style={{ color: '#666', marginLeft: 8 }}>init: {initialHeap} MB</span>
+        <span style={{ color: '#666', fontSize: 10, marginLeft: 8 }}>{collapsed ? '▲' : '▼'}</span>
       </div>
 
-      {/* Scenario buttons */}
-      <div style={{ fontWeight: 'bold', color: '#ccc', marginBottom: 4, fontSize: 11 }}>
-        RECORD 30s BASELINE:
-      </div>
-      <div style={{ display: 'flex', gap: 4, marginBottom: 8, flexWrap: 'wrap' }}>
-        {(['Open Field', 'Capital', 'Combat'] as Scenario[]).map(s => (
+      {!collapsed && (
+        <>
+          {/* Live metrics */}
+          <div style={{ marginTop: 8, marginBottom: 6 }}>
+            <span style={{ color: '#aaa' }}>FPS: </span>
+            <span style={{ color: displayFps < 30 ? '#f44' : displayFps < 50 ? '#ff0' : '#0f0', fontWeight: 'bold', fontSize: 16 }}>
+              {displayFps}
+            </span>
+            <span style={{ color: '#666', marginLeft: 8 }}>avg30s: {avgFps}</span>
+          </div>
+          <div style={{ marginBottom: 6 }}>
+            <span style={{ color: '#aaa' }}>Ticks/s: </span>
+            <span style={{ fontWeight: 'bold' }}>{displayTicks}</span>
+            <span style={{ color: '#666', marginLeft: 8 }}>avg30s: {avgTicks}</span>
+          </div>
+          <div style={{ marginBottom: 10 }}>
+            <span style={{ color: '#aaa' }}>Heap: </span>
+            <span>{heapMB} MB</span>
+            <span style={{ color: '#666', marginLeft: 8 }}>init: {initialHeap} MB</span>
+          </div>
+
+          {/* Scenario buttons */}
+          <div style={{ fontWeight: 'bold', color: '#ccc', marginBottom: 4, fontSize: 11 }}>
+            RECORD 30s BASELINE:
+          </div>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 8, flexWrap: 'wrap' }}>
+            {(['Open Field', 'Capital', 'Combat'] as Scenario[]).map(s => (
+              <button
+                key={s}
+                onClick={() => !recording && startRecording(s)}
+                disabled={recording}
+                style={{
+                  background: scenarioColor(s),
+                  color: '#000',
+                  border: 'none',
+                  borderRadius: 4,
+                  padding: '4px 8px',
+                  fontSize: 11,
+                  fontWeight: 'bold',
+                  fontFamily: 'monospace',
+                  cursor: recording ? 'not-allowed' : 'pointer',
+                  opacity: recording && scenario !== s ? 0.4 : 1,
+                }}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+
+          {/* Recording indicator */}
+          {recording && (
+            <div style={{ color: '#ff0', marginBottom: 8, fontSize: 12 }}>
+              ⏺ Recording {scenario}... {recordSeconds}s / 30s
+            </div>
+          )}
+
+          {/* Captured results */}
+          {Object.keys(capturedRef.current).length > 0 && (
+            <div style={{ borderTop: '1px solid #333', paddingTop: 6, marginBottom: 8, fontSize: 11, color: '#aaa' }}>
+              {Object.entries(capturedRef.current).map(([k, v]) => (
+                <div key={k}>{k}: {v.fps} FPS / {v.ticks} ticks/s</div>
+              ))}
+            </div>
+          )}
+
+          {/* Copy button */}
           <button
-            key={s}
-            onClick={() => !recording && startRecording(s)}
-            disabled={recording}
+            onClick={copySummary}
             style={{
-              background: scenarioColor(s),
-              color: '#000',
+              background: '#2a6',
+              color: '#fff',
               border: 'none',
               borderRadius: 4,
-              padding: '4px 8px',
-              fontSize: 11,
+              padding: '6px 12px',
+              fontSize: 12,
               fontWeight: 'bold',
               fontFamily: 'monospace',
-              cursor: recording ? 'not-allowed' : 'pointer',
-              opacity: recording && scenario !== s ? 0.4 : 1,
+              cursor: 'pointer',
+              width: '100%',
             }}
           >
-            {s}
+            📋 Copy Baseline Summary
           </button>
-        ))}
-      </div>
-
-      {/* Recording indicator */}
-      {recording && (
-        <div style={{ color: '#ff0', marginBottom: 8, fontSize: 12 }}>
-          ⏺ Recording {scenario}... {recordSeconds}s / 30s
-        </div>
+        </>
       )}
-
-      {/* Captured results */}
-      {Object.keys(capturedRef.current).length > 0 && (
-        <div style={{ borderTop: '1px solid #333', paddingTop: 6, marginBottom: 8, fontSize: 11, color: '#aaa' }}>
-          {Object.entries(capturedRef.current).map(([k, v]) => (
-            <div key={k}>{k}: {v.fps} FPS / {v.ticks} ticks/s</div>
-          ))}
-        </div>
-      )}
-
-      {/* Copy button */}
-      <button
-        onClick={copySummary}
-        style={{
-          background: '#2a6',
-          color: '#fff',
-          border: 'none',
-          borderRadius: 4,
-          padding: '6px 12px',
-          fontSize: 12,
-          fontWeight: 'bold',
-          fontFamily: 'monospace',
-          cursor: 'pointer',
-          width: '100%',
-        }}
-      >
-        📋 Copy Baseline Summary
-      </button>
     </div>
   );
 }
