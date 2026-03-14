@@ -1,5 +1,5 @@
 /**
- * CivilianNPCs — GLB-based townspeople (VillagerMan1, VillagerWoman1 & GardenerWoman).
+ * CivilianNPCs — GLB-based townspeople (VillagerMan1, VillagerWoman1, GardenerWoman & ElderMan).
  * Distance-culled by kingdom group for performance.
  */
 import { Suspense } from 'react';
@@ -8,8 +8,9 @@ import { getTerrainHeight } from './Terrain';
 import { VillagerMan1Model, VillagerMan1Def } from './VillagerMan1Model';
 import { VillagerWoman1Model } from './VillagerWoman1Model';
 import { GardenerWomanModel } from './GardenerWomanModel';
+import { ElderManModel } from './ElderManModel';
 
-type GLBVillagerType = 'man1' | 'woman1' | 'gardener';
+type GLBVillagerType = 'man1' | 'woman1' | 'gardener' | 'elder';
 
 interface GLBVillagerDef extends VillagerMan1Def {
   villagerType: GLBVillagerType;
