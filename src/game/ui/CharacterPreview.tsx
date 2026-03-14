@@ -60,10 +60,7 @@ function StandingModel({ url, selected }: { url: string; selected: boolean }) {
     };
   }, [actions]);
 
-  useFrame((_, delta) => {
-    if (!spinRef.current || !selected) return;
-    spinRef.current.rotation.y += Math.min(delta, 0.05) * 0.9;
-  });
+  // No spinning — all characters face camera statically
 
   return (
     <group ref={spinRef}>
