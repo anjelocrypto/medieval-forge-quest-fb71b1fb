@@ -9,7 +9,7 @@ import * as THREE from 'three';
 const DAY_LENGTH = 600;
 
 /** 0 = midnight, 0.25 = sunrise, 0.5 = noon, 0.75 = sunset */
-let timeOfDay = 0.3; // start at early morning
+let timeOfDay = 0.72; // start at golden hour / early sunset
 
 export function getTimeOfDay(): number {
   return timeOfDay;
