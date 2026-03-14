@@ -120,13 +120,14 @@ export const Terrain = memo(function Terrain() {
     const positions = geo.attributes.position;
     const colors = new Float32Array(positions.count * 3);
 
-    const grassColor = new THREE.Color(COLORS.grass);
-    const grassDarkColor = new THREE.Color(COLORS.grassDark);
+    const grassColor = new THREE.Color('#4d8040');
+    const grassDarkColor = new THREE.Color('#3a6830');
     const roadColor = new THREE.Color(COLORS.road);
-    const sandColor = new THREE.Color(COLORS.sand);
-    const stoneColor = new THREE.Color(COLORS.stone);
-    const forestFloor = new THREE.Color('#3a5a2a');
-    const snowColor = new THREE.Color('#c8d0d8');
+    const sandColor = new THREE.Color('#c4b580');
+    const stoneColor = new THREE.Color('#6a6a6a');
+    const forestFloor = new THREE.Color('#354d28');
+    const snowColor = new THREE.Color('#d0d8e0');
+    const hillBrown = new THREE.Color('#6a6040');
     const tmpColor = new THREE.Color();
 
     for (let i = 0; i < positions.count; i++) {
