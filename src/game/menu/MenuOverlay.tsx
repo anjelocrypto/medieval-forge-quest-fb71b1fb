@@ -294,7 +294,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
               fontSize: '1rem',
             }}
           >
-            {isBusy && menuMode === 'main' ? '⏳ Connecting...' : '⚔️ Play as Guest'}
+            {isBusy && menuMode === 'main' ? '⏳ Connecting...' : 'Play as Guest'}
           </button>
 
           {/* Wallet action row */}
