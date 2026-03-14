@@ -91,9 +91,10 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
   const isGroundedRef = useRef(true);
   const attackAnimRef = useRef(0);
 
-  // Debug: track GameScene mount/unmount
+  // Debug: track GameScene mount/unmount + preload remote character GLBs
   useEffect(() => {
     console.log('[GameScene] MOUNTED');
+    preloadRemoteCharacterModels();
     return () => console.log('[GameScene] UNMOUNTED');
   }, []);
 
