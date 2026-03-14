@@ -131,7 +131,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
             fontSize: '1rem',
           }}
         >
-          {busy ? '⏳ Connecting...' : '🌍 Enter World'}
+          {busy ? '⏳ Connecting...' : 'Enter World'}
         </button>
 
         {/* Subtle info text */}
