@@ -32,16 +32,21 @@ function ModelViewer({ url }: { url: string }) {
     return clone;
   }, [gltf.scene]);
 
-  // Compute scale & offset to fit model in view
-  const { scale, yOffset } = useMemo(() => {
+  // Compute scale & offset to perfectly center model in preview
+  const { scale, offset } = useMemo(() => {
     const box = new THREE.Box3().setFromObject(scene);
     const size = new THREE.Vector3();
     box.getSize(size);
     const center = new THREE.Vector3();
     box.getCenter(center);
     const maxDim = Math.max(size.x, size.y, size.z);
-    const s = maxDim > 0 ? 1.6 / maxDim : 1;
-    return { scale: s, yOffset: -center.y * s + (-box.min.y * s) * 0.05 };
+    // If bounding box is degenerate (empty mesh), use fallback
+    const s = maxDim > 0.01 ? 1.8 / maxDim : 1;
+    // Center the model: offset so bounding box center is at origin
+    return {
+      scale: s,
+      offset: new THREE.Vector3(-center.x * s, -center.y * s, -center.z * s),
+    };
   }, [scene]);
 
   // Play idle animation if available
@@ -66,7 +71,7 @@ function ModelViewer({ url }: { url: string }) {
   }, [actions]);
 
   return (
-    <group position={[0, yOffset - 0.6, 0]} scale={[scale, scale, scale]}>
+    <group position={[offset.x, offset.y, offset.z]} scale={[scale, scale, scale]}>
       <primitive object={scene} dispose={null} />
     </group>
   );
