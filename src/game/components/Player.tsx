@@ -569,7 +569,7 @@ export function Player({
     }
 
     // === GROUNDING — terrain height at FINAL resolved X/Z ===
-    const heightOffset = isMounted ? 2.2 : PLAYER_HEIGHT / 2;
+    const heightOffset = isMounted ? 0 : PLAYER_HEIGHT / 2;
     const rawTerrainY = getTerrainHeight(pos.x, pos.z);
     // Bridge override: if player is on a bridge, use bridge deck height
     const bridgeY = getBridgeHeight(pos.x, pos.z);
@@ -864,14 +864,14 @@ export function Player({
     );
   }
 
-  const playerY = isMounted ? -0.35 + riderBounce : 0;
+  const playerY = isMounted ? 1.2 + riderBounce : 0;
 
   return (
     <group ref={groupRef}>
       <group ref={bodyRef}>
         {/* ===== MOUNTED HORSE (GLB) ===== */}
         {isMounted && (
-          <group position={[riderLean * 0.1, -0.1 + horseBodyBob, 0]} rotation={[horsePitch, 0, 0]}>
+          <group position={[riderLean * 0.1, horseBodyBob, 0]} rotation={[horsePitch, 0, 0]}>
             <Suspense fallback={null}>
               <HorseGLBModel moveSpeed={currentSpeedRef.current} />
             </Suspense>
