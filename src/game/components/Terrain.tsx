@@ -78,8 +78,20 @@ export function getTerrainHeight(x: number, z: number): number {
   }
 
   const baseHeight = (h1 + h2 + h3) * (1 - flattenFactor * 0.8);
-  const regional = getRegionalHeight(x, z);
-  const height = (baseHeight + regional) * (1 - settleFlatten) + regional * settleFlatten * 0.3;
+  // Modest mountain amplification — 1.25x regional for more dramatic peaks
+  const regional = getRegionalHeight(x, z) * 1.25;
+  const rawHeight = (baseHeight + regional) * (1 - settleFlatten) + regional * settleFlatten * 0.3;
+
+  // Conservative terrain stepping for voxel-inspired terracing
+  // Only apply outside settlement flatten zones to preserve flat building ground
+  let height = rawHeight;
+  if (settleFlatten < 0.3) {
+    // Mild step: 0.4-unit terraces (Math.round(h * 2.5) / 2.5)
+    const stepStrength = 1 - settleFlatten / 0.3; // fade stepping near settlements
+    const stepped = Math.round(rawHeight * 2.5) / 2.5;
+    height = rawHeight + (stepped - rawHeight) * stepStrength * 0.7;
+  }
+
   return Math.max(-1, height);
 }
 
