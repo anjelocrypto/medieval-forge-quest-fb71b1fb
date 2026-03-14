@@ -28,11 +28,16 @@ export function HorseGLBModel({ moveSpeed, scale = 1 }: Props) {
   const walkActionRef = useRef<THREE.AnimationAction | null>(null);
   const currentStateRef = useRef<'standing' | 'walking'>('standing');
 
+  // Calculate Y offset to place feet on ground
+  const yOffset = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(clonedScene);
+    return -box.min.y; // lift model so lowest point is at Y=0
+  }, [clonedScene]);
+
   useEffect(() => {
     const mixer = new THREE.AnimationMixer(clonedScene);
     mixerRef.current = mixer;
 
-    // Standing clip from standing GLB
     if (standingGltf.animations.length > 0) {
       const action = mixer.clipAction(standingGltf.animations[0], clonedScene);
       action.play();
@@ -40,7 +45,6 @@ export function HorseGLBModel({ moveSpeed, scale = 1 }: Props) {
       standActionRef.current = action;
     }
 
-    // Walking clip from walking GLB
     if (walkingGltf.animations.length > 0) {
       const action = mixer.clipAction(walkingGltf.animations[0], clonedScene);
       action.play();
@@ -79,11 +83,13 @@ export function HorseGLBModel({ moveSpeed, scale = 1 }: Props) {
   });
 
   return (
-    <primitive
-      object={clonedScene}
-      scale={[scale, scale, scale]}
-      castShadow
-      receiveShadow
-    />
+    <group position={[0, yOffset * scale, 0]}>
+      <primitive
+        object={clonedScene}
+        scale={[scale, scale, scale]}
+        castShadow
+        receiveShadow
+      />
+    </group>
   );
 }
