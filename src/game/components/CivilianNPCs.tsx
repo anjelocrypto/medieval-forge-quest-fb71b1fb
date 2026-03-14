@@ -161,6 +161,8 @@ export function CivilianNPCs({ playerPositionRef }: CivilianNPCsProps) {
         return (
           <group key={`glb-v-group-${gi}`}>
             {group.villagers.map(v => {
+              if (v.villagerType === 'guardian')
+                return <GuardianModel key={v.id} def={v} playerPos={playerPos} />;
               if (v.villagerType === 'elder')
                 return <ElderManModel key={v.id} def={v} playerPos={playerPos} />;
               if (v.villagerType === 'gardener')
