@@ -31,10 +31,11 @@ function generateGLBVillagers(): GLBVillagerDef[] {
 
   const pickType = (): GLBVillagerType => {
     const r = rng();
-    if (r < 0.25) return 'man1';
-    if (r < 0.50) return 'woman1';
-    if (r < 0.75) return 'gardener';
-    return 'elder';
+    if (r < 0.20) return 'man1';
+    if (r < 0.40) return 'woman1';
+    if (r < 0.60) return 'gardener';
+    if (r < 0.80) return 'elder';
+    return 'guardian';
   };
 
   const add = (x: number, z: number, opts?: Partial<GLBVillagerDef>) => {
