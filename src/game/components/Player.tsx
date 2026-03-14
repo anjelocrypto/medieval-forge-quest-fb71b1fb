@@ -121,6 +121,7 @@ export function Player({
   const comboWindowRef = useRef(0);
   const isFightingRef = useRef(false);
   const moveSpeedRef = useRef(0);
+  const mountedZeroRef = useRef(0); // always 0 — used to suppress player anim when mounted
   const currentSpeedRef = useRef(0); // actual interpolated speed for acceleration feel
   const survivalAccumRef = useRef(0);
   const lootCheckRef = useRef(0);
@@ -827,22 +828,10 @@ export function Player({
   const airArmRaise = airT * -0.4;
   const airBodyCurl = airT * -0.05; // slight forward curl
 
-  // Horse animation — gallop rhythm
-  const horseGaitFreq = ms > 0.7 ? 1.15 : 1; // gallop has different rhythm
-  const ht = t * horseGaitFreq;
-  const horseLegFL = isMounted ? Math.sin(ht) * 0.55 * ms : 0;
-  const horseLegFR = isMounted ? Math.sin(ht + Math.PI * 0.5) * 0.55 * ms : 0;
-  const horseLegBL = isMounted ? Math.sin(ht + Math.PI) * 0.6 * ms : 0;
-  const horseLegBR = isMounted ? Math.sin(ht + Math.PI * 1.5) * 0.6 * ms : 0;
-  const horseBodyBob = isMounted ? Math.abs(Math.sin(ht * 2)) * 0.12 * ms : 0;
-  const horseNeckBob = isMounted ? Math.sin(ht * 2 + 0.5) * 0.1 * ms : 0;
-  const horseHeadNod = isMounted ? Math.sin(ht * 2 + 1) * 0.06 * ms : 0;
-  // Rider syncs with horse bounce but slightly delayed (body absorbs)
-  const riderBounce = isMounted ? Math.abs(Math.sin(ht * 2 + 0.3)) * 0.08 * ms : 0;
-  const riderSway = isMounted ? Math.sin(ht + 0.2) * 0.04 * ms : 0;
-  const riderLean = isMounted ? lean * 0.6 : 0; // rider leans into turns
+  // Horse — all animation is handled by HorseGLBModel via horsewalk.glb / horsestanding.glb
+  // Only rider lean/sway for visual polish, NO procedural horse leg/bob
+  const riderLean = isMounted ? lean * 0.6 : 0;
   const horsePitch = horsePitchRef.current;
-  // Rider compensates on slopes — leans back uphill, forward downhill
   const riderSlopeComp = isMounted ? -horsePitch * 0.35 : 0;
 
   if (isDead) {
@@ -864,14 +853,14 @@ export function Player({
     );
   }
 
-  const playerY = isMounted ? 1.2 + riderBounce : 0;
+  const playerY = isMounted ? 1.2 : 0;
 
   return (
     <group ref={groupRef}>
       <group ref={bodyRef}>
         {/* ===== MOUNTED HORSE (GLB) ===== */}
         {isMounted && (
-          <group position={[riderLean * 0.1, horseBodyBob, 0]} rotation={[horsePitch, 0, 0]}>
+          <group position={[riderLean * 0.1, 0, 0]} rotation={[horsePitch, 0, 0]}>
             <Suspense fallback={null}>
               <HorseGLBModel moveSpeed={currentSpeedRef} />
             </Suspense>
@@ -880,19 +869,19 @@ export function Player({
 
         {/* ===== PLAYER CHARACTER — GLB MODEL ===== */}
         <group
-          position={[hipSway + idleWeightShift, playerY, atkLunge]}
+          position={[isMounted ? 0 : hipSway + idleWeightShift, playerY, isMounted ? 0 : atkLunge]}
           rotation={[
-            bodyForwardLean + idleSway + airBodyCurl + riderSlopeComp,
-            torsoTwist + atkBodyTwist + (isMounted ? riderSway : 0) + idleHeadLook,
-            lean + riderLean
+            isMounted ? riderSlopeComp : bodyForwardLean + idleSway + airBodyCurl + riderSlopeComp,
+            isMounted ? 0 : torsoTwist + atkBodyTwist + idleHeadLook,
+            isMounted ? riderLean : lean + riderLean
           ]}
         >
           {character === 'goblin' ? (
-            <GoblinGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={attackAnimRef} isFightingRef={isFightingRef} />
+            <GoblinGLBModel moveSpeedRef={isMounted ? mountedZeroRef : moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={isMounted ? mountedZeroRef : attackAnimRef} isFightingRef={isFightingRef} />
           ) : character === 'octopus' ? (
-            <OctopusGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={attackAnimRef} isFightingRef={isFightingRef} />
+            <OctopusGLBModel moveSpeedRef={isMounted ? mountedZeroRef : moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={isMounted ? mountedZeroRef : attackAnimRef} isFightingRef={isFightingRef} />
           ) : (
-            <PlayerGLBModel moveSpeedRef={moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={attackAnimRef} isFightingRef={isFightingRef} />
+            <PlayerGLBModel moveSpeedRef={isMounted ? mountedZeroRef : moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={isMounted ? mountedZeroRef : attackAnimRef} isFightingRef={isFightingRef} />
           )}
         </group>
       </group>
