@@ -1,5 +1,5 @@
 /**
- * CivilianNPCs — GLB-based townspeople (VillagerMan1, VillagerWoman1, GardenerWoman & ElderMan).
+ * CivilianNPCs — GLB-based townspeople (VillagerMan1, VillagerWoman1, GardenerWoman, ElderMan & Guardian).
  * Distance-culled by kingdom group for performance.
  */
 import { Suspense } from 'react';
