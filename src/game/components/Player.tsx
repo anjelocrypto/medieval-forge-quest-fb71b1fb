@@ -6,6 +6,7 @@ import { GoblinGLBModel } from './GoblinCharacterModel';
 import { GoblinDeadModel } from './GoblinDeadModel';
 import { OctopusGLBModel } from './OctopusCharacterModel';
 import { OctopusDeadModel } from './OctopusDeadModel';
+import { NemoClawGLBModel } from './NemoClawCharacterModel';
 import { useCharacter } from '../context/CharacterContext';
 import { getTerrainHeight } from './Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
