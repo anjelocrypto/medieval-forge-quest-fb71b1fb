@@ -60,10 +60,7 @@ function StandingModel({ url, selected }: { url: string; selected: boolean }) {
     };
   }, [actions]);
 
-  useFrame((_, delta) => {
-    if (!spinRef.current || !selected) return;
-    spinRef.current.rotation.y += Math.min(delta, 0.05) * 0.9;
-  });
+  // No spinning — all characters face camera statically
 
   return (
     <group ref={spinRef}>
@@ -87,9 +84,9 @@ export function CharacterPreview({ characterType, selected }: CharacterPreviewPr
   return (
     <div style={{ width: '100%', height: 170, position: 'relative' }}>
       <Canvas
-        frameloop={selected ? 'always' : 'demand'}
+        frameloop="demand"
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
-        camera={{ position: [0, 0.85, 3.8], fov: 30 }}
+        camera={{ position: [0, 0.65, 3.8], fov: 30 }}
         style={{ background: 'transparent' }}
         dpr={[1, 1]}
       >
@@ -97,7 +94,7 @@ export function CharacterPreview({ characterType, selected }: CharacterPreviewPr
         <directionalLight position={[2.4, 4, 2]} intensity={1.1} />
         <directionalLight position={[-2, 2, -2]} intensity={0.35} />
 
-        <group position={[0, -0.45, 0]}>
+        <group position={[0, -0.65, 0]}>
           <StandingModel url={url} selected={selected} />
         </group>
       </Canvas>
