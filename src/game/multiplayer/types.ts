@@ -46,7 +46,7 @@ export interface WorldEvent {
 export interface InterpolatedPlayer {
   playerId: string;
   displayName: string;
-  characterType: 'soldier' | 'goblin' | 'octopus';
+  characterType: 'soldier' | 'goblin' | 'octopus' | 'nemoclaw';
   // Interpolation buffers
   prevPosition: [number, number, number];
   targetPosition: [number, number, number];
