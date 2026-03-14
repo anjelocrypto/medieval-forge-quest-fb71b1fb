@@ -1,75 +1,103 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
+import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
-import { GoblinGLBModel } from '../components/GoblinCharacterModel';
-import { PlayerGLBModel } from '../components/PlayerCharacterModel';
-import { OctopusGLBModel } from '../components/OctopusCharacterModel';
-import { NemoClawGLBModel } from '../components/NemoClawCharacterModel';
+import goblinStandingUrl from '@/assets/goblinstanding.glb?url';
+import soldierStandingUrl from '@/assets/standing.glb?url';
+import octopusStandingUrl from '@/assets/octopusstanding.glb?url';
+import nemoStandingUrl from '@/assets/nemostanding.glb?url';
+import {
+  buildModelNormalization,
+  cloneScene,
+  enableMeshShadows,
+  sanitizeClips,
+} from '../multiplayer/remoteModelUtils';
 
 interface CharacterPreviewProps {
   characterType: string;
   selected: boolean;
 }
 
-function Turntable({ selected, children }: { selected: boolean; children: React.ReactNode }) {
-  const groupRef = useRef<THREE.Group>(null);
+const STANDING_URLS: Record<string, string> = {
+  goblin: goblinStandingUrl,
+  soldier: soldierStandingUrl,
+  octopus: octopusStandingUrl,
+  nemoclaw: nemoStandingUrl,
+};
+
+const PREVIEW_HEIGHT = 1.85;
+
+function StandingModel({ url, selected }: { url: string; selected: boolean }) {
+  const gltf = useGLTF(url);
+  const rootRef = useRef<THREE.Group>(null);
+  const spinRef = useRef<THREE.Group>(null);
+
+  const scene = useMemo(() => cloneScene(gltf.scene), [gltf.scene]);
+  const clips = useMemo(() => sanitizeClips(gltf.animations), [gltf.animations]);
+  const { actions } = useAnimations(clips, rootRef);
+
+  const norm = useMemo(() => {
+    return buildModelNormalization(scene, PREVIEW_HEIGHT, 0, 1, [0, 0, 0]);
+  }, [scene]);
+
+  useEffect(() => {
+    enableMeshShadows(scene);
+  }, [scene]);
+
+  useEffect(() => {
+    const name = Object.keys(actions)[0];
+    if (!name || !actions[name]) return;
+
+    const action = actions[name]!;
+    action.reset();
+    action.setLoop(THREE.LoopRepeat, Infinity);
+    action.enabled = true;
+    action.play();
+
+    return () => {
+      action.stop();
+    };
+  }, [actions]);
 
   useFrame((_, delta) => {
-    if (!groupRef.current) return;
-    if (selected) groupRef.current.rotation.y += delta * 0.9;
+    if (!spinRef.current || !selected) return;
+    spinRef.current.rotation.y += Math.min(delta, 0.05) * 0.9;
   });
 
-  return <group ref={groupRef}>{children}</group>;
-}
-
-function PreviewModel({ characterType }: { characterType: string }) {
-  const moveSpeedRef = useRef(0);
-  const isGroundedRef = useRef(true);
-  const attackAnimRef = useRef(0);
-  const noop = useMemo(() => () => {}, []);
-
-  const commonProps = {
-    moveSpeedRef,
-    controllerHalfHeight: 0.9,
-    isGroundedRef,
-    activeEmote: null,
-    activeEmoteId: 0,
-    onEmoteComplete: noop,
-    attackAnimRef,
-  };
-
-  switch (characterType) {
-    case 'goblin':
-      return <GoblinGLBModel {...commonProps} />;
-    case 'octopus':
-      return <OctopusGLBModel {...commonProps} />;
-    case 'nemoclaw':
-      return <NemoClawGLBModel {...commonProps} />;
-    case 'soldier':
-    default:
-      return <PlayerGLBModel {...commonProps} />;
-  }
+  return (
+    <group ref={spinRef}>
+      <group ref={rootRef} rotation={[0, norm.yawCorrection, 0]}>
+        <group scale={[norm.scale, norm.scale, norm.scale]}>
+          <group position={norm.modelAnchorOffset}>
+            <group position={[0, -0.02, 0]}>
+              <primitive object={scene} dispose={null} />
+            </group>
+          </group>
+        </group>
+      </group>
+    </group>
+  );
 }
 
 export function CharacterPreview({ characterType, selected }: CharacterPreviewProps) {
+  const url = STANDING_URLS[characterType];
+  if (!url) return null;
+
   return (
     <div style={{ width: '100%', height: 170, position: 'relative' }}>
       <Canvas
-        gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
-        camera={{ position: [0, 1.35, 3.2], fov: 34 }}
+        frameloop={selected ? 'always' : 'demand'}
+        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        camera={{ position: [0, 1.25, 2.8], fov: 34 }}
         style={{ background: 'transparent' }}
-        dpr={[1, 1.5]}
+        dpr={[1, 1]}
       >
-        <ambientLight intensity={0.55} />
-        <directionalLight position={[2, 4, 2]} intensity={1.1} />
+        <ambientLight intensity={0.7} />
+        <directionalLight position={[2.4, 4, 2]} intensity={1.1} />
         <directionalLight position={[-2, 2, -2]} intensity={0.35} />
 
-        <Turntable selected={selected}>
-          <group rotation={[0, Math.PI, 0]} position={[0, -0.3, 0]}>
-            <PreviewModel characterType={characterType} />
-          </group>
-        </Turntable>
+        <StandingModel url={url} selected={selected} />
       </Canvas>
     </div>
   );
