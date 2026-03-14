@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect, useMemo, Suspense } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { PlayerGLBModel } from './PlayerCharacterModel';
@@ -26,6 +26,7 @@ import { PlacedStructure } from '../systems/BuildingData';
 import { HorseData, HORSE_SPEED, HORSE_RUN_SPEED, MOUNT_RANGE, DISMOUNT_OFFSET } from '../systems/HorseData';
 import { resolveCollision, rebuildObstacles } from '../systems/CollisionSystem';
 import { WorldResource, INTERACTION_RANGE, GATHER_COOLDOWN, TREE_WOOD_REWARD, ROCK_STONE_REWARD, BERRY_FOOD_REWARD, CRATE_REWARDS } from '../systems/WorldResources';
+import { HorseGLBModel } from './HorseGLBModel';
 
 export interface MountedDebugData {
   terrainY: number;
@@ -868,88 +869,12 @@ export function Player({
   return (
     <group ref={groupRef}>
       <group ref={bodyRef}>
-        {/* ===== MOUNTED HORSE ===== */}
+        {/* ===== MOUNTED HORSE (GLB) ===== */}
         {isMounted && (
-          <group position={[riderLean * 0.1, -2.2 + horseBodyBob, 0]} rotation={[horsePitch, 0, 0]}>
-            {/* Body */}
-            <mesh position={[0, 1.1, 0]} castShadow>
-              <boxGeometry args={[0.7, 0.65, 1.6]} />
-              <meshLambertMaterial color="#6a4a2a" />
-            </mesh>
-            <mesh position={[0, 1.15, 0.6]} castShadow>
-              <boxGeometry args={[0.6, 0.55, 0.4]} />
-              <meshLambertMaterial color="#6a4a2a" />
-            </mesh>
-            <mesh position={[0, 1.05, -0.65]} castShadow>
-              <boxGeometry args={[0.55, 0.5, 0.35]} />
-              <meshLambertMaterial color="#6a4a2a" />
-            </mesh>
-            {/* Neck with bob */}
-            <group position={[0, 1.55 + horseNeckBob, 0.8]} rotation={[0.5 + horseHeadNod, 0, 0]}>
-              <mesh castShadow>
-                <boxGeometry args={[0.35, 0.7, 0.35]} />
-                <meshLambertMaterial color="#6a4a2a" />
-              </mesh>
-            </group>
-            {/* Head with nod */}
-            <group position={[0, 1.85 + horseNeckBob, 1.15 + horseHeadNod * 0.5]}>
-              <mesh castShadow>
-                <boxGeometry args={[0.3, 0.28, 0.45]} />
-                <meshLambertMaterial color="#6a4a2a" />
-              </mesh>
-              <mesh position={[0, -0.08, 0.25]} castShadow>
-                <boxGeometry args={[0.22, 0.18, 0.25]} />
-                <meshLambertMaterial color="#4a3218" />
-              </mesh>
-              <mesh position={[-0.08, 0.2, 0]} castShadow>
-                <boxGeometry args={[0.06, 0.14, 0.06]} />
-                <meshLambertMaterial color="#4a3218" />
-              </mesh>
-              <mesh position={[0.08, 0.2, 0]} castShadow>
-                <boxGeometry args={[0.06, 0.14, 0.06]} />
-                <meshLambertMaterial color="#4a3218" />
-              </mesh>
-            </group>
-            {/* Mane */}
-            <mesh position={[0, 1.65, 0.65]} rotation={[0.4, 0, 0]} castShadow>
-              <boxGeometry args={[0.08, 0.5, 0.3]} />
-              <meshLambertMaterial color="#2a1a08" />
-            </mesh>
-            {/* Saddle */}
-            <mesh position={[0, 1.5, 0.05]} castShadow>
-              <boxGeometry args={[0.55, 0.12, 0.5]} />
-              <meshLambertMaterial color="#5a2010" />
-            </mesh>
-            {/* Legs — proper gait cycle */}
-            {([
-              [-0.22, 0.5, horseLegFL],
-              [0.22, 0.5, horseLegFR],
-              [-0.22, -0.5, horseLegBL],
-              [0.22, -0.5, horseLegBR],
-            ] as [number, number, number][]).map(([lx, lz, anim], i) => (
-              <group key={i} position={[lx, 0.55, lz]} rotation={[anim, 0, 0]}>
-                <mesh position={[0, 0, 0]} castShadow>
-                  <boxGeometry args={[0.16, 0.7, 0.16]} />
-                  <meshLambertMaterial color="#6a4a2a" />
-                </mesh>
-                <mesh position={[0, -0.43, 0]} castShadow>
-                  <boxGeometry args={[0.14, 0.35, 0.14]} />
-                  <meshLambertMaterial color="#4a3218" />
-                </mesh>
-                <mesh position={[0, -0.58, 0]} castShadow>
-                  <boxGeometry args={[0.15, 0.08, 0.18]} />
-                  <meshLambertMaterial color="#1a1a1a" />
-                </mesh>
-              </group>
-            ))}
-            {/* Tail */}
-            <group position={[0, 1.0, -0.95]}
-              rotation={[Math.sin(t * 1.5 + 1) * 0.35 * Math.max(0.3, ms) - 0.3, Math.sin(t * 0.7) * 0.1, 0]}>
-              <mesh castShadow>
-                <boxGeometry args={[0.06, 0.5, 0.06]} />
-                <meshLambertMaterial color="#2a1a08" />
-              </mesh>
-            </group>
+          <group position={[riderLean * 0.1, -0.1 + horseBodyBob, 0]} rotation={[horsePitch, 0, 0]}>
+            <Suspense fallback={null}>
+              <HorseGLBModel moveSpeed={currentSpeedRef.current} />
+            </Suspense>
           </group>
         )}
 

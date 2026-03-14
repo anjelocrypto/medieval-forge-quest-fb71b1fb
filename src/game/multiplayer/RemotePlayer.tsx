@@ -5,6 +5,7 @@ import { InterpolatedPlayer, BROADCAST_RATE_MS, EMOTES } from './types';
 import { getTerrainHeight } from '../components/Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
 import { Html } from '@react-three/drei';
+import { HorseGLBModel } from '../components/HorseGLBModel';
 
 import { RemoteGoblinModel } from './RemoteGoblinModel';
 import { RemoteSoldierModel } from './RemoteSoldierModel';
@@ -17,12 +18,6 @@ interface Props {
 const horseMat = new THREE.MeshLambertMaterial({ color: '#5a3a1a' });
 const saddleMat = new THREE.MeshLambertMaterial({ color: '#4a2010' });
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-
-// Character-specific rider materials
-const soldierBodyMat = new THREE.MeshLambertMaterial({ color: '#3a5a8a' });
-const soldierHeadMat = new THREE.MeshLambertMaterial({ color: '#d4a574' });
-const goblinBodyMat = new THREE.MeshLambertMaterial({ color: '#4a6a3a' });
-const goblinHeadMat = new THREE.MeshLambertMaterial({ color: '#7a9a5a' });
 
 // Nametag heights per character type
 const NAMETAG_HEIGHT_GOBLIN = 2.0;
@@ -194,30 +189,11 @@ function FallbackBox({ charType }: { charType: string }) {
 }
 
 function MountedRemoteModel({ moveSpeed, horsePitch, charType }: { moveSpeed: number; horsePitch: number; charType: string }) {
-  const bobAmount = moveSpeed > 1 ? Math.sin(Date.now() * 0.006) * 0.08 : 0;
-  const isGoblin = charType === 'goblin';
-  const bodyMat = isGoblin ? goblinBodyMat : soldierBodyMat;
-  const headMat = isGoblin ? goblinHeadMat : soldierHeadMat;
-  const riderScale = isGoblin ? 0.7 : 1.0;
-
   return (
     <group rotation={[horsePitch, 0, 0]}>
-      {/* Horse body */}
-      <mesh geometry={boxGeo} material={horseMat} position={[0, 0.9, 0]} scale={[0.7, 0.7, 1.8]} />
-      {/* Horse head */}
-      <mesh geometry={boxGeo} material={horseMat} position={[0, 1.3, -0.9]} scale={[0.35, 0.45, 0.5]} />
-      {/* Horse legs */}
-      {[[-0.25, -0.5], [-0.25, 0.5], [0.25, -0.5], [0.25, 0.5]].map(([x, z], i) => (
-        <mesh key={i} geometry={boxGeo} material={horseMat}
-          position={[x, 0.25, z]} scale={[0.18, 0.65, 0.18]} />
-      ))}
-      {/* Saddle */}
-      <mesh geometry={boxGeo} material={saddleMat} position={[0, 1.35, 0]} scale={[0.6, 0.12, 0.5]} />
-      {/* Rider — scaled by character type */}
-      <group position={[0, 1.7 + bobAmount, 0]} scale={[riderScale, riderScale, riderScale]}>
-        <mesh geometry={boxGeo} material={bodyMat} position={[0, 0.3, 0]} scale={[0.5, 0.6, 0.35]} />
-        <mesh geometry={boxGeo} material={headMat} position={[0, 0.8, 0]} scale={[0.33, 0.33, 0.33]} />
-      </group>
+      <Suspense fallback={null}>
+        <HorseGLBModel moveSpeed={moveSpeed} />
+      </Suspense>
     </group>
   );
 }
