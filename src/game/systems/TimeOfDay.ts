@@ -1,12 +1,12 @@
 /**
  * Shared time-of-day state.
  * One global clock drives sun position, sky color, fog, and light.
- * Day length is ~10 real minutes by default.
+ * Day length is 1 real hour (3600s).
  */
 import * as THREE from 'three';
 
-// Full cycle = 600 seconds (10 min)
-const DAY_LENGTH = 600;
+// Full cycle = 3600 seconds (1 hour)
+const DAY_LENGTH = 3600;
 
 /** 0 = midnight, 0.25 = sunrise, 0.5 = noon, 0.75 = sunset */
 let timeOfDay = 0.72; // start at golden hour / early sunset
