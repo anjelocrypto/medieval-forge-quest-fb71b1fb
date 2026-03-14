@@ -10,6 +10,13 @@ import * as THREE from 'three';
 import { getTerrainHeight } from './Terrain';
 import { SETTLEMENTS } from '../world/RegionData';
 import { VillagerMan1Model, VillagerMan1Def } from './VillagerMan1Model';
+import { VillagerWoman1Model } from './VillagerWoman1Model';
+
+type GLBVillagerType = 'man1' | 'woman1';
+
+interface GLBVillagerDef extends VillagerMan1Def {
+  villagerType: GLBVillagerType;
+}
 
 type CivilianBehavior = 'idle' | 'patrol' | 'talking';
 type CivilianRole = 'villager' | 'merchant' | 'guard' | 'worker';
