@@ -147,6 +147,12 @@ export function VillagerMan1Model({ def, playerPos }: Props) {
     }
   }, [standAction, walkAction]);
 
+  // Previous position for facing direction
+  const prevPosRef = useRef<[number, number]>([
+    def.homePos[0] + Math.cos(def.facingAngle) * def.patrolRadius,
+    def.homePos[2] + Math.sin(def.facingAngle) * def.patrolRadius,
+  ]);
+
   useFrame((_, delta) => {
     if (!groupRef.current) return;
     const dt = Math.min(delta, 0.05);
@@ -180,38 +186,51 @@ export function VillagerMan1Model({ def, playerPos }: Props) {
       }
     }
 
-    // Movement
+    // Compute position on patrol circle
+    const pa = patrolAngleRef.current;
+    let tx: number, tz: number;
+
     if (phase === 'walking') {
       patrolAngleRef.current += dt * def.patrolSpeed * 0.3;
-      const pa = patrolAngleRef.current;
-      const tx = def.homePos[0] + Math.cos(pa) * def.patrolRadius;
-      const tz = def.homePos[2] + Math.sin(pa) * def.patrolRadius;
-      const ty = getTerrainHeight(tx, tz);
-      groupRef.current.position.set(tx, ty, tz);
-      const targetAngle = pa + Math.PI / 2;
-      facingRef.current += (((targetAngle - facingRef.current + Math.PI) % (Math.PI * 2)) - Math.PI) * dt * 4;
-      groupRef.current.rotation.y = facingRef.current;
+      const newPa = patrolAngleRef.current;
+      tx = def.homePos[0] + Math.cos(newPa) * def.patrolRadius;
+      tz = def.homePos[2] + Math.sin(newPa) * def.patrolRadius;
+
+      // Compute facing from actual movement direction
+      const dx = tx - prevPosRef.current[0];
+      const dz = tz - prevPosRef.current[1];
+      if (dx * dx + dz * dz > 1e-8) {
+        // atan2(dx, dz) gives angle where +Z is 0, rotating toward +X
+        const targetAngle = Math.atan2(dx, dz);
+        // Smooth angle interpolation with proper wrapping
+        let angleDiff = targetAngle - facingRef.current;
+        // Wrap to [-PI, PI]
+        angleDiff = angleDiff - Math.PI * 2 * Math.round(angleDiff / (Math.PI * 2));
+        facingRef.current += angleDiff * Math.min(1, dt * 5);
+      }
+      prevPosRef.current[0] = tx;
+      prevPosRef.current[1] = tz;
     } else {
       // Stay in place during standing
-      const tx = def.homePos[0] + Math.cos(patrolAngleRef.current) * def.patrolRadius;
-      const tz = def.homePos[2] + Math.sin(patrolAngleRef.current) * def.patrolRadius;
-      const ty = getTerrainHeight(tx, tz);
-      groupRef.current.position.set(tx, ty, tz);
-      groupRef.current.rotation.y = facingRef.current;
+      tx = def.homePos[0] + Math.cos(pa) * def.patrolRadius;
+      tz = def.homePos[2] + Math.sin(pa) * def.patrolRadius;
     }
+
+    const ty = getTerrainHeight(tx, tz);
+    groupRef.current.position.set(tx, ty, tz);
+    groupRef.current.rotation.y = facingRef.current;
 
     // Update mixers
     walkMixer.update(dt);
     standMixer.update(dt);
 
     // Show/hide correct scene
-    if (innerRef.current) {
-      walkScene.visible = phase === 'walking';
-      standScene.visible = phase === 'standing';
-    }
+    walkScene.visible = phase === 'walking';
+    standScene.visible = phase === 'standing';
   });
 
-  const footY = phase === 'walking' ? walkFootY : standFootY;
+  // Use averaged foot offset for consistent ground placement
+  const footY = (walkFootY + standFootY) / 2;
 
   return (
     <group ref={groupRef} position={def.homePos} rotation={[0, def.facingAngle, 0]}>
