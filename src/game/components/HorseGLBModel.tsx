@@ -60,6 +60,8 @@ export function HorseGLBModel({ moveSpeed, scale = 1 }: Props) {
     };
   }, [clonedScene, standingGltf.animations, walkingGltf.animations]);
 
+  const auditCountRef = useRef(0);
+
   useFrame((_, delta) => {
     const mixer = mixerRef.current;
     if (!mixer) return;
@@ -71,8 +73,15 @@ export function HorseGLBModel({ moveSpeed, scale = 1 }: Props) {
     const isMoving = speed > 0.5;
     const wantState = isMoving ? 'walking' : 'standing';
 
+    // Debug audit logging (first 5 frames only)
+    if (auditCountRef.current < 5) {
+      auditCountRef.current++;
+      console.log(`[HorseAudit] renderPath=HorseGLBModel speed=${speed.toFixed(1)} anim=${wantState} walkActive=${walkActionRef.current?.getEffectiveWeight().toFixed(2)} standActive=${standActionRef.current?.getEffectiveWeight().toFixed(2)} refType=${typeof moveSpeed === 'number' ? 'number' : 'ref'}`);
+    }
+
     if (wantState !== currentStateRef.current) {
       currentStateRef.current = wantState;
+      console.log(`[HorseAudit] TRANSITION → ${wantState} speed=${speed.toFixed(1)}`);
       const fadeTime = 0.3;
       if (wantState === 'walking') {
         walkActionRef.current?.reset().setEffectiveWeight(1).fadeIn(fadeTime).play();
