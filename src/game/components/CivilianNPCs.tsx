@@ -445,21 +445,24 @@ function Civilian({ def, playerPos }: { def: CivilianDef; playerPos: THREE.Vecto
 }
 
 // ========== GLB VILLAGER NPC DEFINITIONS ==========
-function generateGLBVillagers(): VillagerMan1Def[] {
+function generateGLBVillagers(): GLBVillagerDef[] {
   const rng = seededRng(77777);
-  const defs: VillagerMan1Def[] = [];
+  const defs: GLBVillagerDef[] = [];
   let id = 0;
 
-  const add = (x: number, z: number, opts?: Partial<VillagerMan1Def>) => {
+  const add = (x: number, z: number, opts?: Partial<GLBVillagerDef>) => {
     const y = getTerrainHeight(x, z);
+    // Alternate between man1 and woman1 based on seeded rng
+    const villagerType: GLBVillagerType = rng() > 0.5 ? 'woman1' : 'man1';
     defs.push({
-      id: `vm1-${id++}`,
+      id: `glb-v-${id++}`,
       homePos: [x, y, z],
       patrolRadius: 4 + rng() * 5,
       patrolSpeed: 0.5 + rng() * 0.4,
       facingAngle: rng() * Math.PI * 2,
       standDuration: 30 + rng() * 40,
       walkDuration: 20 + rng() * 30,
+      villagerType,
       ...opts,
     });
   };
