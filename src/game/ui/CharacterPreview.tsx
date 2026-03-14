@@ -94,7 +94,7 @@ export function CharacterPreview({ characterType, selected }: CharacterPreviewPr
         <directionalLight position={[2.4, 4, 2]} intensity={1.1} />
         <directionalLight position={[-2, 2, -2]} intensity={0.35} />
 
-        <group position={[0, -0.65, 0]}>
+        <group position={[0, -0.85, 0]}>
           <StandingModel url={url} selected={selected} />
         </group>
       </Canvas>
