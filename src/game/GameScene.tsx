@@ -41,6 +41,7 @@ import { useCharacter } from './context/CharacterContext';
 import { PerfBaselineR3F, PerfBaselineHUD } from './debug/PerfBaseline';
 import { WebGLRecovery } from './systems/WebGLRecovery';
 import { SceneDiagnosticsBoundary } from './debug/SceneDiagnostics';
+import { preloadRemoteCharacterModels } from './multiplayer/preloadRemoteModels';
 
 interface GameSceneProps {
   multiplayer: ReturnType<typeof import('./multiplayer/useMultiplayer').useMultiplayer>;
@@ -90,9 +91,10 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
   const isGroundedRef = useRef(true);
   const attackAnimRef = useRef(0);
 
-  // Debug: track GameScene mount/unmount
+  // Debug: track GameScene mount/unmount + preload remote character GLBs
   useEffect(() => {
     console.log('[GameScene] MOUNTED');
+    preloadRemoteCharacterModels();
     return () => console.log('[GameScene] UNMOUNTED');
   }, []);
 

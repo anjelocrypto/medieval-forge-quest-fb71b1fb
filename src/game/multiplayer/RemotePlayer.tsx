@@ -12,6 +12,23 @@ import { RemoteSoldierModel } from './RemoteSoldierModel';
 import { RemoteOctopusModel } from './RemoteOctopusModel';
 import { RemoteNemoClawModel } from './RemoteNemoClawModel';
 
+// Visible placeholder capsule shown while remote character GLBs are loading
+function RemotePlayerFallback() {
+  return (
+    <group>
+      <mesh position={[0, 0.9, 0]} castShadow>
+        <capsuleGeometry args={[0.3, 1.2, 4, 8]} />
+        <meshStandardMaterial color="#888" transparent opacity={0.6} />
+      </mesh>
+      {/* Small head sphere */}
+      <mesh position={[0, 1.8, 0]} castShadow>
+        <sphereGeometry args={[0.22, 8, 8]} />
+        <meshStandardMaterial color="#aaa" transparent opacity={0.6} />
+      </mesh>
+    </group>
+  );
+}
+
 interface Props {
   player: InterpolatedPlayer;
 }
@@ -130,7 +147,7 @@ export function RemotePlayer({ player }: Props) {
       {player.isMounted ? (
         <MountedRemoteModel moveSpeed={player.moveSpeed} horsePitch={player.horsePitch} />
       ) : (
-        <Suspense fallback={null}>
+        <Suspense fallback={<RemotePlayerFallback />}>
           {charType === 'goblin' ? (
             <RemoteGoblinModel
               moveSpeed={player.moveSpeed}
