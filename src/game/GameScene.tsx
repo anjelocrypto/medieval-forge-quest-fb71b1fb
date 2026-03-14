@@ -350,6 +350,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
           <SkyCreatures playerPositionRef={playerPositionRef} />
           <WildernessStructures playerPositionRef={playerPositionRef} />
           <Bridges playerPositionRef={playerPositionRef} />
+          <NightLighting playerPositionRef={playerPositionRef} />
           <AmbientEffects />
           <CameraController targetRef={playerPositionRef} azimuthRef={cameraAzimuthRef} isMounted={isMounted} />
           <Player
