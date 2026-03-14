@@ -569,7 +569,7 @@ export function Player({
     }
 
     // === GROUNDING — terrain height at FINAL resolved X/Z ===
-    const heightOffset = isMounted ? 2.2 : PLAYER_HEIGHT / 2;
+    const heightOffset = isMounted ? 0 : PLAYER_HEIGHT / 2;
     const rawTerrainY = getTerrainHeight(pos.x, pos.z);
     // Bridge override: if player is on a bridge, use bridge deck height
     const bridgeY = getBridgeHeight(pos.x, pos.z);
