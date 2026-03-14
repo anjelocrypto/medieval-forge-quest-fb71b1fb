@@ -70,7 +70,7 @@ function House({ pos, rot, w, d, h, style, chimney, shed }: {
       {/* Roof with overhang */}
       {roofMat && (
         <>
-          <mesh position={[0, h + 0.4 + roofH / 2, 0]} geometry={GEO.cone4}
+          <mesh position={[0, h + 0.4 + roofH / 2, 0]} rotation={[0, Math.PI / 4, 0]} geometry={GEO.cone4}
             scale={[(w + roofOverhang) * 0.72, roofH, (d + roofOverhang) * 0.72]} material={roofMat} castShadow />
           {/* Ridge beam */}
           <mesh position={[0, h + 0.4 + roofH + 0.05, 0]} geometry={GEO.box}

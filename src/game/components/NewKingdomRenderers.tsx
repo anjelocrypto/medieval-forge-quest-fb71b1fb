@@ -26,7 +26,7 @@ function SimpleHouse({ pos, rot, w, d, h, mat, roofMat }: {
         scale={[w + 0.3, 0.3, d + 0.3]} material={MAT.cobble} castShadow />
       <mesh position={[0, h / 2 + 0.3, 0]} geometry={GEO.box}
         scale={[w, h, d]} material={mat} castShadow />
-      <mesh position={[0, h + 0.3 + h * 0.35, 0]} geometry={GEO.cone4}
+      <mesh position={[0, h + 0.3 + h * 0.35, 0]} rotation={[0, Math.PI / 4, 0]} geometry={GEO.cone4}
         scale={[w * 0.72, h * 0.7, d * 0.72]} material={roofMat} castShadow />
       <mesh position={[0, 0.7, d / 2 + 0.02]} geometry={GEO.box}
         scale={[0.8, 1.3, 0.06]} material={MAT.door} />

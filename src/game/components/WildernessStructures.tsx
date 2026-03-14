@@ -167,7 +167,7 @@ function WildernessCottage({ pos, rot, w, d }: { pos: [number, number, number]; 
     <group position={pos} rotation={[0, rot, 0]}>
       <mesh position={[0, 0.15, 0]} geometry={GEO.box} scale={[w + 0.3, 0.3, d + 0.3]} material={MAT.cobble} castShadow />
       <mesh position={[0, h / 2 + 0.3, 0]} geometry={GEO.box} scale={[w, h, d]} material={MAT.plasterDirty} castShadow />
-      <mesh position={[0, h + 0.3 + 0.8, 0]} geometry={GEO.cone4} scale={[w * 0.75, 1.6, d * 0.75]} material={MAT.roofThatch} castShadow />
+      <mesh position={[0, h + 0.3 + 0.8, 0]} rotation={[0, Math.PI / 4, 0]} geometry={GEO.cone4} scale={[w * 0.75, 1.6, d * 0.75]} material={MAT.roofThatch} castShadow />
       <mesh position={[0, 0.8, d / 2 + 0.01]} geometry={GEO.box} scale={[0.7, 1.4, 0.08]} material={MAT.door} />
       <mesh position={[w / 2 + 0.01, h * 0.6, 0]} geometry={GEO.box} scale={[0.05, 0.5, 0.5]} material={MAT.dark} />
     </group>
@@ -181,7 +181,7 @@ function WildernessFarmhouse({ pos, rot, w, d }: { pos: [number, number, number]
       <mesh position={[0, 1.5, 0]} geometry={GEO.box} scale={[w, 3, d]} material={MAT.daub} castShadow />
       <mesh position={[0, 1.5, d / 2 + 0.01]} geometry={GEO.box} scale={[w, 0.1, 0.06]} material={MAT.timber} />
       <mesh position={[0, 0.5, d / 2 + 0.01]} geometry={GEO.box} scale={[w, 0.1, 0.06]} material={MAT.timber} />
-      <mesh position={[0, 3.3, 0]} geometry={GEO.cone4} scale={[w * 0.7, 1.8, d * 0.7]} material={MAT.roofTile} castShadow />
+      <mesh position={[0, 3 + 0.9, 0]} rotation={[0, Math.PI / 4, 0]} geometry={GEO.cone4} scale={[w * 0.7, 1.8, d * 0.7]} material={MAT.roofTile} castShadow />
       <mesh position={[0, 0.8, d / 2 + 0.01]} geometry={GEO.box} scale={[0.8, 1.5, 0.08]} material={MAT.door} />
       <mesh position={[w * 0.3, 4, -d * 0.3]} geometry={GEO.box} scale={[0.4, 1.2, 0.4]} material={MAT.stoneDark} castShadow />
       {[-1, 0, 1].map(i => (
@@ -209,7 +209,7 @@ function WildernessShed({ pos, rot }: { pos: [number, number, number]; rot: numb
   return (
     <group position={pos} rotation={[0, rot, 0]}>
       <mesh position={[0, 0.8, 0]} geometry={GEO.box} scale={[2, 1.6, 2.5]} material={MAT.woodWeathered} castShadow />
-      <mesh position={[0, 1.9, 0]} geometry={GEO.cone4} scale={[1.5, 1, 1.8]} material={MAT.roofThatch} castShadow />
+      <mesh position={[0, 1.6 + 0.5, 0]} rotation={[0, Math.PI / 4, 0]} geometry={GEO.cone4} scale={[1.5, 1, 1.8]} material={MAT.roofThatch} castShadow />
       <mesh position={[0, 0.6, 1.26]} geometry={GEO.box} scale={[0.6, 1, 0.06]} material={MAT.door} />
       <mesh position={[1.5, 0.2, 0]} geometry={GEO.box} scale={[0.6, 0.4, 1]} material={MAT.woodDark} castShadow />
     </group>
