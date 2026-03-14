@@ -89,7 +89,7 @@ export function CharacterPreview({ characterType, selected }: CharacterPreviewPr
       <Canvas
         frameloop={selected ? 'always' : 'demand'}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
-        camera={{ position: [0, 1.25, 2.8], fov: 34 }}
+        camera={{ position: [0, 0.85, 3.8], fov: 30 }}
         style={{ background: 'transparent' }}
         dpr={[1, 1]}
       >
@@ -97,7 +97,9 @@ export function CharacterPreview({ characterType, selected }: CharacterPreviewPr
         <directionalLight position={[2.4, 4, 2]} intensity={1.1} />
         <directionalLight position={[-2, 2, -2]} intensity={0.35} />
 
-        <StandingModel url={url} selected={selected} />
+        <group position={[0, -0.45, 0]}>
+          <StandingModel url={url} selected={selected} />
+        </group>
       </Canvas>
     </div>
   );
