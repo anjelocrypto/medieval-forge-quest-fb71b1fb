@@ -1,6 +1,7 @@
 /**
  * HorseGLBModel — GLB-based horse with standing/walking animations.
  * Used by both the free-roaming Horse component and mounted horse in Player.
+ * Accepts moveSpeed as either a number or a React ref for frame-accurate reads.
  */
 import { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
@@ -12,8 +13,7 @@ import horseStandingUrl from '@/assets/horsestanding.glb';
 import horseWalkingUrl from '@/assets/horsewalk.glb';
 
 interface Props {
-  moveSpeed: number;
-  /** Scale override (default 1) */
+  moveSpeed: number | React.RefObject<number>;
   scale?: number;
 }
 
@@ -31,7 +31,7 @@ export function HorseGLBModel({ moveSpeed, scale = 1 }: Props) {
   // Calculate Y offset to place feet on ground
   const yOffset = useMemo(() => {
     const box = new THREE.Box3().setFromObject(clonedScene);
-    return -box.min.y; // lift model so lowest point is at Y=0
+    return -box.min.y;
   }, [clonedScene]);
 
   useEffect(() => {
@@ -66,7 +66,9 @@ export function HorseGLBModel({ moveSpeed, scale = 1 }: Props) {
     const dt = Math.min(delta, 0.05);
     mixer.update(dt);
 
-    const isMoving = moveSpeed > 0.5;
+    // Read speed from ref or direct value
+    const speed = typeof moveSpeed === 'number' ? moveSpeed : (moveSpeed.current ?? 0);
+    const isMoving = speed > 0.5;
     const wantState = isMoving ? 'walking' : 'standing';
 
     if (wantState !== currentStateRef.current) {
