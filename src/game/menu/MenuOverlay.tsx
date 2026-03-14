@@ -80,7 +80,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
             textShadow: '0 2px 15px rgba(0,0,0,0.8)',
             fontFamily: 'Georgia, serif',
           }}>
-            MEDIEVAL FORGE
+            TRENCHERIA
           </h1>
           <p className="text-xs tracking-[0.3em] uppercase" style={{ color: '#8a9ab5' }}>
             Shared Online World
