@@ -10,6 +10,13 @@ import * as THREE from 'three';
 import { getTerrainHeight } from './Terrain';
 import { SETTLEMENTS } from '../world/RegionData';
 import { VillagerMan1Model, VillagerMan1Def } from './VillagerMan1Model';
+import { VillagerWoman1Model } from './VillagerWoman1Model';
+
+type GLBVillagerType = 'man1' | 'woman1';
+
+interface GLBVillagerDef extends VillagerMan1Def {
+  villagerType: GLBVillagerType;
+}
 
 type CivilianBehavior = 'idle' | 'patrol' | 'talking';
 type CivilianRole = 'villager' | 'merchant' | 'guard' | 'worker';
@@ -438,21 +445,24 @@ function Civilian({ def, playerPos }: { def: CivilianDef; playerPos: THREE.Vecto
 }
 
 // ========== GLB VILLAGER NPC DEFINITIONS ==========
-function generateGLBVillagers(): VillagerMan1Def[] {
+function generateGLBVillagers(): GLBVillagerDef[] {
   const rng = seededRng(77777);
-  const defs: VillagerMan1Def[] = [];
+  const defs: GLBVillagerDef[] = [];
   let id = 0;
 
-  const add = (x: number, z: number, opts?: Partial<VillagerMan1Def>) => {
+  const add = (x: number, z: number, opts?: Partial<GLBVillagerDef>) => {
     const y = getTerrainHeight(x, z);
+    // Alternate between man1 and woman1 based on seeded rng
+    const villagerType: GLBVillagerType = rng() > 0.5 ? 'woman1' : 'man1';
     defs.push({
-      id: `vm1-${id++}`,
+      id: `glb-v-${id++}`,
       homePos: [x, y, z],
       patrolRadius: 4 + rng() * 5,
       patrolSpeed: 0.5 + rng() * 0.4,
       facingAngle: rng() * Math.PI * 2,
       standDuration: 30 + rng() * 40,
       walkDuration: 20 + rng() * 30,
+      villagerType,
       ...opts,
     });
   };
@@ -488,11 +498,10 @@ function generateGLBVillagers(): VillagerMan1Def[] {
 
 const GLB_VILLAGERS = generateGLBVillagers();
 
-// Group GLB villagers by kingdom for culling
 interface GLBVillagerGroup {
   cx: number; cz: number;
   cullRadius: number;
-  villagers: VillagerMan1Def[];
+  villagers: GLBVillagerDef[];
 }
 
 function buildGLBVillagerGroups(): GLBVillagerGroup[] {
@@ -548,7 +557,7 @@ export function CivilianNPCs({ playerPositionRef }: CivilianNPCsProps) {
         );
       })}
 
-      {/* GLB-based VillagerMan1 NPCs */}
+      {/* GLB-based Villager NPCs (mixed man/woman) */}
       <Suspense fallback={null}>
         {GLB_VILLAGER_GROUPS.map((group, gi) => {
           if (playerPos) {
@@ -557,10 +566,12 @@ export function CivilianNPCs({ playerPositionRef }: CivilianNPCsProps) {
             if (dx * dx + dz * dz > group.cullRadius * group.cullRadius) return null;
           }
           return (
-            <group key={`vm1-group-${gi}`}>
-              {group.villagers.map(v => (
-                <VillagerMan1Model key={v.id} def={v} playerPos={playerPos} />
-              ))}
+            <group key={`glb-v-group-${gi}`}>
+              {group.villagers.map(v =>
+                v.villagerType === 'woman1'
+                  ? <VillagerWoman1Model key={v.id} def={v} playerPos={playerPos} />
+                  : <VillagerMan1Model key={v.id} def={v} playerPos={playerPos} />
+              )}
             </group>
           );
         })}
