@@ -1,7 +1,7 @@
 /**
  * HorseGLBModel — GLB-based horse with standing/walking animations.
- * Used by both the free-roaming Horse component and mounted horse in Player.
- * Accepts moveSpeed as either a number or a React ref for frame-accurate reads.
+ * Uses TWO separate cloned scenes (one per animation) and swaps visibility,
+ * since the standing and walking GLBs may have different skeletons.
  */
 import { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
@@ -21,86 +21,105 @@ export function HorseGLBModel({ moveSpeed, scale = 1 }: Props) {
   const standingGltf = useGLTF(horseStandingUrl);
   const walkingGltf = useGLTF(horseWalkingUrl);
 
-  const clonedScene = useMemo(() => SkeletonUtils.clone(standingGltf.scene), [standingGltf.scene]);
+  const standScene = useMemo(() => SkeletonUtils.clone(standingGltf.scene), [standingGltf.scene]);
+  const walkScene = useMemo(() => SkeletonUtils.clone(walkingGltf.scene), [walkingGltf.scene]);
 
-  const mixerRef = useRef<THREE.AnimationMixer | null>(null);
-  const standActionRef = useRef<THREE.AnimationAction | null>(null);
-  const walkActionRef = useRef<THREE.AnimationAction | null>(null);
+  const standMixerRef = useRef<THREE.AnimationMixer | null>(null);
+  const walkMixerRef = useRef<THREE.AnimationMixer | null>(null);
   const currentStateRef = useRef<'standing' | 'walking'>('standing');
 
-  // Calculate Y offset to place feet on ground
+  // Calculate Y offset to place feet on ground (use standing as reference)
   const yOffset = useMemo(() => {
-    const box = new THREE.Box3().setFromObject(clonedScene);
+    const box = new THREE.Box3().setFromObject(standScene);
     return -box.min.y;
-  }, [clonedScene]);
+  }, [standScene]);
+
+  const walkYOffset = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(walkScene);
+    return -box.min.y;
+  }, [walkScene]);
 
   useEffect(() => {
-    const mixer = new THREE.AnimationMixer(clonedScene);
-    mixerRef.current = mixer;
-
+    // Standing mixer
+    const sMixer = new THREE.AnimationMixer(standScene);
+    standMixerRef.current = sMixer;
     if (standingGltf.animations.length > 0) {
-      const action = mixer.clipAction(standingGltf.animations[0], clonedScene);
+      const action = sMixer.clipAction(standingGltf.animations[0]);
       action.play();
-      action.setEffectiveWeight(1);
-      standActionRef.current = action;
     }
 
+    // Walking mixer
+    const wMixer = new THREE.AnimationMixer(walkScene);
+    walkMixerRef.current = wMixer;
     if (walkingGltf.animations.length > 0) {
-      const action = mixer.clipAction(walkingGltf.animations[0], clonedScene);
+      const action = wMixer.clipAction(walkingGltf.animations[0]);
       action.play();
-      action.setEffectiveWeight(0);
-      walkActionRef.current = action;
     }
 
+    // Initial visibility
+    standScene.visible = true;
+    walkScene.visible = false;
     currentStateRef.current = 'standing';
 
+    console.log(`[HorseAudit] INIT standAnims=${standingGltf.animations.length} walkAnims=${walkingGltf.animations.length}`);
+
     return () => {
-      mixer.stopAllAction();
-      mixer.uncacheRoot(clonedScene);
+      sMixer.stopAllAction();
+      sMixer.uncacheRoot(standScene);
+      wMixer.stopAllAction();
+      wMixer.uncacheRoot(walkScene);
     };
-  }, [clonedScene, standingGltf.animations, walkingGltf.animations]);
+  }, [standScene, walkScene, standingGltf.animations, walkingGltf.animations]);
 
   const auditCountRef = useRef(0);
 
   useFrame((_, delta) => {
-    const mixer = mixerRef.current;
-    if (!mixer) return;
     const dt = Math.min(delta, 0.05);
-    mixer.update(dt);
+    standMixerRef.current?.update(dt);
+    walkMixerRef.current?.update(dt);
 
     // Read speed from ref or direct value
     const speed = typeof moveSpeed === 'number' ? moveSpeed : (moveSpeed.current ?? 0);
-    const isMoving = speed > 0.5;
+    const isMoving = speed > 0.3;
     const wantState = isMoving ? 'walking' : 'standing';
 
-    // Debug audit logging (first 5 frames only)
-    if (auditCountRef.current < 5) {
+    // Debug audit logging (first 10 frames)
+    if (auditCountRef.current < 10) {
       auditCountRef.current++;
-      console.log(`[HorseAudit] renderPath=HorseGLBModel speed=${speed.toFixed(1)} anim=${wantState} walkActive=${walkActionRef.current?.getEffectiveWeight().toFixed(2)} standActive=${standActionRef.current?.getEffectiveWeight().toFixed(2)} refType=${typeof moveSpeed === 'number' ? 'number' : 'ref'}`);
+      console.log(`[HorseAudit] speed=${speed.toFixed(2)} anim=${wantState} refType=${typeof moveSpeed === 'number' ? 'number' : 'ref'}`);
     }
 
     if (wantState !== currentStateRef.current) {
       currentStateRef.current = wantState;
-      console.log(`[HorseAudit] TRANSITION → ${wantState} speed=${speed.toFixed(1)}`);
-      const fadeTime = 0.3;
+      console.log(`[HorseAudit] TRANSITION → ${wantState} speed=${speed.toFixed(2)}`);
       if (wantState === 'walking') {
-        walkActionRef.current?.reset().setEffectiveWeight(1).fadeIn(fadeTime).play();
-        standActionRef.current?.fadeOut(fadeTime);
+        standScene.visible = false;
+        walkScene.visible = true;
       } else {
-        standActionRef.current?.reset().setEffectiveWeight(1).fadeIn(fadeTime).play();
-        walkActionRef.current?.fadeOut(fadeTime);
+        standScene.visible = true;
+        walkScene.visible = false;
       }
     }
   });
 
   return (
-    <group position={[0, yOffset * scale, 0]}>
-      <primitive
-        object={clonedScene}
-        scale={[scale, scale, scale]}
-        castShadow
-        receiveShadow
-      />
+    <group>
+      <group position={[0, yOffset * scale, 0]}>
+        <primitive
+          object={standScene}
+          scale={[scale, scale, scale]}
+          castShadow
+          receiveShadow
+        />
+      </group>
+      <group position={[0, walkYOffset * scale, 0]}>
+        <primitive
+          object={walkScene}
+          scale={[scale, scale, scale]}
+          castShadow
+          receiveShadow
+        />
+      </group>
     </group>
   );
 }
