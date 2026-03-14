@@ -167,7 +167,7 @@ function WildernessCottage({ pos, rot, w, d }: { pos: [number, number, number]; 
     <group position={pos} rotation={[0, rot, 0]}>
       <mesh position={[0, 0.15, 0]} geometry={GEO.box} scale={[w + 0.3, 0.3, d + 0.3]} material={MAT.cobble} castShadow />
       <mesh position={[0, h / 2 + 0.3, 0]} geometry={GEO.box} scale={[w, h, d]} material={MAT.plasterDirty} castShadow />
-      <mesh position={[0, h + 0.3 + 0.8, 0]} geometry={GEO.cone4} scale={[w * 0.75, 1.6, d * 0.75]} material={MAT.roofThatch} castShadow />
+      <mesh position={[0, h + 0.3 + 0.8, 0]} rotation={[0, Math.PI / 4, 0]} geometry={GEO.cone4} scale={[w * 0.75, 1.6, d * 0.75]} material={MAT.roofThatch} castShadow />
       <mesh position={[0, 0.8, d / 2 + 0.01]} geometry={GEO.box} scale={[0.7, 1.4, 0.08]} material={MAT.door} />
       <mesh position={[w / 2 + 0.01, h * 0.6, 0]} geometry={GEO.box} scale={[0.05, 0.5, 0.5]} material={MAT.dark} />
     </group>

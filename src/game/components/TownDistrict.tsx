@@ -43,7 +43,7 @@ function TownHouse({ pos, rot, w, d, h, style, chimney, shed, sign }: {
         </>
       )}
       {/* Roof */}
-      <mesh position={[0, h + 0.3 + roofH / 2, 0]} geometry={GEO.cone4}
+      <mesh position={[0, h + 0.3 + roofH / 2, 0]} rotation={[0, Math.PI / 4, 0]} geometry={GEO.cone4}
         scale={[(w + 0.5) * 0.72, roofH, (d + 0.5) * 0.72]} material={roofMat} castShadow />
       {/* Door */}
       <mesh position={[0, 0.6, d / 2 + 0.02]} geometry={GEO.box}
