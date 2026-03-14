@@ -135,7 +135,9 @@ export function RemoteOctopusModel({ moveSpeed, isRunning, isGrounded, attackAni
     }
     if (isDead) return;
 
-    if (health < prevHealthRef.current && stateRef.current !== 'hit' && stateRef.current !== 'fight' && stateRef.current !== 'dead') {
+    // Hit detection — only trigger on significant HP drops (combat hits, not float drift)
+    const healthDrop = prevHealthRef.current - health;
+    if (healthDrop >= 1 && stateRef.current !== 'hit' && stateRef.current !== 'fight' && stateRef.current !== 'dead') {
       stateRef.current = 'hit';
       hitTimerRef.current = 0;
       setRenderFromState('hit');

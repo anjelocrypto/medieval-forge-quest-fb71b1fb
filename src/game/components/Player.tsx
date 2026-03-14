@@ -16,7 +16,7 @@ import {
   PLAYER_HEIGHT, GRAVITY, STAMINA_DRAIN, STAMINA_REGEN, HUNGER_DRAIN,
   TEMPERATURE_DRAIN, CAMPFIRE_WARMTH_RANGE, CAMPFIRE_WARMTH_RATE,
   SHELTER_EFFECT_RANGE, SHELTER_HUNGER_REDUCTION, SHELTER_STAMINA_BONUS,
-  LOW_HUNGER_THRESHOLD, LOW_TEMP_THRESHOLD, COLD_DAMAGE_RATE,
+  LOW_HUNGER_THRESHOLD,
   POIS, POI_ZONE_RADIUS,
 } from '../constants';
 import { PLAYER_ATTACK_COOLDOWN, PLAYER_ATTACK_RANGE, PLAYER_ATTACK_DAMAGE, PLAYER_ATTACK_ARC } from '../systems/EnemyData';
@@ -689,18 +689,13 @@ export function Player({
         staminaChange = regenRate * elapsed;
       }
 
-      let healthChange = 0;
-      // Only lose HP when hunger is truly empty — and slowly
-      if (survival.hunger <= 0) healthChange -= 0.3 * elapsed;
-      if (survival.temperature < LOW_TEMP_THRESHOLD) healthChange -= COLD_DAMAGE_RATE * elapsed;
-      if (nearCampfire) healthChange += 1.5 * elapsed;
-      if (nearShelter && survival.hunger > 30) healthChange += 0.8 * elapsed;
+      // HP is combat-only — no survival damage, no passive HP drain or heal
+      // Hunger/temperature are cosmetic stats only
 
       onSurvivalUpdate({
         stamina: survival.stamina + staminaChange,
         hunger: survival.hunger - hungerDrain,
         temperature: survival.temperature + tempChange,
-        health: survival.health + healthChange,
       });
     }
 

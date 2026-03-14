@@ -102,7 +102,9 @@ export function RemoteNemoClawModel({ moveSpeed, isRunning, isGrounded, attackAn
     const dt = Math.min(delta, 0.05);
 
     // Hit detection
-    if (health < prevHealthRef.current && stateRef.current !== 'hit' && stateRef.current !== 'fight') {
+    // Hit detection — only trigger on significant HP drops (combat hits, not float drift)
+    const healthDrop = prevHealthRef.current - health;
+    if (healthDrop >= 1 && stateRef.current !== 'hit' && stateRef.current !== 'fight') {
       stateRef.current = 'hit'; hitTimerRef.current = 0; setRenderFromState('hit');
       const name = Object.keys(hitActions)[0];
       if (name && hitActions[name]) { hitActions[name]!.reset(); hitActions[name]!.play(); }
