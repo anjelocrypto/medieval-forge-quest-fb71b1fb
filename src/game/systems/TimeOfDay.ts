@@ -1,29 +1,50 @@
 /**
- * Shared time-of-day state.
- * One global clock drives sun position, sky color, fog, and light.
- * Day length is 1 real hour (3600s).
+ * Shared time-of-day state — GLOBALLY SYNCHRONIZED.
+ *
+ * All clients compute timeOfDay from the same absolute epoch using Date.now().
+ * This guarantees every player sees the same sun, sky, fog, and lamp state
+ * with zero network traffic.
+ *
+ * Full cycle = 3600 seconds (1 real hour).
+ * WORLD_EPOCH is an arbitrary fixed timestamp. All clients share it.
  */
 import * as THREE from 'three';
 
 // Full cycle = 3600 seconds (1 hour)
 const DAY_LENGTH = 3600;
+const DAY_LENGTH_MS = DAY_LENGTH * 1000;
 
-/** 0 = midnight, 0.25 = sunrise, 0.5 = noon, 0.75 = sunset */
-let timeOfDay = 0.72; // start at golden hour / early sunset
+/**
+ * Fixed world epoch — an arbitrary past timestamp.
+ * Every client uses this same constant so they all compute the same timeOfDay.
+ * Changing this value shifts what time the world "starts" at.
+ */
+const WORLD_EPOCH_MS = 1700000000000; // Nov 14 2023 — arbitrary anchor
 
-export function getTimeOfDay(): number {
-  return timeOfDay;
+/**
+ * Compute timeOfDay deterministically from the real clock.
+ * 0 = midnight, 0.25 = sunrise, 0.5 = noon, 0.75 = sunset
+ */
+function computeTimeOfDay(): number {
+  const elapsed = (Date.now() - WORLD_EPOCH_MS) % DAY_LENGTH_MS;
+  return elapsed / DAY_LENGTH_MS;
 }
 
-export function advanceTime(deltaSec: number) {
-  timeOfDay = (timeOfDay + deltaSec / DAY_LENGTH) % 1;
+export function getTimeOfDay(): number {
+  return computeTimeOfDay();
+}
+
+/**
+ * advanceTime is now a no-op. Time is derived from the real clock.
+ * Kept for API compatibility so callers don't break.
+ */
+export function advanceTime(_deltaSec: number) {
+  // No-op: time is globally computed from Date.now()
 }
 
 /** Sun elevation: 0 at horizon, PI/2 at zenith. Negative = below horizon. */
 export function getSunElevation(): number {
-  // Sun is up from 0.2 to 0.8 (dawn to dusk)
-  // Peak at 0.5 (noon)
-  const t = timeOfDay;
+  const t = computeTimeOfDay();
   if (t < 0.2 || t > 0.8) return -0.1; // below horizon
   const normalized = (t - 0.2) / 0.6; // 0→1 over daytime
   return Math.sin(normalized * Math.PI) * (Math.PI / 2.2);
@@ -31,9 +52,9 @@ export function getSunElevation(): number {
 
 /** Sun azimuth angle (rotation around Y axis). East→South→West. */
 export function getSunAzimuth(): number {
-  const t = timeOfDay;
+  const t = computeTimeOfDay();
   const normalized = (t - 0.2) / 0.6;
-  return -Math.PI * 0.4 + normalized * Math.PI * 0.8; // east to west sweep
+  return -Math.PI * 0.4 + normalized * Math.PI * 0.8;
 }
 
 /** Get sun direction vector (world space, pointing FROM sun). */
@@ -92,7 +113,7 @@ const night = {
 
 /** Returns 0 during day, 1 at full night. Smooth transition. */
 export function getNightFactor(): number {
-  const t = timeOfDay;
+  const t = computeTimeOfDay();
   if (t < 0.2 || t > 0.85) return 1;
   if (t < 0.3) return 1 - (t - 0.2) / 0.1;
   if (t > 0.7) return (t - 0.7) / 0.15;
@@ -119,7 +140,7 @@ export function getTimeColors(out: TimeColors = {
   sunIntensity: 1,
   ambientIntensity: 0.3,
 }): TimeColors {
-  const t = timeOfDay;
+  const t = computeTimeOfDay();
 
   // Time zones:
   // 0.0-0.2: night
