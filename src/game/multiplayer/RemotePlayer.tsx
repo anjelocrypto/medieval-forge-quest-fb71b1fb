@@ -10,6 +10,7 @@ import { HorseGLBModel } from '../components/HorseGLBModel';
 import { RemoteGoblinModel } from './RemoteGoblinModel';
 import { RemoteSoldierModel } from './RemoteSoldierModel';
 import { RemoteOctopusModel } from './RemoteOctopusModel';
+import { RemoteNemoClawModel } from './RemoteNemoClawModel';
 
 interface Props {
   player: InterpolatedPlayer;
