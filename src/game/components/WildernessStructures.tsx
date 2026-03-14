@@ -181,7 +181,7 @@ function WildernessFarmhouse({ pos, rot, w, d }: { pos: [number, number, number]
       <mesh position={[0, 1.5, 0]} geometry={GEO.box} scale={[w, 3, d]} material={MAT.daub} castShadow />
       <mesh position={[0, 1.5, d / 2 + 0.01]} geometry={GEO.box} scale={[w, 0.1, 0.06]} material={MAT.timber} />
       <mesh position={[0, 0.5, d / 2 + 0.01]} geometry={GEO.box} scale={[w, 0.1, 0.06]} material={MAT.timber} />
-      <mesh position={[0, 3.3, 0]} geometry={GEO.cone4} scale={[w * 0.7, 1.8, d * 0.7]} material={MAT.roofTile} castShadow />
+      <mesh position={[0, 3 + 0.9, 0]} rotation={[0, Math.PI / 4, 0]} geometry={GEO.cone4} scale={[w * 0.7, 1.8, d * 0.7]} material={MAT.roofTile} castShadow />
       <mesh position={[0, 0.8, d / 2 + 0.01]} geometry={GEO.box} scale={[0.8, 1.5, 0.08]} material={MAT.door} />
       <mesh position={[w * 0.3, 4, -d * 0.3]} geometry={GEO.box} scale={[0.4, 1.2, 0.4]} material={MAT.stoneDark} castShadow />
       {[-1, 0, 1].map(i => (
