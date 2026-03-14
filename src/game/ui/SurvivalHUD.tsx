@@ -160,8 +160,6 @@ export function SurvivalHUD({
   isMounted = false, playerX, playerZ, playerRotation, horseX, horseZ,
   mapOpen, onCloseMap, isSpeaking = false,
 }: HUDProps) {
-  const lowHunger = survival.hunger < 20;
-  const lowTemp = survival.temperature < 25;
   const lowHealth = survival.health < 25;
 
   return (
@@ -170,12 +168,6 @@ export function SurvivalHUD({
       {damageFlash > 0 && (
         <div className="absolute inset-0"
           style={{ background: 'radial-gradient(ellipse at center, transparent 40%, hsla(0,70%,40%,0.35) 100%)' }} />
-      )}
-
-      {/* Cold overlay */}
-      {lowTemp && (
-        <div className="absolute inset-0"
-          style={{ background: 'radial-gradient(ellipse at center, transparent 50%, hsla(210,50%,50%,0.12) 100%)' }} />
       )}
 
       {/* Notification banner */}
