@@ -21,6 +21,8 @@ interface Props {
 }
 
 const HORSE_MOVE_THRESHOLD = 0.3;
+// Target horse height in world units (roughly player height ~1.8, horse slightly taller)
+const TARGET_HORSE_HEIGHT = 2.0;
 
 export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: Props) {
   const standGltf = useGLTF(horseStandsUrl);
@@ -34,19 +36,56 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
   const currentWalking = useRef(false);
   const auditLogged = useRef(false);
 
-  // Compute y-offset so horse feet sit on ground (use standing scene as reference)
-  const yOffset = useMemo(() => {
-    const box = new THREE.Box3().setFromObject(standScene);
-    return -box.min.y;
-  }, [standScene]);
+  // Compute auto-scale based on standing model's native height
+  const { autoScale, yOffset, walkYOffset } = useMemo(() => {
+    const standBox = new THREE.Box3().setFromObject(standScene);
+    const standSize = new THREE.Vector3();
+    standBox.getSize(standSize);
 
-  // Also compute walk scene offset (may differ slightly)
-  const walkYOffset = useMemo(() => {
-    const box = new THREE.Box3().setFromObject(walkScene);
-    return -box.min.y;
-  }, [walkScene]);
+    const walkBox = new THREE.Box3().setFromObject(walkScene);
+    const walkSize = new THREE.Vector3();
+    walkBox.getSize(walkSize);
+
+    const nativeHeight = standSize.y;
+    const computedAutoScale = nativeHeight > 0.01 ? TARGET_HORSE_HEIGHT / nativeHeight : 1;
+
+    console.log(`[HorseAudit] standBox size: x=${standSize.x.toFixed(3)} y=${standSize.y.toFixed(3)} z=${standSize.z.toFixed(3)}`);
+    console.log(`[HorseAudit] standBox min.y=${standBox.min.y.toFixed(3)} max.y=${standBox.max.y.toFixed(3)}`);
+    console.log(`[HorseAudit] walkBox size: x=${walkSize.x.toFixed(3)} y=${walkSize.y.toFixed(3)} z=${walkSize.z.toFixed(3)}`);
+    console.log(`[HorseAudit] walkBox min.y=${walkBox.min.y.toFixed(3)} max.y=${walkBox.max.y.toFixed(3)}`);
+    console.log(`[HorseAudit] autoScale=${computedAutoScale.toFixed(4)} (target=${TARGET_HORSE_HEIGHT}, native=${nativeHeight.toFixed(3)})`);
+
+    return {
+      autoScale: computedAutoScale,
+      yOffset: -standBox.min.y * computedAutoScale,
+      walkYOffset: -walkBox.min.y * computedAutoScale,
+    };
+  }, [standScene, walkScene]);
+
+  const finalScale = autoScale * scale;
 
   useEffect(() => {
+    // Ensure materials are visible
+    const fixMaterials = (scene: THREE.Object3D) => {
+      scene.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const mesh = child as THREE.Mesh;
+          mesh.frustumCulled = false;
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          if (mat) {
+            mat.visible = true;
+            mat.transparent = mat.transparent || false;
+            mat.opacity = mat.opacity > 0 ? mat.opacity : 1;
+            mat.side = THREE.DoubleSide;
+          }
+        }
+      });
+    };
+    fixMaterials(standScene);
+    fixMaterials(walkScene);
+
     // Setup walk mixer
     const walkMixer = new THREE.AnimationMixer(walkScene);
     walkMixerRef.current = walkMixer;
@@ -72,7 +111,7 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
     walkScene.visible = false;
     currentWalking.current = false;
 
-    console.log(`[HorseAudit] path=${renderPath} standClips=${standGltf.animations.length} walkClips=${walkGltf.animations.length}`);
+    console.log(`[HorseAudit] path=${renderPath} standClips=${standGltf.animations.length} walkClips=${walkGltf.animations.length} finalScale=${finalScale.toFixed(3)}`);
 
     return () => {
       walkMixer.stopAllAction();
@@ -80,7 +119,7 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
       standMixer.stopAllAction();
       standMixer.uncacheRoot(standScene);
     };
-  }, [standScene, walkScene, standGltf.animations, walkGltf.animations, renderPath]);
+  }, [standScene, walkScene, standGltf.animations, walkGltf.animations, renderPath, finalScale]);
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
@@ -105,10 +144,10 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
   return (
     <group>
       <group position={[0, yOffset * scale, 0]}>
-        <primitive object={standScene} scale={[scale, scale, scale]} castShadow receiveShadow />
+        <primitive object={standScene} scale={[finalScale, finalScale, finalScale]} castShadow receiveShadow />
       </group>
       <group position={[0, walkYOffset * scale, 0]}>
-        <primitive object={walkScene} scale={[scale, scale, scale]} castShadow receiveShadow />
+        <primitive object={walkScene} scale={[finalScale, finalScale, finalScale]} castShadow receiveShadow />
       </group>
     </group>
   );
