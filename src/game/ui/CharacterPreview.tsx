@@ -84,9 +84,9 @@ export function CharacterPreview({ characterType, selected }: CharacterPreviewPr
   return (
     <div style={{ width: '100%', height: 170, position: 'relative' }}>
       <Canvas
-        frameloop={selected ? 'always' : 'demand'}
+        frameloop="demand"
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
-        camera={{ position: [0, 0.85, 3.8], fov: 30 }}
+        camera={{ position: [0, 0.65, 3.8], fov: 30 }}
         style={{ background: 'transparent' }}
         dpr={[1, 1]}
       >
