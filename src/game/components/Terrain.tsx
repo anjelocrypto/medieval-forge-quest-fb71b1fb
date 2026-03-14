@@ -78,8 +78,20 @@ export function getTerrainHeight(x: number, z: number): number {
   }
 
   const baseHeight = (h1 + h2 + h3) * (1 - flattenFactor * 0.8);
-  const regional = getRegionalHeight(x, z);
-  const height = (baseHeight + regional) * (1 - settleFlatten) + regional * settleFlatten * 0.3;
+  // Modest mountain amplification — 1.25x regional for more dramatic peaks
+  const regional = getRegionalHeight(x, z) * 1.25;
+  const rawHeight = (baseHeight + regional) * (1 - settleFlatten) + regional * settleFlatten * 0.3;
+
+  // Conservative terrain stepping for voxel-inspired terracing
+  // Only apply outside settlement flatten zones to preserve flat building ground
+  let height = rawHeight;
+  if (settleFlatten < 0.3) {
+    // Mild step: 0.4-unit terraces (Math.round(h * 2.5) / 2.5)
+    const stepStrength = 1 - settleFlatten / 0.3; // fade stepping near settlements
+    const stepped = Math.round(rawHeight * 2.5) / 2.5;
+    height = rawHeight + (stepped - rawHeight) * stepStrength * 0.7;
+  }
+
   return Math.max(-1, height);
 }
 
@@ -108,13 +120,14 @@ export const Terrain = memo(function Terrain() {
     const positions = geo.attributes.position;
     const colors = new Float32Array(positions.count * 3);
 
-    const grassColor = new THREE.Color(COLORS.grass);
-    const grassDarkColor = new THREE.Color(COLORS.grassDark);
+    const grassColor = new THREE.Color('#4d8040');
+    const grassDarkColor = new THREE.Color('#3a6830');
     const roadColor = new THREE.Color(COLORS.road);
-    const sandColor = new THREE.Color(COLORS.sand);
-    const stoneColor = new THREE.Color(COLORS.stone);
-    const forestFloor = new THREE.Color('#3a5a2a');
-    const snowColor = new THREE.Color('#c8d0d8');
+    const sandColor = new THREE.Color('#c4b580');
+    const stoneColor = new THREE.Color('#6a6a6a');
+    const forestFloor = new THREE.Color('#354d28');
+    const snowColor = new THREE.Color('#d0d8e0');
+    const hillBrown = new THREE.Color('#6a6040');
     const tmpColor = new THREE.Color();
 
     for (let i = 0; i < positions.count; i++) {
@@ -125,14 +138,18 @@ export const Terrain = memo(function Terrain() {
 
       if (y < -0.5) {
         tmpColor.copy(sandColor);
-      } else if (y < 2) {
+      } else if (y < 1.5) {
         tmpColor.copy(grassColor);
-      } else if (y < 8) {
-        tmpColor.lerpColors(grassColor, grassDarkColor, (y - 2) / 6);
-      } else if (y < 15) {
-        tmpColor.lerpColors(grassDarkColor, stoneColor, (y - 8) / 7);
+      } else if (y < 5) {
+        tmpColor.lerpColors(grassColor, grassDarkColor, (y - 1.5) / 3.5);
+      } else if (y < 9) {
+        tmpColor.lerpColors(grassDarkColor, hillBrown, (y - 5) / 4);
+      } else if (y < 14) {
+        tmpColor.lerpColors(hillBrown, stoneColor, (y - 9) / 5);
+      } else if (y < 18) {
+        tmpColor.lerpColors(stoneColor, snowColor, (y - 14) / 4);
       } else {
-        tmpColor.lerpColors(stoneColor, snowColor, Math.min(1, (y - 15) / 5));
+        tmpColor.copy(snowColor);
       }
 
       // Ashwood dark forest floor
