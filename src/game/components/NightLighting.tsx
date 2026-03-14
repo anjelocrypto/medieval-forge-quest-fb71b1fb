@@ -125,7 +125,8 @@ function LampPost({ x, z, y, glowIntensity }: { x: number; z: number; y: number;
       {/* Glow core — emissive, always visible at night */}
       <mesh position={[0.35, 2.6, 0]} geometry={GEO.box}
         scale={[0.12, 0.18, 0.12]}
-        material={glowIntensity > 0.1 ? emissiveMat : emissiveDimMat} />
+        material={emissiveDimMat}
+        userData={{ isGlow: true }} />
       {/* Lantern top cap */}
       <mesh position={[0.35, 2.8, 0]} geometry={GEO.cone4}
         scale={[0.14, 0.12, 0.14]} material={bracketMat} />
