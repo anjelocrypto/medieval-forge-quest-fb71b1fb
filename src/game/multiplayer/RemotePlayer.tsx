@@ -147,7 +147,7 @@ export function RemotePlayer({ player }: Props) {
       {player.isMounted ? (
         <MountedRemoteModel moveSpeed={player.moveSpeed} horsePitch={player.horsePitch} />
       ) : (
-        <Suspense fallback={null}>
+        <Suspense fallback={<RemotePlayerFallback />}>
           {charType === 'goblin' ? (
             <RemoteGoblinModel
               moveSpeed={player.moveSpeed}
