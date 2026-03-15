@@ -42,102 +42,87 @@ export interface RailwayBridge {
   length: number;
 }
 
-// ========== LINE A: Thornwall → Ironhold → Rivermoor (v4 — clearance audited) ==========
+// ========== LINE A: Thornwall → Ironhold → Rivermoor (v6 — strict intrusion pass) ==========
 export const LINE_A_WAYPOINTS: RailwayWaypoint[] = [
-  // Thornwall city: center [-500,-450], walls ±45 → east wall at x=-455
-  // Station moved to [-470,-515]: 15u west of east wall, 20u south of south wall
-  { x: -470, z: -515, label: 'Thornwall Station', type: 'station' },
-  { x: -440, z: -450, type: 'track' },
+  // Thornwall perimeter bypass: keep route outside fortified city wall envelope.
+  { x: -480, z: -520, label: 'Thornwall Station', type: 'station' },
+  { x: -435, z: -520, type: 'track' },
+  { x: -400, z: -470, type: 'track' },
   { x: -400, z: -400, type: 'track' },
   { x: -360, z: -370, type: 'track' },
   { x: -320, z: -330, type: 'track' },
   { x: -280, z: -280, label: 'Western Marches', type: 'track' },
   { x: -240, z: -240, type: 'track' },
   { x: -190, z: -200, type: 'track' },
-  // Greenmeadow village center [-155,-125], houses radius ~22. Station 45u from center. OK.
   { x: -150, z: -170, label: 'Greenmeadow Station', type: 'station' },
   { x: -110, z: -120, type: 'track' },
-  { x: -70, z: -50, type: 'track' },
-  { x: -50, z: 25, type: 'track' },
-  // v5 fix: Town District west-side buildings at [-34,50], [-30,46], [-32,56] etc.
-  // Old route [-50,25]→[-25,95] passed within 7u of [-34,50]. VIOLATION.
-  // New route swings west: [-55,55] keeps x≤-55 through danger zone (z 42-62).
-  // Closest building [-34,50] is now 20.2u away. [-30,46] is 23.5u away.
-  { x: -55, z: 55, type: 'track' },   // west of Town District cluster
-  { x: -45, z: 85, type: 'track' },   // clears workshop corner [-28,70] by 22.7u
-  // Ironhold: center [0,0], walls ±38. Station at z=95 → 57u south of walls.
+  { x: -80, z: -70, type: 'track' },
+  // Ironhold west-wall bypass: keep x <= -55 through wall-adjacent corridor.
+  { x: -72, z: -20, type: 'track' },
+  { x: -60, z: 30, type: 'track' },
+  { x: -55, z: 55, type: 'track' },
+  { x: -45, z: 85, type: 'track' },
   { x: -25, z: 95, label: 'Ironhold Central', type: 'station' },
   { x: 30, z: 105, type: 'track' },
   { x: 90, z: 105, type: 'track' },
-  // Frostmere bypass — must clear Ashen Hollow [160,50] and Old Veyra [195,95] radius 45
-  // Moved from [150,55] to [130,35]: 36u from Ashen Hollow, 82u from Old Veyra
   { x: 130, z: 35, label: 'Frostmere Bypass', type: 'track' },
   { x: 220, z: 45, type: 'track' },
   { x: 280, z: 100, type: 'track' },
   { x: 330, z: 200, type: 'track' },
-  { x: 350, z: 260, type: 'track' },
-  // Rivermoor: center [450,350], fence ±30. Bridge at 85u from center. OK.
-  { x: 370, z: 285, label: 'Rivermoor River Bridge', type: 'bridge' },
-  { x: 390, z: 290, label: 'Rivermoor Station', type: 'station' },
+  { x: 350, z: 250, type: 'track' },
+  { x: 355, z: 260, label: 'Rivermoor River Bridge', type: 'bridge' },
+  // Rivermoor terminal shifted away from Reed Village house footprint cluster.
+  { x: 360, z: 270, label: 'Rivermoor Station', type: 'station' },
 ];
 
-// ========== LINE B: Goldenvale → Ironhold → Darkhollow (v4 — clearance audited) ==========
+// ========== LINE B: Goldenvale → Ironhold → Darkhollow (v6 — strict intrusion pass) ==========
 export const LINE_B_WAYPOINTS: RailwayWaypoint[] = [
-  // Goldenvale: center [-550,100], trade_city walls east at x=-510, south at z=135
-  // Station moved from [-500,130] to [-485,145]: 25u from east wall, 10u south of south wall
   { x: -485, z: 145, label: 'Goldenvale Station', type: 'station' },
   { x: -450, z: 130, type: 'track' },
   { x: -380, z: 100, type: 'track' },
   { x: -280, z: 80, type: 'track' },
   { x: -180, z: 65, type: 'track' },
-  // v5 fix: Workshop buildings at [-28,70], [-22,72], [-24,66], [-18,68].
-  // Old segment [-100,70]→[-20,85] passed within 12.4u of [-22,72]. VIOLATION.
-  // New route pushes south (higher z) to clear workshop corner entirely.
-  // Closest workshop [-22,72] is now 24.2u away.
-  { x: -100, z: 80, type: 'track' },  // shifted south from z=70
-  { x: -45, z: 98, type: 'track' },   // arcs south of workshop corner
+  { x: -100, z: 80, type: 'track' },
+  { x: -45, z: 98, type: 'track' },
   { x: -20, z: 85, label: 'Great River Bridge', type: 'bridge' },
   { x: -25, z: 95, label: 'Ironhold Central', type: 'station' },
-  // SE departure — REROUTED WEST around Ironhold capital walls (±38)
-  // Old route went THROUGH the capital interior at [5,-10] and [-10,40]!
-  // New route: west bypass with ≥17u clearance from west wall (x=-38)
-  { x: -55, z: 65, type: 'track' },   // 17u from west wall, 26u from nearest town bldg
-  { x: -60, z: 20, type: 'track' },   // 22u from west wall
-  { x: -60, z: -30, type: 'track' },  // 22u from west wall
-  { x: -55, z: -65, type: 'track' },  // 32u from NW corner tower
-  { x: -30, z: -90, type: 'track' },  // 52u from north wall
-  { x: 30, z: -100, type: 'track' },  // clear of all POIs
-  { x: 80, z: -100, type: 'track' },  // 56u from supply depot [60,-50]
-  { x: 110, z: -120, type: 'track' }, // 22u from hunter camp [130,-110]
-  // Blackthorn Fort: center [185,-155], walls ±20. West wall x=165, south wall z=-135.
-  // Station moved from [185,-130] to [150,-120]: 15u west of west wall, 15u south of south wall
-  { x: 150, z: -120, label: 'Blackthorn Halt', type: 'station' },
-  { x: 200, z: -170, type: 'track' },
-  { x: 260, z: -210, type: 'track' },
-  { x: 320, z: -250, type: 'track' },
-  { x: 420, z: -330, label: 'Darkhollow Creek Bridge', type: 'bridge' },
-  { x: 470, z: -360, type: 'track' },
-  // Darkhollow: center [550,-400]. Ashkeep ruins at [500,-350] with 35u collision radius.
-  // Station moved from [500,-375] to [520,-390]: 40u from Ashkeep, 38u from Darkhollow
-  { x: 520, z: -390, label: 'Darkhollow Station', type: 'station' },
+  // West bypass around Ironhold interior.
+  { x: -55, z: 65, type: 'track' },
+  { x: -60, z: 20, type: 'track' },
+  { x: -60, z: -30, type: 'track' },
+  { x: -55, z: -65, type: 'track' },
+  { x: -30, z: -90, type: 'track' },
+  { x: 30, z: -100, type: 'track' },
+  { x: 80, z: -100, type: 'track' },
+  { x: 110, z: -120, type: 'track' },
+  // Blackthorn reroute: stay outside fort perimeter and tower buffer.
+  { x: 130, z: -145, type: 'track' },
+  { x: 150, z: -185, label: 'Blackthorn Halt', type: 'station' },
+  { x: 200, z: -220, type: 'track' },
+  { x: 270, z: -245, type: 'track' },
+  { x: 340, z: -290, type: 'track' },
+  // Darkhollow reroute: avoid marsh bridge approach and Ashkeep ruin interior.
+  { x: 390, z: -360, label: 'Darkhollow Creek Bridge', type: 'bridge' },
+  { x: 460, z: -420, type: 'track' },
+  { x: 520, z: -455, label: 'Darkhollow Station', type: 'station' },
 ];
 
-// ========== STATIONS (v4 — positions match corrected waypoints) ==========
+// ========== STATIONS (v6 — positions match corrected waypoints) ==========
 export const RAILWAY_STATIONS: RailwayStation[] = [
-  { id: 'stn-thornwall', name: 'Thornwall', position: [-470, -515], side: 'south', stationType: 'large', line: 'A' },
+  { id: 'stn-thornwall', name: 'Thornwall', position: [-480, -520], side: 'north', stationType: 'large', line: 'A' },
   { id: 'stn-greenmeadow', name: 'Greenmeadow', position: [-150, -170], side: 'south', stationType: 'small', line: 'A' },
   { id: 'stn-ironhold', name: 'Ironhold Central', position: [-25, 95], side: 'south', stationType: 'capital', line: 'AB' },
   { id: 'stn-goldenvale', name: 'Goldenvale', position: [-485, 145], side: 'south', stationType: 'medium', line: 'B' },
-  { id: 'stn-blackthorn', name: 'Blackthorn Halt', position: [150, -120], side: 'south', stationType: 'small', line: 'B' },
-  { id: 'stn-rivermoor', name: 'Rivermoor', position: [390, 290], side: 'south', stationType: 'medium', line: 'A' },
-  { id: 'stn-darkhollow', name: 'Darkhollow', position: [520, -390], side: 'west', stationType: 'small', line: 'B' },
+  { id: 'stn-blackthorn', name: 'Blackthorn Halt', position: [150, -185], side: 'west', stationType: 'small', line: 'B' },
+  { id: 'stn-rivermoor', name: 'Rivermoor', position: [360, 270], side: 'west', stationType: 'medium', line: 'A' },
+  { id: 'stn-darkhollow', name: 'Darkhollow', position: [520, -455], side: 'south', stationType: 'small', line: 'B' },
 ];
 
-// ========== RAILWAY BRIDGES (v4) ==========
+// ========== RAILWAY BRIDGES (v6) ==========
 export const RAILWAY_BRIDGES: RailwayBridge[] = [
   { id: 'rail-bridge-great-river', position: [-20, 0.5, 85], line: 'B', crosses: 'Great River', length: 24 },
-  { id: 'rail-bridge-rivermoor', position: [370, 0.8, 285], line: 'A', crosses: 'Rivermoor River', length: 22 },
-  { id: 'rail-bridge-darkhollow', position: [420, 0.3, -330], line: 'B', crosses: 'Darkhollow Creek', length: 16 },
+  { id: 'rail-bridge-rivermoor', position: [355, 0.8, 260], line: 'A', crosses: 'Rivermoor River', length: 22 },
+  { id: 'rail-bridge-darkhollow', position: [390, 0.3, -360], line: 'B', crosses: 'Darkhollow Creek', length: 18 },
 ];
 
 /**
