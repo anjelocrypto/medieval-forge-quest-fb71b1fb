@@ -292,6 +292,8 @@ describe('railway strict route intrusion audit', () => {
             to: [seg.bx, seg.bz],
             obstacleId: b.id,
             obstacleType: cls.type,
+            obstacleCenter: [b.cx, b.cz],
+            obstacleShape: `box:halfW=${b.halfW},halfD=${b.halfD},rot=${b.rotation}`,
             minDistance: Number(surfaceDist.toFixed(2)),
             failReason: cls.failReason,
           };
