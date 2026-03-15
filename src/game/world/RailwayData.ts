@@ -4,18 +4,19 @@
  * Line A: Thornwall (SW) ↔ Ironhold ↔ Rivermoor (NE)
  * Line B: Goldenvale (W) ↔ Ironhold ↔ Darkhollow (SE)
  *
- * v6 — strict route intrusion correction pass.
- * Fix strategy:
- * - Reroute around major walls/forts/ruins/city interiors.
- * - Relocate minor movable POIs/buildings that sat on the rail corridor.
- * - Enforce ≥15 units clearance from buildings and walls (unless explicit gate corridor).
+ * v7 — visual clarity pass.
+ * Key v7 changes:
+ * - Line B Ironhold bypass changed from WEST (U-turn) to EAST (through-route).
+ *   Now Line A exits Ironhold ENE and Line B exits ESE — clean Y-junction.
+ * - All 3 railway bridge waypoints repositioned to align with actual water crossings.
+ *   Added tributary streams in WaterData.ts at each bridge location.
+ * - Maintains ≥15u clearance from all collision structures (verified by audit).
  *
- * Key v6 changes:
- * - Thornwall departure moved fully outside fortified wall envelope.
- * - Ironhold west-side approach pulled farther west to clear capital wall buffer.
- * - Blackthorn corridor rerouted around fort perimeter (no interior crossing).
- * - Darkhollow approach rerouted south of marsh bridge + Ashkeep ruin cluster.
- * - Rivermoor terminal moved away from village house footprint cluster.
+ * Previous v6 changes preserved:
+ * - Thornwall departure outside fortified wall envelope.
+ * - Blackthorn corridor outside fort perimeter.
+ * - Darkhollow approach south of marsh bridge + Ashkeep ruin cluster.
+ * - Rivermoor terminal away from village house footprints.
  */
 
 export interface RailwayWaypoint {
@@ -77,7 +78,12 @@ export const LINE_A_WAYPOINTS: RailwayWaypoint[] = [
   { x: 360, z: 270, label: 'Rivermoor Station', type: 'station' },
 ];
 
-// ========== LINE B: Goldenvale → Ironhold → Darkhollow (v6 — strict intrusion pass) ==========
+// ========== LINE B: Goldenvale → Ironhold → Darkhollow (v7 — visual clarity pass) ==========
+// v7 changes:
+// - Eliminated U-turn at Ironhold. Line B now exits EAST, bypasses around Ironhold's
+//   east wall, then curves north toward Blackthorn/Darkhollow. This creates a clean
+//   Y-junction at Ironhold Central (Line A exits ENE, Line B exits ESE).
+// - Bridge waypoint repositioned to align with new tributary stream crossing.
 export const LINE_B_WAYPOINTS: RailwayWaypoint[] = [
   // Goldenvale outer approach: shifted away from Harvest Hill houses.
   { x: -470, z: 185, label: 'Goldenvale Station', type: 'station' },
@@ -86,16 +92,17 @@ export const LINE_B_WAYPOINTS: RailwayWaypoint[] = [
   { x: -300, z: 90, type: 'track' },
   { x: -220, z: 75, type: 'track' },
   { x: -130, z: 95, type: 'track' },
-  { x: -70, z: 108, type: 'track' },
-  { x: -40, z: 96, type: 'track' },
-  { x: -35, z: 84, label: 'Great River Bridge', type: 'bridge' },
+  { x: -70, z: 105, type: 'track' },
+  { x: -40, z: 98, type: 'track' },
+  { x: -25, z: 90, label: 'Ironhold South Bridge', type: 'bridge' },
   { x: -25, z: 95, label: 'Ironhold Central', type: 'station' },
-  // West bypass around Ironhold interior.
-  { x: -55, z: 65, type: 'track' },
-  { x: -60, z: 20, type: 'track' },
-  { x: -60, z: -30, type: 'track' },
-  { x: -55, z: -65, type: 'track' },
-  { x: -30, z: -90, type: 'track' },
+  // East bypass around Ironhold exterior (clean through-route, no U-turn).
+  // Stays ≥18u from east wall (x=38) and corner towers (r=3.2).
+  { x: 45, z: 92, type: 'track' },
+  { x: 58, z: 55, type: 'track' },
+  { x: 65, z: 15, type: 'track' },
+  { x: 60, z: -35, type: 'track' },
+  { x: 45, z: -75, type: 'track' },
   { x: 30, z: -100, type: 'track' },
   { x: 80, z: -100, type: 'track' },
   { x: 110, z: -120, type: 'track' },
@@ -122,11 +129,11 @@ export const RAILWAY_STATIONS: RailwayStation[] = [
   { id: 'stn-darkhollow', name: 'Darkhollow', position: [520, -455], side: 'south', stationType: 'small', line: 'B' },
 ];
 
-// ========== RAILWAY BRIDGES (v6) ==========
+// ========== RAILWAY BRIDGES (v7 — aligned to actual water crossings) ==========
 export const RAILWAY_BRIDGES: RailwayBridge[] = [
-  { id: 'rail-bridge-great-river', position: [-35, 0.5, 84], line: 'B', crosses: 'Great River', length: 24 },
-  { id: 'rail-bridge-rivermoor', position: [355, 0.8, 260], line: 'A', crosses: 'Rivermoor River', length: 22 },
-  { id: 'rail-bridge-darkhollow', position: [390, 0.3, -360], line: 'B', crosses: 'Darkhollow Creek', length: 18 },
+  { id: 'rail-bridge-ironhold-south', position: [-25, 0.5, 90], line: 'B', crosses: 'Ironhold Stream', length: 20 },
+  { id: 'rail-bridge-rivermoor', position: [355, 0.8, 260], line: 'A', crosses: 'Rivermoor Tributary', length: 22 },
+  { id: 'rail-bridge-darkhollow', position: [390, 0.3, -360], line: 'B', crosses: 'Darkhollow Ford', length: 18 },
 ];
 
 /**

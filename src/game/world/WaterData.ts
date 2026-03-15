@@ -52,6 +52,25 @@ export const RIVERS: RiverDef[] = [
     ],
     width: 8,
   },
+  // ===== Railway bridge water crossings (v7) =====
+  // Small tributary south of Ironhold — crossed by Line B bridge
+  {
+    id: 'stream-ironhold-south',
+    points: [[-45, -0.35, 88], [-25, -0.4, 90], [-5, -0.35, 92]],
+    width: 5,
+  },
+  // Rivermoor tributary — small stream crossed by Line A bridge
+  {
+    id: 'stream-rivermoor-crossing',
+    points: [[340, -0.3, 245], [355, -0.35, 260], [370, -0.3, 275]],
+    width: 5,
+  },
+  // Darkhollow ford — small creek crossed by Line B bridge
+  {
+    id: 'stream-darkhollow-ford',
+    points: [[375, -0.2, -348], [390, -0.25, -360], [405, -0.2, -372]],
+    width: 4,
+  },
 ];
 
 export const LAKES: LakeDef[] = [
