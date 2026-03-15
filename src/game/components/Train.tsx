@@ -9,7 +9,7 @@ import { LINE_A_WAYPOINTS, LINE_B_WAYPOINTS, RAILWAY_STATIONS } from '../world/R
 import { buildRailwayPath, samplePathAtDistance, findStationDistance } from '../systems/RailwaySpline';
 import { GEO } from '../world/SettlementPieces';
 
-const TRAIN_SPEED = 12;
+const TRAIN_SPEED = 20;
 const STATION_STOP_TIME = 60;
 
 const boilerMat = new THREE.MeshLambertMaterial({ color: '#3a3030' });
