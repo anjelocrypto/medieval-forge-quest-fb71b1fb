@@ -368,7 +368,7 @@ export const SMALL_POIS: SmallPOIDef[] = [
   
   // === IRONHOLD TO ASHWOOD CORRIDOR ===
   { id: 'sp9', name: 'Forest Clearing', position: [-90, 65], type: 'clearing' },
-  { id: 'sp10', name: 'Lone Watchtower', position: [-130, 95], type: 'watchtower' },
+  { id: 'sp10', name: 'Lone Watchtower', position: [-150, 122], type: 'watchtower' },
   { id: 'sp32', name: 'Forest Shrine', position: [-145, 115], type: 'shrine' },
   { id: 'sp33', name: 'Trail Marker', position: [-170, 70], type: 'milestone' },
   { id: 'sp34', name: 'Abandoned Campsite', position: [-100, 35], type: 'abandoned_camp' },
