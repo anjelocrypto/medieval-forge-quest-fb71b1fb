@@ -356,7 +356,8 @@ function generateTownBuildings(): TownBuildingDef[] {
     [-24, 66, Math.PI * 0.5, 'Stable'],
     // Relocated off the rail corridor while preserving workshop-cluster readability.
     [-120, 132, Math.PI * 0.3, 'Storage'],
-    [-82, 84, Math.PI * 0.45],
+    // Was (-82, 84) — directly on Line B rail corridor (z≈83). Moved south to clear track.
+    [-82, 68, Math.PI * 0.45],
   ];
 
   for (const [x, z, rot, label] of workshopBuildings) {

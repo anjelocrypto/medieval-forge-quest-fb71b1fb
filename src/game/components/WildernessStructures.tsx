@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { GEO, MAT } from '../world/SettlementPieces';
 import { getTerrainHeight } from './Terrain';
 import { SETTLEMENTS, ROADS, SMALL_POIS } from '../world/RegionData';
+import { distToRailway } from '../world/RailwayData';
 
 export interface WildernessBuilding {
   x: number; z: number; rot: number;
