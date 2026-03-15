@@ -335,8 +335,8 @@ function generateTownBuildings(): TownBuildingDef[] {
     [-14, 42, Math.PI],
     [14, 42, -Math.PI],
     // Along roads further out — relocated south to clear Line B corridor (z≈83)
-    [-16, 66, Math.PI * 0.5],
-    [16, 66, -Math.PI * 0.4],
+    [-16, 64, Math.PI * 0.5],
+    [16, 60, -Math.PI * 0.4],
     // Was (10, 74) and (14, 72) — too close to Line B. Moved south.
     [10, 62, -Math.PI * 0.45],
     [14, 60, -Math.PI * 0.5],
