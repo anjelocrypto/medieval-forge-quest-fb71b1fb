@@ -57,7 +57,8 @@ export function samplePathAtDistance(
   outPos: THREE.Vector3,
   outTan: THREE.Vector3,
 ): void {
-  const d = ((distance % totalLen) + totalLen) % totalLen;
+  // Clamp to path length — this is a linear path, not circular
+  const d = Math.max(0, Math.min(distance, totalLen - 0.01));
   let acc = 0;
   for (let i = 1; i < count; i++) {
     const i3 = i * 3, p3 = (i - 1) * 3;

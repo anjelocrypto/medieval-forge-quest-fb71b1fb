@@ -243,7 +243,7 @@ const IronholdCentralStation = memo(function IronholdCentralStation({ station }:
 
     // Place platform SOUTH of junction (away from both tracks diverging north-east)
     // Offset perpendicular to bisector, toward south
-    const offsetDist = 7; // Clear of both rail corridors
+    const offsetDist = 9; // Clear of both rail corridors (platW/2 + margin)
     const perpAngle = bisector - Math.PI / 2; // perpendicular toward south
     const ox = Math.sin(perpAngle) * offsetDist;
     const oz = Math.cos(perpAngle) * offsetDist;

@@ -62,8 +62,9 @@ function getTrainDist(cfg: TrainConfig, time: number): { distance: number; direc
       else { elapsed -= travelT; dist = stations[si]; if (elapsed < STATION_STOP_TIME) { elapsed = 0; } else { elapsed -= STATION_STOP_TIME; si++; } }
     } else { dist += elapsed * TRAIN_SPEED; elapsed = 0; }
   }
-  dist = Math.min(dist, cfg.totalLength - 1);
-  return { distance: isReverse ? cfg.totalLength - dist : dist, direction: isReverse ? -1 : 1 };
+  dist = Math.min(dist, cfg.totalLength);
+  const finalDist = isReverse ? cfg.totalLength - dist : dist;
+  return { distance: Math.max(0, Math.min(finalDist, cfg.totalLength - 0.01)), direction: isReverse ? -1 : 1 };
 }
 
 function Locomotive() {
