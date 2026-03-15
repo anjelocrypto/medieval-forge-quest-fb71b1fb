@@ -380,7 +380,7 @@ export const SMALL_POIS: SmallPOIDef[] = [
   { id: 'sp26', name: 'Roadside Camp', position: [95, 15], type: 'abandoned_camp' },
   { id: 'sp58', name: 'Ruins Approach', position: [130, 55], type: 'milestone' },
   { id: 'sp59', name: 'Ancient Cross', position: [170, 85], type: 'roadside_cross' },
-  { id: 'sp60', name: 'Scavenger Camp', position: [168, 22], type: 'hunter_camp' },
+  { id: 'sp60', name: 'Scavenger Camp', position: [188, 12], type: 'hunter_camp' },
   { id: 'sp62', name: 'Warning Post', position: [175, 75], type: 'watchpost' },
   
   // === BLACKTHORN TO OLD VEYRA ===
