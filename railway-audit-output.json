@@ -1,7 +1,7 @@
 {
   "clearance": 15,
-  "totalViolations": 5,
-  "criticalOrMajorCount": 5,
+  "totalViolations": 3,
+  "criticalOrMajorCount": 3,
   "violations": [
     {
       "line": "B",
@@ -15,14 +15,36 @@
         -130,
         95
       ],
-      "obstacleId": "poi-sp10",
-      "obstacleType": "poi-watchtower",
+      "obstacleId": "poi-sp53",
+      "obstacleType": "poi-hunter_camp",
       "obstacleCenter": [
-        -130,
-        95
+        -138,
+        96
       ],
-      "obstacleShape": "circle:r=1.5",
-      "minDistance": -1.5,
+      "obstacleShape": "circle:r=1.2",
+      "minDistance": 1.51,
+      "failReason": "too close to large POI collision zone"
+    },
+    {
+      "line": "A",
+      "segmentIndex": 20,
+      "segment": "20: [125, 15] -> [220, 45]",
+      "from": [
+        125,
+        15
+      ],
+      "to": [
+        220,
+        45
+      ],
+      "obstacleId": "poi-sp60",
+      "obstacleType": "poi-hunter_camp",
+      "obstacleCenter": [
+        168,
+        22
+      ],
+      "obstacleShape": "circle:r=1.2",
+      "minDistance": 5.07,
       "failReason": "too close to large POI collision zone"
     },
     {
@@ -37,81 +59,15 @@
         -70,
         108
       ],
-      "obstacleId": "poi-sp10",
-      "obstacleType": "poi-watchtower",
+      "obstacleId": "poi-sp53",
+      "obstacleType": "poi-hunter_camp",
       "obstacleCenter": [
-        -130,
-        95
+        -138,
+        96
       ],
-      "obstacleShape": "circle:r=1.5",
-      "minDistance": -1.5,
+      "obstacleShape": "circle:r=1.2",
+      "minDistance": 6.86,
       "failReason": "too close to large POI collision zone"
-    },
-    {
-      "line": "A",
-      "segmentIndex": 20,
-      "segment": "20: [130, 35] -> [220, 45]",
-      "from": [
-        130,
-        35
-      ],
-      "to": [
-        220,
-        45
-      ],
-      "obstacleId": "ashen_hollow-shrine",
-      "obstacleType": "structure",
-      "obstacleCenter": [
-        165,
-        45
-      ],
-      "obstacleShape": "circle:r=0.8",
-      "minDistance": 5.27,
-      "failReason": "too close to rendered/collision structure"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 6,
-      "segment": "6: [-70, 108] -> [-40, 96]",
-      "from": [
-        -70,
-        108
-      ],
-      "to": [
-        -40,
-        96
-      ],
-      "obstacleId": "town--76-96",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -76,
-        96
-      ],
-      "obstacleShape": "box:halfW=2.7306938732328767,halfD=3.0219295325427593,rot=0.9424777960769379",
-      "minDistance": 9.53,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "A",
-      "segmentIndex": 11,
-      "segment": "11: [-100, -150] -> [-80, -70]",
-      "from": [
-        -100,
-        -150
-      ],
-      "to": [
-        -80,
-        -70
-      ],
-      "obstacleId": "poi-sp16",
-      "obstacleType": "poi-inn",
-      "obstacleCenter": [
-        -72,
-        -108
-      ],
-      "obstacleShape": "box:halfW=3.5,halfD=3,rot=0",
-      "minDistance": 12.85,
-      "failReason": "inside or too close to POI structure footprint"
     }
   ],
   "criticalOrMajorViolations": [
@@ -127,14 +83,36 @@
         -130,
         95
       ],
-      "obstacleId": "poi-sp10",
-      "obstacleType": "poi-watchtower",
+      "obstacleId": "poi-sp53",
+      "obstacleType": "poi-hunter_camp",
       "obstacleCenter": [
-        -130,
-        95
+        -138,
+        96
       ],
-      "obstacleShape": "circle:r=1.5",
-      "minDistance": -1.5,
+      "obstacleShape": "circle:r=1.2",
+      "minDistance": 1.51,
+      "failReason": "too close to large POI collision zone"
+    },
+    {
+      "line": "A",
+      "segmentIndex": 20,
+      "segment": "20: [125, 15] -> [220, 45]",
+      "from": [
+        125,
+        15
+      ],
+      "to": [
+        220,
+        45
+      ],
+      "obstacleId": "poi-sp60",
+      "obstacleType": "poi-hunter_camp",
+      "obstacleCenter": [
+        168,
+        22
+      ],
+      "obstacleShape": "circle:r=1.2",
+      "minDistance": 5.07,
       "failReason": "too close to large POI collision zone"
     },
     {
@@ -149,81 +127,15 @@
         -70,
         108
       ],
-      "obstacleId": "poi-sp10",
-      "obstacleType": "poi-watchtower",
+      "obstacleId": "poi-sp53",
+      "obstacleType": "poi-hunter_camp",
       "obstacleCenter": [
-        -130,
-        95
+        -138,
+        96
       ],
-      "obstacleShape": "circle:r=1.5",
-      "minDistance": -1.5,
+      "obstacleShape": "circle:r=1.2",
+      "minDistance": 6.86,
       "failReason": "too close to large POI collision zone"
-    },
-    {
-      "line": "A",
-      "segmentIndex": 20,
-      "segment": "20: [130, 35] -> [220, 45]",
-      "from": [
-        130,
-        35
-      ],
-      "to": [
-        220,
-        45
-      ],
-      "obstacleId": "ashen_hollow-shrine",
-      "obstacleType": "structure",
-      "obstacleCenter": [
-        165,
-        45
-      ],
-      "obstacleShape": "circle:r=0.8",
-      "minDistance": 5.27,
-      "failReason": "too close to rendered/collision structure"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 6,
-      "segment": "6: [-70, 108] -> [-40, 96]",
-      "from": [
-        -70,
-        108
-      ],
-      "to": [
-        -40,
-        96
-      ],
-      "obstacleId": "town--76-96",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -76,
-        96
-      ],
-      "obstacleShape": "box:halfW=2.7306938732328767,halfD=3.0219295325427593,rot=0.9424777960769379",
-      "minDistance": 9.53,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "A",
-      "segmentIndex": 11,
-      "segment": "11: [-100, -150] -> [-80, -70]",
-      "from": [
-        -100,
-        -150
-      ],
-      "to": [
-        -80,
-        -70
-      ],
-      "obstacleId": "poi-sp16",
-      "obstacleType": "poi-inn",
-      "obstacleCenter": [
-        -72,
-        -108
-      ],
-      "obstacleShape": "box:halfW=3.5,halfD=3,rot=0",
-      "minDistance": 12.85,
-      "failReason": "inside or too close to POI structure footprint"
     }
   ],
   "stationViolations": []
