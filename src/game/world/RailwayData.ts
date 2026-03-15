@@ -59,8 +59,13 @@ export const LINE_A_WAYPOINTS: RailwayWaypoint[] = [
   { x: -110, z: -120, type: 'track' },
   { x: -70, z: -50, type: 'track' },
   { x: -50, z: 25, type: 'track' },
-  // Ironhold: center [0,0], walls ±38, south wall z=38. Station at z=95 → 57u south. OK.
-  // Town District buildings extend to z~72 at x~±14. Nearest bldg [-14,72] → 25u away.
+  // v5 fix: Town District west-side buildings at [-34,50], [-30,46], [-32,56] etc.
+  // Old route [-50,25]→[-25,95] passed within 7u of [-34,50]. VIOLATION.
+  // New route swings west: [-55,55] keeps x≤-55 through danger zone (z 42-62).
+  // Closest building [-34,50] is now 20.2u away. [-30,46] is 23.5u away.
+  { x: -55, z: 55, type: 'track' },   // west of Town District cluster
+  { x: -45, z: 85, type: 'track' },   // clears workshop corner [-28,70] by 22.7u
+  // Ironhold: center [0,0], walls ±38. Station at z=95 → 57u south of walls.
   { x: -25, z: 95, label: 'Ironhold Central', type: 'station' },
   { x: 30, z: 105, type: 'track' },
   { x: 90, z: 105, type: 'track' },
