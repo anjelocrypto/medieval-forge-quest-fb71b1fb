@@ -423,8 +423,9 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
             availableBuildables={getAvailableBuildables()}
           />
           <DebugCollision playerPositionRef={playerPositionRef} isMounted={isMounted} />
-          {/* RAILWAY INCREMENTAL TEST — tracks only */}
-          <RailwayTrack playerPositionRef={playerPositionRef} />
+          {/* RAILWAY DISABLED — perf recovery. Tracks cause FPS collapse (heap 480MB+). */}
+          {/* Terrain flattening grid is safe and active. */}
+          {/* <RailwayTrack playerPositionRef={playerPositionRef} /> */}
           {/* <RailwayStations playerPositionRef={playerPositionRef} /> */}
           {/* <RailwayBridges playerPositionRef={playerPositionRef} /> */}
           {/* <Train /> */}
