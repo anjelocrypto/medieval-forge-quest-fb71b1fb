@@ -368,7 +368,8 @@ const StationRenderer = memo(function StationRenderer({ station }: { station: Ra
 
     const sideAngle = rotation + Math.PI / 2;
     const sideDir = station.side === 'south' || station.side === 'west' ? -1 : 1;
-    const offset = 3.5;
+    // Offset = half platform width + 2.5u clearance from rail centerline
+    const offset = dims.platW / 2 + 2.5;
     const ox = Math.sin(sideAngle) * offset * sideDir;
     const oz = Math.cos(sideAngle) * offset * sideDir;
 
