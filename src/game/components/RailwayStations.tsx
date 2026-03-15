@@ -227,7 +227,7 @@ function Platform({ w, l }: { w: number; l: number }) {
 
 const IronholdCentralStation = memo(function IronholdCentralStation({ station }: { station: RailwayStation }) {
   const layout = useMemo(() => {
-    const [sx, sz] = station.position; // (-20, 93) — midpoint between Line A (z≈103) and Line B (z≈83)
+    const [sx, sz] = station.position; // (-45, 89) — midpoint between Line A (z≈95) and Line B (z≈83) at x≈-40
     const y = getTerrainHeight(sx, sz);
 
     // Both lines now run roughly east through the hub as parallel tracks.
