@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
+import { writeFileSync } from 'node:fs';
 import { LINE_A_WAYPOINTS, LINE_B_WAYPOINTS, RAILWAY_STATIONS } from '@/game/world/RailwayData';
 import { rebuildObstacles, getBoxObstacles, getCircleObstacles } from '@/game/systems/CollisionSystem';
 import { BRIDGES } from '@/game/world/BridgeData';
+import { SMALL_POIS } from '@/game/world/RegionData';
 
 const CLEARANCE = 15;
 
@@ -16,6 +18,7 @@ interface Segment {
 
 interface AuditViolation {
   line: 'A' | 'B';
+  segmentIndex: number;
   segment: string;
   from: [number, number];
   to: [number, number];
@@ -25,23 +28,77 @@ interface AuditViolation {
   failReason: string;
 }
 
-function classifyObstacle(id: string): { type: string; failReason: string } {
+const poiTypeById = new Map(SMALL_POIS.map((p) => [p.id, p.type]));
+
+function classifyObstacle(id: string): { type: string; failReason: string; severity: 'critical' | 'major' | 'minor' } {
   if (id.includes('-wall-') || id.includes('-tower-') || id.includes('-gate-') || id.includes('-pal-')) {
-    return { type: 'wall/fortification', failReason: 'inside wall zone or too close to fortification' };
+    return {
+      type: 'wall/fortification',
+      failReason: 'inside wall zone or too close to fortification',
+      severity: 'critical',
+    };
   }
+
   if (id.includes('-house-') || id.startsWith('town-') || id.startsWith('wild-')) {
-    return { type: 'building/house footprint', failReason: 'inside house/building footprint or too close' };
+    return {
+      type: 'building/house footprint',
+      failReason: 'inside house/building footprint or too close',
+      severity: 'critical',
+    };
   }
-  if (id.includes('-hall') || id.includes('-keep') || id.includes('-citadel') || id.includes('-barracks') || id.includes('-cmd') || id.includes('-mine') || id.includes('-nave') || id.includes('-wing')) {
-    return { type: 'major structure', failReason: 'inside settlement structure footprint or too close' };
+
+  if (
+    id.includes('-hall') || id.includes('-keep') || id.includes('-citadel') || id.includes('-barracks') ||
+    id.includes('-cmd') || id.includes('-mine') || id.includes('-nave') || id.includes('-wing') ||
+    id.includes('-altar') || id.includes('-ruin-') || id.includes('-armory') || id.includes('-shed') || id.includes('-main')
+  ) {
+    return {
+      type: 'major settlement structure',
+      failReason: 'inside major settlement structure footprint or too close',
+      severity: 'critical',
+    };
   }
+
+  if (id.startsWith('world-bridge-') || id.startsWith('bridge-')) {
+    return {
+      type: 'bridge deck/approach',
+      failReason: 'too close to bridge structure/approach',
+      severity: 'major',
+    };
+  }
+
   if (id.startsWith('poi-')) {
-    return { type: 'poi structure', failReason: 'inside POI structure footprint or too close' };
+    const poiId = id.replace('poi-', '');
+    const poiType = poiTypeById.get(poiId);
+
+    if (poiType === 'inn' || poiType === 'supply_depot' || poiType === 'ruined_house' || poiType === 'wagon') {
+      return {
+        type: `poi-${poiType}`,
+        failReason: 'inside or too close to POI structure footprint',
+        severity: 'major',
+      };
+    }
+
+    if (poiType === 'watchtower' || poiType === 'cave' || poiType === 'hunter_camp' || poiType === 'stone_circle') {
+      return {
+        type: `poi-${poiType}`,
+        failReason: 'too close to large POI collision zone',
+        severity: 'major',
+      };
+    }
+
+    return {
+      type: `poi-${poiType ?? 'unknown'}`,
+      failReason: 'too close to minor POI marker',
+      severity: 'minor',
+    };
   }
-  if (id.startsWith('bridge-') || id.startsWith('world-bridge-')) {
-    return { type: 'bridge deck/approach', failReason: 'too close to bridge structure/approach' };
-  }
-  return { type: 'structure', failReason: 'too close to rendered/collision structure' };
+
+  return {
+    type: 'structure',
+    failReason: 'too close to rendered/collision structure',
+    severity: 'major',
+  };
 }
 
 function pointToAabbDist(px: number, pz: number, minX: number, maxX: number, minZ: number, maxZ: number): number {
@@ -50,11 +107,21 @@ function pointToAabbDist(px: number, pz: number, minX: number, maxX: number, min
   return Math.hypot(dx, dz);
 }
 
+function pointToSegmentDist(px: number, pz: number, ax: number, az: number, bx: number, bz: number): number {
+  const vx = bx - ax;
+  const vz = bz - az;
+  const len2 = vx * vx + vz * vz;
+  if (len2 < 1e-9) return Math.hypot(px - ax, pz - az);
+  const t = Math.max(0, Math.min(1, ((px - ax) * vx + (pz - az) * vz) / len2));
+  const qx = ax + vx * t;
+  const qz = az + vz * t;
+  return Math.hypot(px - qx, pz - qz);
+}
+
 function segSegDist(
   ax: number, az: number, bx: number, bz: number,
   cx: number, cz: number, dx: number, dz: number,
 ): number {
-  // 2D segment distance via projection sampling (robust enough for audit)
   const samples = [0, 0.25, 0.5, 0.75, 1];
   let best = Infinity;
 
@@ -72,19 +139,7 @@ function segSegDist(
   return best;
 }
 
-function pointToSegmentDist(px: number, pz: number, ax: number, az: number, bx: number, bz: number): number {
-  const vx = bx - ax;
-  const vz = bz - az;
-  const len2 = vx * vx + vz * vz;
-  if (len2 < 1e-9) return Math.hypot(px - ax, pz - az);
-  const t = Math.max(0, Math.min(1, ((px - ax) * vx + (pz - az) * vz) / len2));
-  const qx = ax + vx * t;
-  const qz = az + vz * t;
-  return Math.hypot(px - qx, pz - qz);
-}
-
 function segmentIntersectsAabb(ax: number, az: number, bx: number, bz: number, minX: number, maxX: number, minZ: number, maxZ: number): boolean {
-  // Liang-Barsky clipping in 2D
   let t0 = 0;
   let t1 = 1;
   const dx = bx - ax;
@@ -144,13 +199,13 @@ function segmentToRotBoxDist(
   best = Math.min(best, pointToAabbDist(lax, laz, minX, maxX, minZ, maxZ));
   best = Math.min(best, pointToAabbDist(lbx, lbz, minX, maxX, minZ, maxZ));
 
-  // Edges of AABB in local space
   const edges: Array<[number, number, number, number]> = [
     [minX, minZ, maxX, minZ],
     [maxX, minZ, maxX, maxZ],
     [maxX, maxZ, minX, maxZ],
     [minX, maxZ, minX, minZ],
   ];
+
   for (const [ex1, ez1, ex2, ez2] of edges) {
     best = Math.min(best, segSegDist(lax, laz, lbx, lbz, ex1, ez1, ex2, ez2));
   }
@@ -184,7 +239,6 @@ describe('railway strict route intrusion audit', () => {
     const circles = getCircleObstacles().map((c) => ({ ...c }));
     const boxes = getBoxObstacles().map((b) => ({ ...b }));
 
-    // Add world bridge decks as audited structures
     for (const b of BRIDGES) {
       boxes.push({
         cx: b.position[0],
@@ -209,6 +263,7 @@ describe('railway strict route intrusion audit', () => {
           const cls = classifyObstacle(c.id);
           const v: AuditViolation = {
             line: seg.line,
+            segmentIndex: seg.index,
             segment: `${seg.index}: [${seg.ax}, ${seg.az}] -> [${seg.bx}, ${seg.bz}]`,
             from: [seg.ax, seg.az],
             to: [seg.bx, seg.bz],
@@ -227,6 +282,7 @@ describe('railway strict route intrusion audit', () => {
           const cls = classifyObstacle(b.id);
           const v: AuditViolation = {
             line: seg.line,
+            segmentIndex: seg.index,
             segment: `${seg.index}: [${seg.ax}, ${seg.az}] -> [${seg.bx}, ${seg.bz}]`,
             from: [seg.ax, seg.az],
             to: [seg.bx, seg.bz],
@@ -244,25 +300,42 @@ describe('railway strict route intrusion audit', () => {
 
     const stationViolations = RAILWAY_STATIONS.flatMap((s) => {
       const [sx, sz] = s.position;
-      const found: Array<{ station: string; obstacleId: string; minDistance: number }> = [];
+      const found: Array<{ station: string; obstacleId: string; obstacleType: string; minDistance: number }> = [];
 
       for (const c of circles) {
         const d = Math.hypot(sx - c.x, sz - c.z) - c.radius;
-        if (d < CLEARANCE) found.push({ station: s.name, obstacleId: c.id, minDistance: Number(d.toFixed(2)) });
+        if (d < CLEARANCE) {
+          const cls = classifyObstacle(c.id);
+          found.push({ station: s.name, obstacleId: c.id, obstacleType: cls.type, minDistance: Number(d.toFixed(2)) });
+        }
       }
       for (const b of boxes) {
         const d = segmentToRotBoxDist(sx, sz, sx, sz, b.cx, b.cz, b.halfW, b.halfD, b.rotation);
-        if (d < CLEARANCE) found.push({ station: s.name, obstacleId: b.id, minDistance: Number(d.toFixed(2)) });
+        if (d < CLEARANCE) {
+          const cls = classifyObstacle(b.id);
+          found.push({ station: s.name, obstacleId: b.id, obstacleType: cls.type, minDistance: Number(d.toFixed(2)) });
+        }
       }
       return found;
     });
 
     const sorted = [...violations].sort((a, b) => a.minDistance - b.minDistance || a.line.localeCompare(b.line));
-    console.log('\n=== RAILWAY CLEARANCE VIOLATIONS (<15u) ===');
-    console.table(sorted);
+    const criticalOrMajor = sorted.filter((v) => {
+      const c = classifyObstacle(v.obstacleId);
+      return c.severity !== 'minor';
+    });
 
-    console.log('\n=== STATION CLEARANCE VIOLATIONS (<15u) ===');
-    console.table(stationViolations.sort((a, b) => a.minDistance - b.minDistance));
+    const output = {
+      clearance: CLEARANCE,
+      totalViolations: sorted.length,
+      criticalOrMajorCount: criticalOrMajor.length,
+      violations: sorted,
+      criticalOrMajorViolations: criticalOrMajor,
+      stationViolations: stationViolations.sort((a, b) => a.minDistance - b.minDistance),
+    };
+
+    writeFileSync('railway-audit-output.json', JSON.stringify(output, null, 2));
+    console.log(`\n[railway-audit] wrote railway-audit-output.json with ${sorted.length} violations (${criticalOrMajor.length} critical/major)`);
 
     expect(Array.isArray(violations)).toBe(true);
   });
