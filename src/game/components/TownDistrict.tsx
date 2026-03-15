@@ -337,7 +337,7 @@ function generateTownBuildings(): TownBuildingDef[] {
     // Along roads further out
     [-16, 66, Math.PI * 0.5],
     [16, 66, -Math.PI * 0.4],
-    [-14, 72, Math.PI * 0.3],
+    [10, 74, -Math.PI * 0.45],
     [14, 72, -Math.PI * 0.5],
   ];
 

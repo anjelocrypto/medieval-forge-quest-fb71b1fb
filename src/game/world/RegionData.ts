@@ -386,7 +386,7 @@ export const SMALL_POIS: SmallPOIDef[] = [
   // === BLACKTHORN TO OLD VEYRA ===
   { id: 'sp13', name: 'Watch Post', position: [195, -30], type: 'watchpost' },
   { id: 'sp64', name: 'Military Shrine', position: [200, -65], type: 'shrine' },
-  { id: 'sp65', name: 'Supply Cache', position: [185, 45], type: 'supply_depot' },
+  { id: 'sp65', name: 'Supply Cache', position: [212, 68], type: 'supply_depot' },
   
   // === FROSTMERE HEIGHTS ===
   { id: 'sp14', name: 'Mountain Pond', position: [140, 160], type: 'pond' },
