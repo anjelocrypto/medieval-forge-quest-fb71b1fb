@@ -77,7 +77,12 @@ export const LINE_A_WAYPOINTS: RailwayWaypoint[] = [
   { x: 360, z: 270, label: 'Rivermoor Station', type: 'station' },
 ];
 
-// ========== LINE B: Goldenvale → Ironhold → Darkhollow (v6 — strict intrusion pass) ==========
+// ========== LINE B: Goldenvale → Ironhold → Darkhollow (v7 — visual clarity pass) ==========
+// v7 changes:
+// - Eliminated U-turn at Ironhold. Line B now exits EAST, bypasses around Ironhold's
+//   east wall, then curves north toward Blackthorn/Darkhollow. This creates a clean
+//   Y-junction at Ironhold Central (Line A exits ENE, Line B exits ESE).
+// - Bridge waypoint repositioned to align with new tributary stream crossing.
 export const LINE_B_WAYPOINTS: RailwayWaypoint[] = [
   // Goldenvale outer approach: shifted away from Harvest Hill houses.
   { x: -470, z: 185, label: 'Goldenvale Station', type: 'station' },
@@ -86,16 +91,17 @@ export const LINE_B_WAYPOINTS: RailwayWaypoint[] = [
   { x: -300, z: 90, type: 'track' },
   { x: -220, z: 75, type: 'track' },
   { x: -130, z: 95, type: 'track' },
-  { x: -70, z: 108, type: 'track' },
-  { x: -40, z: 96, type: 'track' },
-  { x: -35, z: 84, label: 'Great River Bridge', type: 'bridge' },
+  { x: -70, z: 105, type: 'track' },
+  { x: -40, z: 98, type: 'track' },
+  { x: -25, z: 90, label: 'Ironhold South Bridge', type: 'bridge' },
   { x: -25, z: 95, label: 'Ironhold Central', type: 'station' },
-  // West bypass around Ironhold interior.
-  { x: -55, z: 65, type: 'track' },
-  { x: -60, z: 20, type: 'track' },
-  { x: -60, z: -30, type: 'track' },
-  { x: -55, z: -65, type: 'track' },
-  { x: -30, z: -90, type: 'track' },
+  // East bypass around Ironhold exterior (clean through-route, no U-turn).
+  // Stays ≥18u from east wall (x=38) and corner towers (r=3.2).
+  { x: 40, z: 85, type: 'track' },
+  { x: 58, z: 55, type: 'track' },
+  { x: 65, z: 15, type: 'track' },
+  { x: 60, z: -35, type: 'track' },
+  { x: 45, z: -75, type: 'track' },
   { x: 30, z: -100, type: 'track' },
   { x: 80, z: -100, type: 'track' },
   { x: 110, z: -120, type: 'track' },
