@@ -427,6 +427,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
           {/* RAILWAY — incremental re-enable. Static tracks only (no useFrame). */}
           {/* Terrain flattening grid is safe and active. */}
           <RailwayTrack />
+          <RailwayLamps playerPositionRef={playerPositionRef} />
           {/* Stations, bridges, trains DISABLED until static tracks proven safe */}
           {/* <RailwayStations playerPositionRef={playerPositionRef} /> */}
           {/* <RailwayBridges playerPositionRef={playerPositionRef} /> */}
