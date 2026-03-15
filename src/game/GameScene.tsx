@@ -21,6 +21,10 @@ import { WildernessStructures } from './components/WildernessStructures';
 import { Bridges } from './components/Bridges';
 import { NightLighting } from './components/NightLighting';
 import { RailwayDebugPreview } from './components/RailwayDebugPreview';
+import { RailwayTrack } from './components/RailwayTrack';
+import { RailwayStations } from './components/RailwayStations';
+import { RailwayBridges } from './components/RailwayBridges';
+import { Train } from './components/Train';
 import { DebugCollision } from './components/DebugCollision';
 import { CameraController } from './systems/CameraController';
 import { InputFlusher } from './systems/InputFlusher';
@@ -419,6 +423,10 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
             availableBuildables={getAvailableBuildables()}
           />
           <DebugCollision playerPositionRef={playerPositionRef} isMounted={isMounted} />
+          <RailwayTrack />
+          <RailwayStations playerPositionRef={playerPositionRef} />
+          <RailwayBridges playerPositionRef={playerPositionRef} />
+          <Train />
           <RailwayDebugPreview />
 
           {/* Remote players from multiplayer */}
