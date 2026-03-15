@@ -419,6 +419,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
             availableBuildables={getAvailableBuildables()}
           />
           <DebugCollision playerPositionRef={playerPositionRef} isMounted={isMounted} />
+          <RailwayDebugPreview />
 
           {/* Remote players from multiplayer */}
           <RemotePlayers remotePlayers={multiplayer.remotePlayers} />
