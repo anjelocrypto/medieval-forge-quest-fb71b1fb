@@ -227,30 +227,21 @@ function Platform({ w, l }: { w: number; l: number }) {
 
 const IronholdCentralStation = memo(function IronholdCentralStation({ station }: { station: RailwayStation }) {
   const layout = useMemo(() => {
-    const [sx, sz] = station.position; // (-25, 95)
+    const [sx, sz] = station.position; // (-20, 93) — midpoint between Line A (z≈103) and Line B (z≈83)
     const y = getTerrainHeight(sx, sz);
 
-    // Line A direction at hub: from (-45,85) through (-25,95) to (30,105)
-    // ≈ heading ENE (atan2(55, 20) ≈ 1.22 rad)
-    const dirA = Math.atan2(30 - (-45), 105 - 85); // atan2(75, 20) ≈ 1.31
-
-    // Line B direction at hub: from (-40,98) through (-25,95) to (45,92)
-    // ≈ heading ESE (atan2(85, -6) ≈ 1.50 rad)
-    const dirB = Math.atan2(45 - (-40), 92 - 98); // atan2(85, -6) ≈ 1.50
-
-    // Bisector between the two outbound directions
-    const bisector = (dirA + dirB) / 2;
-
-    // Place platform SOUTH of junction (away from both tracks diverging north-east)
-    // Offset perpendicular to bisector, toward south
-    const offsetDist = 9; // Clear of both rail corridors (platW/2 + margin)
-    const perpAngle = bisector - Math.PI / 2; // perpendicular toward south
-    const ox = Math.sin(perpAngle) * offsetDist;
-    const oz = Math.cos(perpAngle) * offsetDist;
+    // Both lines now run roughly east through the hub as parallel tracks.
+    // Line A: (-40,95) → (-20,103) → (30,108) — northern track
+    // Line B: (-40,83) → (-20,83) → (45,80) — southern track
+    // Platform sits as a central island between them, aligned along the shared corridor.
+    const trackHeading = Math.atan2(
+      (30 - (-40) + 45 - (-40)) / 2, // avg ΔX ≈ 77.5
+      (108 - 95 + 80 - 83) / 2       // avg ΔZ ≈ 5
+    ); // ≈ 1.51 rad (roughly east)
 
     return {
-      position: new THREE.Vector3(sx + ox, y, sz + oz),
-      rotation: bisector, // Platform aligned along bisector
+      position: new THREE.Vector3(sx, y, sz),
+      rotation: trackHeading, // Platform aligned along shared east-west corridor
       y,
     };
   }, [station]);
