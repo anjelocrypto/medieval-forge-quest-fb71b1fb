@@ -166,8 +166,8 @@ export function RailwayDebugPreview() {
   return (
     <group>
       {/* Route lines */}
-      {lineAGeo && <line geometry={lineAGeo} material={matLineA} />}
-      {lineBGeo && <line geometry={lineBGeo} material={matLineB} />}
+      {lineAGeo && <primitive object={new THREE.Line(lineAGeo, matLineA)} />}
+      {lineBGeo && <primitive object={new THREE.Line(lineBGeo, matLineB)} />}
 
       {/* Waypoint markers */}
       <WaypointMarkers waypoints={LINE_A_WAYPOINTS} mat={matWaypoint} />
