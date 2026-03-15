@@ -128,11 +128,11 @@ export const RAILWAY_STATIONS: RailwayStation[] = [
   { id: 'stn-darkhollow', name: 'Darkhollow', position: [520, -455], side: 'south', stationType: 'small', line: 'B' },
 ];
 
-// ========== RAILWAY BRIDGES (v6) ==========
+// ========== RAILWAY BRIDGES (v7 — aligned to actual water crossings) ==========
 export const RAILWAY_BRIDGES: RailwayBridge[] = [
-  { id: 'rail-bridge-great-river', position: [-35, 0.5, 84], line: 'B', crosses: 'Great River', length: 24 },
-  { id: 'rail-bridge-rivermoor', position: [355, 0.8, 260], line: 'A', crosses: 'Rivermoor River', length: 22 },
-  { id: 'rail-bridge-darkhollow', position: [390, 0.3, -360], line: 'B', crosses: 'Darkhollow Creek', length: 18 },
+  { id: 'rail-bridge-ironhold-south', position: [-25, 0.5, 90], line: 'B', crosses: 'Ironhold Stream', length: 20 },
+  { id: 'rail-bridge-rivermoor', position: [355, 0.8, 260], line: 'A', crosses: 'Rivermoor Tributary', length: 22 },
+  { id: 'rail-bridge-darkhollow', position: [390, 0.3, -360], line: 'B', crosses: 'Darkhollow Ford', length: 18 },
 ];
 
 /**
