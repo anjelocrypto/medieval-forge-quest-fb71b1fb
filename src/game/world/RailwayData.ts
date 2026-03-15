@@ -4,18 +4,18 @@
  * Line A: Thornwall (SW) ↔ Ironhold ↔ Rivermoor (NE)
  * Line B: Goldenvale (W) ↔ Ironhold ↔ Darkhollow (SE)
  *
- * v4 — Full clearance audit. All routes verified against settlement walls,
- * kingdom house footprints, town district buildings, and POI collision zones.
- * Clearance rule: ≥15 units from walls, ≥12 units from house footprints.
+ * v6 — strict route intrusion correction pass.
+ * Fix strategy:
+ * - Reroute around major walls/forts/ruins/city interiors.
+ * - Relocate minor movable POIs/buildings that sat on the rail corridor.
+ * - Enforce ≥15 units clearance from buildings and walls (unless explicit gate corridor).
  *
- * Key v4 changes:
- * - Thornwall station moved outside east wall (was ON the wall line)
- * - Line B SE departure rerouted WEST around Ironhold capital (was going through interior)
- * - Goldenvale station moved 25u from east wall (was 10u)
- * - Blackthorn Halt moved outside fort walls (was 5u from south wall)
- * - Darkhollow station moved away from Ashkeep ruins collision zone
- * - Frostmere Bypass shifted to clear Ashen Hollow outpost (was 11u)
- * - Ironhold Central shifted south to clear Town District buildings
+ * Key v6 changes:
+ * - Thornwall departure moved fully outside fortified wall envelope.
+ * - Ironhold west-side approach pulled farther west to clear capital wall buffer.
+ * - Blackthorn corridor rerouted around fort perimeter (no interior crossing).
+ * - Darkhollow approach rerouted south of marsh bridge + Ashkeep ruin cluster.
+ * - Rivermoor terminal moved away from village house footprint cluster.
  */
 
 export interface RailwayWaypoint {

@@ -338,12 +338,12 @@ export const ROADS: RoadSegment[] = [
 export const SMALL_POIS: SmallPOIDef[] = [
   // === IRONHOLD TO GREENMEADOW CORRIDOR ===
   { id: 'sp1', name: 'Crossroads Well', position: [-70, -55], type: 'crossroads' },
-  { id: 'sp2', name: 'Broken Wagon', position: [-100, -80], type: 'wagon' },
+  { id: 'sp2', name: 'Broken Wagon', position: [-118, -96], type: 'wagon' },
   { id: 'sp3', name: 'Wayside Shrine', position: [-40, -30], type: 'shrine' },
   { id: 'sp21', name: 'First Milestone', position: [-25, -15], type: 'milestone' },
   { id: 'sp22', name: 'Second Milestone', position: [-80, -60], type: 'milestone' },
   { id: 'sp28', name: 'Road Lantern', position: [-35, -45], type: 'lantern_post' },
-  { id: 'sp16', name: 'Roadside Inn', position: [-50, -90], type: 'inn' },
+  { id: 'sp16', name: 'Roadside Inn', position: [-72, -108], type: 'inn' },
   { id: 'sp40', name: 'Farm Shrine', position: [-120, -100], type: 'shrine' },
   { id: 'sp41', name: 'Third Milestone', position: [-140, -110], type: 'milestone' },
   
