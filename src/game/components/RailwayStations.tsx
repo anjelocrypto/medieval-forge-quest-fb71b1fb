@@ -101,14 +101,13 @@ const StationRenderer = memo(function StationRenderer({ station }: { station: Ra
           position={[0, 0.5, -shelterL / 2 + 0.5]} material={MAT.woodLight} />
       </group>
 
-      {/* Platform lamps */}
+      {/* Platform lamps — visual only, no pointLights for performance */}
       {[-platL / 2 + 1.5, platL / 2 - 1.5].map((zp, i) => (
         <group key={`lamp-${i}`} position={[-sideOffset * (platW / 2 - 0.5), 0.5, zp]}>
           <mesh geometry={GEO.cyl8} scale={[0.08, 2.5, 0.08]}
             position={[0, 1.25, 0]} material={lampMat} castShadow />
           <mesh geometry={GEO.box} scale={[0.3, 0.3, 0.3]}
             position={[0, 2.6, 0]} material={lampGlowMat} />
-          <pointLight position={[0, 2.6, 0]} color="#ffdd66" intensity={0.3} distance={8} />
         </group>
       ))}
 

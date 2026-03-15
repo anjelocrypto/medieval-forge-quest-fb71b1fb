@@ -137,15 +137,36 @@ export function getRailwaySegments(): RailSegment[] {
  * Get distance from point to nearest railway track segment.
  * Returns [distance, interpolatedFraction] or null if > maxDist.
  */
+// Pre-computed bounding boxes for fast spatial rejection
+let _segBounds: { minX: number; maxX: number; minZ: number; maxZ: number }[] | null = null;
+
+function getSegBounds(maxDist: number) {
+  if (_segBounds) return _segBounds;
+  const segs = getRailwaySegments();
+  _segBounds = segs.map(seg => ({
+    minX: Math.min(seg.ax, seg.bx) - maxDist,
+    maxX: Math.max(seg.ax, seg.bx) + maxDist,
+    minZ: Math.min(seg.az, seg.bz) - maxDist,
+    maxZ: Math.max(seg.az, seg.bz) + maxDist,
+  }));
+  return _segBounds;
+}
+
 export function distToRailway(x: number, z: number, maxDist: number = 12): number | null {
   const segs = getRailwaySegments();
+  const bounds = getSegBounds(maxDist);
   let best = maxDist + 1;
-  for (const seg of segs) {
+  for (let i = 0; i < segs.length; i++) {
+    const b = bounds[i];
+    // Fast AABB rejection
+    if (x < b.minX || x > b.maxX || z < b.minZ || z > b.maxZ) continue;
+    const seg = segs[i];
     if (seg.len2 < 1) continue;
     const dx = seg.bx - seg.ax, dz = seg.bz - seg.az;
     const t = Math.max(0, Math.min(1, ((x - seg.ax) * dx + (z - seg.az) * dz) / seg.len2));
     const px = seg.ax + t * dx, pz = seg.az + t * dz;
-    const dist = Math.sqrt((x - px) ** 2 + (z - pz) ** 2);
+    const ex = x - px, ez = z - pz;
+    const dist = Math.sqrt(ex * ex + ez * ez);
     if (dist < best) best = dist;
   }
   return best <= maxDist ? best : null;
