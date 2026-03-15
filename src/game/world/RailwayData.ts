@@ -98,7 +98,7 @@ export const LINE_B_WAYPOINTS: RailwayWaypoint[] = [
   { x: -25, z: 95, label: 'Ironhold Central', type: 'station' },
   // East bypass around Ironhold exterior (clean through-route, no U-turn).
   // Stays ≥18u from east wall (x=38) and corner towers (r=3.2).
-  { x: 40, z: 85, type: 'track' },
+  { x: 45, z: 92, type: 'track' },
   { x: 58, z: 55, type: 'track' },
   { x: 65, z: 15, type: 'track' },
   { x: 60, z: -35, type: 'track' },
