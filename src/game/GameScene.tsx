@@ -431,7 +431,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
           {/* Railway structures */}
           <RailwayStations playerPositionRef={playerPositionRef} />
           <RailwayBridges playerPositionRef={playerPositionRef} />
-          {/* <Train /> */}
+          <Train />
           {/* <RailwayDebugPreview /> */}
 
           {/* Remote players from multiplayer */}
