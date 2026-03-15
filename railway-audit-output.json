@@ -1,56 +1,56 @@
 {
   "clearance": 15,
-  "totalViolations": 15,
-  "criticalOrMajorCount": 15,
+  "totalViolations": 5,
+  "criticalOrMajorCount": 5,
   "violations": [
     {
-      "line": "A",
-      "segmentIndex": 14,
-      "segment": "14: [-55, 55] -> [-45, 85]",
+      "line": "B",
+      "segmentIndex": 4,
+      "segment": "4: [-220, 75] -> [-130, 95]",
       "from": [
-        -55,
-        55
+        -220,
+        75
       ],
       "to": [
-        -45,
-        85
+        -130,
+        95
       ],
-      "obstacleId": "town--46-72",
-      "obstacleType": "building/house footprint",
+      "obstacleId": "poi-sp10",
+      "obstacleType": "poi-watchtower",
       "obstacleCenter": [
-        -46,
-        72
+        -130,
+        95
       ],
-      "obstacleShape": "box:halfW=2.6054997561550697,halfD=2.884404785590623,rot=1.413716694115407",
-      "minDistance": 0,
-      "failReason": "inside house/building footprint or too close"
+      "obstacleShape": "circle:r=1.5",
+      "minDistance": -1.5,
+      "failReason": "too close to large POI collision zone"
     },
     {
       "line": "B",
-      "segmentIndex": 8,
-      "segment": "8: [-25, 95] -> [-55, 65]",
+      "segmentIndex": 5,
+      "segment": "5: [-130, 95] -> [-70, 108]",
       "from": [
-        -25,
+        -130,
         95
       ],
       "to": [
-        -55,
-        65
+        -70,
+        108
       ],
-      "obstacleId": "town--40-80",
-      "obstacleType": "building/house footprint",
+      "obstacleId": "poi-sp10",
+      "obstacleType": "poi-watchtower",
       "obstacleCenter": [
-        -40,
-        80
+        -130,
+        95
       ],
-      "obstacleShape": "box:halfW=2.7306938732328767,halfD=3.0219295325427593,rot=0.9424777960769379",
-      "minDistance": 0,
-      "failReason": "inside house/building footprint or too close"
+      "obstacleShape": "circle:r=1.5",
+      "minDistance": -1.5,
+      "failReason": "too close to large POI collision zone"
     },
     {
       "line": "A",
-      "segmentIndex": 19,
-      "segment": "19: [130, 35] -> [220, 45]",
+      "segmentIndex": 20,
+      "segment": "20: [130, 35] -> [220, 45]",
       "from": [
         130,
         35
@@ -59,330 +59,110 @@
         220,
         45
       ],
-      "obstacleId": "poi-sp65",
-      "obstacleType": "poi-supply_depot",
+      "obstacleId": "ashen_hollow-shrine",
+      "obstacleType": "structure",
       "obstacleCenter": [
-        185,
+        165,
         45
       ],
-      "obstacleShape": "box:halfW=2,halfD=1.5,rot=0",
-      "minDistance": 2.15,
-      "failReason": "inside or too close to POI structure footprint"
-    },
-    {
-      "line": "A",
-      "segmentIndex": 15,
-      "segment": "15: [-45, 85] -> [-25, 95]",
-      "from": [
-        -45,
-        85
-      ],
-      "to": [
-        -25,
-        95
-      ],
-      "obstacleId": "town--40-80",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -40,
-        80
-      ],
-      "obstacleShape": "box:halfW=2.7306938732328767,halfD=3.0219295325427593,rot=0.9424777960769379",
-      "minDistance": 3.52,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "A",
-      "segmentIndex": 7,
-      "segment": "7: [-240, -240] -> [-190, -200]",
-      "from": [
-        -240,
-        -240
-      ],
-      "to": [
-        -190,
-        -200
-      ],
-      "obstacleId": "poi-sp94",
-      "obstacleType": "poi-ruined_house",
-      "obstacleCenter": [
-        -212,
-        -206
-      ],
-      "obstacleShape": "box:halfW=2.5,halfD=2,rot=0",
-      "minDistance": 5.93,
-      "failReason": "inside or too close to POI structure footprint"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 9,
-      "segment": "9: [-55, 65] -> [-60, 20]",
-      "from": [
-        -55,
-        65
-      ],
-      "to": [
-        -60,
-        20
-      ],
-      "obstacleId": "town--46-72",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -46,
-        72
-      ],
-      "obstacleShape": "box:halfW=2.6054997561550697,halfD=2.884404785590623,rot=1.413716694115407",
-      "minDistance": 7.67,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 4,
-      "segment": "4: [-180, 65] -> [-100, 80]",
-      "from": [
-        -180,
-        65
-      ],
-      "to": [
-        -100,
-        80
-      ],
-      "obstacleId": "wild--155.36072996863473-59.235521609091386",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -155.36072996863473,
-        59.235521609091386
-      ],
-      "obstacleShape": "box:halfW=1,halfD=1.25,rot=3.5307259430527798",
-      "minDistance": 8.61,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "A",
-      "segmentIndex": 8,
-      "segment": "8: [-190, -200] -> [-150, -170]",
-      "from": [
-        -190,
-        -200
-      ],
-      "to": [
-        -150,
-        -170
-      ],
-      "obstacleId": "poi-sp80",
-      "obstacleType": "poi-ruined_house",
-      "obstacleCenter": [
-        -168,
-        -168
-      ],
-      "obstacleShape": "box:halfW=2.5,halfD=2,rot=0",
-      "minDistance": 9.3,
-      "failReason": "inside or too close to POI structure footprint"
+      "obstacleShape": "circle:r=0.8",
+      "minDistance": 5.27,
+      "failReason": "too close to rendered/collision structure"
     },
     {
       "line": "B",
       "segmentIndex": 6,
-      "segment": "6: [-45, 98] -> [-20, 85]",
+      "segment": "6: [-70, 108] -> [-40, 96]",
       "from": [
-        -45,
-        98
+        -70,
+        108
       ],
       "to": [
-        -20,
-        85
+        -40,
+        96
       ],
-      "obstacleId": "town--40-80",
+      "obstacleId": "town--76-96",
       "obstacleType": "building/house footprint",
       "obstacleCenter": [
-        -40,
-        80
+        -76,
+        96
       ],
       "obstacleShape": "box:halfW=2.7306938732328767,halfD=3.0219295325427593,rot=0.9424777960769379",
-      "minDistance": 9.74,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 0,
-      "segment": "0: [-485, 145] -> [-450, 130]",
-      "from": [
-        -485,
-        145
-      ],
-      "to": [
-        -450,
-        130
-      ],
-      "obstacleId": "goldenvale_village-house-0",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -496.1849293595268,
-        149.246199725682
-      ],
-      "obstacleShape": "box:halfW=1.0373442883485409,halfD=1.3954618076285923,rot=2.9465203994749416",
-      "minDistance": 10.36,
+      "minDistance": 9.53,
       "failReason": "inside house/building footprint or too close"
     },
     {
       "line": "A",
-      "segmentIndex": 9,
-      "segment": "9: [-150, -170] -> [-110, -120]",
+      "segmentIndex": 11,
+      "segment": "11: [-100, -150] -> [-80, -70]",
       "from": [
-        -150,
-        -170
+        -100,
+        -150
       ],
       "to": [
-        -110,
-        -120
+        -80,
+        -70
       ],
-      "obstacleId": "greenmeadow_village-house-9",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -135.0168880296148,
-        -129.1949492140248
-      ],
-      "obstacleShape": "box:halfW=2.150767606241412,halfD=1.9511588757868474,rot=9.590769190024327",
-      "minDistance": 10.96,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 20,
-      "segment": "20: [270, -245] -> [340, -290]",
-      "from": [
-        270,
-        -245
-      ],
-      "to": [
-        340,
-        -290
-      ],
-      "obstacleId": "poi-sp230",
+      "obstacleId": "poi-sp16",
       "obstacleType": "poi-inn",
       "obstacleCenter": [
-        286,
-        -236
+        -72,
+        -108
       ],
       "obstacleShape": "box:halfW=3.5,halfD=3,rot=0",
-      "minDistance": 11.81,
+      "minDistance": 12.85,
       "failReason": "inside or too close to POI structure footprint"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 7,
-      "segment": "7: [-20, 85] -> [-25, 95]",
-      "from": [
-        -20,
-        85
-      ],
-      "to": [
-        -25,
-        95
-      ],
-      "obstacleId": "town--14-72",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -14,
-        72
-      ],
-      "obstacleShape": "box:halfW=1.8757986623102787,halfD=2.0481203772808616,rot=0.9424777960769379",
-      "minDistance": 12.19,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 19,
-      "segment": "19: [200, -220] -> [270, -245]",
-      "from": [
-        200,
-        -220
-      ],
-      "to": [
-        270,
-        -245
-      ],
-      "obstacleId": "poi-sp230",
-      "obstacleType": "poi-inn",
-      "obstacleCenter": [
-        286,
-        -236
-      ],
-      "obstacleShape": "box:halfW=3.5,halfD=3,rot=0",
-      "minDistance": 13.87,
-      "failReason": "inside or too close to POI structure footprint"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 18,
-      "segment": "18: [150, -185] -> [200, -220]",
-      "from": [
-        150,
-        -185
-      ],
-      "to": [
-        200,
-        -220
-      ],
-      "obstacleId": "blackthorn_fort-tower--20--20",
-      "obstacleType": "wall/fortification",
-      "obstacleCenter": [
-        165,
-        -175
-      ],
-      "obstacleShape": "circle:r=2.2",
-      "minDistance": 14.59,
-      "failReason": "inside wall zone or too close to fortification"
     }
   ],
   "criticalOrMajorViolations": [
     {
-      "line": "A",
-      "segmentIndex": 14,
-      "segment": "14: [-55, 55] -> [-45, 85]",
+      "line": "B",
+      "segmentIndex": 4,
+      "segment": "4: [-220, 75] -> [-130, 95]",
       "from": [
-        -55,
-        55
+        -220,
+        75
       ],
       "to": [
-        -45,
-        85
+        -130,
+        95
       ],
-      "obstacleId": "town--46-72",
-      "obstacleType": "building/house footprint",
+      "obstacleId": "poi-sp10",
+      "obstacleType": "poi-watchtower",
       "obstacleCenter": [
-        -46,
-        72
+        -130,
+        95
       ],
-      "obstacleShape": "box:halfW=2.6054997561550697,halfD=2.884404785590623,rot=1.413716694115407",
-      "minDistance": 0,
-      "failReason": "inside house/building footprint or too close"
+      "obstacleShape": "circle:r=1.5",
+      "minDistance": -1.5,
+      "failReason": "too close to large POI collision zone"
     },
     {
       "line": "B",
-      "segmentIndex": 8,
-      "segment": "8: [-25, 95] -> [-55, 65]",
+      "segmentIndex": 5,
+      "segment": "5: [-130, 95] -> [-70, 108]",
       "from": [
-        -25,
+        -130,
         95
       ],
       "to": [
-        -55,
-        65
+        -70,
+        108
       ],
-      "obstacleId": "town--40-80",
-      "obstacleType": "building/house footprint",
+      "obstacleId": "poi-sp10",
+      "obstacleType": "poi-watchtower",
       "obstacleCenter": [
-        -40,
-        80
+        -130,
+        95
       ],
-      "obstacleShape": "box:halfW=2.7306938732328767,halfD=3.0219295325427593,rot=0.9424777960769379",
-      "minDistance": 0,
-      "failReason": "inside house/building footprint or too close"
+      "obstacleShape": "circle:r=1.5",
+      "minDistance": -1.5,
+      "failReason": "too close to large POI collision zone"
     },
     {
       "line": "A",
-      "segmentIndex": 19,
-      "segment": "19: [130, 35] -> [220, 45]",
+      "segmentIndex": 20,
+      "segment": "20: [130, 35] -> [220, 45]",
       "from": [
         130,
         35
@@ -391,305 +171,60 @@
         220,
         45
       ],
-      "obstacleId": "poi-sp65",
-      "obstacleType": "poi-supply_depot",
+      "obstacleId": "ashen_hollow-shrine",
+      "obstacleType": "structure",
       "obstacleCenter": [
-        185,
+        165,
         45
       ],
-      "obstacleShape": "box:halfW=2,halfD=1.5,rot=0",
-      "minDistance": 2.15,
-      "failReason": "inside or too close to POI structure footprint"
-    },
-    {
-      "line": "A",
-      "segmentIndex": 15,
-      "segment": "15: [-45, 85] -> [-25, 95]",
-      "from": [
-        -45,
-        85
-      ],
-      "to": [
-        -25,
-        95
-      ],
-      "obstacleId": "town--40-80",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -40,
-        80
-      ],
-      "obstacleShape": "box:halfW=2.7306938732328767,halfD=3.0219295325427593,rot=0.9424777960769379",
-      "minDistance": 3.52,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "A",
-      "segmentIndex": 7,
-      "segment": "7: [-240, -240] -> [-190, -200]",
-      "from": [
-        -240,
-        -240
-      ],
-      "to": [
-        -190,
-        -200
-      ],
-      "obstacleId": "poi-sp94",
-      "obstacleType": "poi-ruined_house",
-      "obstacleCenter": [
-        -212,
-        -206
-      ],
-      "obstacleShape": "box:halfW=2.5,halfD=2,rot=0",
-      "minDistance": 5.93,
-      "failReason": "inside or too close to POI structure footprint"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 9,
-      "segment": "9: [-55, 65] -> [-60, 20]",
-      "from": [
-        -55,
-        65
-      ],
-      "to": [
-        -60,
-        20
-      ],
-      "obstacleId": "town--46-72",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -46,
-        72
-      ],
-      "obstacleShape": "box:halfW=2.6054997561550697,halfD=2.884404785590623,rot=1.413716694115407",
-      "minDistance": 7.67,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 4,
-      "segment": "4: [-180, 65] -> [-100, 80]",
-      "from": [
-        -180,
-        65
-      ],
-      "to": [
-        -100,
-        80
-      ],
-      "obstacleId": "wild--155.36072996863473-59.235521609091386",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -155.36072996863473,
-        59.235521609091386
-      ],
-      "obstacleShape": "box:halfW=1,halfD=1.25,rot=3.5307259430527798",
-      "minDistance": 8.61,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "A",
-      "segmentIndex": 8,
-      "segment": "8: [-190, -200] -> [-150, -170]",
-      "from": [
-        -190,
-        -200
-      ],
-      "to": [
-        -150,
-        -170
-      ],
-      "obstacleId": "poi-sp80",
-      "obstacleType": "poi-ruined_house",
-      "obstacleCenter": [
-        -168,
-        -168
-      ],
-      "obstacleShape": "box:halfW=2.5,halfD=2,rot=0",
-      "minDistance": 9.3,
-      "failReason": "inside or too close to POI structure footprint"
+      "obstacleShape": "circle:r=0.8",
+      "minDistance": 5.27,
+      "failReason": "too close to rendered/collision structure"
     },
     {
       "line": "B",
       "segmentIndex": 6,
-      "segment": "6: [-45, 98] -> [-20, 85]",
+      "segment": "6: [-70, 108] -> [-40, 96]",
       "from": [
-        -45,
-        98
+        -70,
+        108
       ],
       "to": [
-        -20,
-        85
+        -40,
+        96
       ],
-      "obstacleId": "town--40-80",
+      "obstacleId": "town--76-96",
       "obstacleType": "building/house footprint",
       "obstacleCenter": [
-        -40,
-        80
+        -76,
+        96
       ],
       "obstacleShape": "box:halfW=2.7306938732328767,halfD=3.0219295325427593,rot=0.9424777960769379",
-      "minDistance": 9.74,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 0,
-      "segment": "0: [-485, 145] -> [-450, 130]",
-      "from": [
-        -485,
-        145
-      ],
-      "to": [
-        -450,
-        130
-      ],
-      "obstacleId": "goldenvale_village-house-0",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -496.1849293595268,
-        149.246199725682
-      ],
-      "obstacleShape": "box:halfW=1.0373442883485409,halfD=1.3954618076285923,rot=2.9465203994749416",
-      "minDistance": 10.36,
+      "minDistance": 9.53,
       "failReason": "inside house/building footprint or too close"
     },
     {
       "line": "A",
-      "segmentIndex": 9,
-      "segment": "9: [-150, -170] -> [-110, -120]",
+      "segmentIndex": 11,
+      "segment": "11: [-100, -150] -> [-80, -70]",
       "from": [
-        -150,
-        -170
+        -100,
+        -150
       ],
       "to": [
-        -110,
-        -120
+        -80,
+        -70
       ],
-      "obstacleId": "greenmeadow_village-house-9",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -135.0168880296148,
-        -129.1949492140248
-      ],
-      "obstacleShape": "box:halfW=2.150767606241412,halfD=1.9511588757868474,rot=9.590769190024327",
-      "minDistance": 10.96,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 20,
-      "segment": "20: [270, -245] -> [340, -290]",
-      "from": [
-        270,
-        -245
-      ],
-      "to": [
-        340,
-        -290
-      ],
-      "obstacleId": "poi-sp230",
+      "obstacleId": "poi-sp16",
       "obstacleType": "poi-inn",
       "obstacleCenter": [
-        286,
-        -236
+        -72,
+        -108
       ],
       "obstacleShape": "box:halfW=3.5,halfD=3,rot=0",
-      "minDistance": 11.81,
+      "minDistance": 12.85,
       "failReason": "inside or too close to POI structure footprint"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 7,
-      "segment": "7: [-20, 85] -> [-25, 95]",
-      "from": [
-        -20,
-        85
-      ],
-      "to": [
-        -25,
-        95
-      ],
-      "obstacleId": "town--14-72",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -14,
-        72
-      ],
-      "obstacleShape": "box:halfW=1.8757986623102787,halfD=2.0481203772808616,rot=0.9424777960769379",
-      "minDistance": 12.19,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 19,
-      "segment": "19: [200, -220] -> [270, -245]",
-      "from": [
-        200,
-        -220
-      ],
-      "to": [
-        270,
-        -245
-      ],
-      "obstacleId": "poi-sp230",
-      "obstacleType": "poi-inn",
-      "obstacleCenter": [
-        286,
-        -236
-      ],
-      "obstacleShape": "box:halfW=3.5,halfD=3,rot=0",
-      "minDistance": 13.87,
-      "failReason": "inside or too close to POI structure footprint"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 18,
-      "segment": "18: [150, -185] -> [200, -220]",
-      "from": [
-        150,
-        -185
-      ],
-      "to": [
-        200,
-        -220
-      ],
-      "obstacleId": "blackthorn_fort-tower--20--20",
-      "obstacleType": "wall/fortification",
-      "obstacleCenter": [
-        165,
-        -175
-      ],
-      "obstacleShape": "circle:r=2.2",
-      "minDistance": 14.59,
-      "failReason": "inside wall zone or too close to fortification"
     }
   ],
-  "stationViolations": [
-    {
-      "station": "Goldenvale",
-      "obstacleId": "goldenvale_village-house-0",
-      "obstacleType": "building/house footprint",
-      "minDistance": 10.36
-    },
-    {
-      "station": "Goldenvale",
-      "obstacleId": "goldenvale_village-house-4",
-      "obstacleType": "building/house footprint",
-      "minDistance": 12.69
-    },
-    {
-      "station": "Goldenvale",
-      "obstacleId": "goldenvale_village-house-1",
-      "obstacleType": "building/house footprint",
-      "minDistance": 13.5
-    },
-    {
-      "station": "Goldenvale",
-      "obstacleId": "goldenvale_village-house-2",
-      "obstacleType": "building/house footprint",
-      "minDistance": 13.65
-    }
-  ]
+  "stationViolations": []
 }
