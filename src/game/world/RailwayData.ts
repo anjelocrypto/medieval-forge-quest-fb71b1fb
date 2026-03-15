@@ -123,7 +123,7 @@ export const LINE_B_WAYPOINTS: RailwayWaypoint[] = [
 export const RAILWAY_STATIONS: RailwayStation[] = [
   { id: 'stn-thornwall', name: 'Thornwall', position: [-480, -520], side: 'north', stationType: 'large', line: 'A' },
   { id: 'stn-greenmeadow', name: 'Greenmeadow', position: [-150, -170], side: 'south', stationType: 'small', line: 'A' },
-  { id: 'stn-ironhold', name: 'Ironhold Central', position: [-25, 95], side: 'south', stationType: 'capital', line: 'AB' },
+  { id: 'stn-ironhold', name: 'Ironhold Central', position: [-20, 93], side: 'south', stationType: 'capital', line: 'AB' },
   { id: 'stn-goldenvale', name: 'Goldenvale', position: [-470, 185], side: 'east', stationType: 'medium', line: 'B' },
   { id: 'stn-blackthorn', name: 'Blackthorn Halt', position: [140, -200], side: 'west', stationType: 'small', line: 'B' },
   { id: 'stn-rivermoor', name: 'Rivermoor', position: [360, 270], side: 'west', stationType: 'medium', line: 'A' },
