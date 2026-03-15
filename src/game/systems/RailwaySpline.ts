@@ -1,106 +1,105 @@
 /**
- * RailwaySpline — shared spline utilities for track rendering and train movement.
- * Builds a Catmull-Rom spline from waypoints, sampling terrain height at each point.
+ * RailwaySpline — lightweight spline utilities for train movement.
+ * Uses linear interpolation between waypoints + terrain height.
  */
 import * as THREE from 'three';
 import { RailwayWaypoint } from '../world/RailwayData';
 import { getTerrainHeight } from '../components/Terrain';
 
-const RAIL_HEIGHT_OFFSET = 0.35; // rails sit slightly above ground
-
-export interface SplinePoint {
-  position: THREE.Vector3;
-  tangent: THREE.Vector3;
-}
+const RAIL_HEIGHT_OFFSET = 0.35;
 
 /**
- * Build a smooth 3D path from waypoints using Catmull-Rom interpolation.
- * Returns evenly-spaced points along the path.
+ * Build a 3D path from waypoints with terrain-following height.
+ * Returns packed Float32Array [x,y,z, x,y,z, ...] for zero-alloc sampling.
  */
-export function buildRailwaySpline(
+export function buildRailwayPath(
   waypoints: RailwayWaypoint[],
-  pointsPerSegment: number = 12,
-): THREE.Vector3[] {
-  // Create 3D control points from 2D waypoints + terrain height
-  const controls: THREE.Vector3[] = waypoints.map(wp => {
-    const y = getTerrainHeight(wp.x, wp.z) + RAIL_HEIGHT_OFFSET;
-    return new THREE.Vector3(wp.x, y, wp.z);
-  });
-
-  const curve = new THREE.CatmullRomCurve3(controls, false, 'centripetal', 0.5);
-  const totalPoints = (waypoints.length - 1) * pointsPerSegment;
-  return curve.getSpacedPoints(totalPoints);
-}
-
-/**
- * Get total arc length of a spline path.
- */
-export function getSplineLength(points: THREE.Vector3[]): number {
-  let len = 0;
-  for (let i = 1; i < points.length; i++) {
-    len += points[i].distanceTo(points[i - 1]);
-  }
-  return len;
-}
-
-/**
- * Sample position and forward direction at a given distance along the path.
- */
-export function sampleSplineAtDistance(
-  points: THREE.Vector3[],
-  totalLength: number,
-  distance: number,
-): SplinePoint {
-  const d = ((distance % totalLength) + totalLength) % totalLength;
-  let accumulated = 0;
-  for (let i = 1; i < points.length; i++) {
-    const segLen = points[i].distanceTo(points[i - 1]);
-    if (accumulated + segLen >= d) {
-      const t = (d - accumulated) / segLen;
-      const position = new THREE.Vector3().lerpVectors(points[i - 1], points[i], t);
-      const tangent = new THREE.Vector3().subVectors(points[i], points[i - 1]).normalize();
-      return { position, tangent };
+  subdivPerSeg: number = 4,
+): { points: Float32Array; count: number; totalLength: number } {
+  const total = (waypoints.length - 1) * subdivPerSeg + 1;
+  const pts = new Float32Array(total * 3);
+  let idx = 0;
+  for (let i = 0; i < waypoints.length - 1; i++) {
+    for (let s = 0; s < subdivPerSeg; s++) {
+      const t = s / subdivPerSeg;
+      const x = waypoints[i].x + (waypoints[i + 1].x - waypoints[i].x) * t;
+      const z = waypoints[i].z + (waypoints[i + 1].z - waypoints[i].z) * t;
+      pts[idx++] = x;
+      pts[idx++] = getTerrainHeight(x, z) + RAIL_HEIGHT_OFFSET;
+      pts[idx++] = z;
     }
-    accumulated += segLen;
   }
-  // Fallback to last point
-  const last = points[points.length - 1];
-  const prev = points[points.length - 2];
-  return {
-    position: last.clone(),
-    tangent: new THREE.Vector3().subVectors(last, prev).normalize(),
-  };
+  const last = waypoints[waypoints.length - 1];
+  pts[idx++] = last.x;
+  pts[idx++] = getTerrainHeight(last.x, last.z) + RAIL_HEIGHT_OFFSET;
+  pts[idx++] = last.z;
+
+  // Compute total arc length
+  let totalLength = 0;
+  for (let i = 1; i < total; i++) {
+    const i3 = i * 3, p3 = (i - 1) * 3;
+    const dx = pts[i3] - pts[p3], dy = pts[i3 + 1] - pts[p3 + 1], dz = pts[i3 + 2] - pts[p3 + 2];
+    totalLength += Math.sqrt(dx * dx + dy * dy + dz * dz);
+  }
+
+  return { points: pts, count: total, totalLength };
 }
 
 /**
- * Find the index of the nearest spline point to a given station position.
+ * Sample position + tangent at arc-length distance. Zero allocation.
  */
-export function findNearestPointIndex(
-  points: THREE.Vector3[],
+export function samplePathAtDistance(
+  pts: Float32Array,
+  count: number,
+  totalLen: number,
+  distance: number,
+  outPos: THREE.Vector3,
+  outTan: THREE.Vector3,
+): void {
+  const d = ((distance % totalLen) + totalLen) % totalLen;
+  let acc = 0;
+  for (let i = 1; i < count; i++) {
+    const i3 = i * 3, p3 = (i - 1) * 3;
+    const dx = pts[i3] - pts[p3], dy = pts[i3 + 1] - pts[p3 + 1], dz = pts[i3 + 2] - pts[p3 + 2];
+    const segLen = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (acc + segLen >= d && segLen > 0.001) {
+      const t = (d - acc) / segLen;
+      outPos.set(pts[p3] + dx * t, pts[p3 + 1] + dy * t, pts[p3 + 2] + dz * t);
+      outTan.set(dx / segLen, dy / segLen, dz / segLen);
+      return;
+    }
+    acc += segLen;
+  }
+  // Fallback: last point
+  const l3 = (count - 1) * 3, p3 = (count - 2) * 3;
+  outPos.set(pts[l3], pts[l3 + 1], pts[l3 + 2]);
+  const dx = pts[l3] - pts[p3], dy = pts[l3 + 1] - pts[p3 + 1], dz = pts[l3 + 2] - pts[p3 + 2];
+  const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+  outTan.set(dx / (len || 1), dy / (len || 1), dz / (len || 1));
+}
+
+/**
+ * Find arc-length distance to nearest point to a station position.
+ */
+export function findStationDistance(
+  pts: Float32Array,
+  count: number,
   stationX: number,
   stationZ: number,
 ): number {
-  let bestIdx = 0;
-  let bestDist = Infinity;
-  for (let i = 0; i < points.length; i++) {
-    const dx = points[i].x - stationX;
-    const dz = points[i].z - stationZ;
+  let bestIdx = 0, bestDist = Infinity;
+  for (let i = 0; i < count; i++) {
+    const i3 = i * 3;
+    const dx = pts[i3] - stationX, dz = pts[i3 + 2] - stationZ;
     const d = dx * dx + dz * dz;
-    if (d < bestDist) {
-      bestDist = d;
-      bestIdx = i;
-    }
+    if (d < bestDist) { bestDist = d; bestIdx = i; }
   }
-  return bestIdx;
-}
-
-/**
- * Convert point index to arc-length distance along the path.
- */
-export function pointIndexToDistance(points: THREE.Vector3[], index: number): number {
-  let d = 0;
-  for (let i = 1; i <= Math.min(index, points.length - 1); i++) {
-    d += points[i].distanceTo(points[i - 1]);
+  // Convert index to arc-length
+  let dist = 0;
+  for (let i = 1; i <= bestIdx; i++) {
+    const i3 = i * 3, p3 = (i - 1) * 3;
+    const dx = pts[i3] - pts[p3], dy = pts[i3 + 1] - pts[p3 + 1], dz = pts[i3 + 2] - pts[p3 + 2];
+    dist += Math.sqrt(dx * dx + dy * dy + dz * dz);
   }
-  return d;
+  return dist;
 }
