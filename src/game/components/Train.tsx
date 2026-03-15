@@ -146,7 +146,8 @@ function Locomotive() {
         ))
       )}
       <mesh geometry={GEO.box} scale={[1.6, 0.15, 6.0]} position={[0, 0.15, 0.5]} material={bodyMat} />
-      <pointLight position={[0, 1.8, 3.5]} color="#ffeecc" intensity={0.5} distance={15} />
+      {/* Headlight glow — mesh only, no pointLight for performance */}
+      <mesh geometry={GEO.sphere8} scale={[0.15, 0.15, 0.15]} position={[0, 1.8, 3.0]} material={detailMat} />
     </group>
   );
 }
