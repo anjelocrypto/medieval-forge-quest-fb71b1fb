@@ -490,8 +490,8 @@ export const SMALL_POIS: SmallPOIDef[] = [
   { id: 'sp210', name: 'Trader Rest', position: [-250, 130], type: 'inn' },
   { id: 'sp211', name: 'Western Milestone', position: [-380, 115], type: 'milestone' },
   { id: 'sp212', name: 'Vale Shrine', position: [-440, 125], type: 'shrine' },
-  { id: 'sp213', name: 'Merchant Camp', position: [-470, 140], type: 'hunter_camp' },
-  
+  { id: 'sp213', name: 'Merchant Camp', position: [-492, 166], type: 'hunter_camp' },
+   
   // Frostmere → Rivermoor road
   { id: 'sp220', name: 'River Approach', position: [220, 230], type: 'milestone' },
   { id: 'sp221', name: 'Eastern Inn', position: [320, 270], type: 'inn' },
