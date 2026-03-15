@@ -17,6 +17,11 @@
       ],
       "obstacleId": "blackthorn_fort-tower--20-20",
       "obstacleType": "wall/fortification",
+      "obstacleCenter": [
+        165,
+        -135
+      ],
+      "obstacleShape": "circle:r=2.2",
       "minDistance": -2.2,
       "failReason": "inside wall zone or too close to fortification"
     },
@@ -34,6 +39,11 @@
       ],
       "obstacleId": "blackthorn_fort-tower-20--20",
       "obstacleType": "wall/fortification",
+      "obstacleCenter": [
+        205,
+        -175
+      ],
+      "obstacleShape": "circle:r=2.2",
       "minDistance": -0.81,
       "failReason": "inside wall zone or too close to fortification"
     },
@@ -51,6 +61,11 @@
       ],
       "obstacleId": "thornwall_city-wall-n",
       "obstacleType": "wall/fortification",
+      "obstacleCenter": [
+        -500,
+        -495
+      ],
+      "obstacleShape": "box:halfW=45,halfD=1,rot=0",
       "minDistance": 0,
       "failReason": "inside wall zone or too close to fortification"
     },
@@ -68,6 +83,11 @@
       ],
       "obstacleId": "poi-sp230",
       "obstacleType": "poi-inn",
+      "obstacleCenter": [
+        260,
+        -210
+      ],
+      "obstacleShape": "box:halfW=3.5,halfD=3,rot=0",
       "minDistance": 0,
       "failReason": "inside or too close to POI structure footprint"
     },
@@ -85,6 +105,11 @@
       ],
       "obstacleId": "world-bridge-bridge-darkhollow-marsh",
       "obstacleType": "bridge deck/approach",
+      "obstacleCenter": [
+        400,
+        -320
+      ],
+      "obstacleShape": "box:halfW=2,halfD=14,rot=0.4",
       "minDistance": 0,
       "failReason": "too close to bridge structure/approach"
     },
@@ -102,6 +127,11 @@
       ],
       "obstacleId": "darkhollow_ruins-ruin-7",
       "obstacleType": "major settlement structure",
+      "obstacleCenter": [
+        471.32259815034604,
+        -357.7642053766918
+      ],
+      "obstacleShape": "box:halfW=2.931092589563776,halfD=1.8731572501111378,rot=4.9394859390674855",
       "minDistance": 0,
       "failReason": "inside major settlement structure footprint or too close"
     },
@@ -119,6 +149,11 @@
       ],
       "obstacleId": "darkhollow_ruins-ruin-7",
       "obstacleType": "major settlement structure",
+      "obstacleCenter": [
+        471.32259815034604,
+        -357.7642053766918
+      ],
+      "obstacleShape": "box:halfW=2.931092589563776,halfD=1.8731572501111378,rot=4.9394859390674855",
       "minDistance": 0,
       "failReason": "inside major settlement structure footprint or too close"
     },
@@ -136,6 +171,11 @@
       ],
       "obstacleId": "poi-sp53",
       "obstacleType": "poi-hunter_camp",
+      "obstacleCenter": [
+        -120,
+        75
+      ],
+      "obstacleShape": "circle:r=1.2",
       "minDistance": 0.03,
       "failReason": "too close to large POI collision zone"
     },
@@ -153,6 +193,11 @@
       ],
       "obstacleId": "poi-sp213",
       "obstacleType": "poi-hunter_camp",
+      "obstacleCenter": [
+        -470,
+        140
+      ],
+      "obstacleShape": "circle:r=1.2",
       "minDistance": 0.11,
       "failReason": "too close to large POI collision zone"
     },
@@ -170,6 +215,11 @@
       ],
       "obstacleId": "poi-sp60",
       "obstacleType": "poi-hunter_camp",
+      "obstacleCenter": [
+        145,
+        35
+      ],
+      "obstacleShape": "circle:r=1.2",
       "minDistance": 0.46,
       "failReason": "too close to large POI collision zone"
     },
@@ -187,6 +237,11 @@
       ],
       "obstacleId": "poi-sp80",
       "obstacleType": "poi-ruined_house",
+      "obstacleCenter": [
+        -145,
+        -155
+      ],
+      "obstacleShape": "box:halfW=2.5,halfD=2,rot=0",
       "minDistance": 2.26,
       "failReason": "inside or too close to POI structure footprint"
     },
@@ -204,6 +259,11 @@
       ],
       "obstacleId": "rivermoor_village-house-3",
       "obstacleType": "building/house footprint",
+      "obstacleCenter": [
+        395.8467175969258,
+        294.86015710771954
+      ],
+      "obstacleShape": "box:halfW=1.5925487646298007,halfD=2.2170903219069262,rot=7.174347585532772",
       "minDistance": 5.39,
       "failReason": "inside house/building footprint or too close"
     },
@@ -221,6 +281,11 @@
       ],
       "obstacleId": "poi-sp94",
       "obstacleType": "poi-ruined_house",
+      "obstacleCenter": [
+        -185,
+        -185
+      ],
+      "obstacleShape": "box:halfW=2.5,halfD=2,rot=0",
       "minDistance": 5.9,
       "failReason": "inside or too close to POI structure footprint"
     },
@@ -238,6 +303,11 @@
       ],
       "obstacleId": "poi-sp5",
       "obstacleType": "poi-hunter_camp",
+      "obstacleCenter": [
+        130,
+        -110
+      ],
+      "obstacleShape": "circle:r=1.2",
       "minDistance": 8.8,
       "failReason": "too close to large POI collision zone"
     },
@@ -255,6 +325,11 @@
       ],
       "obstacleId": "town--22-72",
       "obstacleType": "building/house footprint",
+      "obstacleCenter": [
+        -22,
+        72
+      ],
+      "obstacleShape": "box:halfW=2.7306938732328767,halfD=3.0219295325427593,rot=0.9424777960769379",
       "minDistance": 9.09,
       "failReason": "inside house/building footprint or too close"
     },
@@ -272,6 +347,11 @@
       ],
       "obstacleId": "town--22-72",
       "obstacleType": "building/house footprint",
+      "obstacleCenter": [
+        -22,
+        72
+      ],
+      "obstacleShape": "box:halfW=2.7306938732328767,halfD=3.0219295325427593,rot=0.9424777960769379",
       "minDistance": 9.09,
       "failReason": "inside house/building footprint or too close"
     },
@@ -289,6 +369,11 @@
       ],
       "obstacleId": "poi-sp16",
       "obstacleType": "poi-inn",
+      "obstacleCenter": [
+        -50,
+        -90
+      ],
+      "obstacleShape": "box:halfW=3.5,halfD=3,rot=0",
       "minDistance": 9.55,
       "failReason": "inside or too close to POI structure footprint"
     },
@@ -306,6 +391,11 @@
       ],
       "obstacleId": "poi-sp2",
       "obstacleType": "poi-wagon",
+      "obstacleCenter": [
+        -100,
+        -80
+      ],
+      "obstacleShape": "box:halfW=0.75,halfD=1.5,rot=0.2531828205548794",
       "minDistance": 10.05,
       "failReason": "inside or too close to POI structure footprint"
     },
@@ -323,6 +413,11 @@
       ],
       "obstacleId": "ironhold-wall-w",
       "obstacleType": "wall/fortification",
+      "obstacleCenter": [
+        -38,
+        0
+      ],
+      "obstacleShape": "box:halfW=1.25,halfD=38,rot=0",
       "minDistance": 10.75,
       "failReason": "inside wall zone or too close to fortification"
     },
@@ -340,6 +435,11 @@
       ],
       "obstacleId": "ironhold-wall-w",
       "obstacleType": "wall/fortification",
+      "obstacleCenter": [
+        -38,
+        0
+      ],
+      "obstacleShape": "box:halfW=1.25,halfD=38,rot=0",
       "minDistance": 10.75,
       "failReason": "inside wall zone or too close to fortification"
     },
@@ -357,6 +457,11 @@
       ],
       "obstacleId": "town--28-70",
       "obstacleType": "building/house footprint",
+      "obstacleCenter": [
+        -28,
+        70
+      ],
+      "obstacleShape": "box:halfW=2.6054997561550697,halfD=2.884404785590623,rot=1.413716694115407",
       "minDistance": 11.75,
       "failReason": "inside house/building footprint or too close"
     },
@@ -374,6 +479,11 @@
       ],
       "obstacleId": "poi-sp94",
       "obstacleType": "poi-ruined_house",
+      "obstacleCenter": [
+        -185,
+        -185
+      ],
+      "obstacleShape": "box:halfW=2.5,halfD=2,rot=0",
       "minDistance": 13.24,
       "failReason": "inside or too close to POI structure footprint"
     },
@@ -391,6 +501,11 @@
       ],
       "obstacleId": "poi-sp60",
       "obstacleType": "poi-hunter_camp",
+      "obstacleCenter": [
+        145,
+        35
+      ],
+      "obstacleShape": "circle:r=1.2",
       "minDistance": 13.8,
       "failReason": "too close to large POI collision zone"
     },
@@ -408,6 +523,11 @@
       ],
       "obstacleId": "thornwall_city-wall-e",
       "obstacleType": "wall/fortification",
+      "obstacleCenter": [
+        -455,
+        -450
+      ],
+      "obstacleShape": "box:halfW=1,halfD=45,rot=0",
       "minDistance": 14,
       "failReason": "inside wall zone or too close to fortification"
     }
@@ -427,6 +547,11 @@
       ],
       "obstacleId": "blackthorn_fort-tower--20-20",
       "obstacleType": "wall/fortification",
+      "obstacleCenter": [
+        165,
+        -135
+      ],
+      "obstacleShape": "circle:r=2.2",
       "minDistance": -2.2,
       "failReason": "inside wall zone or too close to fortification"
     },
@@ -444,6 +569,11 @@
       ],
       "obstacleId": "blackthorn_fort-tower-20--20",
       "obstacleType": "wall/fortification",
+      "obstacleCenter": [
+        205,
+        -175
+      ],
+      "obstacleShape": "circle:r=2.2",
       "minDistance": -0.81,
       "failReason": "inside wall zone or too close to fortification"
     },
@@ -461,6 +591,11 @@
       ],
       "obstacleId": "thornwall_city-wall-n",
       "obstacleType": "wall/fortification",
+      "obstacleCenter": [
+        -500,
+        -495
+      ],
+      "obstacleShape": "box:halfW=45,halfD=1,rot=0",
       "minDistance": 0,
       "failReason": "inside wall zone or too close to fortification"
     },
@@ -478,6 +613,11 @@
       ],
       "obstacleId": "poi-sp230",
       "obstacleType": "poi-inn",
+      "obstacleCenter": [
+        260,
+        -210
+      ],
+      "obstacleShape": "box:halfW=3.5,halfD=3,rot=0",
       "minDistance": 0,
       "failReason": "inside or too close to POI structure footprint"
     },
@@ -495,6 +635,11 @@
       ],
       "obstacleId": "world-bridge-bridge-darkhollow-marsh",
       "obstacleType": "bridge deck/approach",
+      "obstacleCenter": [
+        400,
+        -320
+      ],
+      "obstacleShape": "box:halfW=2,halfD=14,rot=0.4",
       "minDistance": 0,
       "failReason": "too close to bridge structure/approach"
     },
@@ -512,6 +657,11 @@
       ],
       "obstacleId": "darkhollow_ruins-ruin-7",
       "obstacleType": "major settlement structure",
+      "obstacleCenter": [
+        471.32259815034604,
+        -357.7642053766918
+      ],
+      "obstacleShape": "box:halfW=2.931092589563776,halfD=1.8731572501111378,rot=4.9394859390674855",
       "minDistance": 0,
       "failReason": "inside major settlement structure footprint or too close"
     },
@@ -529,6 +679,11 @@
       ],
       "obstacleId": "darkhollow_ruins-ruin-7",
       "obstacleType": "major settlement structure",
+      "obstacleCenter": [
+        471.32259815034604,
+        -357.7642053766918
+      ],
+      "obstacleShape": "box:halfW=2.931092589563776,halfD=1.8731572501111378,rot=4.9394859390674855",
       "minDistance": 0,
       "failReason": "inside major settlement structure footprint or too close"
     },
@@ -546,6 +701,11 @@
       ],
       "obstacleId": "poi-sp53",
       "obstacleType": "poi-hunter_camp",
+      "obstacleCenter": [
+        -120,
+        75
+      ],
+      "obstacleShape": "circle:r=1.2",
       "minDistance": 0.03,
       "failReason": "too close to large POI collision zone"
     },
@@ -563,6 +723,11 @@
       ],
       "obstacleId": "poi-sp213",
       "obstacleType": "poi-hunter_camp",
+      "obstacleCenter": [
+        -470,
+        140
+      ],
+      "obstacleShape": "circle:r=1.2",
       "minDistance": 0.11,
       "failReason": "too close to large POI collision zone"
     },
@@ -580,6 +745,11 @@
       ],
       "obstacleId": "poi-sp60",
       "obstacleType": "poi-hunter_camp",
+      "obstacleCenter": [
+        145,
+        35
+      ],
+      "obstacleShape": "circle:r=1.2",
       "minDistance": 0.46,
       "failReason": "too close to large POI collision zone"
     },
@@ -597,6 +767,11 @@
       ],
       "obstacleId": "poi-sp80",
       "obstacleType": "poi-ruined_house",
+      "obstacleCenter": [
+        -145,
+        -155
+      ],
+      "obstacleShape": "box:halfW=2.5,halfD=2,rot=0",
       "minDistance": 2.26,
       "failReason": "inside or too close to POI structure footprint"
     },
@@ -614,6 +789,11 @@
       ],
       "obstacleId": "rivermoor_village-house-3",
       "obstacleType": "building/house footprint",
+      "obstacleCenter": [
+        395.8467175969258,
+        294.86015710771954
+      ],
+      "obstacleShape": "box:halfW=1.5925487646298007,halfD=2.2170903219069262,rot=7.174347585532772",
       "minDistance": 5.39,
       "failReason": "inside house/building footprint or too close"
     },
@@ -631,6 +811,11 @@
       ],
       "obstacleId": "poi-sp94",
       "obstacleType": "poi-ruined_house",
+      "obstacleCenter": [
+        -185,
+        -185
+      ],
+      "obstacleShape": "box:halfW=2.5,halfD=2,rot=0",
       "minDistance": 5.9,
       "failReason": "inside or too close to POI structure footprint"
     },
@@ -648,6 +833,11 @@
       ],
       "obstacleId": "poi-sp5",
       "obstacleType": "poi-hunter_camp",
+      "obstacleCenter": [
+        130,
+        -110
+      ],
+      "obstacleShape": "circle:r=1.2",
       "minDistance": 8.8,
       "failReason": "too close to large POI collision zone"
     },
@@ -665,6 +855,11 @@
       ],
       "obstacleId": "town--22-72",
       "obstacleType": "building/house footprint",
+      "obstacleCenter": [
+        -22,
+        72
+      ],
+      "obstacleShape": "box:halfW=2.7306938732328767,halfD=3.0219295325427593,rot=0.9424777960769379",
       "minDistance": 9.09,
       "failReason": "inside house/building footprint or too close"
     },
@@ -682,6 +877,11 @@
       ],
       "obstacleId": "town--22-72",
       "obstacleType": "building/house footprint",
+      "obstacleCenter": [
+        -22,
+        72
+      ],
+      "obstacleShape": "box:halfW=2.7306938732328767,halfD=3.0219295325427593,rot=0.9424777960769379",
       "minDistance": 9.09,
       "failReason": "inside house/building footprint or too close"
     },
@@ -699,6 +899,11 @@
       ],
       "obstacleId": "poi-sp16",
       "obstacleType": "poi-inn",
+      "obstacleCenter": [
+        -50,
+        -90
+      ],
+      "obstacleShape": "box:halfW=3.5,halfD=3,rot=0",
       "minDistance": 9.55,
       "failReason": "inside or too close to POI structure footprint"
     },
@@ -716,6 +921,11 @@
       ],
       "obstacleId": "poi-sp2",
       "obstacleType": "poi-wagon",
+      "obstacleCenter": [
+        -100,
+        -80
+      ],
+      "obstacleShape": "box:halfW=0.75,halfD=1.5,rot=0.2531828205548794",
       "minDistance": 10.05,
       "failReason": "inside or too close to POI structure footprint"
     },
@@ -733,6 +943,11 @@
       ],
       "obstacleId": "ironhold-wall-w",
       "obstacleType": "wall/fortification",
+      "obstacleCenter": [
+        -38,
+        0
+      ],
+      "obstacleShape": "box:halfW=1.25,halfD=38,rot=0",
       "minDistance": 10.75,
       "failReason": "inside wall zone or too close to fortification"
     },
@@ -750,6 +965,11 @@
       ],
       "obstacleId": "ironhold-wall-w",
       "obstacleType": "wall/fortification",
+      "obstacleCenter": [
+        -38,
+        0
+      ],
+      "obstacleShape": "box:halfW=1.25,halfD=38,rot=0",
       "minDistance": 10.75,
       "failReason": "inside wall zone or too close to fortification"
     },
@@ -767,6 +987,11 @@
       ],
       "obstacleId": "town--28-70",
       "obstacleType": "building/house footprint",
+      "obstacleCenter": [
+        -28,
+        70
+      ],
+      "obstacleShape": "box:halfW=2.6054997561550697,halfD=2.884404785590623,rot=1.413716694115407",
       "minDistance": 11.75,
       "failReason": "inside house/building footprint or too close"
     },
@@ -784,6 +1009,11 @@
       ],
       "obstacleId": "poi-sp94",
       "obstacleType": "poi-ruined_house",
+      "obstacleCenter": [
+        -185,
+        -185
+      ],
+      "obstacleShape": "box:halfW=2.5,halfD=2,rot=0",
       "minDistance": 13.24,
       "failReason": "inside or too close to POI structure footprint"
     },
@@ -801,6 +1031,11 @@
       ],
       "obstacleId": "poi-sp60",
       "obstacleType": "poi-hunter_camp",
+      "obstacleCenter": [
+        145,
+        35
+      ],
+      "obstacleShape": "circle:r=1.2",
       "minDistance": 13.8,
       "failReason": "too close to large POI collision zone"
     },
@@ -818,6 +1053,11 @@
       ],
       "obstacleId": "thornwall_city-wall-e",
       "obstacleType": "wall/fortification",
+      "obstacleCenter": [
+        -455,
+        -450
+      ],
+      "obstacleShape": "box:halfW=1,halfD=45,rot=0",
       "minDistance": 14,
       "failReason": "inside wall zone or too close to fortification"
     }
