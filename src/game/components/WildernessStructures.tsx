@@ -52,6 +52,11 @@ function isNearPOI(x: number, z: number, minDist: number): boolean {
   return false;
 }
 
+function isNearRailway(x: number, z: number, minDist: number): boolean {
+  const d = distToRailway(x, z, minDist);
+  return d !== null; // d !== null means within minDist
+}
+
 function generateWildernessBuildings(): WildernessBuilding[] {
   const buildings: WildernessBuilding[] = [];
   const rand = seededRandom(54321);
