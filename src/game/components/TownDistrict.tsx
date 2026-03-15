@@ -337,7 +337,7 @@ function generateTownBuildings(): TownBuildingDef[] {
     // Along roads further out
     [-16, 66, Math.PI * 0.5],
     [16, 66, -Math.PI * 0.4],
-    [-14, 72, Math.PI * 0.3],
+    [10, 74, -Math.PI * 0.45],
     [14, 72, -Math.PI * 0.5],
   ];
 
@@ -354,8 +354,9 @@ function generateTownBuildings(): TownBuildingDef[] {
   const workshopBuildings: Array<[number, number, number, string?]> = [
     [-18, 68, Math.PI * 0.4, 'Blacksmith'],
     [-24, 66, Math.PI * 0.5, 'Stable'],
-    [-22, 72, Math.PI * 0.3, 'Storage'],
-    [-28, 70, Math.PI * 0.45],
+    // Relocated off the rail corridor while preserving workshop-cluster readability.
+    [-120, 132, Math.PI * 0.3, 'Storage'],
+    [-82, 84, Math.PI * 0.45],
   ];
 
   for (const [x, z, rot, label] of workshopBuildings) {

@@ -338,17 +338,17 @@ export const ROADS: RoadSegment[] = [
 export const SMALL_POIS: SmallPOIDef[] = [
   // === IRONHOLD TO GREENMEADOW CORRIDOR ===
   { id: 'sp1', name: 'Crossroads Well', position: [-70, -55], type: 'crossroads' },
-  { id: 'sp2', name: 'Broken Wagon', position: [-100, -80], type: 'wagon' },
+  { id: 'sp2', name: 'Broken Wagon', position: [-118, -96], type: 'wagon' },
   { id: 'sp3', name: 'Wayside Shrine', position: [-40, -30], type: 'shrine' },
   { id: 'sp21', name: 'First Milestone', position: [-25, -15], type: 'milestone' },
   { id: 'sp22', name: 'Second Milestone', position: [-80, -60], type: 'milestone' },
   { id: 'sp28', name: 'Road Lantern', position: [-35, -45], type: 'lantern_post' },
-  { id: 'sp16', name: 'Roadside Inn', position: [-50, -90], type: 'inn' },
+  { id: 'sp16', name: 'Roadside Inn', position: [-128, -118], type: 'inn' },
   { id: 'sp40', name: 'Farm Shrine', position: [-120, -100], type: 'shrine' },
   { id: 'sp41', name: 'Third Milestone', position: [-140, -110], type: 'milestone' },
   
   // === IRONHOLD TO BLACKTHORN CORRIDOR ===
-  { id: 'sp5', name: 'Hunter Camp', position: [130, -110], type: 'hunter_camp' },
+  { id: 'sp5', name: 'Hunter Camp', position: [152, -96], type: 'hunter_camp' },
   { id: 'sp6', name: 'Supply Depot', position: [60, -50], type: 'supply_depot' },
   { id: 'sp25', name: 'Frontier Cross', position: [140, -120], type: 'roadside_cross' },
   { id: 'sp29', name: 'Road Lantern', position: [45, -40], type: 'lantern_post' },
@@ -368,25 +368,25 @@ export const SMALL_POIS: SmallPOIDef[] = [
   
   // === IRONHOLD TO ASHWOOD CORRIDOR ===
   { id: 'sp9', name: 'Forest Clearing', position: [-90, 65], type: 'clearing' },
-  { id: 'sp10', name: 'Lone Watchtower', position: [-130, 95], type: 'watchtower' },
+  { id: 'sp10', name: 'Lone Watchtower', position: [-150, 122], type: 'watchtower' },
   { id: 'sp32', name: 'Forest Shrine', position: [-145, 115], type: 'shrine' },
   { id: 'sp33', name: 'Trail Marker', position: [-170, 70], type: 'milestone' },
   { id: 'sp34', name: 'Abandoned Campsite', position: [-100, 35], type: 'abandoned_camp' },
-  { id: 'sp53', name: 'Woodcutter Camp', position: [-120, 75], type: 'hunter_camp' },
-  
+  { id: 'sp53', name: 'Woodcutter Camp', position: [-172, 122], type: 'hunter_camp' },
+   
   // === IRONHOLD TO OLD VEYRA CORRIDOR ===
   { id: 'sp11', name: 'Burned Village', position: [100, 45], type: 'burned_village' },
   { id: 'sp12', name: 'Stone Circle', position: [150, 70], type: 'stone_circle' },
   { id: 'sp26', name: 'Roadside Camp', position: [95, 15], type: 'abandoned_camp' },
   { id: 'sp58', name: 'Ruins Approach', position: [130, 55], type: 'milestone' },
   { id: 'sp59', name: 'Ancient Cross', position: [170, 85], type: 'roadside_cross' },
-  { id: 'sp60', name: 'Scavenger Camp', position: [145, 35], type: 'hunter_camp' },
+  { id: 'sp60', name: 'Scavenger Camp', position: [188, 12], type: 'hunter_camp' },
   { id: 'sp62', name: 'Warning Post', position: [175, 75], type: 'watchpost' },
   
   // === BLACKTHORN TO OLD VEYRA ===
   { id: 'sp13', name: 'Watch Post', position: [195, -30], type: 'watchpost' },
   { id: 'sp64', name: 'Military Shrine', position: [200, -65], type: 'shrine' },
-  { id: 'sp65', name: 'Supply Cache', position: [185, 45], type: 'supply_depot' },
+  { id: 'sp65', name: 'Supply Cache', position: [212, 68], type: 'supply_depot' },
   
   // === FROSTMERE HEIGHTS ===
   { id: 'sp14', name: 'Mountain Pond', position: [140, 160], type: 'pond' },
@@ -413,7 +413,7 @@ export const SMALL_POIS: SmallPOIDef[] = [
   
   // === GREENMEADOW REGION ===
   { id: 'sp79', name: 'Farm Graveyard', position: [-185, -145], type: 'graveyard' },
-  { id: 'sp80', name: 'Shepherd Hut', position: [-145, -155], type: 'ruined_house' },
+  { id: 'sp80', name: 'Shepherd Hut', position: [-188, -146], type: 'ruined_house' },
   { id: 'sp81', name: 'Field Shrine', position: [-175, -115], type: 'shrine' },
   { id: 'sp82', name: 'Mill Pond', position: [-125, -100], type: 'pond' },
   
@@ -436,7 +436,7 @@ export const SMALL_POIS: SmallPOIDef[] = [
   // === SW WILDERNESS ===
   { id: 'sp92', name: 'Southern Watch', position: [-205, -205], type: 'watchpost' },
   { id: 'sp93', name: 'Wilderness Shrine', position: [-235, -165], type: 'shrine' },
-  { id: 'sp94', name: 'Abandoned Homestead', position: [-185, -185], type: 'ruined_house' },
+  { id: 'sp94', name: 'Abandoned Homestead', position: [-250, -210], type: 'ruined_house' },
   { id: 'sp96', name: 'Southern Graveyard', position: [-155, -225], type: 'graveyard' },
   
   // === SE WILDERNESS ===
@@ -490,8 +490,8 @@ export const SMALL_POIS: SmallPOIDef[] = [
   { id: 'sp210', name: 'Trader Rest', position: [-250, 130], type: 'inn' },
   { id: 'sp211', name: 'Western Milestone', position: [-380, 115], type: 'milestone' },
   { id: 'sp212', name: 'Vale Shrine', position: [-440, 125], type: 'shrine' },
-  { id: 'sp213', name: 'Merchant Camp', position: [-470, 140], type: 'hunter_camp' },
-  
+  { id: 'sp213', name: 'Merchant Camp', position: [-492, 166], type: 'hunter_camp' },
+   
   // Frostmere → Rivermoor road
   { id: 'sp220', name: 'River Approach', position: [220, 230], type: 'milestone' },
   { id: 'sp221', name: 'Eastern Inn', position: [320, 270], type: 'inn' },
@@ -499,7 +499,7 @@ export const SMALL_POIS: SmallPOIDef[] = [
   { id: 'sp223', name: 'Fisher Camp', position: [420, 320], type: 'hunter_camp' },
   
   // Blackthorn → Darkhollow road
-  { id: 'sp230', name: 'Frontier Inn', position: [260, -210], type: 'inn' },
+  { id: 'sp230', name: 'Frontier Inn', position: [238, -275], type: 'inn' },
   { id: 'sp231', name: 'Dark Milestone', position: [380, -290], type: 'milestone' },
   { id: 'sp232', name: 'Hollow Shrine', position: [450, -330], type: 'shrine' },
   { id: 'sp233', name: 'Ruins Watch', position: [480, -360], type: 'watchtower' },
