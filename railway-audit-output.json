@@ -1,7 +1,7 @@
 {
   "clearance": 15,
-  "totalViolations": 4,
-  "criticalOrMajorCount": 4,
+  "totalViolations": 1,
+  "criticalOrMajorCount": 1,
   "violations": [
     {
       "line": "B",
@@ -15,80 +15,14 @@
         45,
         80
       ],
-      "obstacleId": "town-10-74",
+      "obstacleId": "town-16-66",
       "obstacleType": "building/house footprint",
       "obstacleCenter": [
-        10,
-        74
-      ],
-      "obstacleShape": "box:halfW=1.8757986623102787,halfD=2.0481203772808616,rot=-1.413716694115407",
-      "minDistance": 5.52,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 8,
-      "segment": "8: [-28, 83] -> [-20, 83]",
-      "from": [
-        -28,
-        83
-      ],
-      "to": [
-        -20,
-        83
-      ],
-      "obstacleId": "town--18-68",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -18,
-        68
-      ],
-      "obstacleShape": "box:halfW=2.9882642538177446,halfD=3.00731400657195,rot=1.2566370614359172",
-      "minDistance": 11.9,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 5,
-      "segment": "5: [-130, 82] -> [-70, 84]",
-      "from": [
-        -130,
-        82
-      ],
-      "to": [
-        -70,
-        84
-      ],
-      "obstacleId": "town--82-68",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -82,
-        68
-      ],
-      "obstacleShape": "box:halfW=2.6054997561550697,halfD=2.884404785590623,rot=1.413716694115407",
-      "minDistance": 12.65,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 7,
-      "segment": "7: [-40, 83] -> [-28, 83]",
-      "from": [
-        -40,
-        83
-      ],
-      "to": [
-        -28,
-        83
-      ],
-      "obstacleId": "town--24-66",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -24,
+        16,
         66
       ],
-      "obstacleShape": "box:halfW=2.9989208271716916,halfD=3.1123422830014884,rot=1.5707963267948966",
-      "minDistance": 14.03,
+      "obstacleShape": "box:halfW=1.6829408004953905,halfD=2.186038363898209,rot=-1.2566370614359172",
+      "minDistance": 13.12,
       "failReason": "inside house/building footprint or too close"
     }
   ],
@@ -105,80 +39,14 @@
         45,
         80
       ],
-      "obstacleId": "town-10-74",
+      "obstacleId": "town-16-66",
       "obstacleType": "building/house footprint",
       "obstacleCenter": [
-        10,
-        74
-      ],
-      "obstacleShape": "box:halfW=1.8757986623102787,halfD=2.0481203772808616,rot=-1.413716694115407",
-      "minDistance": 5.52,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 8,
-      "segment": "8: [-28, 83] -> [-20, 83]",
-      "from": [
-        -28,
-        83
-      ],
-      "to": [
-        -20,
-        83
-      ],
-      "obstacleId": "town--18-68",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -18,
-        68
-      ],
-      "obstacleShape": "box:halfW=2.9882642538177446,halfD=3.00731400657195,rot=1.2566370614359172",
-      "minDistance": 11.9,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 5,
-      "segment": "5: [-130, 82] -> [-70, 84]",
-      "from": [
-        -130,
-        82
-      ],
-      "to": [
-        -70,
-        84
-      ],
-      "obstacleId": "town--82-68",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -82,
-        68
-      ],
-      "obstacleShape": "box:halfW=2.6054997561550697,halfD=2.884404785590623,rot=1.413716694115407",
-      "minDistance": 12.65,
-      "failReason": "inside house/building footprint or too close"
-    },
-    {
-      "line": "B",
-      "segmentIndex": 7,
-      "segment": "7: [-40, 83] -> [-28, 83]",
-      "from": [
-        -40,
-        83
-      ],
-      "to": [
-        -28,
-        83
-      ],
-      "obstacleId": "town--24-66",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -24,
+        16,
         66
       ],
-      "obstacleShape": "box:halfW=2.9989208271716916,halfD=3.1123422830014884,rot=1.5707963267948966",
-      "minDistance": 14.03,
+      "obstacleShape": "box:halfW=1.6829408004953905,halfD=2.186038363898209,rot=-1.2566370614359172",
+      "minDistance": 13.12,
       "failReason": "inside house/building footprint or too close"
     }
   ],
