@@ -148,6 +148,7 @@ function generateWildernessBuildings(): WildernessBuilding[] {
       if (isNearSettlement(x, z, 60)) continue;
       if (isNearRoad(x, z, 4)) continue;
       if (isNearPOI(x, z, 8)) continue;
+      if (isNearRailway(x, z, 12)) continue; // Keep 12u clear of railway corridor
 
       const type = cluster.types[i % cluster.types.length];
       const rot = rand() * Math.PI * 2;
