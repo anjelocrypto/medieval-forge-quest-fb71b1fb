@@ -423,8 +423,8 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
             availableBuildables={getAvailableBuildables()}
           />
           <DebugCollision playerPositionRef={playerPositionRef} isMounted={isMounted} />
-          {/* RAILWAY ISOLATION TEST — all disabled for baseline measurement */}
-          {/* <RailwayTrack playerPositionRef={playerPositionRef} /> */}
+          {/* RAILWAY INCREMENTAL TEST — tracks only */}
+          <RailwayTrack playerPositionRef={playerPositionRef} />
           {/* <RailwayStations playerPositionRef={playerPositionRef} /> */}
           {/* <RailwayBridges playerPositionRef={playerPositionRef} /> */}
           {/* <Train /> */}
