@@ -24,6 +24,7 @@ import { RailwayDebugPreview } from './components/RailwayDebugPreview';
 import { RailwayTrack } from './components/RailwayTrack';
 import { RailwayStations } from './components/RailwayStations';
 import { RailwayBridges } from './components/RailwayBridges';
+import { RailwayLamps } from './components/RailwayLamps';
 import { Train } from './components/Train';
 import { DebugCollision } from './components/DebugCollision';
 import { CameraController } from './systems/CameraController';
