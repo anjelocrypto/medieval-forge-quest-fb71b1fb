@@ -372,7 +372,7 @@ export const SMALL_POIS: SmallPOIDef[] = [
   { id: 'sp32', name: 'Forest Shrine', position: [-145, 115], type: 'shrine' },
   { id: 'sp33', name: 'Trail Marker', position: [-170, 70], type: 'milestone' },
   { id: 'sp34', name: 'Abandoned Campsite', position: [-100, 35], type: 'abandoned_camp' },
-  { id: 'sp53', name: 'Woodcutter Camp', position: [-138, 96], type: 'hunter_camp' },
+  { id: 'sp53', name: 'Woodcutter Camp', position: [-172, 122], type: 'hunter_camp' },
    
   // === IRONHOLD TO OLD VEYRA CORRIDOR ===
   { id: 'sp11', name: 'Burned Village', position: [100, 45], type: 'burned_village' },
