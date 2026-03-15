@@ -160,14 +160,16 @@ export function RailwayDebugPreview() {
 
   const lineAGeo = useMemo(() => enabled ? buildLineGeometry(LINE_A_WAYPOINTS) : null, [enabled]);
   const lineBGeo = useMemo(() => enabled ? buildLineGeometry(LINE_B_WAYPOINTS) : null, [enabled]);
+  const lineAObj = useMemo(() => lineAGeo ? new THREE.Line(lineAGeo, matLineA) : null, [lineAGeo]);
+  const lineBObj = useMemo(() => lineBGeo ? new THREE.Line(lineBGeo, matLineB) : null, [lineBGeo]);
 
   if (!enabled) return null;
 
   return (
     <group>
       {/* Route lines */}
-      {lineAGeo && <primitive object={new THREE.Line(lineAGeo, matLineA)} />}
-      {lineBGeo && <primitive object={new THREE.Line(lineBGeo, matLineB)} />}
+      {lineAObj && <primitive object={lineAObj} />}
+      {lineBObj && <primitive object={lineBObj} />}
 
       {/* Waypoint markers */}
       <WaypointMarkers waypoints={LINE_A_WAYPOINTS} mat={matWaypoint} />
