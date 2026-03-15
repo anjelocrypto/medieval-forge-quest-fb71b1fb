@@ -191,9 +191,9 @@ const LABELED_A = [
   { x: -190, z: -200, label: 'A8' }, { x: -150, z: -170, label: 'Greenmeadow Stn' },
   { x: -110, z: -120, label: 'A10' }, { x: -70, z: -50, label: 'A11' },
   { x: -50, z: 25, label: 'A12' }, { x: -25, z: 90, label: 'Ironhold Central' },
-  { x: 30, z: 100, label: 'A14' }, { x: 90, z: 110, label: 'A15' },
-  { x: 150, z: 105, label: 'A16 Bypass' }, { x: 210, z: 100, label: 'A17' },
-  { x: 270, z: 140, label: 'A18' }, { x: 330, z: 220, label: 'A19' },
+  { x: 30, z: 100, label: 'A14' }, { x: 90, z: 100, label: 'A15' },
+  { x: 150, z: 55, label: 'A16 Bypass' }, { x: 220, z: 45, label: 'A17' },
+  { x: 280, z: 100, label: 'A18' }, { x: 330, z: 200, label: 'A19' },
   { x: 350, z: 260, label: 'A20' }, { x: 370, z: 285, label: 'Rivermoor Bridge' },
   { x: 390, z: 290, label: 'Rivermoor Stn' },
 ];
@@ -203,12 +203,13 @@ const LABELED_B = [
   { x: -280, z: 75, label: 'B4' }, { x: -180, z: 60, label: 'B5' },
   { x: -100, z: 65, label: 'B6' }, { x: -5, z: 80, label: 'Great River Bridge' },
   { x: -25, z: 90, label: 'Ironhold Central' },
-  { x: -5, z: 45, label: 'B9' }, { x: 30, z: 0, label: 'B10' },
-  { x: 80, z: -55, label: 'B11' }, { x: 130, z: -100, label: 'B12' },
+  { x: -10, z: 40, label: 'B9' }, { x: 5, z: -10, label: 'B10' },
+  { x: 20, z: -45, label: 'B11' }, { x: 60, z: -80, label: 'B12' },
+  { x: 130, z: -100, label: 'B13' },
   { x: 185, z: -130, label: 'Blackthorn Halt' },
-  { x: 230, z: -170, label: 'B14' }, { x: 290, z: -220, label: 'B15' },
-  { x: 340, z: -260, label: 'B16' }, { x: 420, z: -330, label: 'Darkhollow Bridge' },
-  { x: 490, z: -370, label: 'B18' }, { x: 500, z: -375, label: 'Darkhollow Stn' },
+  { x: 230, z: -170, label: 'B15' }, { x: 290, z: -220, label: 'B16' },
+  { x: 340, z: -260, label: 'B17' }, { x: 420, z: -330, label: 'Darkhollow Bridge' },
+  { x: 490, z: -370, label: 'B19' }, { x: 500, z: -375, label: 'Darkhollow Stn' },
 ];
 
 describe('Railway v3 (with flattening)', () => {
