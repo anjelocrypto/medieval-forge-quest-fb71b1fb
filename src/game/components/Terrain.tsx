@@ -83,20 +83,15 @@ export function getTerrainHeight(x: number, z: number): number {
   const regional = getRegionalHeight(x, z) * 1.25;
   const rawHeight = (baseHeight + regional) * (1 - settleFlatten) + regional * settleFlatten * 0.3;
 
-  // Railway corridor flattening — smooth narrow strip along track path
-  // Uses same pattern as settlement flattening: lerp toward local average
-  let railFlatten = 0;
-  const RAIL_HALF_WIDTH = 7; // flatten corridor half-width
-  const railDist = distToRailway(x, z, RAIL_HALF_WIDTH + 4);
-  if (railDist !== null && railDist < RAIL_HALF_WIDTH) {
-    // Smooth falloff: full flatten in center 60%, then cosine fade
-    const t = railDist / RAIL_HALF_WIDTH;
-    railFlatten = t < 0.6 ? 1.0 : 0.5 + 0.5 * Math.cos((t - 0.6) / 0.4 * Math.PI);
-    railFlatten *= 0.85; // 85% flatten — keeps slight terrain variation for naturalness
-  }
-
-  // Apply railway flattening: lerp height toward a smoothed local value
-  // Target is the regional component only (no noise), creating gentle embankments
+  // Railway corridor flattening — DISABLED FOR PERF ISOLATION TEST
+  const railFlatten = 0;
+  // const RAIL_HALF_WIDTH = 7;
+  // const railDist = distToRailway(x, z, RAIL_HALF_WIDTH + 4);
+  // if (railDist !== null && railDist < RAIL_HALF_WIDTH) {
+  //   const t = railDist / RAIL_HALF_WIDTH;
+  //   railFlatten = t < 0.6 ? 1.0 : 0.5 + 0.5 * Math.cos((t - 0.6) / 0.4 * Math.PI);
+  //   railFlatten *= 0.85;
+  // }
   const railTarget = regional * 0.3;
   let height = rawHeight * (1 - railFlatten) + railTarget * railFlatten;
 
