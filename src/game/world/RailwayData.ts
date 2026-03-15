@@ -4,18 +4,19 @@
  * Line A: Thornwall (SW) ↔ Ironhold ↔ Rivermoor (NE)
  * Line B: Goldenvale (W) ↔ Ironhold ↔ Darkhollow (SE)
  *
- * v6 — strict route intrusion correction pass.
- * Fix strategy:
- * - Reroute around major walls/forts/ruins/city interiors.
- * - Relocate minor movable POIs/buildings that sat on the rail corridor.
- * - Enforce ≥15 units clearance from buildings and walls (unless explicit gate corridor).
+ * v7 — visual clarity pass.
+ * Key v7 changes:
+ * - Line B Ironhold bypass changed from WEST (U-turn) to EAST (through-route).
+ *   Now Line A exits Ironhold ENE and Line B exits ESE — clean Y-junction.
+ * - All 3 railway bridge waypoints repositioned to align with actual water crossings.
+ *   Added tributary streams in WaterData.ts at each bridge location.
+ * - Maintains ≥15u clearance from all collision structures (verified by audit).
  *
- * Key v6 changes:
- * - Thornwall departure moved fully outside fortified wall envelope.
- * - Ironhold west-side approach pulled farther west to clear capital wall buffer.
- * - Blackthorn corridor rerouted around fort perimeter (no interior crossing).
- * - Darkhollow approach rerouted south of marsh bridge + Ashkeep ruin cluster.
- * - Rivermoor terminal moved away from village house footprint cluster.
+ * Previous v6 changes preserved:
+ * - Thornwall departure outside fortified wall envelope.
+ * - Blackthorn corridor outside fort perimeter.
+ * - Darkhollow approach south of marsh bridge + Ashkeep ruin cluster.
+ * - Rivermoor terminal away from village house footprints.
  */
 
 export interface RailwayWaypoint {
