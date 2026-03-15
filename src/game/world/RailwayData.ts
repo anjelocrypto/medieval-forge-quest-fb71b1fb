@@ -59,8 +59,13 @@ export const LINE_A_WAYPOINTS: RailwayWaypoint[] = [
   { x: -110, z: -120, type: 'track' },
   { x: -70, z: -50, type: 'track' },
   { x: -50, z: 25, type: 'track' },
-  // Ironhold: center [0,0], walls ±38, south wall z=38. Station at z=95 → 57u south. OK.
-  // Town District buildings extend to z~72 at x~±14. Nearest bldg [-14,72] → 25u away.
+  // v5 fix: Town District west-side buildings at [-34,50], [-30,46], [-32,56] etc.
+  // Old route [-50,25]→[-25,95] passed within 7u of [-34,50]. VIOLATION.
+  // New route swings west: [-55,55] keeps x≤-55 through danger zone (z 42-62).
+  // Closest building [-34,50] is now 20.2u away. [-30,46] is 23.5u away.
+  { x: -55, z: 55, type: 'track' },   // west of Town District cluster
+  { x: -45, z: 85, type: 'track' },   // clears workshop corner [-28,70] by 22.7u
+  // Ironhold: center [0,0], walls ±38. Station at z=95 → 57u south of walls.
   { x: -25, z: 95, label: 'Ironhold Central', type: 'station' },
   { x: 30, z: 105, type: 'track' },
   { x: 90, z: 105, type: 'track' },
@@ -85,8 +90,12 @@ export const LINE_B_WAYPOINTS: RailwayWaypoint[] = [
   { x: -380, z: 100, type: 'track' },
   { x: -280, z: 80, type: 'track' },
   { x: -180, z: 65, type: 'track' },
-  { x: -100, z: 70, type: 'track' },
-  // Bridge moved from [-5,80] to [-20,85]: 25u+ from Town District bldg [-14,72]
+  // v5 fix: Workshop buildings at [-28,70], [-22,72], [-24,66], [-18,68].
+  // Old segment [-100,70]→[-20,85] passed within 12.4u of [-22,72]. VIOLATION.
+  // New route pushes south (higher z) to clear workshop corner entirely.
+  // Closest workshop [-22,72] is now 24.2u away.
+  { x: -100, z: 80, type: 'track' },  // shifted south from z=70
+  { x: -45, z: 98, type: 'track' },   // arcs south of workshop corner
   { x: -20, z: 85, label: 'Great River Bridge', type: 'bridge' },
   { x: -25, z: 95, label: 'Ironhold Central', type: 'station' },
   // SE departure — REROUTED WEST around Ironhold capital walls (±38)
