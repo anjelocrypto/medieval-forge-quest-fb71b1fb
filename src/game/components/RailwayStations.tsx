@@ -389,15 +389,24 @@ interface Props {
   playerPositionRef: React.RefObject<THREE.Vector3>;
 }
 
+// LOD distances per station tier — capital/large visible from far away
+const STATION_LOD: Record<string, number> = {
+  capital: 800,
+  large: 700,
+  medium: 600,
+  small: 450,
+};
+
 export const RailwayStations = memo(function RailwayStations({ playerPositionRef }: Props) {
   const playerPos = playerPositionRef.current;
   return (
     <group name="railway-stations">
       {RAILWAY_STATIONS.map(station => {
         if (playerPos) {
+          const lodDist = STATION_LOD[station.stationType] || 450;
           const dx = playerPos.x - station.position[0];
           const dz = playerPos.z - station.position[1];
-          if (dx * dx + dz * dz > 300 * 300) return null;
+          if (dx * dx + dz * dz > lodDist * lodDist) return null;
         }
         return <StationRenderer key={station.id} station={station} />;
       })}
