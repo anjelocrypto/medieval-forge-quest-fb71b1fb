@@ -300,8 +300,8 @@ function generateTownBuildings(): TownBuildingDef[] {
     [28, 50, -0.3, 'Butcher'],
     [26, 56, 0.2],
     [30, 54, -0.5, 'Food Stall'],
-    [24, 62, 0.1],
-    [18, 64, 0.3],
+    [24, 60, 0.1],
+    [18, 58, 0.3],
   ];
 
   for (const [x, z, rot, label] of marketBuildings) {
