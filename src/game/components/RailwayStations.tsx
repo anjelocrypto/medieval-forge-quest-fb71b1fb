@@ -472,6 +472,10 @@ export const RailwayStations = memo(function RailwayStations({ playerPositionRef
           const dz = playerPos.z - station.position[1];
           if (dx * dx + dz * dz > lodDist * lodDist) return null;
         }
+        // Ironhold Central uses custom junction-aware layout
+        if (station.line === 'AB') {
+          return <IronholdCentralStation key={station.id} station={station} />;
+        }
         return <StationRenderer key={station.id} station={station} />;
       })}
     </group>
