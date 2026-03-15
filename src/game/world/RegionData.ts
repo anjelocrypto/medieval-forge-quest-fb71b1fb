@@ -413,7 +413,7 @@ export const SMALL_POIS: SmallPOIDef[] = [
   
   // === GREENMEADOW REGION ===
   { id: 'sp79', name: 'Farm Graveyard', position: [-185, -145], type: 'graveyard' },
-  { id: 'sp80', name: 'Shepherd Hut', position: [-168, -168], type: 'ruined_house' },
+  { id: 'sp80', name: 'Shepherd Hut', position: [-188, -146], type: 'ruined_house' },
   { id: 'sp81', name: 'Field Shrine', position: [-175, -115], type: 'shrine' },
   { id: 'sp82', name: 'Mill Pond', position: [-125, -100], type: 'pond' },
   
