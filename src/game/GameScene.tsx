@@ -20,6 +20,7 @@ import { SkyCreatures } from './components/SkyCreatures';
 import { WildernessStructures } from './components/WildernessStructures';
 import { Bridges } from './components/Bridges';
 import { NightLighting } from './components/NightLighting';
+import { RailwayDebugPreview } from './components/RailwayDebugPreview';
 import { DebugCollision } from './components/DebugCollision';
 import { CameraController } from './systems/CameraController';
 import { InputFlusher } from './systems/InputFlusher';
