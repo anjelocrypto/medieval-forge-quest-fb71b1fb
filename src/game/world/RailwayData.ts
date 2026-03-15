@@ -47,12 +47,12 @@ export const LINE_A_WAYPOINTS: RailwayWaypoint[] = [
   { x: -50, z: 25, type: 'track' },
   { x: -25, z: 90, label: 'Ironhold Central', type: 'station' },
   { x: 30, z: 100, type: 'track' },
-  { x: 90, z: 110, type: 'track' },
-  // Frostmere bypass — shifted south to also avoid Old Veyra walls (center [195,95] r=45)
-  { x: 150, z: 105, label: 'Frostmere Bypass', type: 'track' },
-  { x: 210, z: 100, type: 'track' },
-  { x: 270, z: 140, type: 'track' },
-  { x: 330, z: 220, type: 'track' },
+  { x: 90, z: 100, type: 'track' },
+  // Frostmere bypass — must also clear Old Veyra [195,95] wall radius 45
+  { x: 150, z: 55, label: 'Frostmere Bypass', type: 'track' },
+  { x: 220, z: 45, type: 'track' },
+  { x: 280, z: 100, type: 'track' },
+  { x: 330, z: 200, type: 'track' },
   { x: 350, z: 260, type: 'track' },
   { x: 370, z: 285, label: 'Rivermoor River Bridge', type: 'bridge' },
   { x: 390, z: 290, label: 'Rivermoor Station', type: 'station' },
