@@ -6,7 +6,8 @@ import * as THREE from 'three';
 import { RailwayWaypoint } from '../world/RailwayData';
 import { getTerrainHeight } from '../components/Terrain';
 
-const RAIL_HEIGHT_OFFSET = 0.35;
+// Must match rail top: TRACK_HEIGHT_OFFSET(0.35) + BALLAST_H(0.15) + SLEEPER_H(0.12) + RAIL_H(0.15) = 0.77
+const RAIL_HEIGHT_OFFSET = 0.77;
 
 /**
  * Build a 3D path from waypoints with terrain-following height.
