@@ -428,9 +428,9 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
           {/* Terrain flattening grid is safe and active. */}
           <RailwayTrack />
           <RailwayLamps playerPositionRef={playerPositionRef} />
-          {/* Stations, bridges, trains DISABLED until static tracks proven safe */}
-          {/* <RailwayStations playerPositionRef={playerPositionRef} /> */}
-          {/* <RailwayBridges playerPositionRef={playerPositionRef} /> */}
+          {/* Railway structures */}
+          <RailwayStations playerPositionRef={playerPositionRef} />
+          <RailwayBridges playerPositionRef={playerPositionRef} />
           {/* <Train /> */}
           {/* <RailwayDebugPreview /> */}
 
