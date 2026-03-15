@@ -348,7 +348,7 @@ export const SMALL_POIS: SmallPOIDef[] = [
   { id: 'sp41', name: 'Third Milestone', position: [-140, -110], type: 'milestone' },
   
   // === IRONHOLD TO BLACKTHORN CORRIDOR ===
-  { id: 'sp5', name: 'Hunter Camp', position: [130, -110], type: 'hunter_camp' },
+  { id: 'sp5', name: 'Hunter Camp', position: [152, -96], type: 'hunter_camp' },
   { id: 'sp6', name: 'Supply Depot', position: [60, -50], type: 'supply_depot' },
   { id: 'sp25', name: 'Frontier Cross', position: [140, -120], type: 'roadside_cross' },
   { id: 'sp29', name: 'Road Lantern', position: [45, -40], type: 'lantern_post' },
