@@ -64,9 +64,9 @@ export const LINE_A_WAYPOINTS: RailwayWaypoint[] = [
   { x: -72, z: -20, type: 'track' },
   { x: -60, z: 30, type: 'track' },
   { x: -55, z: 55, type: 'track' },
-  { x: -45, z: 85, type: 'track' },
-  { x: -25, z: 95, label: 'Ironhold Central', type: 'station' },
-  { x: 30, z: 105, type: 'track' },
+  { x: -40, z: 95, type: 'track' },
+  { x: -20, z: 103, label: 'Ironhold Central', type: 'station' },
+  { x: 30, z: 108, type: 'track' },
   { x: 90, z: 105, type: 'track' },
   { x: 125, z: 15, label: 'Frostmere Bypass', type: 'track' },
   { x: 220, z: 45, type: 'track' },
@@ -92,14 +92,14 @@ export const LINE_B_WAYPOINTS: RailwayWaypoint[] = [
   { x: -380, z: 100, type: 'track' },
   { x: -300, z: 90, type: 'track' },
   { x: -220, z: 75, type: 'track' },
-  { x: -130, z: 95, type: 'track' },
-  { x: -70, z: 105, type: 'track' },
-  { x: -40, z: 98, type: 'track' },
-  { x: -25, z: 90, label: 'Ironhold South Bridge', type: 'bridge' },
-  { x: -25, z: 95, label: 'Ironhold Central', type: 'station' },
+  { x: -130, z: 82, type: 'track' },
+  { x: -70, z: 84, type: 'track' },
+  { x: -40, z: 83, type: 'track' },
+  { x: -28, z: 83, label: 'Ironhold South Bridge', type: 'bridge' },
+  { x: -20, z: 83, label: 'Ironhold Central', type: 'station' },
   // East bypass around Ironhold exterior (clean through-route, no U-turn).
   // Stays ≥18u from east wall (x=38) and corner towers (r=3.2).
-  { x: 45, z: 92, type: 'track' },
+  { x: 45, z: 80, type: 'track' },
   { x: 58, z: 55, type: 'track' },
   { x: 65, z: 15, type: 'track' },
   { x: 60, z: -35, type: 'track' },
@@ -123,7 +123,7 @@ export const LINE_B_WAYPOINTS: RailwayWaypoint[] = [
 export const RAILWAY_STATIONS: RailwayStation[] = [
   { id: 'stn-thornwall', name: 'Thornwall', position: [-480, -520], side: 'north', stationType: 'large', line: 'A' },
   { id: 'stn-greenmeadow', name: 'Greenmeadow', position: [-150, -170], side: 'south', stationType: 'small', line: 'A' },
-  { id: 'stn-ironhold', name: 'Ironhold Central', position: [-25, 95], side: 'south', stationType: 'capital', line: 'AB' },
+  { id: 'stn-ironhold', name: 'Ironhold Central', position: [-20, 93], side: 'south', stationType: 'capital', line: 'AB' },
   { id: 'stn-goldenvale', name: 'Goldenvale', position: [-470, 185], side: 'east', stationType: 'medium', line: 'B' },
   { id: 'stn-blackthorn', name: 'Blackthorn Halt', position: [140, -200], side: 'west', stationType: 'small', line: 'B' },
   { id: 'stn-rivermoor', name: 'Rivermoor', position: [360, 270], side: 'west', stationType: 'medium', line: 'A' },
@@ -132,7 +132,7 @@ export const RAILWAY_STATIONS: RailwayStation[] = [
 
 // ========== RAILWAY BRIDGES (v7 — aligned to actual water crossings) ==========
 export const RAILWAY_BRIDGES: RailwayBridge[] = [
-  { id: 'rail-bridge-ironhold-south', position: [-25, 0.5, 90], line: 'B', crosses: 'Ironhold Stream', length: 20 },
+  { id: 'rail-bridge-ironhold-south', position: [-28, 0.5, 83], line: 'B', crosses: 'Ironhold Stream', length: 20 },
   { id: 'rail-bridge-rivermoor', position: [355, 0.8, 260], line: 'A', crosses: 'Rivermoor Tributary', length: 22 },
   { id: 'rail-bridge-darkhollow', position: [390, 0.3, -360], line: 'B', crosses: 'Darkhollow Ford', length: 18 },
 ];
