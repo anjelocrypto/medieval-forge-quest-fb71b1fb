@@ -141,6 +141,8 @@ export interface RailSegment {
   len2: number;
 }
 
+// Cache invalidation: these are lazily built from the waypoint arrays above.
+// If waypoints change (e.g. v4 clearance fix), caches rebuild on next access.
 let _cachedSegments: RailSegment[] | null = null;
 
 export function getRailwaySegments(): RailSegment[] {
