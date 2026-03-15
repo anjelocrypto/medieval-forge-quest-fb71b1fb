@@ -68,10 +68,11 @@ export const LINE_B_WAYPOINTS: RailwayWaypoint[] = [
   { x: -100, z: 65, type: 'track' },
   { x: -5, z: 80, label: 'Great River Bridge', type: 'bridge' },
   { x: -25, z: 90, label: 'Ironhold Central', type: 'station' },
-  // SE departure — shifted west to stay outside Ironhold walls (45u)
-  { x: -5, z: 45, type: 'track' },
-  { x: 30, z: 0, type: 'track' },
-  { x: 80, z: -55, type: 'track' },
+  // SE departure — route west of Ironhold river (river x≈33 at z=0, hw=5.5)
+  { x: -10, z: 40, type: 'track' },
+  { x: 5, z: -10, type: 'track' },
+  { x: 20, z: -45, type: 'track' },
+  { x: 60, z: -80, type: 'track' },
   { x: 130, z: -100, type: 'track' },
   { x: 185, z: -130, label: 'Blackthorn Halt', type: 'station' },
   { x: 230, z: -170, type: 'track' },
