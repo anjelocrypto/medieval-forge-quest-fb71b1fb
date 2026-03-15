@@ -499,7 +499,7 @@ export const SMALL_POIS: SmallPOIDef[] = [
   { id: 'sp223', name: 'Fisher Camp', position: [420, 320], type: 'hunter_camp' },
   
   // Blackthorn → Darkhollow road
-  { id: 'sp230', name: 'Frontier Inn', position: [286, -236], type: 'inn' },
+  { id: 'sp230', name: 'Frontier Inn', position: [238, -275], type: 'inn' },
   { id: 'sp231', name: 'Dark Milestone', position: [380, -290], type: 'milestone' },
   { id: 'sp232', name: 'Hollow Shrine', position: [450, -330], type: 'shrine' },
   { id: 'sp233', name: 'Ruins Watch', position: [480, -360], type: 'watchtower' },

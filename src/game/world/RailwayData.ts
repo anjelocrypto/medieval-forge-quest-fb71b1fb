@@ -55,7 +55,9 @@ export const LINE_A_WAYPOINTS: RailwayWaypoint[] = [
   { x: -240, z: -240, type: 'track' },
   { x: -190, z: -200, type: 'track' },
   { x: -150, z: -170, label: 'Greenmeadow Station', type: 'station' },
-  { x: -110, z: -120, type: 'track' },
+  // Greenmeadow south bypass: avoid village interior house ring.
+  { x: -130, z: -190, type: 'track' },
+  { x: -100, z: -150, type: 'track' },
   { x: -80, z: -70, type: 'track' },
   // Ironhold west-wall bypass: keep x <= -55 through wall-adjacent corridor.
   { x: -72, z: -20, type: 'track' },
@@ -77,14 +79,16 @@ export const LINE_A_WAYPOINTS: RailwayWaypoint[] = [
 
 // ========== LINE B: Goldenvale → Ironhold → Darkhollow (v6 — strict intrusion pass) ==========
 export const LINE_B_WAYPOINTS: RailwayWaypoint[] = [
-  { x: -485, z: 145, label: 'Goldenvale Station', type: 'station' },
-  { x: -450, z: 130, type: 'track' },
+  // Goldenvale outer approach: shifted away from Harvest Hill houses.
+  { x: -470, z: 185, label: 'Goldenvale Station', type: 'station' },
+  { x: -430, z: 160, type: 'track' },
   { x: -380, z: 100, type: 'track' },
-  { x: -280, z: 80, type: 'track' },
-  { x: -180, z: 65, type: 'track' },
-  { x: -100, z: 80, type: 'track' },
-  { x: -45, z: 98, type: 'track' },
-  { x: -20, z: 85, label: 'Great River Bridge', type: 'bridge' },
+  { x: -300, z: 90, type: 'track' },
+  { x: -220, z: 75, type: 'track' },
+  { x: -130, z: 95, type: 'track' },
+  { x: -70, z: 108, type: 'track' },
+  { x: -40, z: 96, type: 'track' },
+  { x: -35, z: 84, label: 'Great River Bridge', type: 'bridge' },
   { x: -25, z: 95, label: 'Ironhold Central', type: 'station' },
   // West bypass around Ironhold interior.
   { x: -55, z: 65, type: 'track' },
@@ -97,10 +101,10 @@ export const LINE_B_WAYPOINTS: RailwayWaypoint[] = [
   { x: 110, z: -120, type: 'track' },
   // Blackthorn reroute: stay outside fort perimeter and tower buffer.
   { x: 130, z: -145, type: 'track' },
-  { x: 150, z: -185, label: 'Blackthorn Halt', type: 'station' },
-  { x: 200, z: -220, type: 'track' },
-  { x: 270, z: -245, type: 'track' },
-  { x: 340, z: -290, type: 'track' },
+  { x: 140, z: -200, label: 'Blackthorn Halt', type: 'station' },
+  { x: 210, z: -235, type: 'track' },
+  { x: 290, z: -270, type: 'track' },
+  { x: 360, z: -315, type: 'track' },
   // Darkhollow reroute: avoid marsh bridge approach and Ashkeep ruin interior.
   { x: 390, z: -360, label: 'Darkhollow Creek Bridge', type: 'bridge' },
   { x: 460, z: -420, type: 'track' },
@@ -112,15 +116,15 @@ export const RAILWAY_STATIONS: RailwayStation[] = [
   { id: 'stn-thornwall', name: 'Thornwall', position: [-480, -520], side: 'north', stationType: 'large', line: 'A' },
   { id: 'stn-greenmeadow', name: 'Greenmeadow', position: [-150, -170], side: 'south', stationType: 'small', line: 'A' },
   { id: 'stn-ironhold', name: 'Ironhold Central', position: [-25, 95], side: 'south', stationType: 'capital', line: 'AB' },
-  { id: 'stn-goldenvale', name: 'Goldenvale', position: [-485, 145], side: 'south', stationType: 'medium', line: 'B' },
-  { id: 'stn-blackthorn', name: 'Blackthorn Halt', position: [150, -185], side: 'west', stationType: 'small', line: 'B' },
+  { id: 'stn-goldenvale', name: 'Goldenvale', position: [-470, 185], side: 'east', stationType: 'medium', line: 'B' },
+  { id: 'stn-blackthorn', name: 'Blackthorn Halt', position: [140, -200], side: 'west', stationType: 'small', line: 'B' },
   { id: 'stn-rivermoor', name: 'Rivermoor', position: [360, 270], side: 'west', stationType: 'medium', line: 'A' },
   { id: 'stn-darkhollow', name: 'Darkhollow', position: [520, -455], side: 'south', stationType: 'small', line: 'B' },
 ];
 
 // ========== RAILWAY BRIDGES (v6) ==========
 export const RAILWAY_BRIDGES: RailwayBridge[] = [
-  { id: 'rail-bridge-great-river', position: [-20, 0.5, 85], line: 'B', crosses: 'Great River', length: 24 },
+  { id: 'rail-bridge-great-river', position: [-35, 0.5, 84], line: 'B', crosses: 'Great River', length: 24 },
   { id: 'rail-bridge-rivermoor', position: [355, 0.8, 260], line: 'A', crosses: 'Rivermoor River', length: 22 },
   { id: 'rail-bridge-darkhollow', position: [390, 0.3, -360], line: 'B', crosses: 'Darkhollow Creek', length: 18 },
 ];
