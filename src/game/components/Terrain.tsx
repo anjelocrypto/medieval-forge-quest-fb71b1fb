@@ -83,15 +83,8 @@ export function getTerrainHeight(x: number, z: number): number {
   const regional = getRegionalHeight(x, z) * 1.25;
   const rawHeight = (baseHeight + regional) * (1 - settleFlatten) + regional * settleFlatten * 0.3;
 
-  // Railway corridor flattening — smooth narrow strip along track path
-  let railFlatten = 0;
-  const RAIL_HALF_WIDTH = 7;
-  const railDist = distToRailway(x, z, RAIL_HALF_WIDTH + 4);
-  if (railDist !== null && railDist < RAIL_HALF_WIDTH) {
-    const t = railDist / RAIL_HALF_WIDTH;
-    railFlatten = t < 0.6 ? 1.0 : 0.5 + 0.5 * Math.cos((t - 0.6) / 0.4 * Math.PI);
-    railFlatten *= 0.85;
-  }
+  // Railway corridor flattening — uses precomputed grid (fast lookup)
+  const railFlatten = getRailFlattenGrid().sample(x, z);
   const railTarget = regional * 0.3;
   let height = rawHeight * (1 - railFlatten) + railTarget * railFlatten;
 
