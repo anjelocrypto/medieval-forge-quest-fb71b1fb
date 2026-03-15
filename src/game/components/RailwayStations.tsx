@@ -221,7 +221,143 @@ function Platform({ w, l }: { w: number; l: number }) {
   );
 }
 
-// ========== STATION RENDERER ==========
+// ========== IRONHOLD CENTRAL — custom junction-aware capital station ==========
+// Line A exits ENE, Line B exits ESE → station placed SOUTH of junction point,
+// clear of both rail corridors. Platform oriented along the bisector between the two lines.
+
+const IronholdCentralStation = memo(function IronholdCentralStation({ station }: { station: RailwayStation }) {
+  const layout = useMemo(() => {
+    const [sx, sz] = station.position; // (-25, 95)
+    const y = getTerrainHeight(sx, sz);
+
+    // Line A direction at hub: from (-45,85) through (-25,95) to (30,105)
+    // ≈ heading ENE (atan2(55, 20) ≈ 1.22 rad)
+    const dirA = Math.atan2(30 - (-45), 105 - 85); // atan2(75, 20) ≈ 1.31
+
+    // Line B direction at hub: from (-40,98) through (-25,95) to (45,92)
+    // ≈ heading ESE (atan2(85, -6) ≈ 1.50 rad)
+    const dirB = Math.atan2(45 - (-40), 92 - 98); // atan2(85, -6) ≈ 1.50
+
+    // Bisector between the two outbound directions
+    const bisector = (dirA + dirB) / 2;
+
+    // Place platform SOUTH of junction (away from both tracks diverging north-east)
+    // Offset perpendicular to bisector, toward south
+    const offsetDist = 7; // Clear of both rail corridors
+    const perpAngle = bisector - Math.PI / 2; // perpendicular toward south
+    const ox = Math.sin(perpAngle) * offsetDist;
+    const oz = Math.cos(perpAngle) * offsetDist;
+
+    return {
+      position: new THREE.Vector3(sx + ox, y, sz + oz),
+      rotation: bisector, // Platform aligned along bisector
+      y,
+    };
+  }, [station]);
+
+  // Custom capital dimensions — wider to feel like a proper hub
+  const platW = 12;
+  const platL = 20;
+
+  return (
+    <group position={layout.position} rotation={[0, layout.rotation, 0]}>
+      {/* ===== MAIN PLATFORM ===== */}
+      <Platform w={platW} l={platL} />
+
+      {/* ===== WEST HALL — main waiting hall ===== */}
+      <group position={[platW / 2 - 3, 0.55, 2]}>
+        <Shelter w={5} l={9} h={3.5} />
+        <Bench x={0} z={-3} length={3} />
+        <Bench x={0} z={0} length={3} />
+        <Bench x={0} z={3} length={3} />
+      </group>
+
+      {/* ===== EAST HALL — secondary shelter ===== */}
+      <group position={[-(platW / 2 - 3), 0.55, -3]}>
+        <Shelter w={4} l={6} h={3.2} />
+        <Bench x={0} z={-1.5} length={2.5} />
+        <Bench x={0} z={1.5} length={2.5} />
+      </group>
+
+      {/* ===== CLOCK TOWER — at center-back of platform ===== */}
+      <group position={[platW / 2 - 1.2, 0.55, -platL / 2 + 2.5]}>
+        <mesh geometry={GEO.box} scale={[2, 5, 2]}
+          position={[0, 2.5, 0]} material={MAT.stoneWarm} castShadow />
+        {/* Tower windows on two faces */}
+        <mesh geometry={GEO.box} scale={[0.35, 0.55, 0.05]}
+          position={[0, 4, 1.01]} material={MAT.stainedGlass} />
+        <mesh geometry={GEO.box} scale={[0.05, 0.55, 0.35]}
+          position={[1.01, 4, 0]} material={MAT.stainedGlass} />
+        {/* Peaked slate roof */}
+        <mesh geometry={GEO.cone4} scale={[1.6, 2.2, 1.6]}
+          position={[0, 6.1, 0]} rotation={[0, Math.PI / 4, 0]}
+          material={MAT.roofSlate} castShadow />
+        {/* Clock face */}
+        <mesh geometry={GEO.cyl12} scale={[0.5, 0.04, 0.5]}
+          position={[0, 4.2, 1.02]} rotation={[Math.PI / 2, 0, 0]}
+          material={MAT.plaster} />
+        {/* Clock hands */}
+        <mesh geometry={GEO.box} scale={[0.03, 0.35, 0.03]}
+          position={[0, 4.2, 1.05]} material={MAT.dark} />
+        <mesh geometry={GEO.box} scale={[0.22, 0.03, 0.03]}
+          position={[0.11, 4.2, 1.05]} material={MAT.dark} />
+      </group>
+
+      {/* ===== LAMPS — along both platform edges ===== */}
+      {Array.from({ length: 8 }, (_, i) => {
+        const zp = -platL / 2 + (platL / 9) * (i + 1);
+        const side = i % 2 === 0 ? platW / 2 - 0.5 : -(platW / 2 - 0.5);
+        return <StationLamp key={`l-${i}`} x={side} z={zp} />;
+      })}
+
+      {/* ===== ARCHED ENTRANCE — south end (approach side) ===== */}
+      {[-1.8, 1.8].map((xp, i) => (
+        <group key={`arch-${i}`} position={[xp, 0, platL / 2 + 1.8]}>
+          <mesh geometry={GEO.box} scale={[0.45, 3, 0.45]}
+            position={[0, 1.5, 0]} material={MAT.stoneWarm} castShadow />
+          <mesh geometry={GEO.sphere8} scale={[0.22, 0.22, 0.22]}
+            position={[0, 3.05, 0]} material={MAT.stoneLight} />
+        </group>
+      ))}
+      <mesh geometry={GEO.box} scale={[4, 0.3, 0.35]}
+        position={[0, 3.05, platL / 2 + 1.8]} material={MAT.stoneWarm} castShadow />
+
+      {/* ===== STATION SIGN ===== */}
+      <StationSign x={0} z={platL / 2 + 0.5} />
+
+      {/* ===== BANNER POLES at corners ===== */}
+      <BannerPole x={-platW / 2 + 0.5} z={-platL / 2 + 0.5} color="red" />
+      <BannerPole x={platW / 2 - 0.5} z={-platL / 2 + 0.5} color="blue" />
+      <BannerPole x={-platW / 2 + 0.5} z={platL / 2 - 0.5} color="red" />
+      <BannerPole x={platW / 2 - 0.5} z={platL / 2 - 0.5} color="blue" />
+
+      {/* ===== CARGO AREA — north end corner ===== */}
+      <group position={[-(platW / 2 - 2), 0.55, -platL / 2 + 2]}>
+        <Crate x={0} z={0} scale={1.1} />
+        <Crate x={0.8} z={0.3} scale={0.9} />
+        <Crate x={-0.3} z={0.8} scale={0.85} />
+        <Barrel x={1.2} z={-0.2} />
+        <Barrel x={-0.6} z={-0.3} />
+      </group>
+
+      {/* ===== WAITING BENCHES — along platform open edges ===== */}
+      <Bench x={0} z={platL / 3} rotY={0} length={1.6} />
+      <Bench x={0} z={-platL / 3} rotY={0} length={1.6} />
+
+      {/* ===== DECORATIVE FENCE POSTS at platform ends ===== */}
+      {[-platL / 2 + 0.3, platL / 2 - 0.3].map((zp, i) => (
+        <mesh key={`fence-${i}`} geometry={GEO.box} scale={[0.1, 0.8, 0.1]}
+          position={[platW / 2 - 0.4, 0.95, zp]} material={MAT.fence} castShadow />
+      ))}
+      {[-platL / 2 + 0.3, platL / 2 - 0.3].map((zp, i) => (
+        <mesh key={`fence2-${i}`} geometry={GEO.box} scale={[0.1, 0.8, 0.1]}
+          position={[-(platW / 2 - 0.4), 0.95, zp]} material={MAT.fence} castShadow />
+      ))}
+    </group>
+  );
+});
+
+// ========== GENERIC STATION RENDERER (non-capital) ==========
 
 const StationRenderer = memo(function StationRenderer({ station }: { station: RailwayStation }) {
   const { position, dims, rotation, sideDir } = useMemo(() => {
@@ -245,7 +381,6 @@ const StationRenderer = memo(function StationRenderer({ station }: { station: Ra
   }, [station]);
 
   const { platW, platL, shelterW, shelterL, shelterH, numLamps } = dims;
-  const isCapital = station.stationType === 'capital';
   const isLarge = station.stationType === 'large';
   const isMedium = station.stationType === 'medium';
 
@@ -279,85 +414,15 @@ const StationRenderer = memo(function StationRenderer({ station }: { station: Ra
       {/* ===== EXTRA BENCH (OUTSIDE SHELTER) ===== */}
       <Bench x={-shelterOffX * 0.3} z={platL / 4} rotY={Math.PI / 2} />
 
-      {/* ===== CAPITAL EXTRAS ===== */}
-      {isCapital && (
-        <>
-          {/* Second shelter on other end */}
-          <group position={[shelterOffX, 0.55, -platL / 2 + shelterL / 2 + 0.5]}>
-            <Shelter w={shelterW * 0.8} l={shelterL * 0.6} h={shelterH * 0.9} />
-          </group>
-
-          {/* Clock tower */}
-          <group position={[sideDir * (platW / 2 - 1.2), 0.55, 0]}>
-            <mesh geometry={GEO.box} scale={[1.8, 4.5, 1.8]}
-              position={[0, 2.25, 0]} material={MAT.stoneWarm} castShadow />
-            {/* Tower windows */}
-            <mesh geometry={GEO.box} scale={[0.3, 0.5, 0.05]}
-              position={[0, 3.5, 0.91]} material={MAT.stainedGlass} />
-            <mesh geometry={GEO.box} scale={[0.05, 0.5, 0.3]}
-              position={[0.91, 3.5, 0]} material={MAT.stainedGlass} />
-            {/* Peaked roof */}
-            <mesh geometry={GEO.cone4} scale={[1.5, 2, 1.5]}
-              position={[0, 5.5, 0]} rotation={[0, Math.PI / 4, 0]}
-              material={MAT.roofSlate} castShadow />
-            {/* Clock face */}
-            <mesh geometry={GEO.cyl12} scale={[0.45, 0.04, 0.45]}
-              position={[0, 3.8, 0.92]} rotation={[Math.PI / 2, 0, 0]}
-              material={MAT.plaster} />
-            {/* Clock hands */}
-            <mesh geometry={GEO.box} scale={[0.03, 0.3, 0.03]}
-              position={[0, 3.8, 0.95]} material={MAT.dark} />
-            <mesh geometry={GEO.box} scale={[0.2, 0.03, 0.03]}
-              position={[0.1, 3.8, 0.95]} material={MAT.dark} />
-          </group>
-
-          {/* Banner poles at platform corners */}
-          <BannerPole x={-platW / 2 + 0.5} z={-platL / 2 + 0.5} color="red" />
-          <BannerPole x={platW / 2 - 0.5} z={-platL / 2 + 0.5} color="blue" />
-          <BannerPole x={-platW / 2 + 0.5} z={platL / 2 - 0.5} color="red" />
-          <BannerPole x={platW / 2 - 0.5} z={platL / 2 - 0.5} color="blue" />
-
-          {/* Cargo area */}
-          <group position={[-shelterOffX * 0.6, 0.55, -platL / 4]}>
-            <Crate x={0} z={0} scale={1.1} />
-            <Crate x={0.7} z={0.2} scale={0.9} />
-            <Barrel x={-0.5} z={0.3} />
-            <Barrel x={0.4} z={-0.5} />
-          </group>
-
-          {/* Extra benches along platform */}
-          <Bench x={lampSide * 0.4} z={-platL / 3} length={1.4} />
-          <Bench x={lampSide * 0.4} z={platL / 3} length={1.4} />
-
-          {/* Arched entrance pillars */}
-          {[-1.2, 1.2].map((xp, i) => (
-            <group key={`arch-${i}`} position={[xp, 0, platL / 2 + 1.5]}>
-              <mesh geometry={GEO.box} scale={[0.4, 2.5, 0.4]}
-                position={[0, 1.25, 0]} material={MAT.stoneWarm} castShadow />
-              <mesh geometry={GEO.sphere8} scale={[0.2, 0.2, 0.2]}
-                position={[0, 2.55, 0]} material={MAT.stoneLight} />
-            </group>
-          ))}
-          {/* Arch crossbeam */}
-          <mesh geometry={GEO.box} scale={[2.8, 0.25, 0.3]}
-            position={[0, 2.55, platL / 2 + 1.5]} material={MAT.stoneWarm} castShadow />
-        </>
-      )}
-
       {/* ===== LARGE STATION EXTRAS ===== */}
       {isLarge && (
         <>
-          {/* Cargo area */}
           <group position={[-shelterOffX * 0.5, 0.55, -platL / 3]}>
             <Crate x={0} z={0} />
             <Crate x={0.65} z={0.15} scale={0.85} />
             <Barrel x={-0.4} z={0.3} />
           </group>
-
-          {/* Extra benches */}
           <Bench x={lampSide * 0.4} z={-platL / 4} length={1.3} />
-
-          {/* Banner poles */}
           <BannerPole x={-platW / 2 + 0.4} z={platL / 2 - 0.5} />
           <BannerPole x={platW / 2 - 0.4} z={platL / 2 - 0.5} color="blue" />
         </>
@@ -366,7 +431,6 @@ const StationRenderer = memo(function StationRenderer({ station }: { station: Ra
       {/* ===== MEDIUM STATION EXTRAS ===== */}
       {isMedium && (
         <>
-          {/* Trade crates */}
           <group position={[-shelterOffX * 0.4, 0.55, platL / 4]}>
             <Crate x={0} z={0} scale={0.9} />
             <Barrel x={0.5} z={-0.2} />
@@ -407,6 +471,10 @@ export const RailwayStations = memo(function RailwayStations({ playerPositionRef
           const dx = playerPos.x - station.position[0];
           const dz = playerPos.z - station.position[1];
           if (dx * dx + dz * dz > lodDist * lodDist) return null;
+        }
+        // Ironhold Central uses custom junction-aware layout
+        if (station.line === 'AB') {
+          return <IronholdCentralStation key={station.id} station={station} />;
         }
         return <StationRenderer key={station.id} station={station} />;
       })}
