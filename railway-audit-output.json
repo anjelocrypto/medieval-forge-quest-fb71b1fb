@@ -1,54 +1,8 @@
 {
   "clearance": 15,
-  "totalViolations": 1,
-  "criticalOrMajorCount": 1,
-  "violations": [
-    {
-      "line": "B",
-      "segmentIndex": 5,
-      "segment": "5: [-130, 95] -> [-70, 108]",
-      "from": [
-        -130,
-        95
-      ],
-      "to": [
-        -70,
-        108
-      ],
-      "obstacleId": "town--96-118",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -96,
-        118
-      ],
-      "obstacleShape": "box:halfW=2.7306938732328767,halfD=3.0219295325427593,rot=0.9424777960769379",
-      "minDistance": 11.56,
-      "failReason": "inside house/building footprint or too close"
-    }
-  ],
-  "criticalOrMajorViolations": [
-    {
-      "line": "B",
-      "segmentIndex": 5,
-      "segment": "5: [-130, 95] -> [-70, 108]",
-      "from": [
-        -130,
-        95
-      ],
-      "to": [
-        -70,
-        108
-      ],
-      "obstacleId": "town--96-118",
-      "obstacleType": "building/house footprint",
-      "obstacleCenter": [
-        -96,
-        118
-      ],
-      "obstacleShape": "box:halfW=2.7306938732328767,halfD=3.0219295325427593,rot=0.9424777960769379",
-      "minDistance": 11.56,
-      "failReason": "inside house/building footprint or too close"
-    }
-  ],
+  "totalViolations": 0,
+  "criticalOrMajorCount": 0,
+  "violations": [],
+  "criticalOrMajorViolations": [],
   "stationViolations": []
 }
