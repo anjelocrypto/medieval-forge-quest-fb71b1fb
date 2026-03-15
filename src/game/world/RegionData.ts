@@ -372,15 +372,15 @@ export const SMALL_POIS: SmallPOIDef[] = [
   { id: 'sp32', name: 'Forest Shrine', position: [-145, 115], type: 'shrine' },
   { id: 'sp33', name: 'Trail Marker', position: [-170, 70], type: 'milestone' },
   { id: 'sp34', name: 'Abandoned Campsite', position: [-100, 35], type: 'abandoned_camp' },
-  { id: 'sp53', name: 'Woodcutter Camp', position: [-120, 75], type: 'hunter_camp' },
-  
+  { id: 'sp53', name: 'Woodcutter Camp', position: [-138, 96], type: 'hunter_camp' },
+   
   // === IRONHOLD TO OLD VEYRA CORRIDOR ===
   { id: 'sp11', name: 'Burned Village', position: [100, 45], type: 'burned_village' },
   { id: 'sp12', name: 'Stone Circle', position: [150, 70], type: 'stone_circle' },
   { id: 'sp26', name: 'Roadside Camp', position: [95, 15], type: 'abandoned_camp' },
   { id: 'sp58', name: 'Ruins Approach', position: [130, 55], type: 'milestone' },
   { id: 'sp59', name: 'Ancient Cross', position: [170, 85], type: 'roadside_cross' },
-  { id: 'sp60', name: 'Scavenger Camp', position: [145, 35], type: 'hunter_camp' },
+  { id: 'sp60', name: 'Scavenger Camp', position: [168, 22], type: 'hunter_camp' },
   { id: 'sp62', name: 'Warning Post', position: [175, 75], type: 'watchpost' },
   
   // === BLACKTHORN TO OLD VEYRA ===
