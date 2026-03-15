@@ -1,52 +1,8 @@
 {
   "clearance": 15,
-  "totalViolations": 3,
-  "criticalOrMajorCount": 3,
+  "totalViolations": 1,
+  "criticalOrMajorCount": 1,
   "violations": [
-    {
-      "line": "B",
-      "segmentIndex": 4,
-      "segment": "4: [-220, 75] -> [-130, 95]",
-      "from": [
-        -220,
-        75
-      ],
-      "to": [
-        -130,
-        95
-      ],
-      "obstacleId": "poi-sp53",
-      "obstacleType": "poi-hunter_camp",
-      "obstacleCenter": [
-        -138,
-        96
-      ],
-      "obstacleShape": "circle:r=1.2",
-      "minDistance": 1.51,
-      "failReason": "too close to large POI collision zone"
-    },
-    {
-      "line": "A",
-      "segmentIndex": 20,
-      "segment": "20: [125, 15] -> [220, 45]",
-      "from": [
-        125,
-        15
-      ],
-      "to": [
-        220,
-        45
-      ],
-      "obstacleId": "poi-sp60",
-      "obstacleType": "poi-hunter_camp",
-      "obstacleCenter": [
-        168,
-        22
-      ],
-      "obstacleShape": "circle:r=1.2",
-      "minDistance": 5.07,
-      "failReason": "too close to large POI collision zone"
-    },
     {
       "line": "B",
       "segmentIndex": 5,
@@ -59,64 +15,20 @@
         -70,
         108
       ],
-      "obstacleId": "poi-sp53",
-      "obstacleType": "poi-hunter_camp",
+      "obstacleId": "town--96-118",
+      "obstacleType": "building/house footprint",
       "obstacleCenter": [
-        -138,
-        96
+        -96,
+        118
       ],
-      "obstacleShape": "circle:r=1.2",
-      "minDistance": 6.86,
-      "failReason": "too close to large POI collision zone"
+      "obstacleShape": "box:halfW=2.7306938732328767,halfD=3.0219295325427593,rot=0.9424777960769379",
+      "minDistance": 11.56,
+      "failReason": "inside house/building footprint or too close"
     }
   ],
   "criticalOrMajorViolations": [
     {
       "line": "B",
-      "segmentIndex": 4,
-      "segment": "4: [-220, 75] -> [-130, 95]",
-      "from": [
-        -220,
-        75
-      ],
-      "to": [
-        -130,
-        95
-      ],
-      "obstacleId": "poi-sp53",
-      "obstacleType": "poi-hunter_camp",
-      "obstacleCenter": [
-        -138,
-        96
-      ],
-      "obstacleShape": "circle:r=1.2",
-      "minDistance": 1.51,
-      "failReason": "too close to large POI collision zone"
-    },
-    {
-      "line": "A",
-      "segmentIndex": 20,
-      "segment": "20: [125, 15] -> [220, 45]",
-      "from": [
-        125,
-        15
-      ],
-      "to": [
-        220,
-        45
-      ],
-      "obstacleId": "poi-sp60",
-      "obstacleType": "poi-hunter_camp",
-      "obstacleCenter": [
-        168,
-        22
-      ],
-      "obstacleShape": "circle:r=1.2",
-      "minDistance": 5.07,
-      "failReason": "too close to large POI collision zone"
-    },
-    {
-      "line": "B",
       "segmentIndex": 5,
       "segment": "5: [-130, 95] -> [-70, 108]",
       "from": [
@@ -127,15 +39,15 @@
         -70,
         108
       ],
-      "obstacleId": "poi-sp53",
-      "obstacleType": "poi-hunter_camp",
+      "obstacleId": "town--96-118",
+      "obstacleType": "building/house footprint",
       "obstacleCenter": [
-        -138,
-        96
+        -96,
+        118
       ],
-      "obstacleShape": "circle:r=1.2",
-      "minDistance": 6.86,
-      "failReason": "too close to large POI collision zone"
+      "obstacleShape": "box:halfW=2.7306938732328767,halfD=3.0219295325427593,rot=0.9424777960769379",
+      "minDistance": 11.56,
+      "failReason": "inside house/building footprint or too close"
     }
   ],
   "stationViolations": []
