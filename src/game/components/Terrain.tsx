@@ -2,6 +2,7 @@ import { useMemo, memo } from 'react';
 import * as THREE from 'three';
 import { WORLD_SIZE, COLORS } from '../constants';
 import { ROADS, REGIONS, SETTLEMENTS } from '../world/RegionData';
+import { distToRailway } from '../world/RailwayData';
 
 function noise2D(x: number, z: number, scale: number = 1, seed: number = 0): number {
   const nx = (x + seed) * scale;
@@ -82,14 +83,30 @@ export function getTerrainHeight(x: number, z: number): number {
   const regional = getRegionalHeight(x, z) * 1.25;
   const rawHeight = (baseHeight + regional) * (1 - settleFlatten) + regional * settleFlatten * 0.3;
 
+  // Railway corridor flattening — smooth narrow strip along track path
+  // Uses same pattern as settlement flattening: lerp toward local average
+  let railFlatten = 0;
+  const RAIL_HALF_WIDTH = 7; // flatten corridor half-width
+  const railDist = distToRailway(x, z, RAIL_HALF_WIDTH + 4);
+  if (railDist !== null && railDist < RAIL_HALF_WIDTH) {
+    // Smooth falloff: full flatten in center 60%, then cosine fade
+    const t = railDist / RAIL_HALF_WIDTH;
+    railFlatten = t < 0.6 ? 1.0 : 0.5 + 0.5 * Math.cos((t - 0.6) / 0.4 * Math.PI);
+    railFlatten *= 0.85; // 85% flatten — keeps slight terrain variation for naturalness
+  }
+
+  // Apply railway flattening: lerp height toward a smoothed local value
+  // Target is the regional component only (no noise), creating gentle embankments
+  const railTarget = regional * 0.3;
+  let height = rawHeight * (1 - railFlatten) + railTarget * railFlatten;
+
   // Conservative terrain stepping for voxel-inspired terracing
-  // Only apply outside settlement flatten zones to preserve flat building ground
-  let height = rawHeight;
-  if (settleFlatten < 0.3) {
-    // Mild step: 0.4-unit terraces (Math.round(h * 2.5) / 2.5)
-    const stepStrength = 1 - settleFlatten / 0.3; // fade stepping near settlements
-    const stepped = Math.round(rawHeight * 2.5) / 2.5;
-    height = rawHeight + (stepped - rawHeight) * stepStrength * 0.7;
+  // Only apply outside settlement AND railway flatten zones
+  const combinedFlatten = Math.max(settleFlatten, railFlatten);
+  if (combinedFlatten < 0.3) {
+    const stepStrength = 1 - combinedFlatten / 0.3;
+    const stepped = Math.round(height * 2.5) / 2.5;
+    height = height + (stepped - height) * stepStrength * 0.7;
   }
 
   return Math.max(-1, height);
