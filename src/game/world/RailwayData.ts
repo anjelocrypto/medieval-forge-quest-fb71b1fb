@@ -71,6 +71,7 @@ export const LINE_A_WAYPOINTS: RailwayWaypoint[] = [
   { x: 125, z: 15, label: 'Frostmere Bypass', type: 'track' },
   { x: 220, z: 45, type: 'track' },
   { x: 280, z: 100, type: 'track' },
+  { x: 296, z: 133, type: 'track' },
   { x: 330, z: 200, type: 'track' },
   { x: 350, z: 250, type: 'track' },
   { x: 355, z: 260, label: 'Rivermoor River Bridge', type: 'bridge' },
