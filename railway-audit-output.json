@@ -15,14 +15,14 @@
         45,
         80
       ],
-      "obstacleId": "town-16-66",
+      "obstacleId": "town-18-64",
       "obstacleType": "building/house footprint",
       "obstacleCenter": [
-        16,
-        66
+        18,
+        64
       ],
-      "obstacleShape": "box:halfW=1.6829408004953905,halfD=2.186038363898209,rot=-1.2566370614359172",
-      "minDistance": 13.12,
+      "obstacleShape": "box:halfW=1.71623616220079,halfD=2.0311842423688473,rot=0.3",
+      "minDistance": 14.83,
       "failReason": "inside house/building footprint or too close"
     }
   ],
@@ -39,14 +39,14 @@
         45,
         80
       ],
-      "obstacleId": "town-16-66",
+      "obstacleId": "town-18-64",
       "obstacleType": "building/house footprint",
       "obstacleCenter": [
-        16,
-        66
+        18,
+        64
       ],
-      "obstacleShape": "box:halfW=1.6829408004953905,halfD=2.186038363898209,rot=-1.2566370614359172",
-      "minDistance": 13.12,
+      "obstacleShape": "box:halfW=1.71623616220079,halfD=2.0311842423688473,rot=0.3",
+      "minDistance": 14.83,
       "failReason": "inside house/building footprint or too close"
     }
   ],
