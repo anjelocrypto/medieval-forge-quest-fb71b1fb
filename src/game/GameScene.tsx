@@ -24,6 +24,7 @@ import { RailwayDebugPreview } from './components/RailwayDebugPreview';
 import { RailwayTrack } from './components/RailwayTrack';
 import { RailwayStations } from './components/RailwayStations';
 import { RailwayBridges } from './components/RailwayBridges';
+import { RailwayLamps } from './components/RailwayLamps';
 import { Train } from './components/Train';
 import { DebugCollision } from './components/DebugCollision';
 import { CameraController } from './systems/CameraController';
@@ -426,6 +427,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
           {/* RAILWAY — incremental re-enable. Static tracks only (no useFrame). */}
           {/* Terrain flattening grid is safe and active. */}
           <RailwayTrack />
+          <RailwayLamps playerPositionRef={playerPositionRef} />
           {/* Stations, bridges, trains DISABLED until static tracks proven safe */}
           {/* <RailwayStations playerPositionRef={playerPositionRef} /> */}
           {/* <RailwayBridges playerPositionRef={playerPositionRef} /> */}
