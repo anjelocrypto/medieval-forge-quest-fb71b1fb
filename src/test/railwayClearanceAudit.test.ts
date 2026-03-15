@@ -24,6 +24,8 @@ interface AuditViolation {
   to: [number, number];
   obstacleId: string;
   obstacleType: string;
+  obstacleCenter: [number, number];
+  obstacleShape: string;
   minDistance: number;
   failReason: string;
 }
