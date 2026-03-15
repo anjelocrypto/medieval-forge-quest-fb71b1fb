@@ -1,8 +1,8 @@
 import { useMemo, memo } from 'react';
 import * as THREE from 'three';
-import { WORLD_SIZE, COLORS } from '../constants';
+import { WORLD_SIZE, HALF_WORLD, COLORS } from '../constants';
 import { ROADS, REGIONS, SETTLEMENTS } from '../world/RegionData';
-import { distToRailway } from '../world/RailwayData';
+import { getRailFlattenGrid } from '../world/RailwayData';
 
 function noise2D(x: number, z: number, scale: number = 1, seed: number = 0): number {
   const nx = (x + seed) * scale;
