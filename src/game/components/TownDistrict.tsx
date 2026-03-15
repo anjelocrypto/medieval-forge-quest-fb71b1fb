@@ -334,11 +334,12 @@ function generateTownBuildings(): TownBuildingDef[] {
     // North side (behind walls)
     [-14, 42, Math.PI],
     [14, 42, -Math.PI],
-    // Along roads further out
+    // Along roads further out — relocated south to clear Line B corridor (z≈83)
     [-16, 66, Math.PI * 0.5],
     [16, 66, -Math.PI * 0.4],
-    [10, 74, -Math.PI * 0.45],
-    [14, 72, -Math.PI * 0.5],
+    // Was (10, 74) and (14, 72) — too close to Line B. Moved south.
+    [10, 62, -Math.PI * 0.45],
+    [14, 60, -Math.PI * 0.5],
   ];
 
   for (const [x, z, rot] of residentialPositions) {
