@@ -343,7 +343,7 @@ export const SMALL_POIS: SmallPOIDef[] = [
   { id: 'sp21', name: 'First Milestone', position: [-25, -15], type: 'milestone' },
   { id: 'sp22', name: 'Second Milestone', position: [-80, -60], type: 'milestone' },
   { id: 'sp28', name: 'Road Lantern', position: [-35, -45], type: 'lantern_post' },
-  { id: 'sp16', name: 'Roadside Inn', position: [-72, -108], type: 'inn' },
+  { id: 'sp16', name: 'Roadside Inn', position: [-128, -118], type: 'inn' },
   { id: 'sp40', name: 'Farm Shrine', position: [-120, -100], type: 'shrine' },
   { id: 'sp41', name: 'Third Milestone', position: [-140, -110], type: 'milestone' },
   

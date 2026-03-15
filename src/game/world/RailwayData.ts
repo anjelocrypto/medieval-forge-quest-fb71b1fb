@@ -67,7 +67,7 @@ export const LINE_A_WAYPOINTS: RailwayWaypoint[] = [
   { x: -25, z: 95, label: 'Ironhold Central', type: 'station' },
   { x: 30, z: 105, type: 'track' },
   { x: 90, z: 105, type: 'track' },
-  { x: 130, z: 35, label: 'Frostmere Bypass', type: 'track' },
+  { x: 125, z: 15, label: 'Frostmere Bypass', type: 'track' },
   { x: 220, z: 45, type: 'track' },
   { x: 280, z: 100, type: 'track' },
   { x: 330, z: 200, type: 'track' },
