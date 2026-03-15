@@ -171,3 +171,113 @@ export function distToRailway(x: number, z: number, maxDist: number = 12): numbe
   }
   return best <= maxDist ? best : null;
 }
+
+/**
+ * Precomputed railway flatten grid.
+ * Built once on first access. Stores flatten intensity (0-1) on a coarse grid.
+ * Terrain samples this via bilinear interpolation — zero per-vertex segment scans.
+ */
+const GRID_CELL = 6; // 6-unit cells
+const RAIL_HALF_WIDTH = 7;
+const GRID_MAX_DIST = RAIL_HALF_WIDTH + 4;
+
+interface RailFlattenGrid {
+  data: Float32Array;
+  cols: number;
+  rows: number;
+  originX: number;
+  originZ: number;
+  cell: number;
+  sample(x: number, z: number): number;
+}
+
+let _flattenGrid: RailFlattenGrid | null = null;
+
+export function getRailFlattenGrid(): RailFlattenGrid {
+  if (_flattenGrid) return _flattenGrid;
+
+  // Compute grid bounds from railway segments with padding
+  const segs = getRailwaySegments();
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (const seg of segs) {
+    minX = Math.min(minX, seg.ax, seg.bx);
+    maxX = Math.max(maxX, seg.ax, seg.bx);
+    minZ = Math.min(minZ, seg.az, seg.bz);
+    maxZ = Math.max(maxZ, seg.az, seg.bz);
+  }
+  // Pad by max influence distance
+  const pad = GRID_MAX_DIST + GRID_CELL;
+  minX -= pad; maxX += pad; minZ -= pad; maxZ += pad;
+
+  const cols = Math.ceil((maxX - minX) / GRID_CELL) + 1;
+  const rows = Math.ceil((maxZ - minZ) / GRID_CELL) + 1;
+  const data = new Float32Array(cols * rows);
+
+  // Pre-compute flatten value at each grid point
+  const bounds = getSegBounds(GRID_MAX_DIST);
+  for (let row = 0; row < rows; row++) {
+    const gz = minZ + row * GRID_CELL;
+    for (let col = 0; col < cols; col++) {
+      const gx = minX + col * GRID_CELL;
+      
+      // Find nearest railway distance (inlined for speed)
+      let best = GRID_MAX_DIST + 1;
+      for (let i = 0; i < segs.length; i++) {
+        const b = bounds[i];
+        if (gx < b.minX || gx > b.maxX || gz < b.minZ || gz > b.maxZ) continue;
+        const seg = segs[i];
+        if (seg.len2 < 1) continue;
+        const dx = seg.bx - seg.ax, dz = seg.bz - seg.az;
+        const t = Math.max(0, Math.min(1, ((gx - seg.ax) * dx + (gz - seg.az) * dz) / seg.len2));
+        const px = seg.ax + t * dx, pz = seg.az + t * dz;
+        const ex = gx - px, ez = gz - pz;
+        const dist = Math.sqrt(ex * ex + ez * ez);
+        if (dist < best) best = dist;
+      }
+
+      // Compute flatten intensity
+      let flatten = 0;
+      if (best <= RAIL_HALF_WIDTH) {
+        const t = best / RAIL_HALF_WIDTH;
+        flatten = t < 0.6 ? 1.0 : 0.5 + 0.5 * Math.cos((t - 0.6) / 0.4 * Math.PI);
+        flatten *= 0.85;
+      }
+      data[row * cols + col] = flatten;
+    }
+  }
+
+  _flattenGrid = {
+    data, cols, rows,
+    originX: minX,
+    originZ: minZ,
+    cell: GRID_CELL,
+    sample(x: number, z: number): number {
+      // Bilinear interpolation from precomputed grid
+      const fx = (x - this.originX) / this.cell;
+      const fz = (z - this.originZ) / this.cell;
+      
+      // Fast bounds check — return 0 if outside grid
+      if (fx < 0 || fz < 0 || fx >= this.cols - 1 || fz >= this.rows - 1) return 0;
+      
+      const ix = fx | 0; // floor
+      const iz = fz | 0;
+      const tx = fx - ix;
+      const tz = fz - iz;
+      
+      const i00 = iz * this.cols + ix;
+      const v00 = this.data[i00];
+      const v10 = this.data[i00 + 1];
+      const v01 = this.data[i00 + this.cols];
+      const v11 = this.data[i00 + this.cols + 1];
+      
+      // Bilinear
+      return (v00 * (1 - tx) * (1 - tz) +
+              v10 * tx * (1 - tz) +
+              v01 * (1 - tx) * tz +
+              v11 * tx * tz);
+    },
+  };
+
+  console.log(`[Railway] Flatten grid built: ${cols}x${rows} = ${cols * rows} cells (${(data.byteLength / 1024).toFixed(1)} KB)`);
+  return _flattenGrid;
+}
