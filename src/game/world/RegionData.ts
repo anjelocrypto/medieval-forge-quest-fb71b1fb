@@ -436,7 +436,7 @@ export const SMALL_POIS: SmallPOIDef[] = [
   // === SW WILDERNESS ===
   { id: 'sp92', name: 'Southern Watch', position: [-205, -205], type: 'watchpost' },
   { id: 'sp93', name: 'Wilderness Shrine', position: [-235, -165], type: 'shrine' },
-  { id: 'sp94', name: 'Abandoned Homestead', position: [-185, -185], type: 'ruined_house' },
+  { id: 'sp94', name: 'Abandoned Homestead', position: [-212, -206], type: 'ruined_house' },
   { id: 'sp96', name: 'Southern Graveyard', position: [-155, -225], type: 'graveyard' },
   
   // === SE WILDERNESS ===
