@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { GEO, MAT } from '../world/SettlementPieces';
 import { getTerrainHeight } from './Terrain';
 import { SETTLEMENTS, ROADS, SMALL_POIS } from '../world/RegionData';
+import { distToRailway } from '../world/RailwayData';
 
 export interface WildernessBuilding {
   x: number; z: number; rot: number;
@@ -49,6 +50,11 @@ function isNearPOI(x: number, z: number, minDist: number): boolean {
     if (d < minDist) return true;
   }
   return false;
+}
+
+function isNearRailway(x: number, z: number, minDist: number): boolean {
+  const d = distToRailway(x, z, minDist);
+  return d !== null; // d !== null means within minDist
 }
 
 function generateWildernessBuildings(): WildernessBuilding[] {
@@ -142,6 +148,7 @@ function generateWildernessBuildings(): WildernessBuilding[] {
       if (isNearSettlement(x, z, 60)) continue;
       if (isNearRoad(x, z, 4)) continue;
       if (isNearPOI(x, z, 8)) continue;
+      if (isNearRailway(x, z, 12)) continue; // Keep 12u clear of railway corridor
 
       const type = cluster.types[i % cluster.types.length];
       const rot = rand() * Math.PI * 2;

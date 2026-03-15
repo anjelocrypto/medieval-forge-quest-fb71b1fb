@@ -300,8 +300,8 @@ function generateTownBuildings(): TownBuildingDef[] {
     [28, 50, -0.3, 'Butcher'],
     [26, 56, 0.2],
     [30, 54, -0.5, 'Food Stall'],
-    [24, 62, 0.1],
-    [18, 64, 0.3],
+    [24, 60, 0.1],
+    [18, 58, 0.3],
   ];
 
   for (const [x, z, rot, label] of marketBuildings) {
@@ -334,11 +334,12 @@ function generateTownBuildings(): TownBuildingDef[] {
     // North side (behind walls)
     [-14, 42, Math.PI],
     [14, 42, -Math.PI],
-    // Along roads further out
-    [-16, 66, Math.PI * 0.5],
-    [16, 66, -Math.PI * 0.4],
-    [10, 74, -Math.PI * 0.45],
-    [14, 72, -Math.PI * 0.5],
+    // Along roads further out — relocated south to clear Line B corridor (z≈83)
+    [-16, 64, Math.PI * 0.5],
+    [16, 60, -Math.PI * 0.4],
+    // Was (10, 74) and (14, 72) — too close to Line B. Moved south.
+    [10, 62, -Math.PI * 0.45],
+    [14, 60, -Math.PI * 0.5],
   ];
 
   for (const [x, z, rot] of residentialPositions) {
@@ -352,11 +353,12 @@ function generateTownBuildings(): TownBuildingDef[] {
 
   // === WORKSHOP CORNER (southwest, around [-20, 65]) ===
   const workshopBuildings: Array<[number, number, number, string?]> = [
-    [-18, 68, Math.PI * 0.4, 'Blacksmith'],
-    [-24, 66, Math.PI * 0.5, 'Stable'],
-    // Relocated off the rail corridor while preserving workshop-cluster readability.
+    // Relocated south to clear Line B railway corridor (z≈83, need 15u clearance)
+    [-18, 56, Math.PI * 0.4, 'Blacksmith'],
+    [-24, 54, Math.PI * 0.5, 'Stable'],
     [-120, 132, Math.PI * 0.3, 'Storage'],
-    [-82, 84, Math.PI * 0.45],
+    // Was (-82, 84) then (-82, 68) — moved well clear of Line B
+    [-82, 56, Math.PI * 0.45],
   ];
 
   for (const [x, z, rot, label] of workshopBuildings) {
