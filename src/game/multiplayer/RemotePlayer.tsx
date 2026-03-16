@@ -145,7 +145,7 @@ export function RemotePlayer({ player }: Props) {
       </Html>
 
       {player.isMounted ? (
-        <MountedRemoteModel moveSpeed={player.moveSpeed} horsePitch={player.horsePitch} />
+        <MountedRemoteModel moveSpeed={player.moveSpeed} horsePitch={player.horsePitch} charType={charType} player={player} />
       ) : (
         <Suspense fallback={<RemotePlayerFallback />}>
           {charType === 'goblin' ? (
@@ -191,12 +191,32 @@ export function RemotePlayer({ player }: Props) {
   );
 }
 
-function MountedRemoteModel({ moveSpeed, horsePitch }: { moveSpeed: number; horsePitch: number }) {
+function MountedRemoteModel({ moveSpeed, horsePitch, charType, player }: {
+  moveSpeed: number;
+  horsePitch: number;
+  charType: string;
+  player: InterpolatedPlayer;
+}) {
   return (
     <group rotation={[horsePitch, 0, 0]}>
+      {/* Horse */}
       <Suspense fallback={null}>
         <HorseGLBModel moveSpeed={moveSpeed} renderPath="mounted-remote" />
       </Suspense>
+      {/* Rider character seated on horse */}
+      <group position={[0, 1.2, 0]} rotation={[0, 0, 0]}>
+        <Suspense fallback={<RemotePlayerFallback />}>
+          {charType === 'goblin' ? (
+            <RemoteGoblinModel moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
+          ) : charType === 'octopus' ? (
+            <RemoteOctopusModel moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
+          ) : charType === 'nemoclaw' ? (
+            <RemoteNemoClawModel moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
+          ) : (
+            <RemoteSoldierModel moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
+          )}
+        </Suspense>
+      </group>
     </group>
   );
 }
