@@ -41,6 +41,8 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
 
   const [isWalking, setIsWalking] = useState(false);
   const isWalkingRef = useRef(false);
+  const sceneRef = useRef<THREE.Group>(null);
+  const finalScaleRef = useRef(1);
 
   const metrics = useMemo(() => {
     horseScene.updateMatrixWorld(true);
