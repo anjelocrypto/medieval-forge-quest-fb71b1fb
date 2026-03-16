@@ -77,6 +77,7 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
   }, [horseScene, standGltf.scene, walkGltf.scene, standGltf.animations, walkGltf.animations]);
 
   const finalScale = metrics.unifiedScale * scale;
+  finalScaleRef.current = finalScale;
 
   useEffect(() => {
     const mixer = new THREE.AnimationMixer(horseScene);
