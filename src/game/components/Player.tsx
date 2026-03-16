@@ -385,7 +385,7 @@ export function Player({
     let baseSpeed: number, runSpeed: number;
     if (isMounted) { baseSpeed = HORSE_SPEED; runSpeed = HORSE_RUN_SPEED; }
     else { baseSpeed = PLAYER_SPEED; runSpeed = PLAYER_RUN_SPEED; }
-    const targetSpeed = canRun ? runSpeed : baseSpeed;
+    let targetSpeed = canRun ? runSpeed : baseSpeed;
     const isMoving = _moveDir.lengthSq() > 0.001;
     const isAttacking = attackAnimRef.current > 0 || isFightingRef.current;
     // Allow movement during attack at reduced speed so player can escape enemy clusters
