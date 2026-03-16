@@ -161,8 +161,8 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
     if (!loggedRef.current) {
       loggedRef.current = true;
       console.log(`[HorseGLBModel:${renderPath}] LOADED`,
-        `stand: ${metrics.standMeshCount} meshes, size=${metrics.standSize.y.toFixed(2)}, scale=${metrics.standScale.toFixed(3)}, anims=${standGltf.animations.length}`,
-        `| walk: ${metrics.walkMeshCount} meshes, size=${metrics.walkSize.y.toFixed(2)}, scale=${metrics.walkScale.toFixed(3)}, anims=${walkGltf.animations.length}`
+        `stand: ${metrics.standMeshCount} meshes, size=${metrics.standSize.y.toFixed(2)}, scale=${metrics.unifiedScale.toFixed(3)}, anims=${standGltf.animations.length}`,
+        `| walk: ${metrics.walkMeshCount} meshes, size=${metrics.walkSize.y.toFixed(2)}, scale=${metrics.unifiedScale.toFixed(3)} (unified), anims=${walkGltf.animations.length}`
       );
     }
 
