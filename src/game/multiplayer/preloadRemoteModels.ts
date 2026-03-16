@@ -53,4 +53,8 @@ export function preloadRemoteCharacterModels() {
   // NemoClaw
   useGLTF.preload(nemoStandingUrl);
   useGLTF.preload(nemoWalkingUrl);
+
+  // Horse (for mounted remote players)
+  useGLTF.preload(horseStandUrl);
+  useGLTF.preload(horseWalkUrl);
 }
