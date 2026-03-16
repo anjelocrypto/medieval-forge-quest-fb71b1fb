@@ -29,6 +29,7 @@ const TARGET_HORSE_HEIGHT = 2.0;
 const WALK_START_THRESHOLD = 0.4;
 const WALK_STOP_THRESHOLD = 0.15;
 const WALK_SCALE_COMPENSATION = 1.12; // boost walk pose to match standing visual mass
+const WALK_Y_LIFT = 0.15; // lift horse when walking to prevent feet clipping ground
 
 export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: Props) {
   const standGltf = useGLTF(horseStandUrl);
@@ -174,8 +175,10 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
     }
   });
 
+  const walkLift = isWalking ? WALK_Y_LIFT : 0;
+
   return (
-    <group position={[0, metrics.yOffset * scale, 0]}>
+    <group position={[0, metrics.yOffset * scale + walkLift, 0]}>
       <group ref={sceneRef}>
         <primitive object={horseScene} scale={[finalScale, finalScale, finalScale]} />
       </group>
