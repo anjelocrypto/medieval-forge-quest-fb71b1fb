@@ -452,6 +452,7 @@ export function useProximityVoice(
   // ─── Sync peers when remote players change ───
   // KEY FIX: No micReadyRef gate — peers are created regardless of mic state.
   // Receiving audio does NOT require having a mic.
+  const remotePlayerCount = remotePlayers.size;
   const syncPeers = useCallback(() => {
     if (!connected) return;
 
@@ -474,7 +475,7 @@ export function useProximityVoice(
         });
       }
     }
-  }, [connected, remotePlayers, playerId, createPeer, destroyPeer]);
+  }, [connected, remotePlayerCount, remotePlayers, playerId, createPeer, destroyPeer]);
 
   // ─── Start talking (K down) ───
   const startTalking = useCallback(async () => {
