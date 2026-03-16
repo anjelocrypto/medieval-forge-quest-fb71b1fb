@@ -37,7 +37,7 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
   const auditLogged = useRef(false);
 
   // Compute auto-scale based on standing model's native height
-  const { autoScale, yOffset, walkYOffset } = useMemo(() => {
+  const { standAutoScale, walkAutoScale, yOffset, walkYOffset } = useMemo(() => {
     const standBox = new THREE.Box3().setFromObject(standScene);
     const standSize = new THREE.Vector3();
     standBox.getSize(standSize);
@@ -46,23 +46,25 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
     const walkSize = new THREE.Vector3();
     walkBox.getSize(walkSize);
 
-    const nativeHeight = standSize.y;
-    const computedAutoScale = nativeHeight > 0.01 ? TARGET_HORSE_HEIGHT / nativeHeight : 1;
+    const standNativeHeight = standSize.y;
+    const walkNativeHeight = walkSize.y;
+    const computedStandScale = standNativeHeight > 0.01 ? TARGET_HORSE_HEIGHT / standNativeHeight : 1;
+    const computedWalkScale = walkNativeHeight > 0.01 ? TARGET_HORSE_HEIGHT / walkNativeHeight : 1;
 
     console.log(`[HorseAudit] standBox size: x=${standSize.x.toFixed(3)} y=${standSize.y.toFixed(3)} z=${standSize.z.toFixed(3)}`);
-    console.log(`[HorseAudit] standBox min.y=${standBox.min.y.toFixed(3)} max.y=${standBox.max.y.toFixed(3)}`);
     console.log(`[HorseAudit] walkBox size: x=${walkSize.x.toFixed(3)} y=${walkSize.y.toFixed(3)} z=${walkSize.z.toFixed(3)}`);
-    console.log(`[HorseAudit] walkBox min.y=${walkBox.min.y.toFixed(3)} max.y=${walkBox.max.y.toFixed(3)}`);
-    console.log(`[HorseAudit] autoScale=${computedAutoScale.toFixed(4)} (target=${TARGET_HORSE_HEIGHT}, native=${nativeHeight.toFixed(3)})`);
+    console.log(`[HorseAudit] standAutoScale=${computedStandScale.toFixed(4)} walkAutoScale=${computedWalkScale.toFixed(4)}`);
 
     return {
-      autoScale: computedAutoScale,
-      yOffset: -standBox.min.y * computedAutoScale,
-      walkYOffset: -walkBox.min.y * computedAutoScale,
+      standAutoScale: computedStandScale,
+      walkAutoScale: computedWalkScale,
+      yOffset: -standBox.min.y * computedStandScale,
+      walkYOffset: -walkBox.min.y * computedWalkScale,
     };
   }, [standScene, walkScene]);
 
-  const finalScale = autoScale * scale;
+  const standFinalScale = standAutoScale * scale;
+  const walkFinalScale = walkAutoScale * scale;
 
   useEffect(() => {
     // Ensure materials are visible
@@ -111,7 +113,7 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
     walkScene.visible = false;
     currentWalking.current = false;
 
-    console.log(`[HorseAudit] path=${renderPath} standClips=${standGltf.animations.length} walkClips=${walkGltf.animations.length} finalScale=${finalScale.toFixed(3)}`);
+    console.log(`[HorseAudit] path=${renderPath} standClips=${standGltf.animations.length} walkClips=${walkGltf.animations.length} standScale=${standFinalScale.toFixed(3)} walkScale=${walkFinalScale.toFixed(3)}`);
 
     return () => {
       walkMixer.stopAllAction();
@@ -119,7 +121,7 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
       standMixer.stopAllAction();
       standMixer.uncacheRoot(standScene);
     };
-  }, [standScene, walkScene, standGltf.animations, walkGltf.animations, renderPath, finalScale]);
+  }, [standScene, walkScene, standGltf.animations, walkGltf.animations, renderPath, standFinalScale, walkFinalScale]);
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
@@ -144,10 +146,10 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
   return (
     <group>
       <group position={[0, yOffset * scale, 0]}>
-        <primitive object={standScene} scale={[finalScale, finalScale, finalScale]} castShadow receiveShadow />
+        <primitive object={standScene} scale={[standFinalScale, standFinalScale, standFinalScale]} castShadow receiveShadow />
       </group>
       <group position={[0, walkYOffset * scale, 0]}>
-        <primitive object={walkScene} scale={[finalScale, finalScale, finalScale]} castShadow receiveShadow />
+        <primitive object={walkScene} scale={[walkFinalScale, walkFinalScale, walkFinalScale]} castShadow receiveShadow />
       </group>
     </group>
   );
