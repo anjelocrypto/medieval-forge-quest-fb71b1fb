@@ -16,22 +16,27 @@ interface Props {
   onReady: () => void;
 }
 
-/** Minimum number of consecutive frames before we declare "ready" */
-const MIN_STABLE_FRAMES = 8;
+/** Minimum stable frames AND minimum wall-clock time before declaring ready */
+const MIN_STABLE_FRAMES = 30;
+const MIN_ELAPSED_MS = 3000; // at least 3 seconds to let assets load
 
 export function StartupReadiness({ onReady }: Props) {
   const frameCount = useRef(0);
   const fired = useRef(false);
+  const mountTime = useRef(Date.now());
 
   useFrame(() => {
     if (fired.current) return;
     frameCount.current++;
 
-    // Wait for several stable frames — proves Canvas, WebGL, Terrain,
-    // Suspense boundaries have all resolved and the loop is alive.
-    if (frameCount.current >= MIN_STABLE_FRAMES) {
+    const elapsed = Date.now() - mountTime.current;
+
+    // Must have both enough frames AND enough wall-clock time.
+    // This ensures Suspense boundaries, terrain, and core assets
+    // have had time to resolve — not just the first few empty frames.
+    if (frameCount.current >= MIN_STABLE_FRAMES && elapsed >= MIN_ELAPSED_MS) {
       fired.current = true;
-      console.log(`[Startup] Scene ready after ${frameCount.current} stable frames`);
+      console.log(`[Startup] Scene ready after ${frameCount.current} frames, ${elapsed}ms`);
       onReady();
     }
   });

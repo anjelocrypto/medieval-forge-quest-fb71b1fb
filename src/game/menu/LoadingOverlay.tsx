@@ -41,7 +41,7 @@ export function LoadingOverlay({ ready, onFadeComplete }: Props) {
     return () => clearInterval(iv);
   }, []);
 
-  // Indeterminate progress that caps at 85% until ready, then jumps to 100%
+  // Progress that caps at 85% until ready, then jumps to 100%
   useEffect(() => {
     if (ready) {
       setFakeProgress(100);
@@ -49,8 +49,8 @@ export function LoadingOverlay({ ready, onFadeComplete }: Props) {
     }
     const iv = setInterval(() => {
       const elapsed = (Date.now() - startTime.current) / 1000;
-      // Ease toward 85% over ~8 seconds
-      const pct = Math.min(85, 85 * (1 - Math.exp(-elapsed / 3)));
+      // Ease toward 85% over ~12 seconds (slower to match real load time)
+      const pct = Math.min(85, 85 * (1 - Math.exp(-elapsed / 5)));
       setFakeProgress(pct);
     }, 80);
     return () => clearInterval(iv);
