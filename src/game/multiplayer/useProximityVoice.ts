@@ -21,9 +21,10 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 import * as THREE from 'three';
 
 // ─── Config ───
-const VOICE_MAX_RANGE = 60;
-const VOICE_FULL_RANGE = 8;
-const VOICE_GAIN = 1.8;
+const VOICE_MAX_RANGE = 40;         // world units — completely silent beyond
+const VOICE_FULL_RANGE = 15;        // world units — full volume inside
+const VOICE_GAIN = 1.6;             // master gain multiplier
+const VOICE_SILENCE_THRESHOLD = 0.005; // below this gain → hard zero
 const VOICE_INIT_DELAY_MS = 3000;
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
