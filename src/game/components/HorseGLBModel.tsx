@@ -113,7 +113,7 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
     walkScene.visible = false;
     currentWalking.current = false;
 
-    console.log(`[HorseAudit] path=${renderPath} standClips=${standGltf.animations.length} walkClips=${walkGltf.animations.length} finalScale=${finalScale.toFixed(3)}`);
+    console.log(`[HorseAudit] path=${renderPath} standClips=${standGltf.animations.length} walkClips=${walkGltf.animations.length} standScale=${standFinalScale.toFixed(3)} walkScale=${walkFinalScale.toFixed(3)}`);
 
     return () => {
       walkMixer.stopAllAction();
@@ -121,7 +121,7 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
       standMixer.stopAllAction();
       standMixer.uncacheRoot(standScene);
     };
-  }, [standScene, walkScene, standGltf.animations, walkGltf.animations, renderPath, finalScale]);
+  }, [standScene, walkScene, standGltf.animations, walkGltf.animations, renderPath, standFinalScale, walkFinalScale]);
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
