@@ -340,6 +340,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         }}>
 
         <WebGLRecovery />
+        {onSceneReady && <StartupReadiness onReady={onSceneReady} />}
         <PerfBaselineR3F />
         <InputFlusher />
         <SceneDiagnosticsBoundary>
