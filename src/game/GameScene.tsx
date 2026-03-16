@@ -56,7 +56,7 @@ interface GameSceneProps {
   onSceneReady?: () => void;
 }
 
-export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
+export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameSceneProps) {
   const {
     survival, updateSurvival, inventory, addResource, eatFood,
     interactionText, setInteractionText,
