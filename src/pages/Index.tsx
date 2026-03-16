@@ -2,27 +2,40 @@ import { useState, useCallback } from 'react';
 import { GameScene } from '../game/GameScene';
 import { CinematicMenu } from '../game/menu/CinematicMenu';
 import { MenuScene3D } from '../game/menu/MenuScene3D';
-import { LoadingScreen } from '../game/menu/LoadingScreen';
+import { LoadingOverlay } from '../game/menu/LoadingOverlay';
 import { useMultiplayer } from '../game/multiplayer/useMultiplayer';
 
 type AppMode = 'lobby' | 'loading' | 'game';
 
 const Index = () => {
   const [appMode, setAppMode] = useState<AppMode>('lobby');
+  const [sceneReady, setSceneReady] = useState(false);
+  const [overlayDone, setOverlayDone] = useState(false);
   const multiplayer = useMultiplayer();
 
   const handleEnterWorld = useCallback(async (playerName: string) => {
     await multiplayer.enterWorld(playerName);
+    setSceneReady(false);
+    setOverlayDone(false);
     setAppMode('loading');
   }, [multiplayer.enterWorld]);
 
-  const handleLoadingReady = useCallback(() => {
+  const handleSceneReady = useCallback(() => {
+    console.log('[Index] Scene reported ready — will fade out overlay');
+    setSceneReady(true);
+  }, []);
+
+  const handleOverlayFadeComplete = useCallback(() => {
+    console.log('[Index] Overlay fade complete — entering game mode');
+    setOverlayDone(true);
     setAppMode('game');
   }, []);
 
   const handleLeave = useCallback(async () => {
     await multiplayer.leaveWorld();
     setAppMode('lobby');
+    setSceneReady(false);
+    setOverlayDone(false);
   }, [multiplayer.leaveWorld]);
 
   if (appMode === 'lobby') {
@@ -34,21 +47,24 @@ const Index = () => {
     );
   }
 
-  if (appMode === 'loading') {
-    return (
-      <div className="w-screen h-screen relative overflow-hidden">
-        {/* Keep the cinematic 3D world as background during loading */}
-        <MenuScene3D />
-        <LoadingScreen onReady={handleLoadingReady} />
-      </div>
-    );
-  }
-
+  // In 'loading' and 'game' modes, GameScene is always mounted.
+  // The LoadingOverlay sits on top and fades out only when StartupReadiness
+  // confirms the Canvas has rendered stable frames.
   return (
-    <GameScene
-      multiplayer={multiplayer}
-      onLeaveWorld={handleLeave}
-    />
+    <>
+      <GameScene
+        multiplayer={multiplayer}
+        onLeaveWorld={handleLeave}
+        onSceneReady={handleSceneReady}
+      />
+      {/* Loading overlay stays on top until scene is truly ready */}
+      {!overlayDone && (
+        <LoadingOverlay
+          ready={sceneReady}
+          onFadeComplete={handleOverlayFadeComplete}
+        />
+      )}
+    </>
   );
 };
 
