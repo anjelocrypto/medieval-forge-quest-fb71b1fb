@@ -21,9 +21,10 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 import * as THREE from 'three';
 
 // ─── Config ───
-const VOICE_MAX_RANGE = 60;
-const VOICE_FULL_RANGE = 8;
-const VOICE_GAIN = 1.8;
+const VOICE_MAX_RANGE = 40;         // world units — completely silent beyond
+const VOICE_FULL_RANGE = 15;        // world units — full volume inside
+const VOICE_GAIN = 1.6;             // master gain multiplier
+const VOICE_SILENCE_THRESHOLD = 0.005; // below this gain → hard zero
 const VOICE_INIT_DELAY_MS = 3000;
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -156,18 +157,20 @@ export function useProximityVoice(
       const stream = ev.streams[0] || new MediaStream([ev.track]);
       audioEl.srcObject = stream;
 
-      // Create Web Audio source node
+      // Create Web Audio source node — audio MUST go through gain node
       if (!entry.sourceNode) {
         try {
           entry.sourceNode = ctx.createMediaElementSource(audioEl);
           entry.sourceNode.connect(gainNode);
+          // Only set volume=1 if source node succeeded (audio routes through gain)
+          audioEl.volume = 1;
+          voiceLog('audio routed through gain node', { from: remoteId.slice(0, 8) });
         } catch {
-          // Already connected — safe to ignore
+          // If MediaElementSource fails, keep volume=0 to prevent uncontrolled audio leakage
+          audioEl.volume = 0;
+          voiceLog('MediaElementSource failed — audio muted to prevent leakage', { from: remoteId.slice(0, 8) });
         }
       }
-
-      // Set volume to 1 so audio flows through gain node
-      audioEl.volume = 1;
 
       // Explicitly play to handle autoplay restrictions
       audioEl.play().catch(err => {
@@ -529,7 +532,14 @@ export function useProximityVoice(
         const t = (dist - VOICE_FULL_RANGE) / (VOICE_MAX_RANGE - VOICE_FULL_RANGE);
         vol = VOICE_GAIN * (1 - t * t);
       }
-      entry.gainNode.gain.value += (vol - entry.gainNode.gain.value) * 0.15;
+      // Hard zero beyond max range — no asymptotic leak
+      if (vol < VOICE_SILENCE_THRESHOLD) vol = 0;
+      // Smooth transition to avoid clicks, but snap to zero when target is zero
+      if (vol === 0) {
+        entry.gainNode.gain.value = 0;
+      } else {
+        entry.gainNode.gain.value += (vol - entry.gainNode.gain.value) * 0.2;
+      }
     }
   }, [playerPositionRef, remotePlayers]);
 
