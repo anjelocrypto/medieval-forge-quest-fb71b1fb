@@ -532,7 +532,14 @@ export function useProximityVoice(
         const t = (dist - VOICE_FULL_RANGE) / (VOICE_MAX_RANGE - VOICE_FULL_RANGE);
         vol = VOICE_GAIN * (1 - t * t);
       }
-      entry.gainNode.gain.value += (vol - entry.gainNode.gain.value) * 0.15;
+      // Hard zero beyond max range — no asymptotic leak
+      if (vol < VOICE_SILENCE_THRESHOLD) vol = 0;
+      // Smooth transition to avoid clicks, but snap to zero when target is zero
+      if (vol === 0) {
+        entry.gainNode.gain.value = 0;
+      } else {
+        entry.gainNode.gain.value += (vol - entry.gainNode.gain.value) * 0.2;
+      }
     }
   }, [playerPositionRef, remotePlayers]);
 
