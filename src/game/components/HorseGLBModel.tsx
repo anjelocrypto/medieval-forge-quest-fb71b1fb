@@ -1,12 +1,13 @@
 /**
- * HorseGLBModel — clean rebuild using exactly 2 GLBs:
- *   mainhorsestanding.glb → idle / standing
- *   mainhorsewalking.glb  → walking / moving
- *
- * Both scenes are cloned (SkeletonUtils) so multiple instances work.
- * Each is independently scaled to TARGET_HORSE_HEIGHT.
- * Visibility uses React state with hysteresis to prevent flicker.
- * Animation clips are cloned before binding to ensure correct bone mapping.
+ * HorseGLBModel — CLEAN REBUILD
+ * Uses exactly 2 GLBs: mainhorsestanding.glb + mainhorsewalking.glb
+ * 
+ * Architecture:
+ * - Both GLBs are loaded, cloned, scaled to same height, and ALWAYS in the scene tree
+ * - Visibility is toggled via group.visible (never unmount/remount)
+ * - Animation mixers are created once per clone lifetime
+ * - Hysteresis prevents flicker between stand/walk
+ * - Debug logging on first render to verify assets loaded correctly
  */
 import { useRef, useEffect, useMemo, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
@@ -24,27 +25,39 @@ interface Props {
 }
 
 const TARGET_HORSE_HEIGHT = 2.0;
-// Hysteresis thresholds to prevent flicker
 const WALK_START_THRESHOLD = 0.4;
 const WALK_STOP_THRESHOLD = 0.15;
 
 export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: Props) {
   const standGltf = useGLTF(horseStandUrl);
   const walkGltf = useGLTF(horseWalkUrl);
+  const loggedRef = useRef(false);
 
   // Clone scenes so each instance is independent
-  const standScene = useMemo(() => SkeletonUtils.clone(standGltf.scene), [standGltf.scene]);
-  const walkScene = useMemo(() => SkeletonUtils.clone(walkGltf.scene), [walkGltf.scene]);
+  const standScene = useMemo(() => {
+    const clone = SkeletonUtils.clone(standGltf.scene);
+    return clone;
+  }, [standGltf.scene]);
+
+  const walkScene = useMemo(() => {
+    const clone = SkeletonUtils.clone(walkGltf.scene);
+    return clone;
+  }, [walkGltf.scene]);
 
   const walkMixerRef = useRef<THREE.AnimationMixer | null>(null);
   const standMixerRef = useRef<THREE.AnimationMixer | null>(null);
+  const standGroupRef = useRef<THREE.Group>(null);
+  const walkGroupRef = useRef<THREE.Group>(null);
 
-  // Use React state for visibility (not refs) — ensures correct initial render
   const [isWalking, setIsWalking] = useState(false);
   const isWalkingRef = useRef(false);
 
-  // Compute independent scales and Y offsets for each model
-  const { standScale, walkScale, standYOffset, walkYOffset } = useMemo(() => {
+  // Compute independent scales so both models match TARGET_HORSE_HEIGHT
+  const metrics = useMemo(() => {
+    // Force update transforms before measuring
+    standScene.updateMatrixWorld(true);
+    walkScene.updateMatrixWorld(true);
+
     const standBox = new THREE.Box3().setFromObject(standScene);
     const standSize = new THREE.Vector3();
     standBox.getSize(standSize);
@@ -53,21 +66,31 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
     const walkSize = new THREE.Vector3();
     walkBox.getSize(walkSize);
 
-    const sScale = standSize.y > 0.01 ? TARGET_HORSE_HEIGHT / standSize.y : 1;
-    const wScale = walkSize.y > 0.01 ? TARGET_HORSE_HEIGHT / walkSize.y : 1;
+    const sScale = standSize.y > 0.001 ? TARGET_HORSE_HEIGHT / standSize.y : 1;
+    const wScale = walkSize.y > 0.001 ? TARGET_HORSE_HEIGHT / walkSize.y : 1;
 
-    return {
+    const result = {
       standScale: sScale,
       walkScale: wScale,
       standYOffset: -standBox.min.y * sScale,
       walkYOffset: -walkBox.min.y * wScale,
+      standSize: standSize.clone(),
+      walkSize: walkSize.clone(),
+      standMeshCount: 0,
+      walkMeshCount: 0,
     };
+
+    // Count meshes for debug
+    standScene.traverse(c => { if ((c as THREE.Mesh).isMesh) result.standMeshCount++; });
+    walkScene.traverse(c => { if ((c as THREE.Mesh).isMesh) result.walkMeshCount++; });
+
+    return result;
   }, [standScene, walkScene]);
 
-  const finalStandScale = standScale * scale;
-  const finalWalkScale = walkScale * scale;
+  const finalStandScale = metrics.standScale * scale;
+  const finalWalkScale = metrics.walkScale * scale;
 
-  // Setup materials + animation mixers (once per clone)
+  // Setup materials + animation mixers
   useEffect(() => {
     const fixMaterials = (scene: THREE.Object3D) => {
       scene.traverse((child) => {
@@ -76,15 +99,15 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
           mesh.frustumCulled = false;
           mesh.castShadow = true;
           mesh.receiveShadow = true;
-          const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-          for (const mat of mats) {
-            if (mat) {
-              mat.visible = true;
-              mat.side = THREE.DoubleSide;
-              if ((mat as THREE.MeshStandardMaterial).opacity !== undefined) {
-                (mat as THREE.MeshStandardMaterial).opacity = Math.max((mat as THREE.MeshStandardMaterial).opacity, 1);
-              }
-            }
+          if (Array.isArray(mesh.material)) {
+            mesh.material.forEach(m => {
+              if (m) { m.visible = true; m.side = THREE.DoubleSide; m.transparent = false; m.opacity = 1; }
+            });
+          } else if (mesh.material) {
+            mesh.material.visible = true;
+            mesh.material.side = THREE.DoubleSide;
+            (mesh.material as any).transparent = false;
+            (mesh.material as any).opacity = 1;
           }
         }
       });
@@ -98,7 +121,8 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
     standMixerRef.current = standMixer;
     if (standGltf.animations.length > 0) {
       for (const clip of standGltf.animations) {
-        const action = standMixer.clipAction(clip.clone());
+        const cloned = clip.clone();
+        const action = standMixer.clipAction(cloned);
         action.setLoop(THREE.LoopRepeat, Infinity);
         action.setEffectiveWeight(1);
         action.play();
@@ -110,11 +134,21 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
     walkMixerRef.current = walkMixer;
     if (walkGltf.animations.length > 0) {
       for (const clip of walkGltf.animations) {
-        const action = walkMixer.clipAction(clip.clone());
+        const cloned = clip.clone();
+        const action = walkMixer.clipAction(cloned);
         action.setLoop(THREE.LoopRepeat, Infinity);
         action.setEffectiveWeight(1);
         action.play();
       }
+    }
+
+    // Debug log once
+    if (!loggedRef.current) {
+      loggedRef.current = true;
+      console.log(`[HorseGLBModel:${renderPath}] LOADED`,
+        `stand: ${metrics.standMeshCount} meshes, size=${metrics.standSize.y.toFixed(2)}, scale=${metrics.standScale.toFixed(3)}, anims=${standGltf.animations.length}`,
+        `| walk: ${metrics.walkMeshCount} meshes, size=${metrics.walkSize.y.toFixed(2)}, scale=${metrics.walkScale.toFixed(3)}, anims=${walkGltf.animations.length}`
+      );
     }
 
     return () => {
@@ -125,20 +159,18 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
     };
   }, [standScene, walkScene, standGltf.animations, walkGltf.animations]);
 
-  // Frame update: tick mixers + hysteresis-based visibility switch
+  // Frame update: tick mixers + hysteresis toggle
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
     standMixerRef.current?.update(dt);
     walkMixerRef.current?.update(dt);
 
-    const speed = typeof moveSpeed === 'number' ? moveSpeed : (moveSpeed.current ?? 0);
+    const speed = typeof moveSpeed === 'number' ? moveSpeed : (moveSpeed?.current ?? 0);
 
     let wantWalk = isWalkingRef.current;
     if (isWalkingRef.current) {
-      // Currently walking — stop only below low threshold
       if (speed < WALK_STOP_THRESHOLD) wantWalk = false;
     } else {
-      // Currently standing — start only above high threshold
       if (speed > WALK_START_THRESHOLD) wantWalk = true;
     }
 
@@ -146,26 +178,26 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
       isWalkingRef.current = wantWalk;
       setIsWalking(wantWalk);
     }
+
+    // Direct visibility control via refs for immediate response
+    if (standGroupRef.current) standGroupRef.current.visible = !wantWalk;
+    if (walkGroupRef.current) walkGroupRef.current.visible = wantWalk;
   });
 
   return (
     <group>
-      {/* Standing model */}
-      <group visible={!isWalking} position={[0, standYOffset * scale, 0]}>
+      {/* Standing model — visible when not walking */}
+      <group ref={standGroupRef} visible={!isWalking} position={[0, metrics.standYOffset * scale, 0]}>
         <primitive
           object={standScene}
           scale={[finalStandScale, finalStandScale, finalStandScale]}
-          castShadow
-          receiveShadow
         />
       </group>
-      {/* Walking model */}
-      <group visible={isWalking} position={[0, walkYOffset * scale, 0]}>
+      {/* Walking model — visible when walking */}
+      <group ref={walkGroupRef} visible={isWalking} position={[0, metrics.walkYOffset * scale, 0]}>
         <primitive
           object={walkScene}
           scale={[finalWalkScale, finalWalkScale, finalWalkScale]}
-          castShadow
-          receiveShadow
         />
       </group>
     </group>

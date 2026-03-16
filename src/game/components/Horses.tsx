@@ -134,21 +134,26 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse, isMounted }: Pr
     }
   });
 
-  // Don't render if mounted
+  // Don't render if mounted — Player.tsx renders the horse inline
   if (horse.state === 'mounted' || isMounted) return null;
 
   // Cull if far from player — but never cull while horse is being called/approaching
   const playerPos = playerPositionRef.current;
-  if (playerPos && horse.state !== 'called' && horse.state !== 'approaching') {
+  if (playerPos && horse.state !== 'called' && horse.state !== 'approaching' && horse.state !== 'waiting') {
     const dx = playerPos.x - posRef.current[0];
     const dz = playerPos.z - posRef.current[2];
     if (dx * dx + dz * dz > 200 * 200) return null;
   }
 
   return (
-    <group ref={groupRef}>
-      <Suspense fallback={null}>
-        <HorseGLBModel moveSpeed={moveSpeedRef} renderPath="called-horse" />
+    <group ref={groupRef} position={[posRef.current[0], posRef.current[1], posRef.current[2]]}>
+      <Suspense fallback={
+        <mesh>
+          <boxGeometry args={[1, 2, 2]} />
+          <meshStandardMaterial color="brown" wireframe />
+        </mesh>
+      }>
+        <HorseGLBModel moveSpeed={moveSpeedRef} renderPath="world-horse" />
       </Suspense>
     </group>
   );
