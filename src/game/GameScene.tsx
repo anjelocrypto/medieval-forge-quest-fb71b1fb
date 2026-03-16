@@ -48,13 +48,15 @@ import { PerfBaselineR3F, PerfBaselineHUD } from './debug/PerfBaseline';
 import { WebGLRecovery } from './systems/WebGLRecovery';
 import { SceneDiagnosticsBoundary } from './debug/SceneDiagnostics';
 import { preloadRemoteCharacterModels } from './multiplayer/preloadRemoteModels';
+import { StartupReadiness } from './systems/StartupReadiness';
 
 interface GameSceneProps {
   multiplayer: ReturnType<typeof import('./multiplayer/useMultiplayer').useMultiplayer>;
   onLeaveWorld: () => void;
+  onSceneReady?: () => void;
 }
 
-export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
+export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameSceneProps) {
   const {
     survival, updateSurvival, inventory, addResource, eatFood,
     interactionText, setInteractionText,
@@ -338,6 +340,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
         }}>
 
         <WebGLRecovery />
+        {onSceneReady && <StartupReadiness onReady={onSceneReady} />}
         <PerfBaselineR3F />
         <InputFlusher />
         <SceneDiagnosticsBoundary>
