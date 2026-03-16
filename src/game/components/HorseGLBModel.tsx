@@ -28,6 +28,7 @@ interface Props {
 const TARGET_HORSE_HEIGHT = 2.0;
 const WALK_START_THRESHOLD = 0.4;
 const WALK_STOP_THRESHOLD = 0.15;
+const WALK_SCALE_COMPENSATION = 1.12; // boost walk pose to match standing visual mass
 
 export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: Props) {
   const standGltf = useGLTF(horseStandUrl);
@@ -40,6 +41,8 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
 
   const [isWalking, setIsWalking] = useState(false);
   const isWalkingRef = useRef(false);
+  const sceneRef = useRef<THREE.Group>(null);
+  const finalScaleRef = useRef(1);
 
   const metrics = useMemo(() => {
     horseScene.updateMatrixWorld(true);
@@ -74,6 +77,7 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
   }, [horseScene, standGltf.scene, walkGltf.scene, standGltf.animations, walkGltf.animations]);
 
   const finalScale = metrics.unifiedScale * scale;
+  finalScaleRef.current = finalScale;
 
   useEffect(() => {
     const mixer = new THREE.AnimationMixer(horseScene);
@@ -160,11 +164,22 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
     const walkWeight = wantWalk ? 1 : 0;
     if (idleActionRef.current) idleActionRef.current.setEffectiveWeight(idleWeight);
     if (walkActionRef.current) walkActionRef.current.setEffectiveWeight(walkWeight);
+
+    // Compensate for visual crouch in walk animation
+    if (sceneRef.current) {
+      const targetCompensation = wantWalk ? WALK_SCALE_COMPENSATION : 1;
+      const current = sceneRef.current.scale.x / finalScaleRef.current;
+      const smoothed = THREE.MathUtils.lerp(current, targetCompensation, 1 - Math.exp(-8 * dt));
+      const s = finalScaleRef.current * smoothed;
+      sceneRef.current.scale.set(s, s, s);
+    }
   });
 
   return (
     <group position={[0, metrics.yOffset * scale, 0]}>
-      <primitive object={horseScene} scale={[finalScale, finalScale, finalScale]} />
+      <group ref={sceneRef}>
+        <primitive object={horseScene} scale={[finalScale, finalScale, finalScale]} />
+      </group>
     </group>
   );
 }
