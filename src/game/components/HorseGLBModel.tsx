@@ -175,8 +175,10 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
     }
   });
 
+  const walkLift = isWalking ? WALK_Y_LIFT : 0;
+
   return (
-    <group position={[0, metrics.yOffset * scale, 0]}>
+    <group position={[0, metrics.yOffset * scale + walkLift, 0]}>
       <group ref={sceneRef}>
         <primitive object={horseScene} scale={[finalScale, finalScale, finalScale]} />
       </group>
