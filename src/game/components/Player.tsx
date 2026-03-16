@@ -551,6 +551,30 @@ export function Player({
       vel.y -= GRAVITY * dt;
     }
 
+    // === ENEMY PUSH-APART: prevent overlap pinning ===
+    // Push player away from nearby alive enemies so they can't stack and trap the player
+    const enemyHandle = enemiesHandleRef.current;
+    if (enemyHandle) {
+      const enemies = enemyHandle.getEnemies();
+      let pushAwayX = 0, pushAwayZ = 0;
+      const ENEMY_PUSH_RADIUS = 2.0; // start pushing when this close
+      const ENEMY_PUSH_FORCE = 8;    // units/sec push strength
+      enemies.forEach((e) => {
+        if (e.state === 'dead') return;
+        const edx = pos.x - e.position[0];
+        const edz = pos.z - e.position[2];
+        const eDist = Math.sqrt(edx * edx + edz * edz);
+        if (eDist < ENEMY_PUSH_RADIUS && eDist > 0.01) {
+          const overlap = 1 - eDist / ENEMY_PUSH_RADIUS; // 0..1
+          pushAwayX += (edx / eDist) * overlap * ENEMY_PUSH_FORCE * dt;
+          pushAwayZ += (edz / eDist) * overlap * ENEMY_PUSH_FORCE * dt;
+        }
+      });
+      // Apply push — this lets the player slide out of enemy clusters
+      pos.x += pushAwayX;
+      pos.z += pushAwayZ;
+    }
+
     // Apply horizontal movement
     pos.x += vel.x * dt;
     pos.z += vel.z * dt;
@@ -566,8 +590,9 @@ export function Player({
     if (Math.abs(pushX) > 0.001 || Math.abs(pushZ) > 0.001) {
       pos.x = resolved.x;
       pos.z = resolved.z;
-      if (pushX * vel.x < 0) vel.x *= 0.1;
-      if (pushZ * vel.z < 0) vel.z *= 0.1;
+      // Dampen velocity in push direction, but preserve at least 30% to allow escape
+      if (pushX * vel.x < 0) vel.x *= 0.3;
+      if (pushZ * vel.z < 0) vel.z *= 0.3;
     }
 
     // === GROUNDING — terrain height at FINAL resolved X/Z ===
