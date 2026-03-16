@@ -33,14 +33,57 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
   const walkGltf = useGLTF(horseWalkUrl);
   const loggedRef = useRef(false);
 
-  // Clone scenes so each instance is independent
+  // Nuclear fix for frustum culling: disable on EVERY node, not just meshes.
+  // Must run synchronously in useMemo so it's applied before the first render frame.
+  const fixSceneForRendering = (scene: THREE.Object3D) => {
+    scene.traverse((child) => {
+      // Disable frustum culling on EVERY object — groups, bones, meshes, everything
+      child.frustumCulled = false;
+
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+
+        // Force correct bounding sphere for skinned meshes
+        if ((mesh as THREE.SkinnedMesh).isSkinnedMesh) {
+          const skinned = mesh as THREE.SkinnedMesh;
+          skinned.geometry.computeBoundingSphere();
+          // Expand bounding sphere to prevent any edge-case culling
+          if (skinned.geometry.boundingSphere) {
+            skinned.geometry.boundingSphere.radius *= 10;
+          }
+        }
+
+        const fixMat = (m: THREE.Material) => {
+          m.visible = true;
+          m.side = THREE.DoubleSide;
+          (m as any).transparent = false;
+          (m as any).opacity = 1;
+          (m as any).depthWrite = true;
+          (m as any).depthTest = true;
+          (m as any).alphaTest = 0;
+        };
+
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach(m => { if (m) fixMat(m); });
+        } else if (mesh.material) {
+          fixMat(mesh.material);
+        }
+      }
+    });
+  };
+
+  // Clone scenes so each instance is independent — fix rendering SYNCHRONOUSLY
   const standScene = useMemo(() => {
     const clone = SkeletonUtils.clone(standGltf.scene);
+    fixSceneForRendering(clone);
     return clone;
   }, [standGltf.scene]);
 
   const walkScene = useMemo(() => {
     const clone = SkeletonUtils.clone(walkGltf.scene);
+    fixSceneForRendering(clone);
     return clone;
   }, [walkGltf.scene]);
 
@@ -90,32 +133,8 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
   const finalStandScale = metrics.standScale * scale;
   const finalWalkScale = metrics.walkScale * scale;
 
-  // Setup materials + animation mixers
+  // Setup animation mixers (materials already fixed synchronously in useMemo)
   useEffect(() => {
-    const fixMaterials = (scene: THREE.Object3D) => {
-      scene.traverse((child) => {
-        if ((child as THREE.Mesh).isMesh) {
-          const mesh = child as THREE.Mesh;
-          mesh.frustumCulled = false;
-          mesh.castShadow = true;
-          mesh.receiveShadow = true;
-          if (Array.isArray(mesh.material)) {
-            mesh.material.forEach(m => {
-              if (m) { m.visible = true; m.side = THREE.DoubleSide; m.transparent = false; m.opacity = 1; }
-            });
-          } else if (mesh.material) {
-            mesh.material.visible = true;
-            mesh.material.side = THREE.DoubleSide;
-            (mesh.material as any).transparent = false;
-            (mesh.material as any).opacity = 1;
-          }
-        }
-      });
-    };
-
-    fixMaterials(standScene);
-    fixMaterials(walkScene);
-
     // Stand mixer
     const standMixer = new THREE.AnimationMixer(standScene);
     standMixerRef.current = standMixer;
