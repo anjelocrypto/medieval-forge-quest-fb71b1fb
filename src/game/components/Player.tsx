@@ -857,7 +857,12 @@ export function Player({
         {/* ===== MOUNTED HORSE (GLB) ===== */}
         {isMounted && (
           <group position={[riderLean * 0.1, 0, 0]} rotation={[horsePitch, 0, 0]}>
-            <Suspense fallback={null}>
+            <Suspense fallback={
+              <mesh>
+                <boxGeometry args={[1, 2, 2]} />
+                <meshStandardMaterial color="brown" wireframe />
+              </mesh>
+            }>
               <HorseGLBModel moveSpeed={currentSpeedRef} renderPath="mounted-local" />
             </Suspense>
           </group>
