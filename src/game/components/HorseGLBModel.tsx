@@ -160,6 +160,15 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
     const walkWeight = wantWalk ? 1 : 0;
     if (idleActionRef.current) idleActionRef.current.setEffectiveWeight(idleWeight);
     if (walkActionRef.current) walkActionRef.current.setEffectiveWeight(walkWeight);
+
+    // Compensate for visual crouch in walk animation
+    if (sceneRef.current) {
+      const targetCompensation = wantWalk ? WALK_SCALE_COMPENSATION : 1;
+      const current = sceneRef.current.scale.x / finalScaleRef.current;
+      const smoothed = THREE.MathUtils.lerp(current, targetCompensation, 1 - Math.exp(-8 * dt));
+      const s = finalScaleRef.current * smoothed;
+      sceneRef.current.scale.set(s, s, s);
+    }
   });
 
   return (
