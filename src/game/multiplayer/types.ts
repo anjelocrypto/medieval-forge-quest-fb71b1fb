@@ -1,6 +1,7 @@
 // ===== Multiplayer Network Types =====
 // All interfaces for Supabase Realtime multiplayer sync
 
+// ===== Full state (internal representation — NOT sent on wire) =====
 export interface NetworkPlayerState {
   playerId: string;
   displayName: string;
@@ -27,22 +28,46 @@ export interface NetworkPlayerState {
   timestamp: number;
 }
 
-export interface ChatMessage {
-  id: string;
-  playerId: string;
-  displayName: string;
-  text: string;
-  timestamp: number;
-  type: 'chat' | 'emote' | 'system';
+// ===== Split wire formats for bandwidth optimization =====
+
+/** High-frequency position/movement payload — sent at MOVE_BROADCAST_MS */
+export interface MovePayload {
+  i: string;                      // playerId
+  p: [number, number, number];    // position
+  r: number;                      // rotation
+  s: number;                      // moveSpeed
+  n: boolean;                     // isRunning
+  g: boolean;                     // isGrounded
+  m: boolean;                     // isMounted
+  hp?: [number, number, number];  // horsePosition (only if mounted)
+  hr?: number;                    // horseRotation (only if mounted)
+  hP?: number;                    // horsePitch (only if mounted)
 }
 
-export interface WorldEvent {
-  type: 'building_placed' | 'building_removed' | 'resource_depleted' | 'loot_collected' | 'enemy_killed' | 'area_secured';
-  payload: Record<string, unknown>;
-  playerId: string;
-  timestamp: number;
+/** Low-frequency metadata payload — sent at META_BROADCAST_MS, only when changed */
+export interface MetaPayload {
+  i: string;       // playerId
+  dn: string;      // displayName
+  ct: string;      // characterType
+  h: number;       // health
+  mh: number;      // maxHealth
+  st: number;      // stamina
+  hu: number;      // hunger
+  tp: number;      // temperature
+  bm: boolean;     // buildMode
+  hs: string;      // horseState
+  em: string | null; // emote
+  sp: boolean;     // isSpeaking
 }
 
+/** Discrete action event — sent once per trigger, NOT spammed */
+export interface ActionPayload {
+  i: string;       // playerId
+  t: 'attack' | 'emote' | 'mount' | 'dismount';
+  d?: unknown;     // optional data (e.g. emote key, attack duration)
+}
+
+// ===== Internal interpolated representation =====
 export interface InterpolatedPlayer {
   playerId: string;
   displayName: string;
@@ -75,9 +100,35 @@ export interface InterpolatedPlayer {
   interpolationT: number;
 }
 
-export const BROADCAST_RATE_MS = 50; // 20 Hz state broadcast
+export interface ChatMessage {
+  id: string;
+  playerId: string;
+  displayName: string;
+  text: string;
+  timestamp: number;
+  type: 'chat' | 'emote' | 'system';
+}
+
+export interface WorldEvent {
+  type: 'building_placed' | 'building_removed' | 'resource_depleted' | 'loot_collected' | 'enemy_killed' | 'area_secured';
+  payload: Record<string, unknown>;
+  playerId: string;
+  timestamp: number;
+}
+
+// ===== Broadcast timing =====
+export const MOVE_BROADCAST_MS = 100;    // 10Hz — position/movement
+export const META_BROADCAST_MS = 500;    // 2Hz max — metadata (only on change)
+export const BROADCAST_RATE_MS = 100;    // legacy alias for interpolation math
 export const INTERPOLATION_DELAY_MS = 100; // smoothing buffer
 export const STALE_PLAYER_TIMEOUT_MS = 8000;
+
+// ===== Scalability constants =====
+export const MAX_VOICE_PEERS = 6;           // max simultaneous WebRTC peers
+export const LOD_FULL_DISTANCE = 60;        // full model with all animations
+export const LOD_MEDIUM_DISTANCE = 120;     // simplified capsule placeholder
+export const LOD_HIDDEN_DISTANCE = 200;     // not rendered at all
+export const FAR_PLAYER_THROTTLE_MS = 500;  // throttle far-player state processing
 
 export const EMOTES: Record<string, string> = {
   wave: '👋',

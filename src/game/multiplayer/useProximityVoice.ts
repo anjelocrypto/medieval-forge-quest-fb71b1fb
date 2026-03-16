@@ -8,24 +8,24 @@
  * - Uses Web Audio API GainNodes for distance-based attenuation.
  * - Push-to-talk on K key: mic track is muted/unmuted (not re-acquired).
  *
- * Reliability design:
- * - Peers are created immediately when remote players appear (no mic gate).
- * - Late mic acquisition adds tracks to all existing peers + renegotiates.
- * - ICE candidates are buffered until remote description is set.
- * - A voice_ready handshake ensures late joiners are discovered by existing peers.
- * - audioEl.play() is called explicitly to handle autoplay restrictions.
+ * Scalability:
+ * - MAX_VOICE_PEERS caps simultaneous WebRTC connections (default 6).
+ * - Only creates peers for the N closest players within hearing range.
+ * - Periodically prunes far-away peers to free resources.
  */
 
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import * as THREE from 'three';
+import { MAX_VOICE_PEERS } from './types';
 
 // ─── Config ───
-const VOICE_MAX_RANGE = 40;         // world units — completely silent beyond
-const VOICE_FULL_RANGE = 15;        // world units — full volume inside
-const VOICE_GAIN = 1.6;             // master gain multiplier
-const VOICE_SILENCE_THRESHOLD = 0.005; // below this gain → hard zero
+const VOICE_MAX_RANGE = 40;
+const VOICE_FULL_RANGE = 15;
+const VOICE_GAIN = 1.6;
+const VOICE_SILENCE_THRESHOLD = 0.005;
 const VOICE_INIT_DELAY_MS = 3000;
+const VOICE_PEER_SYNC_MS = 2000; // how often to re-evaluate peer set
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
@@ -92,7 +92,7 @@ export function useProximityVoice(
     return audioCtxRef.current;
   }, []);
 
-  // ─── Destroy peer (defined early for use in createPeer) ───
+  // ─── Destroy peer ───
   const destroyPeer = useCallback((remoteId: string) => {
     const entry = peersRef.current.get(remoteId);
     if (!entry) return;
@@ -115,29 +115,25 @@ export function useProximityVoice(
       return;
     }
 
-    // If peer already exists and is not failed, skip
     const existing = peersRef.current.get(remoteId);
     if (existing) {
       const state = existing.pc.connectionState;
       if (state !== 'failed' && state !== 'closed') return;
-      // Clean up failed peer before recreating
       destroyPeer(remoteId);
     }
 
     voiceLog('createPeer', { remoteId: remoteId.slice(0, 8), initiator });
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
 
-    // Add local tracks if available (may not be yet — that's OK, we'll add later)
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => {
         pc.addTrack(track, localStreamRef.current!);
       });
     }
 
-    // Audio element for remote stream
     const audioEl = document.createElement('audio');
     audioEl.autoplay = true;
-    audioEl.volume = 0; // We route through Web Audio API gain
+    audioEl.volume = 0;
 
     const ctx = getAudioCtx();
     const gainNode = ctx.createGain();
@@ -157,22 +153,18 @@ export function useProximityVoice(
       const stream = ev.streams[0] || new MediaStream([ev.track]);
       audioEl.srcObject = stream;
 
-      // Create Web Audio source node — audio MUST go through gain node
       if (!entry.sourceNode) {
         try {
           entry.sourceNode = ctx.createMediaElementSource(audioEl);
           entry.sourceNode.connect(gainNode);
-          // Only set volume=1 if source node succeeded (audio routes through gain)
           audioEl.volume = 1;
           voiceLog('audio routed through gain node', { from: remoteId.slice(0, 8) });
         } catch {
-          // If MediaElementSource fails, keep volume=0 to prevent uncontrolled audio leakage
           audioEl.volume = 0;
-          voiceLog('MediaElementSource failed — audio muted to prevent leakage', { from: remoteId.slice(0, 8) });
+          voiceLog('MediaElementSource failed — audio muted', { from: remoteId.slice(0, 8) });
         }
       }
 
-      // Explicitly play to handle autoplay restrictions
       audioEl.play().catch(err => {
         voiceLog('audioEl.play() blocked', { err: err.message });
       });
@@ -181,8 +173,7 @@ export function useProximityVoice(
     pc.onicecandidate = (ev) => {
       if (ev.candidate) {
         channel.send({
-          type: 'broadcast',
-          event: 'voice_ice',
+          type: 'broadcast', event: 'voice_ice',
           payload: { from: playerId, to: remoteId, candidate: ev.candidate.toJSON() },
         });
       }
@@ -193,7 +184,6 @@ export function useProximityVoice(
       voiceLog('peerState', { remote: remoteId.slice(0, 8), state });
 
       if (state === 'failed') {
-        // Retry logic
         const peerEntry = peersRef.current.get(remoteId);
         if (peerEntry && peerEntry.retryCount < PEER_RETRY_MAX) {
           const retryCount = peerEntry.retryCount + 1;
@@ -203,7 +193,6 @@ export function useProximityVoice(
             if (connectedRef.current && remotePlayers.has(remoteId)) {
               const newInitiator = playerId > remoteId;
               createPeer(remoteId, newInitiator);
-              // Track retry count on new entry
               const newEntry = peersRef.current.get(remoteId);
               if (newEntry) newEntry.retryCount = retryCount;
             }
@@ -218,15 +207,13 @@ export function useProximityVoice(
 
     peersRef.current.set(remoteId, entry);
 
-    // Initiate if we're the initiator (deterministic: alphabetically higher ID)
     if (initiator) {
       (async () => {
         try {
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
           channel.send({
-            type: 'broadcast',
-            event: 'voice_offer',
+            type: 'broadcast', event: 'voice_offer',
             payload: { from: playerId, to: remoteId, sdp: offer },
           });
           voiceLog('offer sent', { to: remoteId.slice(0, 8) });
@@ -255,7 +242,7 @@ export function useProximityVoice(
     }
   }, []);
 
-  // ─── Add tracks to all existing peers (after late mic acquisition) ───
+  // ─── Add tracks to all existing peers ───
   const addTracksToAllPeers = useCallback(async () => {
     const stream = localStreamRef.current;
     if (!stream) return;
@@ -270,7 +257,6 @@ export function useProximityVoice(
         entry.pc.addTrack(track, stream);
       });
 
-      // Renegotiate if we're the initiator
       const channel = channelRef.current;
       if (!channel) continue;
       const initiator = playerId > remoteId;
@@ -279,8 +265,7 @@ export function useProximityVoice(
           const offer = await entry.pc.createOffer();
           await entry.pc.setLocalDescription(offer);
           channel.send({
-            type: 'broadcast',
-            event: 'voice_offer',
+            type: 'broadcast', event: 'voice_offer',
             payload: { from: playerId, to: remoteId, sdp: offer },
           });
           voiceLog('renegotiation offer sent', { to: remoteId.slice(0, 8) });
@@ -300,19 +285,15 @@ export function useProximityVoice(
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
       localStreamRef.current = stream;
-      // Start muted — only unmute on push-to-talk
       stream.getAudioTracks().forEach(t => { t.enabled = false; });
       micReadyRef.current = true;
       setMicPermission('granted');
       voiceLog('mic acquired');
 
-      // KEY FIX: Add tracks to all already-created peers and renegotiate
       await addTracksToAllPeers();
 
-      // Broadcast voice_ready so existing peers know we can receive
       channelRef.current?.send({
-        type: 'broadcast',
-        event: 'voice_ready',
+        type: 'broadcast', event: 'voice_ready',
         payload: { playerId },
       });
 
@@ -336,7 +317,6 @@ export function useProximityVoice(
       if (payload.to !== playerId) return;
       voiceLog('received offer', { from: payload.from.slice(0, 8) });
 
-      // Create peer if needed (non-initiator side)
       if (!peersRef.current.has(payload.from)) {
         createPeer(payload.from, false);
       }
@@ -344,12 +324,10 @@ export function useProximityVoice(
       if (!entry) return;
 
       try {
-        // Handle renegotiation: if we already have a remote desc, handle gracefully
         const signalingState = entry.pc.signalingState;
         if (signalingState === 'stable') {
           await entry.pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
         } else if (signalingState === 'have-local-offer') {
-          // Glare: both sides sent offers. Lower ID rolls back.
           if (playerId < payload.from) {
             voiceLog('glare: rolling back', { signalingState });
             await entry.pc.setLocalDescription({ type: 'rollback' } as any);
@@ -368,8 +346,7 @@ export function useProximityVoice(
         const answer = await entry.pc.createAnswer();
         await entry.pc.setLocalDescription(answer);
         channel.send({
-          type: 'broadcast',
-          event: 'voice_answer',
+          type: 'broadcast', event: 'voice_answer',
           payload: { from: playerId, to: payload.from, sdp: answer },
         });
         voiceLog('answer sent', { to: payload.from.slice(0, 8) });
@@ -396,13 +373,11 @@ export function useProximityVoice(
       if (payload.to !== playerId) return;
       const entry = peersRef.current.get(payload.from);
       if (!entry) {
-        voiceLog('ICE for unknown peer (buffering)', { from: payload.from.slice(0, 8) });
-        // Can't buffer without a peer entry — will be handled when peer is created
+        voiceLog('ICE for unknown peer', { from: payload.from.slice(0, 8) });
         return;
       }
 
       if (!entry.hasRemoteDesc) {
-        // Buffer until remote description is set
         entry.iceCandidateBuffer.push(payload.candidate);
         voiceLog('ICE buffered', { from: payload.from.slice(0, 8), buffered: entry.iceCandidateBuffer.length });
         return;
@@ -425,7 +400,6 @@ export function useProximityVoice(
       });
     };
 
-    // When a remote player announces voice_ready, create peer if needed
     const handleVoiceReady = ({ payload }: any) => {
       if (payload.playerId === playerId) return;
       voiceLog('voice_ready received', { from: payload.playerId.slice(0, 8) });
@@ -433,12 +407,6 @@ export function useProximityVoice(
       if (!peersRef.current.has(payload.playerId)) {
         const initiator = playerId > payload.playerId;
         createPeer(payload.playerId, initiator);
-      } else {
-        // Peer exists but may need renegotiation if they just got their mic
-        const entry = peersRef.current.get(payload.playerId);
-        if (entry && entry.pc.connectionState === 'connected') {
-          voiceLog('peer already connected, voice_ready is informational');
-        }
       }
     };
 
@@ -449,24 +417,42 @@ export function useProximityVoice(
     channel.on('broadcast', { event: 'voice_ready' }, handleVoiceReady);
   }, [playerId, createPeer, flushIceBuffer]);
 
-  // ─── Sync peers when remote players change ───
-  // KEY FIX: No micReadyRef gate — peers are created regardless of mic state.
-  // Receiving audio does NOT require having a mic.
-  const remotePlayerCount = remotePlayers.size;
-  const syncPeers = useCallback(() => {
+  // ─── Distance-based peer lifecycle management ───
+  // Only maintain peers for the closest N players within hearing range.
+  const syncPeersProximity = useCallback(() => {
     if (!connected) return;
+    const localPos = playerPositionRef.current;
 
-    // Create peers for new remote players
-    for (const [remoteId] of remotePlayers) {
-      if (!peersRef.current.has(remoteId)) {
-        const initiator = playerId > remoteId;
-        createPeer(remoteId, initiator);
+    // Build sorted list of nearby remote players
+    const candidates: { id: string; dist: number }[] = [];
+    for (const [remoteId, rp] of remotePlayers) {
+      let dist = Infinity;
+      if (localPos) {
+        const dx = localPos.x - rp.targetPosition[0];
+        const dz = localPos.z - rp.targetPosition[2];
+        dist = Math.sqrt(dx * dx + dz * dz);
+      }
+      if (dist <= VOICE_MAX_RANGE) {
+        candidates.push({ id: remoteId, dist });
       }
     }
 
-    // Remove peers for players that left
+    // Sort by distance, take closest MAX_VOICE_PEERS
+    candidates.sort((a, b) => a.dist - b.dist);
+    const allowedPeers = new Set(candidates.slice(0, MAX_VOICE_PEERS).map(c => c.id));
+
+    // Create peers for allowed nearby players
+    for (const id of allowedPeers) {
+      if (!peersRef.current.has(id)) {
+        const initiator = playerId > id;
+        createPeer(id, initiator);
+      }
+    }
+
+    // Destroy peers that are no longer in allowed set
     for (const [peerId] of peersRef.current) {
-      if (!remotePlayers.has(peerId)) {
+      if (!allowedPeers.has(peerId)) {
+        voiceLog('proximity prune peer', { peerId: peerId.slice(0, 8) });
         destroyPeer(peerId);
         setSpeakingPeers(prev => {
           const next = new Set(prev);
@@ -475,7 +461,7 @@ export function useProximityVoice(
         });
       }
     }
-  }, [connected, remotePlayerCount, remotePlayers, playerId, createPeer, destroyPeer]);
+  }, [connected, remotePlayers, playerId, createPeer, destroyPeer, playerPositionRef]);
 
   // ─── Start talking (K down) ───
   const startTalking = useCallback(async () => {
@@ -490,8 +476,7 @@ export function useProximityVoice(
     localStreamRef.current?.getAudioTracks().forEach(t => { t.enabled = true; });
 
     channelRef.current?.send({
-      type: 'broadcast',
-      event: 'voice_speaking',
+      type: 'broadcast', event: 'voice_speaking',
       payload: { playerId, speaking: true },
     });
     voiceLog('transmitting');
@@ -505,8 +490,7 @@ export function useProximityVoice(
     localStreamRef.current?.getAudioTracks().forEach(t => { t.enabled = false; });
 
     channelRef.current?.send({
-      type: 'broadcast',
-      event: 'voice_speaking',
+      type: 'broadcast', event: 'voice_speaking',
       payload: { playerId, speaking: false },
     });
   }, [playerId]);
@@ -533,9 +517,7 @@ export function useProximityVoice(
         const t = (dist - VOICE_FULL_RANGE) / (VOICE_MAX_RANGE - VOICE_FULL_RANGE);
         vol = VOICE_GAIN * (1 - t * t);
       }
-      // Hard zero beyond max range — no asymptotic leak
       if (vol < VOICE_SILENCE_THRESHOLD) vol = 0;
-      // Smooth transition to avoid clicks, but snap to zero when target is zero
       if (vol === 0) {
         entry.gainNode.gain.value = 0;
       } else {
@@ -577,10 +559,15 @@ export function useProximityVoice(
     }
   }, [connected, setupSignaling]);
 
-  // ─── Sync peers on remote player changes ───
+  // ─── Proximity-based peer sync (replaces old syncPeers) ───
   useEffect(() => {
-    syncPeers();
-  }, [syncPeers]);
+    if (!connected) return;
+    // Initial sync
+    syncPeersProximity();
+    // Periodic re-evaluation
+    const interval = setInterval(syncPeersProximity, VOICE_PEER_SYNC_MS);
+    return () => clearInterval(interval);
+  }, [connected, syncPeersProximity]);
 
   // ─── Proximity gain update loop ───
   useEffect(() => {
@@ -603,7 +590,6 @@ export function useProximityVoice(
       }
       micReadyRef.current = false;
       signalingSetupRef.current = false;
-      // Reset log counts
       for (const k of Object.keys(vLog)) delete vLog[k];
     };
   }, [destroyPeer]);
@@ -625,7 +611,7 @@ export function useProximityVoice(
     }
   }, [connected, acquireMic, micPermission]);
 
-  // ─── Resume AudioContext on first user interaction (autoplay policy) ───
+  // ─── Resume AudioContext on first user interaction ───
   useEffect(() => {
     if (!connected) return;
     const resume = () => {

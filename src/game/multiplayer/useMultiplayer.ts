@@ -4,20 +4,19 @@ import { resetSpawnIndex } from '../systems/SafeSpawn';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import {
   NetworkPlayerState, InterpolatedPlayer, ChatMessage, WorldEvent,
-  BROADCAST_RATE_MS, STALE_PLAYER_TIMEOUT_MS,
+  MovePayload, MetaPayload, ActionPayload,
+  MOVE_BROADCAST_MS, META_BROADCAST_MS, STALE_PLAYER_TIMEOUT_MS,
 } from './types';
 
 // Global world configuration
 const GLOBAL_WORLD_KEY = 'global_world_1';
 const SESSION_KEY = 'global_world_session';
-
-// Single unified timeout for all subscribe paths (fresh + reconnect)
 const SUBSCRIBE_TIMEOUT_MS = 10_000;
 const REMOTE_PLAYERS_COMMIT_MS = 100;
 
 // ===== MP-Audit rate-limited logger =====
 const auditLogCounts: Record<string, number> = {};
-const AUDIT_LOG_LIMIT = 5; // only log first N per label per session
+const AUDIT_LOG_LIMIT = 5;
 
 function mpAudit(label: string, data?: Record<string, unknown>) {
   const count = auditLogCounts[label] ?? 0;
@@ -40,13 +39,9 @@ interface StartupTimings {
 
 function createTimings(): StartupTimings {
   return {
-    enterWorldClicked: 0,
-    connectStart: 0,
-    channelCreated: 0,
-    channelSubscribed: 0,
-    presenceTrackSent: 0,
-    firstRemoteReceived: 0,
-    gameplayReady: 0,
+    enterWorldClicked: 0, connectStart: 0, channelCreated: 0,
+    channelSubscribed: 0, presenceTrackSent: 0,
+    firstRemoteReceived: 0, gameplayReady: 0,
   };
 }
 
@@ -81,9 +76,7 @@ function loadSession(): { displayName: string } | null {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 function clearSession() {
@@ -102,6 +95,54 @@ export interface MultiplayerState {
   worldEvents: WorldEvent[];
 }
 
+// ===== Meta change detection =====
+interface SentMeta {
+  displayName: string;
+  characterType: string;
+  health: number;
+  maxHealth: number;
+  stamina: number;
+  hunger: number;
+  temperature: number;
+  buildMode: boolean;
+  horseState: string;
+  emote: string | null;
+  isSpeaking: boolean;
+}
+
+function metaChanged(prev: SentMeta | null, state: NetworkPlayerState): boolean {
+  if (!prev) return true;
+  return (
+    prev.displayName !== state.displayName ||
+    prev.characterType !== state.characterType ||
+    Math.abs(prev.health - state.health) > 0.5 ||
+    prev.maxHealth !== state.maxHealth ||
+    Math.abs(prev.stamina - state.stamina) > 2 ||
+    Math.abs(prev.hunger - state.hunger) > 2 ||
+    Math.abs(prev.temperature - state.temperature) > 2 ||
+    prev.buildMode !== state.buildMode ||
+    prev.horseState !== state.horseState ||
+    prev.emote !== state.emote ||
+    prev.isSpeaking !== state.isSpeaking
+  );
+}
+
+function extractSentMeta(state: NetworkPlayerState): SentMeta {
+  return {
+    displayName: state.displayName,
+    characterType: state.characterType,
+    health: state.health,
+    maxHealth: state.maxHealth,
+    stamina: state.stamina,
+    hunger: state.hunger,
+    temperature: state.temperature,
+    buildMode: state.buildMode,
+    horseState: state.horseState,
+    emote: state.emote,
+    isSpeaking: state.isSpeaking,
+  };
+}
+
 export function useMultiplayer() {
   const playerId = useRef(getOrCreatePlayerId()).current;
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
@@ -112,8 +153,10 @@ export function useMultiplayer() {
   const remotePlayersRef = useRef<Map<string, InterpolatedPlayer>>(new Map());
   const remotePlayersCommitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
-  const broadcastTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const moveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const metaTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const localStateRef = useRef<NetworkPlayerState | null>(null);
+  const lastSentMetaRef = useRef<SentMeta | null>(null);
   const staleCleanupRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timingsRef = useRef<StartupTimings>(createTimings());
   const firstRemoteReceivedRef = useRef(false);
@@ -130,7 +173,6 @@ export function useMultiplayer() {
       setRemotePlayersVersion((v) => v + 1);
       return;
     }
-
     if (remotePlayersCommitTimerRef.current) return;
     remotePlayersCommitTimerRef.current = setTimeout(() => {
       remotePlayersCommitTimerRef.current = null;
@@ -138,7 +180,6 @@ export function useMultiplayer() {
     }, REMOTE_PLAYERS_COMMIT_MS);
   }, []);
 
-  // Update display name
   const updateDisplayName = useCallback((name: string) => {
     const trimmed = name.trim().slice(0, 20) || 'Knight';
     setDisplayName(trimmed);
@@ -146,18 +187,17 @@ export function useMultiplayer() {
   }, []);
 
   // ===== Canonical cleanup helper =====
-  // One function for ALL cleanup paths: leaveWorld, unmount, timeout, error, reconnect pre-cleanup.
   const fullCleanup = useCallback(async (channel: RealtimeChannel | null) => {
-    // 1. Clear timers
-    if (broadcastTimerRef.current) { clearInterval(broadcastTimerRef.current); broadcastTimerRef.current = null; }
+    if (moveTimerRef.current) { clearInterval(moveTimerRef.current); moveTimerRef.current = null; }
+    if (metaTimerRef.current) { clearInterval(metaTimerRef.current); metaTimerRef.current = null; }
     if (staleCleanupRef.current) { clearInterval(staleCleanupRef.current); staleCleanupRef.current = null; }
     if (remotePlayersCommitTimerRef.current) {
       clearTimeout(remotePlayersCommitTimerRef.current);
       remotePlayersCommitTimerRef.current = null;
     }
     initialStateSentRef.current = false;
+    lastSentMetaRef.current = null;
 
-    // 2. Unsubscribe + remove from Supabase SDK registry
     if (channel) {
       try {
         await supabase.removeChannel(channel);
@@ -167,19 +207,52 @@ export function useMultiplayer() {
       }
     }
 
-    // 3. Null the ref (if it was the active channel)
     if (channelRef.current === channel || channel === null) {
       channelRef.current = null;
     }
   }, []);
 
+  // ===== Helper: ensure/create InterpolatedPlayer entry =====
+  function ensurePlayer(players: Map<string, InterpolatedPlayer>, id: string): InterpolatedPlayer {
+    let p = players.get(id);
+    if (!p) {
+      p = {
+        playerId: id,
+        displayName: 'Knight',
+        characterType: 'goblin',
+        prevPosition: [0, 0, 82],
+        targetPosition: [0, 0, 82],
+        prevRotation: 0,
+        targetRotation: 0,
+        renderPosition: [0, 0, 82],
+        renderRotation: 0,
+        moveSpeed: 0,
+        isRunning: false,
+        isGrounded: true,
+        isMounted: false,
+        health: 100,
+        maxHealth: 100,
+        attackAnim: 0,
+        buildMode: false,
+        horsePitch: 0,
+        horsePosition: [0, 0, 0],
+        horseRotation: 0,
+        horseState: 'idle',
+        emote: null,
+        isSpeaking: false,
+        lastUpdateTime: Date.now(),
+        interpolationT: 0,
+      };
+      players.set(id, p);
+    }
+    return p;
+  }
+
   // ===== Internal: subscribe to global world channel =====
   const subscribeToGlobalWorld = useCallback(async (playerName: string): Promise<boolean> => {
     const timings = timingsRef.current;
-
     mpAudit('subscribeToGlobalWorld start', { playerId });
 
-    // Cleanup any existing channel using canonical helper
     const oldChannel = channelRef.current;
     channelRef.current = null;
     if (oldChannel) {
@@ -190,6 +263,7 @@ export function useMultiplayer() {
     remotePlayersRef.current = new Map();
     scheduleRemotePlayersCommit(true);
     initialStateSentRef.current = false;
+    lastSentMetaRef.current = null;
 
     logTiming('Channel creating', timings, 'connectStart');
 
@@ -200,88 +274,78 @@ export function useMultiplayer() {
     logTiming('Channel created', timings, 'channelCreated');
     mpAudit('channel created', { topic: `world:${GLOBAL_WORLD_KEY}` });
 
-    // Player state broadcast handler
-    channel.on('broadcast', { event: 'player_state' }, ({ payload }: { payload: NetworkPlayerState }) => {
-      if (payload.playerId === playerId) return;
+    // ===== HIGH-FREQ: position/movement =====
+    channel.on('broadcast', { event: 'pm' }, ({ payload }: { payload: MovePayload }) => {
+      if (payload.i === playerId) return;
 
-      mpAudit('player_state received', {
-        from: payload.playerId,
-        localId: playerId,
-        charType: payload.characterType,
-        pos: payload.position,
-      });
-
-      // Log first remote player received
       if (!firstRemoteReceivedRef.current) {
         firstRemoteReceivedRef.current = true;
         logTiming('First remote player received', timingsRef.current, 'firstRemoteReceived');
       }
 
       const players = remotePlayersRef.current;
-      const existing = players.get(payload.playerId);
+      const existing = players.get(payload.i);
       const now = Date.now();
+      const isNew = !existing;
 
-      if (existing) {
-        const requiresImmediateCommit =
-          existing.isMounted !== payload.isMounted ||
-          existing.characterType !== (payload.characterType || 'goblin') ||
-          existing.displayName !== payload.displayName;
+      const p = ensurePlayer(players, payload.i);
+      p.prevPosition = [...p.targetPosition] as [number, number, number];
+      p.targetPosition = payload.p;
+      p.prevRotation = p.targetRotation;
+      p.targetRotation = payload.r;
+      p.moveSpeed = payload.s;
+      p.isRunning = payload.n;
+      p.isGrounded = payload.g;
 
-        existing.prevPosition = [...existing.targetPosition] as [number, number, number];
-        existing.targetPosition = payload.position;
-        existing.prevRotation = existing.targetRotation;
-        existing.targetRotation = payload.rotation;
-        existing.moveSpeed = payload.moveSpeed;
-        existing.isRunning = payload.isRunning;
-        existing.isGrounded = payload.isGrounded ?? true;
-        existing.isMounted = payload.isMounted;
-        existing.health = payload.health;
-        existing.maxHealth = payload.maxHealth;
-        existing.attackAnim = payload.attackAnim;
-        existing.buildMode = payload.buildMode;
-        existing.horsePitch = payload.horsePitch;
-        existing.horsePosition = payload.horsePosition;
-        existing.horseRotation = payload.horseRotation;
-        existing.horseState = payload.horseState;
-        existing.emote = payload.emote;
-        existing.isSpeaking = payload.isSpeaking;
-        existing.lastUpdateTime = now;
-        existing.interpolationT = 0;
-        existing.displayName = payload.displayName;
-        existing.characterType = payload.characterType || 'goblin';
-
-        scheduleRemotePlayersCommit(requiresImmediateCommit);
-      } else {
-        players.set(payload.playerId, {
-          playerId: payload.playerId,
-          displayName: payload.displayName,
-          characterType: payload.characterType || 'goblin',
-          prevPosition: payload.position,
-          targetPosition: payload.position,
-          prevRotation: payload.rotation,
-          targetRotation: payload.rotation,
-          renderPosition: payload.position,
-          renderRotation: payload.rotation,
-          moveSpeed: payload.moveSpeed,
-          isRunning: payload.isRunning,
-          isGrounded: payload.isGrounded ?? true,
-          isMounted: payload.isMounted,
-          health: payload.health,
-          maxHealth: payload.maxHealth,
-          attackAnim: payload.attackAnim,
-          buildMode: payload.buildMode,
-          horsePitch: payload.horsePitch,
-          horsePosition: payload.horsePosition,
-          horseRotation: payload.horseRotation,
-          horseState: payload.horseState,
-          emote: payload.emote,
-          isSpeaking: payload.isSpeaking,
-          lastUpdateTime: now,
-          interpolationT: 0,
-        });
-        mpAudit('remotePlayers size after insert', { size: players.size });
-        scheduleRemotePlayersCommit(true);
+      const wasMounted = p.isMounted;
+      p.isMounted = payload.m;
+      if (payload.m && payload.hp) {
+        p.horsePosition = payload.hp;
+        p.horseRotation = payload.hr ?? 0;
+        p.horsePitch = payload.hP ?? 0;
       }
+
+      p.lastUpdateTime = now;
+      p.interpolationT = 0;
+
+      scheduleRemotePlayersCommit(isNew || wasMounted !== payload.m);
+    });
+
+    // ===== LOW-FREQ: metadata =====
+    channel.on('broadcast', { event: 'pme' }, ({ payload }: { payload: MetaPayload }) => {
+      if (payload.i === playerId) return;
+
+      const players = remotePlayersRef.current;
+      const isNew = !players.has(payload.i);
+      const p = ensurePlayer(players, payload.i);
+
+      const charChanged = p.characterType !== (payload.ct || 'goblin');
+      const nameChanged = p.displayName !== payload.dn;
+
+      p.displayName = payload.dn;
+      p.characterType = (payload.ct || 'goblin') as any;
+      p.health = payload.h;
+      p.maxHealth = payload.mh;
+      p.buildMode = payload.bm;
+      p.horseState = payload.hs;
+      p.emote = payload.em;
+      p.isSpeaking = payload.sp;
+      p.lastUpdateTime = Date.now();
+
+      scheduleRemotePlayersCommit(isNew || charChanged || nameChanged);
+    });
+
+    // ===== EVENT: discrete actions =====
+    channel.on('broadcast', { event: 'pa' }, ({ payload }: { payload: ActionPayload }) => {
+      if (payload.i === playerId) return;
+      const p = remotePlayersRef.current.get(payload.i);
+      if (!p) return;
+
+      if (payload.t === 'attack') {
+        p.attackAnim = typeof payload.d === 'number' ? payload.d : 0.4;
+      }
+
+      scheduleRemotePlayersCommit();
     });
 
     // Chat messages
@@ -294,30 +358,26 @@ export function useMultiplayer() {
       setWorldEvents(prev => [...prev.slice(-49), payload]);
     });
 
-    // Presence tracking — leave
+    // Presence — leave
     channel.on('presence', { event: 'leave' }, ({ key }: { key: string }) => {
       mpAudit('presence leave removed', { key });
       if (remotePlayersRef.current.delete(key)) {
         scheduleRemotePlayersCommit(true);
       }
       setChatMessages(prev => [...prev, {
-        id: crypto.randomUUID(),
-        playerId: 'system',
-        displayName: 'System',
-        text: 'A player has left the world.',
-        timestamp: Date.now(),
-        type: 'system',
+        id: crypto.randomUUID(), playerId: 'system', displayName: 'System',
+        text: 'A player has left the world.', timestamp: Date.now(), type: 'system',
       }]);
     });
 
-    // Subscribe with single unified timeout
+    // Subscribe with timeout
     return new Promise<boolean>((resolve) => {
       let resolved = false;
 
       const timeoutId = setTimeout(async () => {
         if (resolved) return;
         resolved = true;
-        console.error(`[MP-Startup] SUBSCRIBE TIMEOUT after ${SUBSCRIBE_TIMEOUT_MS}ms — channel never reached SUBSCRIBED`);
+        console.error(`[MP-Startup] SUBSCRIBE TIMEOUT after ${SUBSCRIBE_TIMEOUT_MS}ms`);
         await fullCleanup(channel);
         setConnectionStatus('disconnected');
         resolve(false);
@@ -331,10 +391,7 @@ export function useMultiplayer() {
           clearTimeout(timeoutId);
 
           logTiming('Channel subscribed', timings, 'channelSubscribed');
-          mpAudit('channel subscribe success');
-
           channelRef.current = channel;
-          mpAudit('channelRef assigned', { nonNull: true });
 
           await channel.track({ playerId, displayName: playerName, joinedAt: Date.now() });
           logTiming('Presence track sent', timings, 'presenceTrackSent');
@@ -342,29 +399,17 @@ export function useMultiplayer() {
           console.log('[Multiplayer] Connected successfully, status → connected');
           setConnectionStatus('connected');
 
-          // Mark gameplay ready
           logTiming('Gameplay ready', timings, 'gameplayReady');
           const totalMs = timings.gameplayReady - timings.enterWorldClicked;
           console.log(`[MP-Startup] TOTAL STARTUP: ${totalMs}ms`);
 
           setChatMessages(prev => [...prev, {
-            id: crypto.randomUUID(),
-            playerId: 'system',
-            displayName: 'System',
-            text: 'You joined the world.',
-            timestamp: Date.now(),
-            type: 'system',
+            id: crypto.randomUUID(), playerId: 'system', displayName: 'System',
+            text: 'You joined the world.', timestamp: Date.now(), type: 'system',
           }]);
 
-          if (localStateRef.current && channelRef.current && !initialStateSentRef.current) {
-            initialStateSentRef.current = true;
-            mpAudit('initial player_state sent on subscribe');
-            channelRef.current.send({
-              type: 'broadcast',
-              event: 'player_state',
-              payload: localStateRef.current,
-            });
-          }
+          // Send initial full state immediately
+          sendInitialState();
 
           resolve(true);
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
@@ -378,23 +423,62 @@ export function useMultiplayer() {
         }
       });
 
-      // Start broadcast timer (non-blocking — sends only when channelRef is set)
-      if (broadcastTimerRef.current) clearInterval(broadcastTimerRef.current);
-      broadcastTimerRef.current = setInterval(() => {
-        if (localStateRef.current && channelRef.current) {
-          mpAudit('player_state send', {
-            playerId: localStateRef.current.playerId,
-            charType: localStateRef.current.characterType,
-            pos: localStateRef.current.position,
-          });
-          channelRef.current.send({
-            type: 'broadcast',
-            event: 'player_state',
-            payload: localStateRef.current,
-          });
+      // ===== HIGH-FREQ broadcast timer (movement) =====
+      if (moveTimerRef.current) clearInterval(moveTimerRef.current);
+      moveTimerRef.current = setInterval(() => {
+        const state = localStateRef.current;
+        const ch = channelRef.current;
+        if (!state || !ch) return;
+
+        const payload: MovePayload = {
+          i: state.playerId,
+          p: state.position,
+          r: state.rotation,
+          s: state.moveSpeed,
+          n: state.isRunning,
+          g: state.isGrounded,
+          m: state.isMounted,
+        };
+
+        // Only include horse data when mounted
+        if (state.isMounted) {
+          payload.hp = state.horsePosition;
+          payload.hr = state.horseRotation;
+          payload.hP = state.horsePitch;
         }
-      }, BROADCAST_RATE_MS);
-      mpAudit('broadcast timer started');
+
+        ch.send({ type: 'broadcast', event: 'pm', payload });
+      }, MOVE_BROADCAST_MS);
+
+      // ===== LOW-FREQ broadcast timer (metadata, only on change) =====
+      if (metaTimerRef.current) clearInterval(metaTimerRef.current);
+      metaTimerRef.current = setInterval(() => {
+        const state = localStateRef.current;
+        const ch = channelRef.current;
+        if (!state || !ch) return;
+
+        if (!metaChanged(lastSentMetaRef.current, state)) return;
+        lastSentMetaRef.current = extractSentMeta(state);
+
+        const payload: MetaPayload = {
+          i: state.playerId,
+          dn: state.displayName,
+          ct: state.characterType,
+          h: Math.round(state.health * 10) / 10,
+          mh: state.maxHealth,
+          st: Math.round(state.stamina),
+          hu: Math.round(state.hunger),
+          tp: Math.round(state.temperature),
+          bm: state.buildMode,
+          hs: state.horseState,
+          em: state.emote,
+          sp: state.isSpeaking,
+        };
+
+        ch.send({ type: 'broadcast', event: 'pme', payload });
+      }, META_BROADCAST_MS);
+
+      mpAudit('split broadcast timers started', { moveMs: MOVE_BROADCAST_MS, metaMs: META_BROADCAST_MS });
 
       // Stale player cleanup
       if (staleCleanupRef.current) clearInterval(staleCleanupRef.current);
@@ -413,22 +497,50 @@ export function useMultiplayer() {
     });
   }, [playerId, fullCleanup, scheduleRemotePlayersCommit]);
 
+  // Send both move + meta immediately (for first join or reconnect)
+  const sendInitialState = useCallback(() => {
+    const state = localStateRef.current;
+    const ch = channelRef.current;
+    if (!state || !ch || initialStateSentRef.current) return;
+    initialStateSentRef.current = true;
+
+    const movePayload: MovePayload = {
+      i: state.playerId, p: state.position, r: state.rotation,
+      s: state.moveSpeed, n: state.isRunning, g: state.isGrounded, m: state.isMounted,
+    };
+    if (state.isMounted) {
+      movePayload.hp = state.horsePosition;
+      movePayload.hr = state.horseRotation;
+      movePayload.hP = state.horsePitch;
+    }
+    ch.send({ type: 'broadcast', event: 'pm', payload: movePayload });
+
+    lastSentMetaRef.current = extractSentMeta(state);
+    const metaPayload: MetaPayload = {
+      i: state.playerId, dn: state.displayName, ct: state.characterType,
+      h: Math.round(state.health * 10) / 10, mh: state.maxHealth,
+      st: Math.round(state.stamina), hu: Math.round(state.hunger),
+      tp: Math.round(state.temperature), bm: state.buildMode,
+      hs: state.horseState, em: state.emote, sp: state.isSpeaking,
+    };
+    ch.send({ type: 'broadcast', event: 'pme', payload: metaPayload });
+    mpAudit('initial split state sent');
+  }, []);
+
   // ===== Enter the global world =====
   const enterWorld = useCallback(async (playerName?: string) => {
     const name = (playerName?.trim() || displayName).slice(0, 20) || 'Knight';
     updateDisplayName(name);
     setConnectionStatus('connecting');
 
-    // Reset timings & audit counts
     const timings = createTimings();
     timings.enterWorldClicked = Date.now();
     timingsRef.current = timings;
     firstRemoteReceivedRef.current = false;
     initialStateSentRef.current = false;
-    // Reset audit log counts for fresh session
     for (const k of Object.keys(auditLogCounts)) delete auditLogCounts[k];
 
-    resetSpawnIndex(); // Reset multiplayer spawn separation counter
+    resetSpawnIndex();
     mpAudit('enterWorld start', { name, playerId });
     logTiming('Enter world clicked', timings, 'enterWorldClicked');
 
@@ -448,7 +560,7 @@ export function useMultiplayer() {
     }
   }, [displayName, updateDisplayName, subscribeToGlobalWorld, playerId]);
 
-  // ===== Leave world (canonical cleanup) =====
+  // ===== Leave world =====
   const leaveWorld = useCallback(async () => {
     mpAudit('leaveWorld called');
     const ch = channelRef.current;
@@ -462,17 +574,11 @@ export function useMultiplayer() {
     setWorldEvents([]);
   }, [fullCleanup]);
 
-  // ===== Reconnect on mount — DISABLED =====
-  // Auto-reconnect was silently transitioning lobby→game on page load,
-  // mounting the heavy 3D Canvas while the channel was still negotiating.
-  // This caused WebGL context loss under GPU pressure.
-  // Now: always start in lobby. User clicks Enter World explicitly.
+  // Auto-reconnect disabled
   const hasAttemptedReconnect = useRef(false);
   useEffect(() => {
     if (hasAttemptedReconnect.current) return;
     hasAttemptedReconnect.current = true;
-
-    // Clear any stale session so we don't accumulate dead sessions
     const session = loadSession();
     if (session) {
       console.log('[Multiplayer] Found stale session — clearing (auto-reconnect disabled)');
@@ -481,31 +587,33 @@ export function useMultiplayer() {
   }, []);
 
   // ===== Broadcast local player state =====
+  const prevAttackAnimRef = useRef(0);
   const updateLocalState = useCallback((state: NetworkPlayerState) => {
     localStateRef.current = state;
 
-    if (connected && channelRef.current && !initialStateSentRef.current) {
-      initialStateSentRef.current = true;
-      mpAudit('initial player_state sent from broadcaster');
+    // Detect attack edge → send discrete event
+    if (state.attackAnim > 0 && prevAttackAnimRef.current === 0 && channelRef.current) {
       channelRef.current.send({
-        type: 'broadcast',
-        event: 'player_state',
-        payload: state,
+        type: 'broadcast', event: 'pa',
+        payload: { i: state.playerId, t: 'attack', d: state.attackAnim } as ActionPayload,
       });
     }
-  }, [connected]);
+    prevAttackAnimRef.current = state.attackAnim;
+
+    // Send initial state if not yet sent
+    if (connected && channelRef.current && !initialStateSentRef.current) {
+      sendInitialState();
+    }
+  }, [connected, sendInitialState]);
 
   // ===== Send chat =====
   const sendChat = useCallback((text: string) => {
     if (!channelRef.current || !text.trim()) return;
     const currentDisplayName = sessionStorage.getItem('mp_display_name') || 'Knight';
     const msg: ChatMessage = {
-      id: crypto.randomUUID(),
-      playerId,
+      id: crypto.randomUUID(), playerId,
       displayName: currentDisplayName,
-      text: text.trim().slice(0, 200),
-      timestamp: Date.now(),
-      type: 'chat',
+      text: text.trim().slice(0, 200), timestamp: Date.now(), type: 'chat',
     };
     channelRef.current.send({ type: 'broadcast', event: 'chat', payload: msg });
     setChatMessages(prev => [...prev.slice(-99), msg]);
@@ -516,12 +624,9 @@ export function useMultiplayer() {
     if (!channelRef.current) return;
     const currentDisplayName = sessionStorage.getItem('mp_display_name') || 'Knight';
     const msg: ChatMessage = {
-      id: crypto.randomUUID(),
-      playerId,
+      id: crypto.randomUUID(), playerId,
       displayName: currentDisplayName,
-      text: emoteKey,
-      timestamp: Date.now(),
-      type: 'emote',
+      text: emoteKey, timestamp: Date.now(), type: 'emote',
     };
     channelRef.current.send({ type: 'broadcast', event: 'chat', payload: msg });
     setChatMessages(prev => [...prev.slice(-99), msg]);
@@ -534,11 +639,11 @@ export function useMultiplayer() {
     setWorldEvents(prev => [...prev.slice(-49), event]);
   }, []);
 
-  // Cleanup on unmount (canonical)
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      // Sync cleanup: clear timers immediately, channel removal is fire-and-forget
-      if (broadcastTimerRef.current) { clearInterval(broadcastTimerRef.current); broadcastTimerRef.current = null; }
+      if (moveTimerRef.current) { clearInterval(moveTimerRef.current); moveTimerRef.current = null; }
+      if (metaTimerRef.current) { clearInterval(metaTimerRef.current); metaTimerRef.current = null; }
       if (staleCleanupRef.current) { clearInterval(staleCleanupRef.current); staleCleanupRef.current = null; }
       if (remotePlayersCommitTimerRef.current) {
         clearTimeout(remotePlayersCommitTimerRef.current);
@@ -546,9 +651,7 @@ export function useMultiplayer() {
       }
       const ch = channelRef.current;
       channelRef.current = null;
-      if (ch) {
-        supabase.removeChannel(ch).catch(() => {});
-      }
+      if (ch) { supabase.removeChannel(ch).catch(() => {}); }
     };
   }, []);
 
@@ -567,6 +670,6 @@ export function useMultiplayer() {
     sendChat,
     sendEmote,
     broadcastWorldEvent,
-    channelRef,  // exposed for voice signaling
+    channelRef,
   };
 }
