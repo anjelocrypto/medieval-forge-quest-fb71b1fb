@@ -203,17 +203,10 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
     <group>
       {/* Standing model — visible when not walking */}
       <group ref={standGroupRef} visible={!isWalking} position={[0, metrics.standYOffset * scale, 0]}>
-        <primitive
-          object={standScene}
-          scale={[finalStandScale, finalStandScale, finalStandScale]}
-        />
+        <primitive object={standScene} scale={[finalScale, finalScale, finalScale]} />
       </group>
-      {/* Walking model — visible when walking */}
       <group ref={walkGroupRef} visible={isWalking} position={[0, metrics.walkYOffset * scale, 0]}>
-        <primitive
-          object={walkScene}
-          scale={[finalWalkScale, finalWalkScale, finalWalkScale]}
-        />
+        <primitive object={walkScene} scale={[finalScale, finalScale, finalScale]} />
       </group>
     </group>
   );
