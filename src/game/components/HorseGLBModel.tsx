@@ -4,6 +4,10 @@
  * horsewalks.glb  = walking animation (full scene)
  * We show one and hide the other based on moveSpeed.
  * Both are cloned so multiple horses work independently.
+ *
+ * Visibility is toggled on wrapper <group> refs (not scene.visible)
+ * to avoid Three.js propagation issues with cloned skinned meshes.
+ * Animation clips are cloned to properly bind to cloned scene roots.
  */
 import { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
@@ -21,7 +25,6 @@ interface Props {
 }
 
 const HORSE_MOVE_THRESHOLD = 0.3;
-// Target horse height in world units (roughly player height ~1.8, horse slightly taller)
 const TARGET_HORSE_HEIGHT = 2.0;
 
 export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: Props) {
@@ -31,12 +34,16 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
   const standScene = useMemo(() => SkeletonUtils.clone(standGltf.scene), [standGltf.scene]);
   const walkScene = useMemo(() => SkeletonUtils.clone(walkGltf.scene), [walkGltf.scene]);
 
+  // Refs for visibility toggling on wrapper groups (not scene.visible)
+  const standGroupRef = useRef<THREE.Group>(null);
+  const walkGroupRef = useRef<THREE.Group>(null);
+
   const walkMixerRef = useRef<THREE.AnimationMixer | null>(null);
   const standMixerRef = useRef<THREE.AnimationMixer | null>(null);
   const currentWalking = useRef(false);
   const auditLogged = useRef(false);
 
-  // Compute auto-scale based on standing model's native height
+  // Compute independent auto-scales for each model
   const { standAutoScale, walkAutoScale, yOffset, walkYOffset } = useMemo(() => {
     const standBox = new THREE.Box3().setFromObject(standScene);
     const standSize = new THREE.Vector3();
@@ -66,8 +73,8 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
   const standFinalScale = standAutoScale * scale;
   const walkFinalScale = walkAutoScale * scale;
 
+  // Setup materials and animations — no scale values in deps to avoid re-triggering
   useEffect(() => {
-    // Ensure materials are visible
     const fixMaterials = (scene: THREE.Object3D) => {
       scene.traverse((child) => {
         if ((child as THREE.Mesh).isMesh) {
@@ -75,8 +82,13 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
           mesh.frustumCulled = false;
           mesh.castShadow = true;
           mesh.receiveShadow = true;
-          const mat = mesh.material as THREE.MeshStandardMaterial;
-          if (mat) {
+          if (Array.isArray(mesh.material)) {
+            mesh.material.forEach((mat) => {
+              mat.visible = true;
+              mat.side = THREE.DoubleSide;
+            });
+          } else if (mesh.material) {
+            const mat = mesh.material as THREE.MeshStandardMaterial;
             mat.visible = true;
             mat.transparent = mat.transparent || false;
             mat.opacity = mat.opacity > 0 ? mat.opacity : 1;
@@ -88,32 +100,44 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
     fixMaterials(standScene);
     fixMaterials(walkScene);
 
-    // Setup walk mixer
+    // Setup walk mixer with CLONED clips for proper binding to cloned scene
     const walkMixer = new THREE.AnimationMixer(walkScene);
     walkMixerRef.current = walkMixer;
-
     if (walkGltf.animations.length > 0) {
-      const action = walkMixer.clipAction(walkGltf.animations[0]);
-      action.play();
-      action.setEffectiveWeight(1);
+      for (const clip of walkGltf.animations) {
+        const clonedClip = clip.clone();
+        const action = walkMixer.clipAction(clonedClip);
+        action.setLoop(THREE.LoopRepeat, Infinity);
+        action.setEffectiveWeight(1);
+        action.play();
+      }
+      console.log(`[HorseAudit] Walk mixer: ${walkGltf.animations.length} clips bound, tracks: ${walkGltf.animations.map(c => c.tracks.length).join(',')}`);
+    } else {
+      console.warn(`[HorseAudit] WARNING: walkGltf has 0 animation clips!`);
     }
 
-    // Setup stand mixer (in case standing has an idle animation)
+    // Setup stand mixer with CLONED clips
     const standMixer = new THREE.AnimationMixer(standScene);
     standMixerRef.current = standMixer;
-
     if (standGltf.animations.length > 0) {
-      const action = standMixer.clipAction(standGltf.animations[0]);
-      action.play();
-      action.setEffectiveWeight(1);
+      for (const clip of standGltf.animations) {
+        const clonedClip = clip.clone();
+        const action = standMixer.clipAction(clonedClip);
+        action.setLoop(THREE.LoopRepeat, Infinity);
+        action.setEffectiveWeight(1);
+        action.play();
+      }
+      console.log(`[HorseAudit] Stand mixer: ${standGltf.animations.length} clips bound, tracks: ${standGltf.animations.map(c => c.tracks.length).join(',')}`);
+    } else {
+      console.warn(`[HorseAudit] WARNING: standGltf has 0 animation clips!`);
     }
 
-    // Initial visibility
-    standScene.visible = true;
-    walkScene.visible = false;
+    // Initial visibility via group refs
     currentWalking.current = false;
+    if (standGroupRef.current) standGroupRef.current.visible = true;
+    if (walkGroupRef.current) walkGroupRef.current.visible = false;
 
-    console.log(`[HorseAudit] path=${renderPath} standClips=${standGltf.animations.length} walkClips=${walkGltf.animations.length} standScale=${standFinalScale.toFixed(3)} walkScale=${walkFinalScale.toFixed(3)}`);
+    console.log(`[HorseAudit] path=${renderPath} standClips=${standGltf.animations.length} walkClips=${walkGltf.animations.length}`);
 
     return () => {
       walkMixer.stopAllAction();
@@ -121,7 +145,7 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
       standMixer.stopAllAction();
       standMixer.uncacheRoot(standScene);
     };
-  }, [standScene, walkScene, standGltf.animations, walkGltf.animations, renderPath, standFinalScale, walkFinalScale]);
+  }, [standScene, walkScene, standGltf.animations, walkGltf.animations, renderPath]);
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
@@ -133,22 +157,23 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
 
     if (!auditLogged.current) {
       auditLogged.current = true;
-      console.log(`[HorseAudit] first frame speed=${speed.toFixed(2)} wantWalk=${wantWalk}`);
+      console.log(`[HorseAudit] first frame speed=${speed.toFixed(2)} wantWalk=${wantWalk} standGroupRef=${!!standGroupRef.current} walkGroupRef=${!!walkGroupRef.current}`);
     }
 
     if (wantWalk !== currentWalking.current) {
       currentWalking.current = wantWalk;
-      standScene.visible = !wantWalk;
-      walkScene.visible = wantWalk;
+      // Toggle visibility on wrapper groups, not on scene objects
+      if (standGroupRef.current) standGroupRef.current.visible = !wantWalk;
+      if (walkGroupRef.current) walkGroupRef.current.visible = wantWalk;
     }
   });
 
   return (
     <group>
-      <group position={[0, yOffset * scale, 0]}>
+      <group ref={standGroupRef} position={[0, yOffset * scale, 0]}>
         <primitive object={standScene} scale={[standFinalScale, standFinalScale, standFinalScale]} castShadow receiveShadow />
       </group>
-      <group position={[0, walkYOffset * scale, 0]}>
+      <group ref={walkGroupRef} visible={false} position={[0, walkYOffset * scale, 0]}>
         <primitive object={walkScene} scale={[walkFinalScale, walkFinalScale, walkFinalScale]} castShadow receiveShadow />
       </group>
     </group>
