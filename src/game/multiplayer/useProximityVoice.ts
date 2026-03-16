@@ -157,18 +157,20 @@ export function useProximityVoice(
       const stream = ev.streams[0] || new MediaStream([ev.track]);
       audioEl.srcObject = stream;
 
-      // Create Web Audio source node
+      // Create Web Audio source node — audio MUST go through gain node
       if (!entry.sourceNode) {
         try {
           entry.sourceNode = ctx.createMediaElementSource(audioEl);
           entry.sourceNode.connect(gainNode);
+          // Only set volume=1 if source node succeeded (audio routes through gain)
+          audioEl.volume = 1;
+          voiceLog('audio routed through gain node', { from: remoteId.slice(0, 8) });
         } catch {
-          // Already connected — safe to ignore
+          // If MediaElementSource fails, keep volume=0 to prevent uncontrolled audio leakage
+          audioEl.volume = 0;
+          voiceLog('MediaElementSource failed — audio muted to prevent leakage', { from: remoteId.slice(0, 8) });
         }
       }
-
-      // Set volume to 1 so audio flows through gain node
-      audioEl.volume = 1;
 
       // Explicitly play to handle autoplay restrictions
       audioEl.play().catch(err => {
