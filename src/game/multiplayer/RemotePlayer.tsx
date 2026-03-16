@@ -1,7 +1,7 @@
-import { useRef, Suspense } from 'react';
+import { useRef, Suspense, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { InterpolatedPlayer, BROADCAST_RATE_MS, EMOTES } from './types';
+import { InterpolatedPlayer, BROADCAST_RATE_MS, EMOTES, LOD_FULL_DISTANCE, LOD_MEDIUM_DISTANCE } from './types';
 import { getTerrainHeight } from '../components/Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
 import { Html } from '@react-three/drei';
@@ -20,7 +20,6 @@ function RemotePlayerFallback() {
         <capsuleGeometry args={[0.3, 1.2, 4, 8]} />
         <meshStandardMaterial color="#888" transparent opacity={0.6} />
       </mesh>
-      {/* Small head sphere */}
       <mesh position={[0, 1.8, 0]} castShadow>
         <sphereGeometry args={[0.22, 8, 8]} />
         <meshStandardMaterial color="#aaa" transparent opacity={0.6} />
@@ -29,8 +28,37 @@ function RemotePlayerFallback() {
   );
 }
 
+// LOD capsule for medium-distance players — cheaper than full GLB model
+function LODCapsule({ isMounted }: { isMounted: boolean }) {
+  if (isMounted) {
+    return (
+      <group>
+        {/* Horse silhouette */}
+        <mesh position={[0, 0.8, 0]} castShadow>
+          <boxGeometry args={[0.8, 1, 1.8]} />
+          <meshStandardMaterial color="#8B6914" transparent opacity={0.4} />
+        </mesh>
+        {/* Rider silhouette */}
+        <mesh position={[0, 2, 0]} castShadow>
+          <capsuleGeometry args={[0.2, 0.6, 4, 6]} />
+          <meshStandardMaterial color="#888" transparent opacity={0.4} />
+        </mesh>
+      </group>
+    );
+  }
+  return (
+    <group>
+      <mesh position={[0, 0.9, 0]} castShadow>
+        <capsuleGeometry args={[0.25, 1, 4, 6]} />
+        <meshStandardMaterial color="#888" transparent opacity={0.4} />
+      </mesh>
+    </group>
+  );
+}
+
 interface Props {
   player: InterpolatedPlayer;
+  playerPositionRef: React.RefObject<THREE.Vector3>;
 }
 
 // Nametag heights per character type
@@ -51,10 +79,11 @@ function mpAuditRemote(label: string, data?: Record<string, unknown>) {
   console.log(`[MP-Audit] ${label}${suffix}`);
 }
 
-export function RemotePlayer({ player }: Props) {
+export function RemotePlayer({ player, playerPositionRef }: Props) {
   const groupRef = useRef<THREE.Group>(null);
   const currentPos = useRef(new THREE.Vector3(...player.renderPosition));
   const currentRot = useRef(player.renderRotation);
+  const distanceRef = useRef(0);
 
   mpAuditRemote('RemotePlayer mounted', {
     id: player.playerId,
@@ -66,22 +95,26 @@ export function RemotePlayer({ player }: Props) {
     if (!groupRef.current) return;
     const dt = Math.min(delta, 0.05);
 
+    // Calculate distance to local player for LOD decisions
+    const localPos = playerPositionRef.current;
+    if (localPos) {
+      const dx = currentPos.current.x - localPos.x;
+      const dz = currentPos.current.z - localPos.z;
+      distanceRef.current = Math.sqrt(dx * dx + dz * dz);
+    }
+
     const lerpSpeed = 1000 / BROADCAST_RATE_MS;
     const t = Math.min(1, dt * lerpSpeed * 0.15);
 
     const tx = player.targetPosition[0];
     const tz = player.targetPosition[2];
 
-    // Use bridge height if available, otherwise terrain height
     const bridgeY = getBridgeHeight(tx, tz);
     const rawTerrainY = getTerrainHeight(tx, tz);
     const groundY = bridgeY !== null ? bridgeY : rawTerrainY;
-
-    // GLB models have feet at Y=0, so ground level is the target Y
     const ty = groundY;
 
     currentPos.current.x += (tx - currentPos.current.x) * t;
-    // Faster Y lerp for snappy grounding
     const yLerp = Math.min(1, dt * lerpSpeed * 0.3);
     currentPos.current.y += (ty - currentPos.current.y) * yLerp;
     currentPos.current.z += (tz - currentPos.current.z) * t;
@@ -105,9 +138,14 @@ export function RemotePlayer({ player }: Props) {
     : charType === 'nemoclaw' ? NAMETAG_HEIGHT_NEMOCLAW
     : NAMETAG_HEIGHT_SOLDIER;
 
+  // LOD tier based on distance
+  const dist = distanceRef.current;
+  const isFullLOD = dist < LOD_FULL_DISTANCE;
+  const isMediumLOD = dist >= LOD_FULL_DISTANCE && dist < LOD_MEDIUM_DISTANCE;
+
   return (
     <group ref={groupRef}>
-      {/* Nametag + health */}
+      {/* Nametag + health — always visible within render range */}
       <Html position={[0, nametagY, 0]} center distanceFactor={20}
         style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div style={{
@@ -144,48 +182,28 @@ export function RemotePlayer({ player }: Props) {
         </div>
       </Html>
 
-      {player.isMounted ? (
-        <MountedRemoteModel moveSpeed={player.moveSpeed} horsePitch={player.horsePitch} charType={charType} player={player} />
+      {/* LOD rendering */}
+      {isMediumLOD ? (
+        <LODCapsule isMounted={player.isMounted} />
+      ) : isFullLOD ? (
+        player.isMounted ? (
+          <MountedRemoteModel moveSpeed={player.moveSpeed} horsePitch={player.horsePitch} charType={charType} player={player} />
+        ) : (
+          <Suspense fallback={<RemotePlayerFallback />}>
+            {charType === 'goblin' ? (
+              <RemoteGoblinModel moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
+            ) : charType === 'octopus' ? (
+              <RemoteOctopusModel moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
+            ) : charType === 'nemoclaw' ? (
+              <RemoteNemoClawModel moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
+            ) : (
+              <RemoteSoldierModel moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
+            )}
+          </Suspense>
+        )
       ) : (
-        <Suspense fallback={<RemotePlayerFallback />}>
-          {charType === 'goblin' ? (
-            <RemoteGoblinModel
-              moveSpeed={player.moveSpeed}
-              isRunning={player.isRunning}
-              isGrounded={player.isGrounded}
-              attackAnim={player.attackAnim}
-              health={player.health}
-              emote={player.emote}
-            />
-          ) : charType === 'octopus' ? (
-            <RemoteOctopusModel
-              moveSpeed={player.moveSpeed}
-              isRunning={player.isRunning}
-              isGrounded={player.isGrounded}
-              attackAnim={player.attackAnim}
-              health={player.health}
-              emote={player.emote}
-            />
-          ) : charType === 'nemoclaw' ? (
-            <RemoteNemoClawModel
-              moveSpeed={player.moveSpeed}
-              isRunning={player.isRunning}
-              isGrounded={player.isGrounded}
-              attackAnim={player.attackAnim}
-              health={player.health}
-              emote={player.emote}
-            />
-          ) : (
-            <RemoteSoldierModel
-              moveSpeed={player.moveSpeed}
-              isRunning={player.isRunning}
-              isGrounded={player.isGrounded}
-              attackAnim={player.attackAnim}
-              health={player.health}
-              emote={player.emote}
-            />
-          )}
-        </Suspense>
+        /* Very far (LOD_MEDIUM to LOD_HIDDEN) — just nametag, no model */
+        null
       )}
     </group>
   );
@@ -195,12 +213,10 @@ export function RemotePlayer({ player }: Props) {
 function MountedRemoteFallback() {
   return (
     <group>
-      {/* Horse placeholder */}
       <mesh position={[0, 0.8, 0]} castShadow>
         <boxGeometry args={[1, 1.2, 2.2]} />
         <meshStandardMaterial color="#8B6914" transparent opacity={0.5} />
       </mesh>
-      {/* Rider placeholder */}
       <mesh position={[0, 2.2, 0]} castShadow>
         <capsuleGeometry args={[0.25, 0.8, 4, 8]} />
         <meshStandardMaterial color="#888" transparent opacity={0.5} />
@@ -217,11 +233,9 @@ function MountedRemoteModel({ moveSpeed, horsePitch, charType, player }: {
 }) {
   return (
     <group rotation={[horsePitch, 0, 0]}>
-      {/* Horse — use visible fallback instead of null */}
       <Suspense fallback={<MountedRemoteFallback />}>
         <HorseGLBModel moveSpeed={moveSpeed} renderPath="mounted-remote" />
       </Suspense>
-      {/* Rider character seated on horse */}
       <group position={[0, 1.2, 0]} rotation={[0, 0, 0]}>
         <Suspense fallback={<RemotePlayerFallback />}>
           {charType === 'goblin' ? (

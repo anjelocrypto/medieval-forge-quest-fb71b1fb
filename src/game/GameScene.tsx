@@ -435,7 +435,7 @@ export function GameScene({ multiplayer, onLeaveWorld }: GameSceneProps) {
           {/* <RailwayDebugPreview /> */}
 
           {/* Remote players from multiplayer */}
-          <RemotePlayers remotePlayers={multiplayer.remotePlayers} />
+          <RemotePlayers remotePlayers={multiplayer.remotePlayers} playerPositionRef={playerPositionRef} />
 
           {/* Multiplayer broadcaster — samples local state and pushes to network hook */}
           {multiplayer.connected && (
