@@ -95,9 +95,8 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
   const [isWalking, setIsWalking] = useState(false);
   const isWalkingRef = useRef(false);
 
-  // Compute independent scales so both models match TARGET_HORSE_HEIGHT
+  // Compute UNIFIED scale from standing GLB (source of truth) — walk uses same scale
   const metrics = useMemo(() => {
-    // Force update transforms before measuring
     standScene.updateMatrixWorld(true);
     walkScene.updateMatrixWorld(true);
 
@@ -109,29 +108,26 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
     const walkSize = new THREE.Vector3();
     walkBox.getSize(walkSize);
 
-    const sScale = standSize.y > 0.001 ? TARGET_HORSE_HEIGHT / standSize.y : 1;
-    const wScale = walkSize.y > 0.001 ? TARGET_HORSE_HEIGHT / walkSize.y : 1;
+    // Use STANDING scale as the single source of truth for both models
+    const unifiedScale = standSize.y > 0.001 ? TARGET_HORSE_HEIGHT / standSize.y : 1;
 
     const result = {
-      standScale: sScale,
-      walkScale: wScale,
-      standYOffset: -standBox.min.y * sScale,
-      walkYOffset: -walkBox.min.y * wScale,
+      unifiedScale,
+      standYOffset: -standBox.min.y * unifiedScale,
+      walkYOffset: -walkBox.min.y * unifiedScale,
       standSize: standSize.clone(),
       walkSize: walkSize.clone(),
       standMeshCount: 0,
       walkMeshCount: 0,
     };
 
-    // Count meshes for debug
     standScene.traverse(c => { if ((c as THREE.Mesh).isMesh) result.standMeshCount++; });
     walkScene.traverse(c => { if ((c as THREE.Mesh).isMesh) result.walkMeshCount++; });
 
     return result;
   }, [standScene, walkScene]);
 
-  const finalStandScale = metrics.standScale * scale;
-  const finalWalkScale = metrics.walkScale * scale;
+  const finalScale = metrics.unifiedScale * scale;
 
   // Setup animation mixers (materials already fixed synchronously in useMemo)
   useEffect(() => {
