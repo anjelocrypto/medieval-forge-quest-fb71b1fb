@@ -394,6 +394,9 @@ export function Player({
     const accel = isMounted ? ACCEL_MOUNTED : (canRun ? ACCEL_GROUND_RUN : ACCEL_GROUND);
     const decel = isMounted ? DECEL_MOUNTED : DECEL_GROUND;
 
+    // Reduce speed while attacking so escape is possible but not full-sprint
+    if (isAttacking && isMoving) targetSpeed *= 0.45;
+
     if (isMoving && !attackMoveBlock) {
       _moveDir.normalize();
 
