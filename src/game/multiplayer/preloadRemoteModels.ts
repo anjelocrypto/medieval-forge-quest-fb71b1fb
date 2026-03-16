@@ -20,6 +20,10 @@ import octopusWalkingUrl from '@/assets/octopuswalking.glb?url';
 import nemoStandingUrl from '@/assets/nemostanding.glb?url';
 import nemoWalkingUrl from '@/assets/nemowalking.glb?url';
 
+// Horse GLBs (needed for mounted remote players)
+import horseStandUrl from '@/assets/mainhorsestanding.glb?url';
+import horseWalkUrl from '@/assets/mainhorsewalking.glb?url';
+
 let preloaded = false;
 
 /**
@@ -49,4 +53,8 @@ export function preloadRemoteCharacterModels() {
   // NemoClaw
   useGLTF.preload(nemoStandingUrl);
   useGLTF.preload(nemoWalkingUrl);
+
+  // Horse (for mounted remote players)
+  useGLTF.preload(horseStandUrl);
+  useGLTF.preload(horseWalkUrl);
 }

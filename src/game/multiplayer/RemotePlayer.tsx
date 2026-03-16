@@ -191,6 +191,24 @@ export function RemotePlayer({ player }: Props) {
   );
 }
 
+// Visible placeholder for mounted remote players while horse/rider GLBs load
+function MountedRemoteFallback() {
+  return (
+    <group>
+      {/* Horse placeholder */}
+      <mesh position={[0, 0.8, 0]} castShadow>
+        <boxGeometry args={[1, 1.2, 2.2]} />
+        <meshStandardMaterial color="#8B6914" transparent opacity={0.5} />
+      </mesh>
+      {/* Rider placeholder */}
+      <mesh position={[0, 2.2, 0]} castShadow>
+        <capsuleGeometry args={[0.25, 0.8, 4, 8]} />
+        <meshStandardMaterial color="#888" transparent opacity={0.5} />
+      </mesh>
+    </group>
+  );
+}
+
 function MountedRemoteModel({ moveSpeed, horsePitch, charType, player }: {
   moveSpeed: number;
   horsePitch: number;
@@ -199,8 +217,8 @@ function MountedRemoteModel({ moveSpeed, horsePitch, charType, player }: {
 }) {
   return (
     <group rotation={[horsePitch, 0, 0]}>
-      {/* Horse */}
-      <Suspense fallback={null}>
+      {/* Horse — use visible fallback instead of null */}
+      <Suspense fallback={<MountedRemoteFallback />}>
         <HorseGLBModel moveSpeed={moveSpeed} renderPath="mounted-remote" />
       </Suspense>
       {/* Rider character seated on horse */}
