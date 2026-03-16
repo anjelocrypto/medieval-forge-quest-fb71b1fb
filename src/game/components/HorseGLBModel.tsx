@@ -177,7 +177,9 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
 
   return (
     <group position={[0, metrics.yOffset * scale, 0]}>
-      <primitive object={horseScene} scale={[finalScale, finalScale, finalScale]} />
+      <group ref={sceneRef}>
+        <primitive object={horseScene} scale={[finalScale, finalScale, finalScale]} />
+      </group>
     </group>
   );
 }
