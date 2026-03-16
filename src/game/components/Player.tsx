@@ -388,11 +388,13 @@ export function Player({
     const targetSpeed = canRun ? runSpeed : baseSpeed;
     const isMoving = _moveDir.lengthSq() > 0.001;
     const isAttacking = attackAnimRef.current > 0 || isFightingRef.current;
+    // Allow movement during attack at reduced speed so player can escape enemy clusters
+    const attackMoveBlock = isAttacking && !isMoving; // only block if NOT actively trying to move
 
     const accel = isMounted ? ACCEL_MOUNTED : (canRun ? ACCEL_GROUND_RUN : ACCEL_GROUND);
     const decel = isMounted ? DECEL_MOUNTED : DECEL_GROUND;
 
-    if (isMoving && !isAttacking) {
+    if (isMoving && !attackMoveBlock) {
       _moveDir.normalize();
 
       if (isMounted) {
