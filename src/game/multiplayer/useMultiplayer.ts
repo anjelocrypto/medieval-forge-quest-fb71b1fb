@@ -13,6 +13,7 @@ const SESSION_KEY = 'global_world_session';
 
 // Single unified timeout for all subscribe paths (fresh + reconnect)
 const SUBSCRIBE_TIMEOUT_MS = 10_000;
+const REMOTE_PLAYERS_COMMIT_MS = 100;
 
 // ===== MP-Audit rate-limited logger =====
 const auditLogCounts: Record<string, number> = {};
@@ -105,17 +106,37 @@ export function useMultiplayer() {
   const playerId = useRef(getOrCreatePlayerId()).current;
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [displayName, setDisplayName] = useState(getDisplayName());
-  const [remotePlayers, setRemotePlayers] = useState<Map<string, InterpolatedPlayer>>(new Map());
+  const [, setRemotePlayersVersion] = useState(0);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [worldEvents, setWorldEvents] = useState<WorldEvent[]>([]);
+  const remotePlayersRef = useRef<Map<string, InterpolatedPlayer>>(new Map());
+  const remotePlayersCommitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const broadcastTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const localStateRef = useRef<NetworkPlayerState | null>(null);
   const staleCleanupRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timingsRef = useRef<StartupTimings>(createTimings());
   const firstRemoteReceivedRef = useRef(false);
+  const initialStateSentRef = useRef(false);
 
   const connected = connectionStatus === 'connected';
+
+  const scheduleRemotePlayersCommit = useCallback((immediate = false) => {
+    if (immediate) {
+      if (remotePlayersCommitTimerRef.current) {
+        clearTimeout(remotePlayersCommitTimerRef.current);
+        remotePlayersCommitTimerRef.current = null;
+      }
+      setRemotePlayersVersion((v) => v + 1);
+      return;
+    }
+
+    if (remotePlayersCommitTimerRef.current) return;
+    remotePlayersCommitTimerRef.current = setTimeout(() => {
+      remotePlayersCommitTimerRef.current = null;
+      setRemotePlayersVersion((v) => v + 1);
+    }, REMOTE_PLAYERS_COMMIT_MS);
+  }, []);
 
   // Update display name
   const updateDisplayName = useCallback((name: string) => {
@@ -130,6 +151,11 @@ export function useMultiplayer() {
     // 1. Clear timers
     if (broadcastTimerRef.current) { clearInterval(broadcastTimerRef.current); broadcastTimerRef.current = null; }
     if (staleCleanupRef.current) { clearInterval(staleCleanupRef.current); staleCleanupRef.current = null; }
+    if (remotePlayersCommitTimerRef.current) {
+      clearTimeout(remotePlayersCommitTimerRef.current);
+      remotePlayersCommitTimerRef.current = null;
+    }
+    initialStateSentRef.current = false;
 
     // 2. Unsubscribe + remove from Supabase SDK registry
     if (channel) {
@@ -161,6 +187,10 @@ export function useMultiplayer() {
       await fullCleanup(oldChannel);
     }
 
+    remotePlayersRef.current = new Map();
+    scheduleRemotePlayersCommit(true);
+    initialStateSentRef.current = false;
+
     logTiming('Channel creating', timings, 'connectStart');
 
     const channel = supabase.channel(`world:${GLOBAL_WORLD_KEY}`, {
@@ -187,68 +217,71 @@ export function useMultiplayer() {
         logTiming('First remote player received', timingsRef.current, 'firstRemoteReceived');
       }
 
-      setRemotePlayers(prev => {
-        const next = new Map(prev);
-        const existing = next.get(payload.playerId);
-        const now = Date.now();
-        if (existing) {
-          next.set(payload.playerId, {
-            ...existing,
-            prevPosition: [...existing.targetPosition] as [number, number, number],
-            targetPosition: payload.position,
-            prevRotation: existing.targetRotation,
-            targetRotation: payload.rotation,
-            moveSpeed: payload.moveSpeed,
-            isRunning: payload.isRunning,
-            isGrounded: payload.isGrounded ?? true,
-            isMounted: payload.isMounted,
-            health: payload.health,
-            maxHealth: payload.maxHealth,
-            attackAnim: payload.attackAnim,
-            buildMode: payload.buildMode,
-            horsePitch: payload.horsePitch,
-            horsePosition: payload.horsePosition,
-            horseRotation: payload.horseRotation,
-            horseState: payload.horseState,
-            emote: payload.emote,
-            isSpeaking: payload.isSpeaking,
-            lastUpdateTime: now,
-            interpolationT: 0,
-            displayName: payload.displayName,
-            characterType: payload.characterType || 'goblin',
-          });
-        } else {
-          next.set(payload.playerId, {
-            playerId: payload.playerId,
-            displayName: payload.displayName,
-            characterType: payload.characterType || 'goblin',
-            prevPosition: payload.position,
-            targetPosition: payload.position,
-            prevRotation: payload.rotation,
-            targetRotation: payload.rotation,
-            renderPosition: payload.position,
-            renderRotation: payload.rotation,
-            moveSpeed: payload.moveSpeed,
-            isRunning: payload.isRunning,
-            isGrounded: payload.isGrounded ?? true,
-            isMounted: payload.isMounted,
-            health: payload.health,
-            maxHealth: payload.maxHealth,
-            attackAnim: payload.attackAnim,
-            buildMode: payload.buildMode,
-            horsePitch: payload.horsePitch,
-            horsePosition: payload.horsePosition,
-            horseRotation: payload.horseRotation,
-            horseState: payload.horseState,
-            emote: payload.emote,
-            isSpeaking: payload.isSpeaking,
-            lastUpdateTime: now,
-            interpolationT: 0,
-          });
-        }
-        mpAudit('remotePlayers size after insert', { size: next.size });
-        return next;
-      });
+      const players = remotePlayersRef.current;
+      const existing = players.get(payload.playerId);
+      const now = Date.now();
+
+      if (existing) {
+        const requiresImmediateCommit =
+          existing.isMounted !== payload.isMounted ||
+          existing.characterType !== (payload.characterType || 'goblin') ||
+          existing.displayName !== payload.displayName;
+
+        existing.prevPosition = [...existing.targetPosition] as [number, number, number];
+        existing.targetPosition = payload.position;
+        existing.prevRotation = existing.targetRotation;
+        existing.targetRotation = payload.rotation;
+        existing.moveSpeed = payload.moveSpeed;
+        existing.isRunning = payload.isRunning;
+        existing.isGrounded = payload.isGrounded ?? true;
+        existing.isMounted = payload.isMounted;
+        existing.health = payload.health;
+        existing.maxHealth = payload.maxHealth;
+        existing.attackAnim = payload.attackAnim;
+        existing.buildMode = payload.buildMode;
+        existing.horsePitch = payload.horsePitch;
+        existing.horsePosition = payload.horsePosition;
+        existing.horseRotation = payload.horseRotation;
+        existing.horseState = payload.horseState;
+        existing.emote = payload.emote;
+        existing.isSpeaking = payload.isSpeaking;
+        existing.lastUpdateTime = now;
+        existing.interpolationT = 0;
+        existing.displayName = payload.displayName;
+        existing.characterType = payload.characterType || 'goblin';
+
+        scheduleRemotePlayersCommit(requiresImmediateCommit);
+      } else {
+        players.set(payload.playerId, {
+          playerId: payload.playerId,
+          displayName: payload.displayName,
+          characterType: payload.characterType || 'goblin',
+          prevPosition: payload.position,
+          targetPosition: payload.position,
+          prevRotation: payload.rotation,
+          targetRotation: payload.rotation,
+          renderPosition: payload.position,
+          renderRotation: payload.rotation,
+          moveSpeed: payload.moveSpeed,
+          isRunning: payload.isRunning,
+          isGrounded: payload.isGrounded ?? true,
+          isMounted: payload.isMounted,
+          health: payload.health,
+          maxHealth: payload.maxHealth,
+          attackAnim: payload.attackAnim,
+          buildMode: payload.buildMode,
+          horsePitch: payload.horsePitch,
+          horsePosition: payload.horsePosition,
+          horseRotation: payload.horseRotation,
+          horseState: payload.horseState,
+          emote: payload.emote,
+          isSpeaking: payload.isSpeaking,
+          lastUpdateTime: now,
+          interpolationT: 0,
+        });
+        mpAudit('remotePlayers size after insert', { size: players.size });
+        scheduleRemotePlayersCommit(true);
+      }
     });
 
     // Chat messages
@@ -264,11 +297,9 @@ export function useMultiplayer() {
     // Presence tracking — leave
     channel.on('presence', { event: 'leave' }, ({ key }: { key: string }) => {
       mpAudit('presence leave removed', { key });
-      setRemotePlayers(prev => {
-        const next = new Map(prev);
-        next.delete(key);
-        return next;
-      });
+      if (remotePlayersRef.current.delete(key)) {
+        scheduleRemotePlayersCommit(true);
+      }
       setChatMessages(prev => [...prev, {
         id: crypto.randomUUID(),
         playerId: 'system',
@@ -302,13 +333,14 @@ export function useMultiplayer() {
           logTiming('Channel subscribed', timings, 'channelSubscribed');
           mpAudit('channel subscribe success');
 
+          channelRef.current = channel;
+          mpAudit('channelRef assigned', { nonNull: true });
+
           await channel.track({ playerId, displayName: playerName, joinedAt: Date.now() });
           logTiming('Presence track sent', timings, 'presenceTrackSent');
 
           console.log('[Multiplayer] Connected successfully, status → connected');
           setConnectionStatus('connected');
-          channelRef.current = channel;
-          mpAudit('channelRef assigned', { nonNull: true });
 
           // Mark gameplay ready
           logTiming('Gameplay ready', timings, 'gameplayReady');
@@ -324,6 +356,16 @@ export function useMultiplayer() {
             type: 'system',
           }]);
 
+          if (localStateRef.current && channelRef.current && !initialStateSentRef.current) {
+            initialStateSentRef.current = true;
+            mpAudit('initial player_state sent on subscribe');
+            channelRef.current.send({
+              type: 'broadcast',
+              event: 'player_state',
+              payload: localStateRef.current,
+            });
+          }
+
           resolve(true);
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           if (resolved) return;
@@ -335,18 +377,6 @@ export function useMultiplayer() {
           resolve(false);
         }
       });
-
-      // Fire immediate first broadcast (don't wait for interval tick)
-      setTimeout(() => {
-        if (localStateRef.current && channelRef.current) {
-          mpAudit('immediate first broadcast');
-          channelRef.current.send({
-            type: 'broadcast',
-            event: 'player_state',
-            payload: localStateRef.current,
-          });
-        }
-      }, 0);
 
       // Start broadcast timer (non-blocking — sends only when channelRef is set)
       if (broadcastTimerRef.current) clearInterval(broadcastTimerRef.current);
@@ -370,21 +400,18 @@ export function useMultiplayer() {
       if (staleCleanupRef.current) clearInterval(staleCleanupRef.current);
       staleCleanupRef.current = setInterval(() => {
         const now = Date.now();
-        setRemotePlayers(prev => {
-          let changed = false;
-          const next = new Map(prev);
-          for (const [id, rp] of next) {
-            if (now - rp.lastUpdateTime > STALE_PLAYER_TIMEOUT_MS) {
-              mpAudit('stale cleanup removed', { playerId: id });
-              next.delete(id);
-              changed = true;
-            }
+        let changed = false;
+        for (const [id, rp] of remotePlayersRef.current) {
+          if (now - rp.lastUpdateTime > STALE_PLAYER_TIMEOUT_MS) {
+            mpAudit('stale cleanup removed', { playerId: id });
+            remotePlayersRef.current.delete(id);
+            changed = true;
           }
-          return changed ? next : prev;
-        });
+        }
+        if (changed) scheduleRemotePlayersCommit(true);
       }, 2000);
     });
-  }, [playerId, fullCleanup]);
+  }, [playerId, fullCleanup, scheduleRemotePlayersCommit]);
 
   // ===== Enter the global world =====
   const enterWorld = useCallback(async (playerName?: string) => {
@@ -397,6 +424,7 @@ export function useMultiplayer() {
     timings.enterWorldClicked = Date.now();
     timingsRef.current = timings;
     firstRemoteReceivedRef.current = false;
+    initialStateSentRef.current = false;
     // Reset audit log counts for fresh session
     for (const k of Object.keys(auditLogCounts)) delete auditLogCounts[k];
 
@@ -418,7 +446,7 @@ export function useMultiplayer() {
       setConnectionStatus('disconnected');
       throw err;
     }
-  }, [displayName, updateDisplayName, subscribeToGlobalWorld]);
+  }, [displayName, updateDisplayName, subscribeToGlobalWorld, playerId]);
 
   // ===== Leave world (canonical cleanup) =====
   const leaveWorld = useCallback(async () => {
@@ -428,7 +456,8 @@ export function useMultiplayer() {
     await fullCleanup(ch);
     clearSession();
     setConnectionStatus('disconnected');
-    setRemotePlayers(new Map());
+    remotePlayersRef.current = new Map();
+    setRemotePlayersVersion((v) => v + 1);
     setChatMessages([]);
     setWorldEvents([]);
   }, [fullCleanup]);
@@ -454,7 +483,17 @@ export function useMultiplayer() {
   // ===== Broadcast local player state =====
   const updateLocalState = useCallback((state: NetworkPlayerState) => {
     localStateRef.current = state;
-  }, []);
+
+    if (connected && channelRef.current && !initialStateSentRef.current) {
+      initialStateSentRef.current = true;
+      mpAudit('initial player_state sent from broadcaster');
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'player_state',
+        payload: state,
+      });
+    }
+  }, [connected]);
 
   // ===== Send chat =====
   const sendChat = useCallback((text: string) => {
@@ -501,6 +540,10 @@ export function useMultiplayer() {
       // Sync cleanup: clear timers immediately, channel removal is fire-and-forget
       if (broadcastTimerRef.current) { clearInterval(broadcastTimerRef.current); broadcastTimerRef.current = null; }
       if (staleCleanupRef.current) { clearInterval(staleCleanupRef.current); staleCleanupRef.current = null; }
+      if (remotePlayersCommitTimerRef.current) {
+        clearTimeout(remotePlayersCommitTimerRef.current);
+        remotePlayersCommitTimerRef.current = null;
+      }
       const ch = channelRef.current;
       channelRef.current = null;
       if (ch) {
@@ -515,7 +558,7 @@ export function useMultiplayer() {
     connectionStatus,
     displayName,
     updateDisplayName,
-    remotePlayers,
+    remotePlayers: remotePlayersRef.current,
     chatMessages,
     worldEvents,
     enterWorld,
