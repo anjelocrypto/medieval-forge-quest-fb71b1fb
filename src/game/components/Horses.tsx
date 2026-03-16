@@ -137,9 +137,9 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse, isMounted }: Pr
   // Don't render if mounted
   if (horse.state === 'mounted' || isMounted) return null;
 
-  // Cull if far from player
+  // Cull if far from player — but never cull while horse is being called/approaching
   const playerPos = playerPositionRef.current;
-  if (playerPos) {
+  if (playerPos && horse.state !== 'called' && horse.state !== 'approaching') {
     const dx = playerPos.x - posRef.current[0];
     const dz = playerPos.z - posRef.current[2];
     if (dx * dx + dz * dz > 200 * 200) return null;
