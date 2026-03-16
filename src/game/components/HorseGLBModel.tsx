@@ -146,10 +146,10 @@ export function HorseGLBModel({ moveSpeed, scale = 1, renderPath = 'unknown' }: 
   return (
     <group>
       <group position={[0, yOffset * scale, 0]}>
-        <primitive object={standScene} scale={[finalScale, finalScale, finalScale]} castShadow receiveShadow />
+        <primitive object={standScene} scale={[standFinalScale, standFinalScale, standFinalScale]} castShadow receiveShadow />
       </group>
       <group position={[0, walkYOffset * scale, 0]}>
-        <primitive object={walkScene} scale={[finalScale, finalScale, finalScale]} castShadow receiveShadow />
+        <primitive object={walkScene} scale={[walkFinalScale, walkFinalScale, walkFinalScale]} castShadow receiveShadow />
       </group>
     </group>
   );
