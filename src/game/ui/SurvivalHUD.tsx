@@ -23,6 +23,7 @@ interface HUDProps {
   mapOpen: boolean;
   onCloseMap: () => void;
   isSpeaking?: boolean;
+  trencheriBalance?: number | null;
 }
 
 /* ── shared panel style ── */
