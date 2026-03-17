@@ -1,13 +1,14 @@
 /**
  * Hook for saving/loading player progression to/from the database.
- * Only works for wallet-connected accounts (guests have no persistence).
+ * Now passes session token for authenticated saves.
  */
 import { useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ProgressionState } from '../types';
+import { loadWalletSession } from './usePlayerAccount';
 
-const SAVE_DEBOUNCE_MS = 30_000; // Save at most every 30s
-const SAVE_ON_MILESTONE_MS = 5_000; // Save after milestone, shorter debounce
+const SAVE_DEBOUNCE_MS = 30_000;
+const SAVE_ON_MILESTONE_MS = 5_000;
 
 export function useProgressionPersistence() {
   const lastSaveRef = useRef(0);
@@ -20,14 +21,13 @@ export function useProgressionPersistence() {
 
   const saveProgression = useCallback(async (progression: ProgressionState, immediate = false) => {
     const wallet = walletRef.current;
-    if (!wallet) return; // Guest — no persistence
+    if (!wallet) return;
 
     const now = Date.now();
     const elapsed = now - lastSaveRef.current;
     const debounce = immediate ? SAVE_ON_MILESTONE_MS : SAVE_DEBOUNCE_MS;
 
     if (elapsed < debounce && !immediate) {
-      // Schedule a deferred save
       if (!saveTimerRef.current) {
         saveTimerRef.current = setTimeout(() => {
           saveTimerRef.current = null;
@@ -44,6 +44,7 @@ export function useProgressionPersistence() {
     }
 
     try {
+      const session = loadWalletSession();
       const { error } = await supabase.rpc('save_player_progression', {
         _wallet_address: wallet,
         _enemies_killed: progression.enemiesKilled,
@@ -52,7 +53,8 @@ export function useProgressionPersistence() {
         _total_stone_gathered: progression.totalStoneGathered,
         _tier: progression.tier,
         _areas_secured: progression.areasSecured,
-      });
+        _session_token: session?.session_token || undefined,
+      } as any);
       if (error) {
         console.warn('[Progression] Save failed:', error.message);
       }
