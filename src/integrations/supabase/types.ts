@@ -53,6 +53,24 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_wallets: {
+        Row: {
+          added_at: string
+          label: string | null
+          wallet_address: string
+        }
+        Insert: {
+          added_at?: string
+          label?: string | null
+          wallet_address: string
+        }
+        Update: {
+          added_at?: string
+          label?: string | null
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       coin_claims: {
         Row: {
           claimed_at: string
@@ -318,6 +336,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_admin_status: {
+        Args: { _session_token: string; _wallet_address: string }
+        Returns: Json
+      }
       claim_trencheri_coin:
         | {
             Args: {
@@ -331,6 +353,17 @@ export type Database = {
             Args: {
               _amount?: number
               _coin_id: string
+              _session_token?: string
+              _wallet_address: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _amount?: number
+              _coin_id: string
+              _player_x?: number
+              _player_z?: number
               _session_token?: string
               _wallet_address: string
             }
@@ -486,6 +519,10 @@ export type Database = {
             }
             Returns: undefined
           }
+      verify_admin_session: {
+        Args: { _session_token: string; _wallet_address: string }
+        Returns: boolean
+      }
       verify_wallet_session: {
         Args: { _session_token: string; _wallet_address: string }
         Returns: boolean

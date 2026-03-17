@@ -1,6 +1,7 @@
 /**
  * useTrencheriCoins — Server-authoritative $TRENCHERI coin system.
- * Now passes session tokens for authenticated coin operations.
+ * All coin operations require authenticated session tokens.
+ * Claims require player position for server-side proximity validation.
  */
 import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -103,11 +104,13 @@ export function useTrencheriCoins() {
 
     try {
       const session = loadWalletSession();
+      if (!session?.session_token) return []; // Session required
+
       const { data, error } = await supabase.rpc('issue_trencheri_coins', {
         _wallet_address: wallet,
         _positions: positions as any,
         _lifetime_seconds: Math.floor(COIN_LIFETIME_MS / 1000),
-        _session_token: session?.session_token || undefined,
+        _session_token: session.session_token,
       } as any);
 
       if (error) return [];
@@ -133,21 +136,30 @@ export function useTrencheriCoins() {
     }
   }, []);
 
-  const claimCoin = useCallback(async (coinId: string): Promise<boolean> => {
+  /** Claim a coin — now requires player position for proximity validation */
+  const claimCoin = useCallback(async (
+    coinId: string,
+    playerX: number,
+    playerZ: number,
+  ): Promise<boolean> => {
     const now = Date.now();
     if (now - lastClaimTimeRef.current < CLAIM_COOLDOWN_MS) return false;
 
     const wallet = walletRef.current;
     if (!wallet) return false;
 
+    const session = loadWalletSession();
+    if (!session?.session_token) return false; // Session required
+
     lastClaimTimeRef.current = now;
 
     try {
-      const session = loadWalletSession();
       const { data, error } = await supabase.rpc('claim_trencheri_coin', {
         _wallet_address: wallet,
         _coin_id: coinId,
-        _session_token: session?.session_token || undefined,
+        _session_token: session.session_token,
+        _player_x: playerX,
+        _player_z: playerZ,
       } as any);
 
       if (error) return false;
@@ -163,6 +175,7 @@ export function useTrencheriCoins() {
     }
   }, []);
 
+  /** Try to collect a coin at player position — passes position for server proximity check */
   const tryCollectCoin = useCallback(async (
     playerX: number, playerZ: number,
     showNotification: (msg: string) => void,
@@ -192,7 +205,8 @@ export function useTrencheriCoins() {
 
     setCoins(prev => prev.map(c => c.id === coinId ? { ...c, collected: true } : c));
 
-    const success = await claimCoin(coinId);
+    // Pass player position for server-side proximity validation
+    const success = await claimCoin(coinId, playerX, playerZ);
     if (success) {
       showNotification(`+${amount} $TRENCHERI`);
       return coinId;
