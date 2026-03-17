@@ -270,7 +270,7 @@ export function Minimap({
     <>
       {/* Minimap — top right */}
       {!mapOpen && (
-        <div className="absolute right-4 pointer-events-none" style={{ width: MAP_SIZE, height: MAP_SIZE, top: 130 }}>
+        <div className="absolute right-4 pointer-events-none" style={{ width: MAP_SIZE, height: MAP_SIZE, top: 130, zIndex: 50 }}>
           <canvas ref={miniRef} width={MAP_SIZE} height={MAP_SIZE}
             style={{ width: MAP_SIZE, height: MAP_SIZE, borderRadius: '50%' }} />
         </div>
