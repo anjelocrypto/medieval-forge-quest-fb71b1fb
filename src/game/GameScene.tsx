@@ -117,7 +117,6 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         if (saved) {
           setProgression(saved);
         }
-        }
         // Mark loaded AFTER setProgression so auto-save won't fire for the hydration
         progressionLoadedRef.current = true;
       });
