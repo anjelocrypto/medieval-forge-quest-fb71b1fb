@@ -65,8 +65,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     // 2. Create DB account
     const name = playerName.trim() || 'Knight';
     const community = communityName.trim() || null;
-    // character_type: only goblin/soldier are DB-valid
-    const dbCharType = (character === 'goblin' || character === 'soldier') ? character : 'goblin';
+    const dbCharType = character;
 
     const account = await playerAccount.createAccount(walletAddress, name, community, dbCharType);
     if (!account) {
