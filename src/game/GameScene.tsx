@@ -214,9 +214,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
 
   // Preload remote character GLBs
   useEffect(() => {
-    console.log('[GameScene] MOUNTED');
     preloadRemoteCharacterModels();
-    return () => console.log('[GameScene] UNMOUNTED');
   }, []);
 
   useEffect(() => { initInput(); }, []);
