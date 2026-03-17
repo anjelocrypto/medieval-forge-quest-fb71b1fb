@@ -71,6 +71,24 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_rate_log: {
+        Row: {
+          id: string
+          sent_at: string
+          wallet_address: string
+        }
+        Insert: {
+          id?: string
+          sent_at?: string
+          wallet_address: string
+        }
+        Update: {
+          id?: string
+          sent_at?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       coin_claims: {
         Row: {
           claimed_at: string
@@ -519,6 +537,14 @@ export type Database = {
             }
             Returns: undefined
           }
+      validate_chat: {
+        Args: {
+          _message_length?: number
+          _session_token: string
+          _wallet_address: string
+        }
+        Returns: Json
+      }
       verify_admin_session: {
         Args: { _session_token: string; _wallet_address: string }
         Returns: boolean
