@@ -25,6 +25,13 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
   const playerAccount = usePlayerAccount();
   const { character, setCharacter } = useCharacter();
 
+  // Detect mobile/touch devices
+  const isMobile = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      || ('ontouchstart' in window && window.innerWidth < 1024);
+  }, []);
+
   // Check for existing wallet session on mount
   const [walletSession, setWalletSession] = useState(() => loadWalletSession());
 
