@@ -53,6 +53,7 @@ interface PlayerProps {
   lootPickups: LootPickup[];
   onCollectLoot: (id: string) => void;
   onEatFood: () => void;
+  onTryCollectCoin?: () => void;
   horse: HorseData;
   isMounted: boolean;
   onMountHorse: () => void;
