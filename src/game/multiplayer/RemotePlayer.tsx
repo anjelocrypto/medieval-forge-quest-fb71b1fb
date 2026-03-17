@@ -199,6 +199,8 @@ export function RemotePlayer({ player, playerPositionRef }: Props) {
               <RemoteOctopusModel moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
             ) : charType === 'nemoclaw' ? (
               <RemoteNemoClawModel moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
+            ) : charType === 'chillhouse' ? (
+              <RemoteChillhouseModel moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
             ) : (
               <RemoteSoldierModel moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
             )}
