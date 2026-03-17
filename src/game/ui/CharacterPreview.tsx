@@ -7,6 +7,7 @@ import goblinStandingUrl from '@/assets/goblinstanding.glb?url';
 import soldierStandingUrl from '@/assets/standing.glb?url';
 import octopusStandingUrl from '@/assets/octopusstanding.glb?url';
 import nemoStandingUrl from '@/assets/nemostanding.glb?url';
+import chillhouseStandingUrl from '@/assets/chillhousestanding.glb?url';
 import {
   buildModelNormalization,
   cloneScene,
@@ -24,6 +25,7 @@ const STANDING_URLS: Record<string, string> = {
   soldier: soldierStandingUrl,
   octopus: octopusStandingUrl,
   nemoclaw: nemoStandingUrl,
+  chillhouse: chillhouseStandingUrl,
 };
 
 const PREVIEW_HEIGHT = 1.85;

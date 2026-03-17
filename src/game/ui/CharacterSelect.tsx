@@ -7,6 +7,7 @@ const CHARACTERS: { type: CharacterType; name: string; desc: string }[] = [
   { type: 'soldier', name: 'Soldier', desc: 'Armored human warrior' },
   { type: 'octopus', name: 'Octopus', desc: 'Tentacled sea creature' },
   { type: 'nemoclaw', name: 'NemoClaw', desc: 'Fierce dual-claw beast' },
+  { type: 'chillhouse', name: 'Chillhouse', desc: 'Cool & relaxed brawler' },
 ];
 
 export function CharacterSelect() {
@@ -53,7 +54,7 @@ export function CharacterSelect() {
         </div>
 
         {/* Character Grid */}
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-5 gap-3">
           {CHARACTERS.map((c, idx) => {
             const selected = character === c.type;
             const hovered = hoveredIdx === idx;

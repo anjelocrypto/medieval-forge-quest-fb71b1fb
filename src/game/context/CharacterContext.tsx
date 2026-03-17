@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
-export type CharacterType = 'soldier' | 'goblin' | 'octopus' | 'nemoclaw';
+export type CharacterType = 'soldier' | 'goblin' | 'octopus' | 'nemoclaw' | 'chillhouse';
 
 interface CharacterContextValue {
   character: CharacterType;
@@ -18,6 +18,7 @@ export function CharacterProvider({ children }: { children: ReactNode }) {
     if (saved === 'soldier') return 'soldier';
     if (saved === 'octopus') return 'octopus';
     if (saved === 'nemoclaw') return 'nemoclaw';
+    if (saved === 'chillhouse') return 'chillhouse';
     return 'goblin';
   });
 

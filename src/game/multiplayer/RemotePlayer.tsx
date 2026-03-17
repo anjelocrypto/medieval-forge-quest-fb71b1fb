@@ -11,6 +11,7 @@ import { RemoteGoblinModel } from './RemoteGoblinModel';
 import { RemoteSoldierModel } from './RemoteSoldierModel';
 import { RemoteOctopusModel } from './RemoteOctopusModel';
 import { RemoteNemoClawModel } from './RemoteNemoClawModel';
+import { RemoteChillhouseModel } from './RemoteChillhouseModel';
 
 // Visible placeholder capsule shown while remote character GLBs are loading
 function RemotePlayerFallback() {
@@ -66,6 +67,7 @@ const NAMETAG_HEIGHT_GOBLIN = 2.0;
 const NAMETAG_HEIGHT_SOLDIER = 2.8;
 const NAMETAG_HEIGHT_OCTOPUS = 2.0;
 const NAMETAG_HEIGHT_NEMOCLAW = 2.4;
+const NAMETAG_HEIGHT_CHILLHOUSE = 2.6;
 const NAMETAG_HEIGHT_MOUNTED = 4.5;
 
 const remoteAuditCounts: Record<string, number> = {};
@@ -130,12 +132,13 @@ export function RemotePlayer({ player, playerPositionRef }: Props) {
 
   const healthPct = player.maxHealth > 0 ? player.health / player.maxHealth : 1;
   const emoteText = player.emote ? EMOTES[player.emote] || player.emote : null;
-  const charType = player.characterType || 'goblin';
+  const charType = (player.characterType || 'goblin') as string;
   const nametagY = player.isMounted
     ? NAMETAG_HEIGHT_MOUNTED
     : charType === 'goblin' ? NAMETAG_HEIGHT_GOBLIN
     : charType === 'octopus' ? NAMETAG_HEIGHT_OCTOPUS
     : charType === 'nemoclaw' ? NAMETAG_HEIGHT_NEMOCLAW
+    : charType === 'chillhouse' ? NAMETAG_HEIGHT_CHILLHOUSE
     : NAMETAG_HEIGHT_SOLDIER;
 
   // LOD tier based on distance
@@ -196,6 +199,8 @@ export function RemotePlayer({ player, playerPositionRef }: Props) {
               <RemoteOctopusModel moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
             ) : charType === 'nemoclaw' ? (
               <RemoteNemoClawModel moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
+            ) : charType === 'chillhouse' ? (
+              <RemoteChillhouseModel moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
             ) : (
               <RemoteSoldierModel moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
             )}
@@ -244,6 +249,8 @@ function MountedRemoteModel({ moveSpeed, horsePitch, charType, player }: {
             <RemoteOctopusModel moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
           ) : charType === 'nemoclaw' ? (
             <RemoteNemoClawModel moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
+          ) : charType === 'chillhouse' ? (
+            <RemoteChillhouseModel moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
           ) : (
             <RemoteSoldierModel moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
           )}
