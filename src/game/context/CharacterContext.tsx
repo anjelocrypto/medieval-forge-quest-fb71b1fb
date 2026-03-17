@@ -18,6 +18,7 @@ export function CharacterProvider({ children }: { children: ReactNode }) {
     if (saved === 'soldier') return 'soldier';
     if (saved === 'octopus') return 'octopus';
     if (saved === 'nemoclaw') return 'nemoclaw';
+    if (saved === 'chillhouse') return 'chillhouse';
     return 'goblin';
   });
 
