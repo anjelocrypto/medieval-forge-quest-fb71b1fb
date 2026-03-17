@@ -202,7 +202,29 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
           boxShadow: '0 25px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
         }}>
 
-        {/* Title */}
+        {/* Mobile warning */}
+        {isMobile && (
+          <div className="mb-4 px-4 py-3 rounded-lg text-xs text-center" style={{
+            background: 'rgba(255,160,0,0.1)',
+            color: '#ffaa44',
+            border: '1px solid rgba(255,160,0,0.25)',
+          }}>
+            ⚠️ Trencheria is designed for desktop browsers with keyboard & mouse.
+            Mobile experience is not yet supported.
+          </div>
+        )}
+
+        {/* Alpha badge */}
+        <div className="mb-4 text-center">
+          <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full" style={{
+            background: 'rgba(232,168,56,0.1)',
+            color: '#d4a854',
+            border: '1px solid rgba(232,168,56,0.2)',
+          }}>
+            Alpha Preview
+          </span>
+        </div>
+
         <div className="text-center mb-6">
           <div className="text-5xl mb-2" style={{
             color: '#e8d5b7',

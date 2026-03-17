@@ -869,9 +869,10 @@ export function Player({
         ) : character === 'octopus' ? (
           <OctopusDeadModel />
         ) : (
+          // Generic death pose for soldier, nemoclaw, chillhouse
           <group rotation={[Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
             <mesh castShadow>
-              <boxGeometry args={[0.7, 1, 0.35]} />
+              <capsuleGeometry args={[0.3, 1, 4, 8]} />
               <meshLambertMaterial color="#4a3520" />
             </mesh>
           </group>
