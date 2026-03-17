@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChatMessage, EMOTES } from './types';
 import { setInputFocused } from '../systems/InputSystem';
+import { censorText } from '../utils/profanityFilter';
 
 interface Props {
   messages: ChatMessage[];
