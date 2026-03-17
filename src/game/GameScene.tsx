@@ -187,6 +187,9 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Guest coin message cooldown (5s between messages)
+  const lastGuestCoinMsgRef = useRef(0);
+
   // Coin collection callback for Player
   const handleTryCollectCoin = useCallback(() => {
     const pos = playerPositionRef.current;
@@ -194,12 +197,15 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     const nearDist = trencheri.getNearestCoinDistance(pos.x, pos.z);
     if (nearDist !== null) {
       if (!wallet?.wallet_address) {
-        // Guest — show message
-        setInteractionText('🪙 Connect Phantom wallet to collect $TRENCHERI');
+        // Guest — show gated message with 5s cooldown to prevent spam
+        const now = Date.now();
+        if (now - lastGuestCoinMsgRef.current < 5000) return;
+        lastGuestCoinMsgRef.current = now;
+        setInteractionText('🪙 Connect Phantom wallet to register and collect $TRENCHERI');
+        setTimeout(() => setInteractionText(null), 3000);
         return;
       }
       trencheri.tryCollectCoin(pos.x, pos.z, (msg) => {
-        // Use the existing notification system
         setInteractionText(msg);
         setTimeout(() => setInteractionText(null), 2000);
       });
