@@ -2,7 +2,7 @@
  * Menu UI overlay with Guest / Create Account / Log In flows.
  * Wallet connection via Phantom is optional — guests play without a DB account.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { usePhantomWallet } from '../hooks/usePhantomWallet';
 import { usePlayerAccount, loadWalletSession, clearWalletSession } from '../hooks/usePlayerAccount';
 import { useCharacter, CharacterType } from '../context/CharacterContext';
