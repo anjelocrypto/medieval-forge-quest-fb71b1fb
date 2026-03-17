@@ -76,6 +76,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
 
   const { character } = useCharacter();
   const progressionPersistence = useProgressionPersistence();
+  const trencheri = useTrencheriCoins();
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
   const enemiesHandleRef = useRef<EnemiesHandle>(null);
   const [mapOpen, setMapOpen] = useState(false);
