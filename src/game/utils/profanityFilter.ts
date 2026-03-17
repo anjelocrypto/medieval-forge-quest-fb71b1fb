@@ -15,40 +15,49 @@ const BLOCKED_WORDS: string[] = [
 ];
 
 // Build regex patterns - match whole words, case insensitive
-// Also match common letter substitutions: @ for a, 0 for o, 1 for i/l, 3 for e, $ for s
 function buildPattern(word: string): RegExp {
-  const escaped = word
-    .split('')
-    .map(c => {
-      const lower = c.toLowerCase();
-      switch (lower) {
-        case 'a': return '[a@4]';
-        case 'e': return '[e3]';
-        case 'i': return '[i1!|]';
-        case 'o': return '[o0]';
-        case 's': return '[s$5]';
-        case 'l': return '[l1|]';
-        case 't': return '[t7]';
-        default: return c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      }
-    })
-    .join('+'); // Allow repeated chars like "fuuuck"
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   
   // For multi-word phrases, don't require word boundaries
   if (word.includes(' ')) {
     return new RegExp(escaped, 'gi');
   }
+  // Strict word boundary matching only
+  return new RegExp(`\\b${escaped}\\b`, 'gi');
+}
+
+// Separate patterns for leet-speak variants of the most offensive terms only
+function buildLeetPattern(word: string): RegExp {
+  const leetMap: Record<string, string> = {
+    'a': '[a@4]', 'e': '[e3]', 'i': '[i1!]', 'o': '[o0]',
+    's': '[s$5]', 'l': '[l1]', 't': '[t7]',
+  };
+  const escaped = word
+    .split('')
+    .map(c => leetMap[c.toLowerCase()] || c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('');
   return new RegExp(`\\b${escaped}\\b`, 'gi');
 }
 
 const PATTERNS = BLOCKED_WORDS.map(buildPattern);
+
+// Only apply leet-speak detection to the worst slurs, not common words like "ass"
+const LEET_WORDS = ['fuck', 'shit', 'nigger', 'nigga', 'faggot', 'retard', 'cunt'];
+const LEET_PATTERNS = LEET_WORDS.map(buildLeetPattern);
 
 /**
  * Returns true if text contains profanity.
  */
 export function containsProfanity(text: string): boolean {
   const normalized = text.toLowerCase();
-  return PATTERNS.some(p => p.test(normalized));
+  // Insert spaces before uppercase letters to catch camelCase: "FuckYou" → "Fuck You"
+  const decameled = text.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
+  
+  const check = (t: string) => 
+    PATTERNS.some(p => { p.lastIndex = 0; return p.test(t); }) ||
+    LEET_PATTERNS.some(p => { p.lastIndex = 0; return p.test(t); });
+  
+  return check(normalized) || check(decameled);
 }
 
 /**
@@ -56,7 +65,7 @@ export function containsProfanity(text: string): boolean {
  */
 export function censorText(text: string): string {
   let result = text;
-  for (const pattern of PATTERNS) {
+  for (const pattern of [...PATTERNS, ...LEET_PATTERNS]) {
     pattern.lastIndex = 0;
     result = result.replace(pattern, (match) => '*'.repeat(match.length));
   }

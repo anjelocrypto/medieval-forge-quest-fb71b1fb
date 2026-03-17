@@ -101,6 +101,10 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
   const attackAnimRef = useRef(0);
 
   // Progression persistence — load on mount, save on changes
+  const progressionLoadedRef = useRef(false);
+  const latestProgressionRef = useRef(progression);
+  latestProgressionRef.current = progression;
+
   useEffect(() => {
     const session = loadWalletSession();
     if (session?.wallet_address) {
@@ -110,22 +114,30 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
           setProgression(saved);
           console.log('[Progression] Loaded from DB:', saved);
         }
+        // Mark loaded AFTER setProgression so auto-save won't fire for the hydration
+        progressionLoadedRef.current = true;
       });
+    } else {
+      // Guest — no persistence, but mark as "loaded" so auto-save stays disabled
+      progressionLoadedRef.current = true;
     }
     return () => {
-      // Flush save on unmount
-      progressionPersistence.flushSave(progression);
+      // Flush latest progression on unmount (uses ref, not stale closure)
+      if (progressionLoadedRef.current) {
+        progressionPersistence.flushSave(latestProgressionRef.current);
+      }
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-save progression every 30s when it changes
+  // Auto-save progression only AFTER initial load completes, and only on real changes
   const prevProgressionRef = useRef(progression);
   useEffect(() => {
-    if (prevProgressionRef.current !== progression) {
-      prevProgressionRef.current = progression;
-      const isMilestone = progression.enemiesKilled % 5 === 0 && progression.enemiesKilled > 0;
-      progressionPersistence.saveProgression(progression, isMilestone);
-    }
+    // Don't save until DB load has completed (prevents saving defaults over real data)
+    if (!progressionLoadedRef.current) return;
+    if (prevProgressionRef.current === progression) return;
+    prevProgressionRef.current = progression;
+    const isMilestone = progression.enemiesKilled % 5 === 0 && progression.enemiesKilled > 0;
+    progressionPersistence.saveProgression(progression, isMilestone);
   }, [progression, progressionPersistence]);
 
   // Preload remote character GLBs
