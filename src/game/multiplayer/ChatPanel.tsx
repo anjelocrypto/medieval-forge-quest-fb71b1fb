@@ -54,7 +54,7 @@ export function ChatPanel({ messages, onSendChat, onSendEmote, displayName }: Pr
   const recentMessages = messages.slice(-20);
 
   return (
-    <div className="fixed bottom-20 left-4 z-40 pointer-events-auto" style={{ width: 320 }}>
+    <div className="fixed bottom-44 left-4 z-40 pointer-events-auto" style={{ width: 320 }}>
       {/* Message history (always visible, faded) */}
       <div ref={scrollRef} className="overflow-y-auto mb-1 space-y-0.5"
         style={{ maxHeight: open ? 200 : 80, opacity: open ? 1 : 0.6 }}>
