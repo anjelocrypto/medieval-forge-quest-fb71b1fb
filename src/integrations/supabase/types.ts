@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      coin_claims: {
+        Row: {
+          claimed_at: string
+          coin_id: string
+          id: string
+          wallet_address: string
+        }
+        Insert: {
+          claimed_at?: string
+          coin_id: string
+          id?: string
+          wallet_address: string
+        }
+        Update: {
+          claimed_at?: string
+          coin_id?: string
+          id?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       game_rooms: {
         Row: {
           created_at: string
@@ -90,6 +111,33 @@ export type Database = {
           last_position_x?: number | null
           last_position_y?: number | null
           last_position_z?: number | null
+          updated_at?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
+      player_balances: {
+        Row: {
+          created_at: string
+          id: string
+          total_coins_collected: number
+          trencheri_balance: number
+          updated_at: string
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          total_coins_collected?: number
+          trencheri_balance?: number
+          updated_at?: string
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          total_coins_collected?: number
+          trencheri_balance?: number
           updated_at?: string
           wallet_address?: string
         }
@@ -180,6 +228,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_trencheri_coin: {
+        Args: { _amount?: number; _coin_id: string; _wallet_address: string }
+        Returns: Json
+      }
+      cleanup_old_coin_claims: { Args: never; Returns: undefined }
       cleanup_stale_rooms: { Args: never; Returns: undefined }
       create_game_room: {
         Args: {
@@ -212,6 +265,10 @@ export type Database = {
           total_stone_gathered: number
           total_wood_gathered: number
         }[]
+      }
+      get_trencheri_balance: {
+        Args: { _wallet_address: string }
+        Returns: number
       }
       heartbeat_room_player: {
         Args: { _player_id: string; _room_id: string }
