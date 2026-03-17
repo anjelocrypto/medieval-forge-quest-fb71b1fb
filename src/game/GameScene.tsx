@@ -74,7 +74,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
   const enemiesHandleRef = useRef<EnemiesHandle>(null);
   const [mapOpen, setMapOpen] = useState(false);
-  const [debugMounted, setDebugMounted] = useState(false);
+  // debugMounted disabled for production
   const [currentEmote, setCurrentEmote] = useState<string | null>(null);
   const [activeEmote, setActiveEmote] = useState<{ key: string; id: number } | null>(null);
   const emoteIdRef = useRef(0);
