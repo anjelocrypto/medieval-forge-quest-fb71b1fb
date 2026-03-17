@@ -499,6 +499,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
             highlightedResourceRef={highlightedResourceRef}
           />
           <LootPickups pickups={lootPickups} />
+          <TrencheriCoins coins={trencheri.coins} playerPositionRef={playerPositionRef} />
           <Horse horse={horse} playerPositionRef={playerPositionRef} onUpdateHorse={updateHorse} isMounted={isMounted} />
           <Enemies
             ref={enemiesHandleRef}
