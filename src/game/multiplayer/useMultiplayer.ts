@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { loadWalletSession } from '../hooks/usePlayerAccount';
 import { resetSpawnIndex } from '../systems/SafeSpawn';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import {
