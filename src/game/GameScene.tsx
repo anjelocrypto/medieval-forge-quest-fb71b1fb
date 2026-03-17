@@ -116,7 +116,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
       progressionPersistence.loadProgression(session.wallet_address).then(saved => {
         if (saved) {
           setProgression(saved);
-          console.log('[Progression] Loaded from DB:', saved);
+        }
         }
         // Mark loaded AFTER setProgression so auto-save won't fire for the hydration
         progressionLoadedRef.current = true;
