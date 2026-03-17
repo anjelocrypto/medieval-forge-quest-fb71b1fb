@@ -610,10 +610,13 @@ export function useMultiplayer() {
   const sendChat = useCallback((text: string) => {
     if (!channelRef.current || !text.trim()) return;
     const currentDisplayName = sessionStorage.getItem('mp_display_name') || 'Knight';
+    // Sanitize chat text: strip HTML tags, limit length
+    const sanitized = text.trim().replace(/<[^>]*>/g, '').slice(0, 200);
+    if (!sanitized) return;
     const msg: ChatMessage = {
       id: crypto.randomUUID(), playerId,
       displayName: currentDisplayName,
-      text: text.trim().slice(0, 200), timestamp: Date.now(), type: 'chat',
+      text: sanitized, timestamp: Date.now(), type: 'chat',
     };
     channelRef.current.send({ type: 'broadcast', event: 'chat', payload: msg });
     setChatMessages(prev => [...prev.slice(-99), msg]);

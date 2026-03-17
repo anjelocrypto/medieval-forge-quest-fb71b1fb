@@ -74,8 +74,8 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     }
 
     // 2. Create DB account
-    const name = playerName.trim() || 'Knight';
-    const community = communityName.trim() || null;
+    const name = sanitizeName(playerName);
+    const community = communityName.replace(/<[^>]*>/g, '').trim().slice(0, 30) || null;
     const dbCharType = character;
 
     const account = await playerAccount.createAccount(walletAddress, name, community, dbCharType);
