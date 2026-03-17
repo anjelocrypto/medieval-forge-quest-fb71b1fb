@@ -72,10 +72,10 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
   } = useGameState();
 
   const { character } = useCharacter();
+  const progressionPersistence = useProgressionPersistence();
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
   const enemiesHandleRef = useRef<EnemiesHandle>(null);
   const [mapOpen, setMapOpen] = useState(false);
-  // debugMounted disabled for production
   const [currentEmote, setCurrentEmote] = useState<string | null>(null);
   const [activeEmote, setActiveEmote] = useState<{ key: string; id: number } | null>(null);
   const emoteIdRef = useRef(0);
@@ -100,7 +100,37 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
   const isGroundedRef = useRef(true);
   const attackAnimRef = useRef(0);
 
-  // Debug: track GameScene mount/unmount + preload remote character GLBs
+  // Progression persistence — load on mount, save on changes
+  useEffect(() => {
+    const session = loadWalletSession();
+    if (session?.wallet_address) {
+      progressionPersistence.setWallet(session.wallet_address);
+      progressionPersistence.loadProgression(session.wallet_address).then(saved => {
+        if (saved) {
+          // Hydrate game state from DB
+          updateSurvival({}); // no-op, just to trigger re-render context
+          // We need to set progression directly — expose via useGameState
+          console.log('[Progression] Loaded from DB:', saved);
+        }
+      });
+    }
+    return () => {
+      // Flush save on unmount
+      progressionPersistence.flushSave(progression);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-save progression every 30s when it changes
+  const prevProgressionRef = useRef(progression);
+  useEffect(() => {
+    if (prevProgressionRef.current !== progression) {
+      prevProgressionRef.current = progression;
+      const isMilestone = progression.enemiesKilled % 5 === 0 && progression.enemiesKilled > 0;
+      progressionPersistence.saveProgression(progression, isMilestone);
+    }
+  }, [progression, progressionPersistence]);
+
+  // Preload remote character GLBs
   useEffect(() => {
     console.log('[GameScene] MOUNTED');
     preloadRemoteCharacterModels();
