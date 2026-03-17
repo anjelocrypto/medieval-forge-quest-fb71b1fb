@@ -169,7 +169,6 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'KeyM') setMapOpen(prev => !prev);
-      if (e.code === 'F3') { e.preventDefault(); setDebugMounted(prev => !prev); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
