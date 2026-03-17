@@ -1,52 +1,66 @@
 /**
- * useTrencheriCoins — Manages $TRENCHERI coin balance and collection.
+ * useTrencheriCoins — Server-authoritative $TRENCHERI coin system.
  * 
- * Server-validated: Each coin claim goes through the claim_trencheri_coin RPC
- * which enforces unique coin IDs and wallet ownership.
+ * Architecture:
+ * 1. Client generates terrain-safe candidate positions locally
+ * 2. Client sends positions to issue_trencheri_coins RPC → server assigns real IDs
+ * 3. Client also fetches get_active_coins to see coins issued by other players
+ * 4. On collection, claim_trencheri_coin RPC validates:
+ *    - coin exists in active_coins table
+ *    - coin is not expired
+ *    - coin is not already claimed
+ *    - wallet is valid + has account
+ *    - per-wallet 3s rate limit (server-side)
  * 
- * Client-trusted: Coin spawn positions are generated locally. A malicious client
- * could fabricate coin IDs. Mitigation: unique constraint prevents double-claims,
- * and rate limiting (max 1 claim per 2s) prevents spam.
+ * What is server-validated:
+ *   ✅ Coin IDs (server-generated UUIDs with 'sc_' prefix)
+ *   ✅ Coin existence (must be in active_coins table)
+ *   ✅ Expiry (checked at claim time)
+ *   ✅ Double-claim (row lock + claimed_by check)
+ *   ✅ Rate limiting (3s per wallet, enforced in DB)
+ *   ✅ Wallet ownership (checked against player_accounts)
+ *   ✅ Global coin cap (max 200 active unclaimed)
+ * 
+ * What is still client-trusted:
+ *   ⚠️ Candidate positions are generated client-side (client picks WHERE coins go)
+ *   ⚠️ Client decides WHEN to request new coins (spawn timing)
+ *   ⚠️ No position validation on claim (player doesn't prove proximity)
+ *      Mitigation: coins are visible to all wallet users, so no hidden advantage
  */
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { loadWalletSession } from './usePlayerAccount';
 
 export interface TrencheriCoin {
   id: string;
   position: [number, number, number];
-  spawnedAt: number; // Date.now()
+  spawnedAt: number;
   amount: number;
   collected: boolean;
+  expiresAt: number; // timestamp ms
 }
 
 const COIN_LIFETIME_MS = 5 * 60 * 1000; // 5 minutes
-const MAX_ACTIVE_COINS = 30;
-const SPAWN_INTERVAL_MS = 15_000; // new coin every 15s
-const CLAIM_COOLDOWN_MS = 2000; // 2s between claims
+const MAX_LOCAL_COINS = 30; // max coins rendered locally
+const SPAWN_INTERVAL_MS = 20_000; // request new coins every 20s
+const CLAIM_COOLDOWN_MS = 3500; // slightly above server's 3s to avoid wasted calls
 const COLLECTION_RADIUS = 3.0;
+const FETCH_INTERVAL_MS = 30_000; // refresh active coins from server every 30s
 
 export function useTrencheriCoins() {
   const [balance, setBalance] = useState<number | null>(null);
   const [coins, setCoins] = useState<TrencheriCoin[]>([]);
   const lastClaimTimeRef = useRef(0);
   const walletRef = useRef<string | null>(null);
-  const spawnTimerRef = useRef(0);
-  const coinCounterRef = useRef(0);
   const balanceLoadedRef = useRef(false);
-
-  /** Check if player has wallet session */
-  const isWalletConnected = useCallback((): boolean => {
-    const session = loadWalletSession();
-    walletRef.current = session?.wallet_address ?? null;
-    return !!session?.wallet_address;
-  }, []);
+  const lastIssueTimeRef = useRef(0);
 
   /** Load balance from DB */
   const loadBalance = useCallback(async () => {
     const session = loadWalletSession();
     if (!session?.wallet_address) {
       setBalance(null);
+      walletRef.current = null;
       balanceLoadedRef.current = true;
       return;
     }
@@ -66,8 +80,90 @@ export function useTrencheriCoins() {
     balanceLoadedRef.current = true;
   }, []);
 
-  /** Claim a coin — server-validated */
-  const claimCoin = useCallback(async (coinId: string, amount: number): Promise<boolean> => {
+  /** Fetch active coins from server (visible to all wallet users) */
+  const fetchActiveCoins = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_active_coins', { _limit: 50 });
+      if (error || !data) return;
+
+      const serverCoins = data as unknown as Array<{
+        id: string; x: number; y: number; z: number;
+        amount: number; expires_at: string;
+      }>;
+
+      if (!Array.isArray(serverCoins)) return;
+
+      setCoins(prev => {
+        const existingIds = new Set(prev.map(c => c.id));
+        const newCoins: TrencheriCoin[] = [];
+
+        for (const sc of serverCoins) {
+          if (existingIds.has(sc.id)) continue;
+          newCoins.push({
+            id: sc.id,
+            position: [sc.x, sc.y, sc.z],
+            spawnedAt: Date.now(),
+            amount: sc.amount,
+            collected: false,
+            expiresAt: new Date(sc.expires_at).getTime(),
+          });
+        }
+
+        if (newCoins.length === 0) return prev;
+
+        // Merge: keep existing uncollected + new, cap at MAX_LOCAL_COINS
+        const alive = prev.filter(c => !c.collected && c.expiresAt > Date.now());
+        return [...alive, ...newCoins].slice(0, MAX_LOCAL_COINS);
+      });
+    } catch {
+      // Silent fail — non-critical
+    }
+  }, []);
+
+  /** Issue new coins via server RPC (positions generated by client, IDs by server) */
+  const issueCoins = useCallback(async (
+    positions: Array<{ x: number; y: number; z: number }>
+  ): Promise<TrencheriCoin[]> => {
+    const wallet = walletRef.current;
+    if (!wallet || positions.length === 0) return [];
+
+    // Rate limit issue requests
+    const now = Date.now();
+    if (now - lastIssueTimeRef.current < SPAWN_INTERVAL_MS * 0.8) return [];
+    lastIssueTimeRef.current = now;
+
+    try {
+      const { data, error } = await supabase.rpc('issue_trencheri_coins', {
+        _wallet_address: wallet,
+        _positions: positions as any,
+        _lifetime_seconds: Math.floor(COIN_LIFETIME_MS / 1000),
+      });
+
+      if (error) return [];
+
+      const result = data as unknown as {
+        success: boolean;
+        coins?: Array<{ id: string; x: number; y: number; z: number; amount: number; expires_at: string }>;
+        error?: string;
+      };
+
+      if (!result?.success || !result.coins) return [];
+
+      return result.coins.map(c => ({
+        id: c.id,
+        position: [c.x, c.y, c.z] as [number, number, number],
+        spawnedAt: Date.now(),
+        amount: c.amount,
+        collected: false,
+        expiresAt: new Date(c.expires_at).getTime(),
+      }));
+    } catch {
+      return [];
+    }
+  }, []);
+
+  /** Claim a coin — server-validated against active_coins registry */
+  const claimCoin = useCallback(async (coinId: string): Promise<boolean> => {
     const now = Date.now();
     if (now - lastClaimTimeRef.current < CLAIM_COOLDOWN_MS) return false;
 
@@ -80,7 +176,6 @@ export function useTrencheriCoins() {
       const { data, error } = await supabase.rpc('claim_trencheri_coin', {
         _wallet_address: wallet,
         _coin_id: coinId,
-        _amount: amount,
       });
 
       if (error) return false;
@@ -89,6 +184,10 @@ export function useTrencheriCoins() {
       if (result?.success && typeof result.balance === 'number') {
         setBalance(result.balance);
         return true;
+      }
+      // Log rejection reason for debugging
+      if (result?.error) {
+        console.warn('[TRENCHERI] Claim rejected:', result.error);
       }
       return false;
     } catch {
@@ -101,17 +200,15 @@ export function useTrencheriCoins() {
     playerX: number, playerZ: number,
     showNotification: (msg: string) => void,
   ): Promise<string | null> => {
-    if (!walletRef.current) {
-      // Guest — show message but don't collect
-      // Caller handles the guest message
-      return null;
-    }
+    if (!walletRef.current) return null;
 
     let closestCoin: TrencheriCoin | null = null;
     let closestDist = COLLECTION_RADIUS * COLLECTION_RADIUS;
+    const now = Date.now();
 
     for (const coin of coins) {
       if (coin.collected) continue;
+      if (coin.expiresAt < now) continue; // Skip expired
       const dx = playerX - coin.position[0];
       const dz = playerZ - coin.position[2];
       const distSq = dx * dx + dz * dz;
@@ -129,7 +226,7 @@ export function useTrencheriCoins() {
     // Optimistically mark as collected
     setCoins(prev => prev.map(c => c.id === coinId ? { ...c, collected: true } : c));
 
-    const success = await claimCoin(coinId, amount);
+    const success = await claimCoin(coinId);
     if (success) {
       showNotification(`+${amount} $TRENCHERI`);
       return coinId;
@@ -143,8 +240,9 @@ export function useTrencheriCoins() {
   /** Check if any coin is near player (for interaction text) */
   const getNearestCoinDistance = useCallback((playerX: number, playerZ: number): number | null => {
     let minDist = Infinity;
+    const now = Date.now();
     for (const coin of coins) {
-      if (coin.collected) continue;
+      if (coin.collected || coin.expiresAt < now) continue;
       const dx = playerX - coin.position[0];
       const dz = playerZ - coin.position[2];
       const distSq = dx * dx + dz * dz;
@@ -153,18 +251,31 @@ export function useTrencheriCoins() {
     return minDist < COLLECTION_RADIUS * COLLECTION_RADIUS ? Math.sqrt(minDist) : null;
   }, [coins]);
 
+  /** Remove expired coins from local state */
+  const pruneExpired = useCallback(() => {
+    const now = Date.now();
+    setCoins(prev => {
+      const alive = prev.filter(c => !c.collected && c.expiresAt > now);
+      return alive.length !== prev.length ? alive : prev;
+    });
+  }, []);
+
   return {
     balance,
     coins,
     setCoins,
-    isWalletConnected,
     loadBalance,
+    fetchActiveCoins,
+    issueCoins,
     tryCollectCoin,
     getNearestCoinDistance,
+    pruneExpired,
     balanceLoaded: balanceLoadedRef.current,
+    walletConnected: !!walletRef.current,
     COIN_LIFETIME_MS,
-    MAX_ACTIVE_COINS,
+    MAX_LOCAL_COINS,
     SPAWN_INTERVAL_MS,
+    FETCH_INTERVAL_MS,
     COLLECTION_RADIUS,
   };
 }
