@@ -270,7 +270,7 @@ export function Minimap({
     <>
       {/* Minimap — top right */}
       {!mapOpen && (
-        <div className="absolute right-4 pointer-events-none" style={{ width: MAP_SIZE, height: MAP_SIZE, top: 130 }}>
+        <div className="absolute right-4 pointer-events-none" style={{ width: MAP_SIZE, height: MAP_SIZE, top: 130, zIndex: 50 }}>
           <canvas ref={miniRef} width={MAP_SIZE} height={MAP_SIZE}
             style={{ width: MAP_SIZE, height: MAP_SIZE, borderRadius: '50%' }} />
         </div>
@@ -279,7 +279,7 @@ export function Minimap({
       {/* Full map overlay */}
       {mapOpen && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-auto"
-          style={{ background: 'rgba(0,0,0,0.6)' }} onClick={onCloseMap}>
+          style={{ background: 'rgba(0,0,0,0.6)', zIndex: 60 }} onClick={onCloseMap}>
           <canvas ref={fullRef} width={600} height={600}
             style={{ width: 600, height: 600, borderRadius: 8, boxShadow: '0 0 40px rgba(0,0,0,0.5)' }}
             onClick={e => e.stopPropagation()} />
