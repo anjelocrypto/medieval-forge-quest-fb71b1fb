@@ -266,7 +266,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
 
   return (
     <div className="w-screen h-screen bg-background overflow-hidden cursor-crosshair">
-      <PerfBaselineHUD />
+      {/* PerfBaselineHUD removed from production — use F3 for debug */}
       <SurvivalHUD
         survival={survival}
         inventory={inventory}
