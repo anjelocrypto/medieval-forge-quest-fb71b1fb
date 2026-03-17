@@ -107,9 +107,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
       progressionPersistence.setWallet(session.wallet_address);
       progressionPersistence.loadProgression(session.wallet_address).then(saved => {
         if (saved) {
-          // Hydrate game state from DB
-          updateSurvival({}); // no-op, just to trigger re-render context
-          // We need to set progression directly — expose via useGameState
+          setProgression(saved);
           console.log('[Progression] Loaded from DB:', saved);
         }
       });
