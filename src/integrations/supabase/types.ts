@@ -95,6 +95,45 @@ export type Database = {
         }
         Relationships: []
       }
+      player_progression: {
+        Row: {
+          areas_secured: string[]
+          created_at: string
+          enemies_killed: number
+          id: string
+          structures_built: number
+          tier: number
+          total_stone_gathered: number
+          total_wood_gathered: number
+          updated_at: string
+          wallet_address: string
+        }
+        Insert: {
+          areas_secured?: string[]
+          created_at?: string
+          enemies_killed?: number
+          id?: string
+          structures_built?: number
+          tier?: number
+          total_stone_gathered?: number
+          total_wood_gathered?: number
+          updated_at?: string
+          wallet_address: string
+        }
+        Update: {
+          areas_secured?: string[]
+          created_at?: string
+          enemies_killed?: number
+          id?: string
+          structures_built?: number
+          tier?: number
+          total_stone_gathered?: number
+          total_wood_gathered?: number
+          updated_at?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       room_players: {
         Row: {
           display_name: string
@@ -160,6 +199,20 @@ export type Database = {
         }
         Returns: string
       }
+      get_leaderboard: {
+        Args: { _limit?: number }
+        Returns: {
+          character_type: string
+          community_name: string
+          display_name: string
+          enemies_killed: number
+          structures_built: number
+          tier: number
+          total_score: number
+          total_stone_gathered: number
+          total_wood_gathered: number
+        }[]
+      }
       heartbeat_room_player: {
         Args: { _player_id: string; _room_id: string }
         Returns: undefined
@@ -173,9 +226,25 @@ export type Database = {
         Args: { _player_id: string; _room_id: string }
         Returns: undefined
       }
+      load_player_progression: {
+        Args: { _wallet_address: string }
+        Returns: Json
+      }
       login_wallet_account: { Args: { _wallet_address: string }; Returns: Json }
       refresh_game_room_state: {
         Args: { _room_id: string }
+        Returns: undefined
+      }
+      save_player_progression: {
+        Args: {
+          _areas_secured: string[]
+          _enemies_killed: number
+          _structures_built: number
+          _tier: number
+          _total_stone_gathered: number
+          _total_wood_gathered: number
+          _wallet_address: string
+        }
         Returns: undefined
       }
       update_wallet_last_position: {

@@ -305,6 +305,7 @@ export function SurvivalHUD({
         <ControlSection title="Utility">
           {!isMounted && <ControlRow keys="H" action="Call Horse" />}
           <ControlRow keys="M" action="Map" />
+          <ControlRow keys="L" action="Leaderboard" />
           <ControlRow keys="K" action="Voice (Hold)" />
           <ControlRow keys="F4" action="Character" />
           <ControlRow keys="SCROLL" action="Zoom" />
@@ -314,9 +315,15 @@ export function SurvivalHUD({
       {/* Build mode panel */}
       {buildMode && (
         <div className="absolute top-24 right-4 p-4 rounded-lg min-w-56" style={panelStyle}>
-          <div className="flex items-center gap-2 mb-3 pb-2" style={{ borderBottom: '1px solid hsla(40,30%,45%,0.2)' }}>
+          <div className="flex items-center gap-2 mb-1 pb-2" style={{ borderBottom: '1px solid hsla(40,30%,45%,0.2)' }}>
             <span className="text-base">🔨</span>
             <span style={{ fontSize: 13, fontWeight: 800, color: 'hsl(35,60%,65%)', letterSpacing: '0.04em' }}>BUILD MODE</span>
+          </div>
+          <div className="mb-3 px-2 py-1 rounded text-center" style={{
+            fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const,
+            color: 'hsl(35,50%,55%)', background: 'hsla(35,40%,40%,0.1)', border: '1px solid hsla(35,40%,40%,0.15)',
+          }}>
+            ⚠️ Alpha Preview — Session only, not saved
           </div>
           {availableBuildables.map((b, i) => (
             <div key={b.type}

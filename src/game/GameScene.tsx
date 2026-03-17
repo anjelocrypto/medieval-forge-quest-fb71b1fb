@@ -20,7 +20,6 @@ import { SkyCreatures } from './components/SkyCreatures';
 import { WildernessStructures } from './components/WildernessStructures';
 import { Bridges } from './components/Bridges';
 import { NightLighting } from './components/NightLighting';
-import { RailwayDebugPreview } from './components/RailwayDebugPreview';
 import { RailwayTrack } from './components/RailwayTrack';
 import { RailwayStations } from './components/RailwayStations';
 import { RailwayBridges } from './components/RailwayBridges';
@@ -31,7 +30,10 @@ import { CameraController } from './systems/CameraController';
 import { InputFlusher } from './systems/InputFlusher';
 import { BuildModeController } from './systems/BuildModeController';
 import { SurvivalHUD } from './ui/SurvivalHUD';
+import { Leaderboard } from './ui/Leaderboard';
 import { useGameState } from './hooks/useGameState';
+import { useProgressionPersistence } from './hooks/useProgressionPersistence';
+import { loadWalletSession } from './hooks/usePlayerAccount';
 import { generateWorldResources, WorldResource, generateLootDrop } from './systems/WorldResources';
 import { initInput } from './systems/InputSystem';
 import { POIS, POI_ZONE_RADIUS } from './constants';
@@ -44,7 +46,6 @@ import { useProximityVoice } from './multiplayer/useProximityVoice';
 import { EmoteWheel } from './ui/EmoteWheel';
 import { CharacterSelect } from './ui/CharacterSelect';
 import { useCharacter } from './context/CharacterContext';
-import { PerfBaselineR3F, PerfBaselineHUD } from './debug/PerfBaseline';
 import { WebGLRecovery } from './systems/WebGLRecovery';
 import { SceneDiagnosticsBoundary } from './debug/SceneDiagnostics';
 import { preloadRemoteCharacterModels } from './multiplayer/preloadRemoteModels';
@@ -63,7 +64,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     buildMode, toggleBuildMode, selectedBuildIndex, cycleBuild,
     structures, placeStructure, buildFeedback, setBuildFeedback,
     damageFlash, applyPlayerDamage,
-    progression, recordEnemyKill, secureArea,
+    progression, setProgression, recordEnemyKill, secureArea,
     lootPickups, addLootPickups, collectLoot,
     notification, getAvailableBuildables,
     horse, isMounted, mountHorse, dismountHorse, callHorse, updateHorse,
@@ -71,10 +72,10 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
   } = useGameState();
 
   const { character } = useCharacter();
+  const progressionPersistence = useProgressionPersistence();
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
   const enemiesHandleRef = useRef<EnemiesHandle>(null);
   const [mapOpen, setMapOpen] = useState(false);
-  // debugMounted disabled for production
   const [currentEmote, setCurrentEmote] = useState<string | null>(null);
   const [activeEmote, setActiveEmote] = useState<{ key: string; id: number } | null>(null);
   const emoteIdRef = useRef(0);
@@ -99,7 +100,35 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
   const isGroundedRef = useRef(true);
   const attackAnimRef = useRef(0);
 
-  // Debug: track GameScene mount/unmount + preload remote character GLBs
+  // Progression persistence — load on mount, save on changes
+  useEffect(() => {
+    const session = loadWalletSession();
+    if (session?.wallet_address) {
+      progressionPersistence.setWallet(session.wallet_address);
+      progressionPersistence.loadProgression(session.wallet_address).then(saved => {
+        if (saved) {
+          setProgression(saved);
+          console.log('[Progression] Loaded from DB:', saved);
+        }
+      });
+    }
+    return () => {
+      // Flush save on unmount
+      progressionPersistence.flushSave(progression);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-save progression every 30s when it changes
+  const prevProgressionRef = useRef(progression);
+  useEffect(() => {
+    if (prevProgressionRef.current !== progression) {
+      prevProgressionRef.current = progression;
+      const isMilestone = progression.enemiesKilled % 5 === 0 && progression.enemiesKilled > 0;
+      progressionPersistence.saveProgression(progression, isMilestone);
+    }
+  }, [progression, progressionPersistence]);
+
+  // Preload remote character GLBs
   useEffect(() => {
     console.log('[GameScene] MOUNTED');
     preloadRemoteCharacterModels();
@@ -287,6 +316,9 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         onCloseMap={() => setMapOpen(false)}
         isSpeaking={voice.isTalking}
       />
+
+      {/* Leaderboard (L key) */}
+      <Leaderboard />
 
       {/* Multiplayer HUD */}
       <MultiplayerHUD
