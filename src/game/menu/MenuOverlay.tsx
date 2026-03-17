@@ -45,7 +45,6 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
   }, [playerAccount.error]);
 
   // === GUEST FLOW ===
-  // Display name sanitization with profanity filter
   const sanitizeName = (name: string): string => sanitizeDisplayName(name);
 
   const handleGuestPlay = async () => {
@@ -66,9 +65,9 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     setBusy(true);
     setError(null);
 
-    // 1. Connect Phantom
-    const walletAddress = await phantom.connect();
-    if (!walletAddress) {
+    // 1. Connect Phantom (with signature)
+    const result = await phantom.connect();
+    if (!result) {
       setBusy(false);
       return;
     }
@@ -78,7 +77,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     const community = communityName.replace(/<[^>]*>/g, '').trim().slice(0, 30) || null;
     const dbCharType = character;
 
-    const account = await playerAccount.createAccount(walletAddress, name, community, dbCharType);
+    const account = await playerAccount.createAccount(result.address, name, community, dbCharType, result.sessionToken);
     if (!account) {
       setBusy(false);
       return;
@@ -102,15 +101,15 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     setBusy(true);
     setError(null);
 
-    // 1. Connect Phantom
-    const walletAddress = await phantom.connect();
-    if (!walletAddress) {
+    // 1. Connect Phantom (with signature)
+    const result = await phantom.connect();
+    if (!result) {
       setBusy(false);
       return;
     }
 
     // 2. Login via RPC
-    const account = await playerAccount.loginAccount(walletAddress);
+    const account = await playerAccount.loginAccount(result.address, result.sessionToken);
     if (!account) {
       setBusy(false);
       return;
@@ -126,6 +125,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
       community_name: account.community_name,
       character_type: account.character_type,
       account_id: account.id,
+      session_token: result.sessionToken || '',
     });
 
     // 4. Enter world
@@ -241,7 +241,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
           }}>
             <div>
               <div className="text-xs font-bold" style={{ color: '#88cc88' }}>
-                🔗 Wallet Account
+                🔗 Wallet Account {walletSession.session_token ? '✓' : ''}
               </div>
               <div className="text-xs mt-0.5" style={{ color: '#8a9ab5' }}>
                 {walletSession.display_name}
@@ -276,7 +276,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
           />
         </div>
 
-        {/* Community Name — always visible */}
+        {/* Community Name */}
         <div className="mb-5">
           <label className="block text-xs font-bold mb-1.5 uppercase tracking-wider" style={labelStyle}>
             Community Name <span className="font-normal opacity-60">(optional)</span>
@@ -310,7 +310,6 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
 
         {/* Action Buttons */}
         <div className="space-y-3">
-          {/* Play as Guest — primary action */}
           <button
             onClick={handleGuestPlay}
             disabled={isBusy}
@@ -325,7 +324,6 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
             {isBusy && menuMode === 'main' ? '⏳ Connecting...' : 'Play as Guest'}
           </button>
 
-          {/* Wallet action row */}
           <div className="flex gap-3">
             <button
               onClick={handleCreateAccount}
@@ -354,7 +352,6 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
           </div>
         </div>
 
-        {/* Info text */}
         <p className="text-center text-xs mt-5" style={{ color: '#444' }}>
           Guest — play instantly · Wallet — save your profile
         </p>
