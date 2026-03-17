@@ -659,7 +659,7 @@ export function Player({
     pos.z = THREE.MathUtils.clamp(pos.z, -halfWorld, halfWorld);
     playerPositionRef.current.copy(pos);
 
-    // Loot collection
+    // Loot + coin collection
     if (!isMounted) {
       lootCheckRef.current += dt;
       if (lootCheckRef.current > 0.2) {
@@ -670,6 +670,8 @@ export function Player({
           const dz = pos.z - loot.position[2];
           if (dx * dx + dz * dz < 4) onCollectLoot(loot.id);
         }
+        // Try coin collection
+        if (onTryCollectCoin) onTryCollectCoin();
       }
     }
 
