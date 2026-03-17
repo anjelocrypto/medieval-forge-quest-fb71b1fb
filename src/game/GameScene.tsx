@@ -373,6 +373,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         mapOpen={mapOpen}
         onCloseMap={() => setMapOpen(false)}
         isSpeaking={voice.isTalking}
+        trencheriBalance={trencheri.balance}
       />
 
       {/* Leaderboard (L key) */}
