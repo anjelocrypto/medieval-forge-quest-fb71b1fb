@@ -38,7 +38,9 @@ function buildPattern(word: string): RegExp {
   if (word.includes(' ')) {
     return new RegExp(escaped, 'gi');
   }
-  return new RegExp(`\\b${escaped}\\b`, 'gi');
+  // Use word boundary OR camelCase boundary (uppercase letter before/after)
+  // This catches "FuckYou", "shitHead" etc.
+  return new RegExp(`(?<=^|\\b|[a-z])${escaped}(?=$|\\b|[A-Z])`, 'gi');
 }
 
 const PATTERNS = BLOCKED_WORDS.map(buildPattern);
