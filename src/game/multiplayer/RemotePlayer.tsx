@@ -11,6 +11,7 @@ import { RemoteGoblinModel } from './RemoteGoblinModel';
 import { RemoteSoldierModel } from './RemoteSoldierModel';
 import { RemoteOctopusModel } from './RemoteOctopusModel';
 import { RemoteNemoClawModel } from './RemoteNemoClawModel';
+import { RemoteChillhouseModel } from './RemoteChillhouseModel';
 
 // Visible placeholder capsule shown while remote character GLBs are loading
 function RemotePlayerFallback() {
