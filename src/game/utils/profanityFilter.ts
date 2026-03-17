@@ -50,7 +50,14 @@ const LEET_PATTERNS = LEET_WORDS.map(buildLeetPattern);
  */
 export function containsProfanity(text: string): boolean {
   const normalized = text.toLowerCase();
-  return PATTERNS.some(p => p.test(normalized));
+  // Insert spaces before uppercase letters to catch camelCase: "FuckYou" → "Fuck You"
+  const decameled = text.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
+  
+  const check = (t: string) => 
+    PATTERNS.some(p => { p.lastIndex = 0; return p.test(t); }) ||
+    LEET_PATTERNS.some(p => { p.lastIndex = 0; return p.test(t); });
+  
+  return check(normalized) || check(decameled);
 }
 
 /**
@@ -58,7 +65,7 @@ export function containsProfanity(text: string): boolean {
  */
 export function censorText(text: string): string {
   let result = text;
-  for (const pattern of PATTERNS) {
+  for (const pattern of [...PATTERNS, ...LEET_PATTERNS]) {
     pattern.lastIndex = 0;
     result = result.replace(pattern, (match) => '*'.repeat(match.length));
   }
