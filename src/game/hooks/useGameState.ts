@@ -205,7 +205,7 @@ export function useGameState() {
     structures, placeStructure,
     buildFeedback, setBuildFeedback,
     damageFlash, applyPlayerDamage,
-    progression, recordEnemyKill, secureArea,
+    progression, setProgression, recordEnemyKill, secureArea,
     lootPickups, addLootPickups, collectLoot,
     notification,
     getAvailableBuildables,
