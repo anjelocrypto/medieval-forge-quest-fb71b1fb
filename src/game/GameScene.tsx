@@ -319,6 +319,9 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         isSpeaking={voice.isTalking}
       />
 
+      {/* Leaderboard (L key) */}
+      <Leaderboard />
+
       {/* Multiplayer HUD */}
       <MultiplayerHUD
         connectionStatus={multiplayer.connectionStatus}
