@@ -23,6 +23,7 @@ interface HUDProps {
   mapOpen: boolean;
   onCloseMap: () => void;
   isSpeaking?: boolean;
+  trencheriBalance?: number | null;
 }
 
 /* ── shared panel style ── */
@@ -158,7 +159,7 @@ export function SurvivalHUD({
   survival, inventory, interactionText, buildMode, selectedBuildIndex,
   buildFeedback, damageFlash, progression, notification, availableBuildables,
   isMounted = false, playerX, playerZ, playerRotation, horseX, horseZ,
-  mapOpen, onCloseMap, isSpeaking = false,
+  mapOpen, onCloseMap, isSpeaking = false, trencheriBalance,
 }: HUDProps) {
   const lowHealth = survival.health < 25;
 
@@ -203,8 +204,41 @@ export function SurvivalHUD({
         )}
       </div>
 
-      {/* ═══ BOTTOM RIGHT — Inventory ═══ */}
+      {/* ═══ BOTTOM RIGHT — Inventory + $TRENCHERI ═══ */}
       <div className="absolute bottom-6 right-6 flex flex-col items-end gap-2">
+        {/* $TRENCHERI balance */}
+        <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg" style={{
+          ...panelStyle,
+          border: trencheriBalance !== null && trencheriBalance !== undefined
+            ? '1px solid hsla(45,80%,50%,0.4)'
+            : '1px solid hsla(40,30%,45%,0.3)',
+        }}>
+          <span style={{ fontSize: 16 }}>🪙</span>
+          {trencheriBalance !== null && trencheriBalance !== undefined ? (
+            <>
+              <span style={{
+                fontSize: 14, fontWeight: 800, color: 'hsl(45,80%,65%)',
+                letterSpacing: '0.04em', fontFamily: 'ui-monospace, monospace',
+              }}>
+                {trencheriBalance.toLocaleString()}
+              </span>
+              <span style={{
+                fontSize: 9, fontWeight: 700, color: 'hsl(45,50%,50%)',
+                letterSpacing: '0.08em', textTransform: 'uppercase' as const,
+              }}>
+                $TRENCHERI
+              </span>
+            </>
+          ) : (
+            <span style={{
+              fontSize: 10, fontWeight: 600, color: 'hsl(40,15%,50%)',
+              fontStyle: 'italic',
+            }}>
+              Connect Wallet
+            </span>
+          )}
+        </div>
+
         <div className="flex gap-4 p-3.5 rounded-lg" style={panelStyle}>
           <ResourceSlot icon="🪵" value={inventory.wood} label="Wood" />
           <div style={{ width: 1, background: 'hsla(40,30%,45%,0.25)' }} />

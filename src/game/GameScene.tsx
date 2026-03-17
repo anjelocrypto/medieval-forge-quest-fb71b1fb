@@ -35,6 +35,9 @@ import { useGameState } from './hooks/useGameState';
 import { useProgressionPersistence } from './hooks/useProgressionPersistence';
 import { loadWalletSession } from './hooks/usePlayerAccount';
 import { generateWorldResources, WorldResource, generateLootDrop } from './systems/WorldResources';
+import { useTrencheriCoins } from './hooks/useTrencheriCoins';
+import { spawnCoin, despawnExpiredCoins } from './systems/CoinSpawner';
+import { TrencheriCoins } from './components/TrencheriCoins';
 import { initInput } from './systems/InputSystem';
 import { POIS, POI_ZONE_RADIUS } from './constants';
 // Multiplayer
@@ -73,6 +76,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
 
   const { character } = useCharacter();
   const progressionPersistence = useProgressionPersistence();
+  const trencheri = useTrencheriCoins();
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
   const enemiesHandleRef = useRef<EnemiesHandle>(null);
   const [mapOpen, setMapOpen] = useState(false);
@@ -139,6 +143,48 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     const isMilestone = progression.enemiesKilled % 5 === 0 && progression.enemiesKilled > 0;
     progressionPersistence.saveProgression(progression, isMilestone);
   }, [progression, progressionPersistence]);
+
+  // $TRENCHERI coin system — load balance + spawn/despawn loop
+  useEffect(() => {
+    trencheri.loadBalance();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const coinSpawnTimerRef = useRef(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const pos = playerPositionRef.current;
+      // Despawn expired coins
+      trencheri.setCoins(prev => {
+        const alive = despawnExpiredCoins(prev, trencheri.COIN_LIFETIME_MS);
+        // Spawn new coin if under max
+        if (alive.length < trencheri.MAX_ACTIVE_COINS) {
+          const newCoin = spawnCoin(pos.x, pos.z);
+          if (newCoin) return [...alive, newCoin];
+        }
+        return alive;
+      });
+    }, trencheri.SPAWN_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Coin collection callback for Player
+  const handleTryCollectCoin = useCallback(() => {
+    const pos = playerPositionRef.current;
+    const wallet = loadWalletSession();
+    const nearDist = trencheri.getNearestCoinDistance(pos.x, pos.z);
+    if (nearDist !== null) {
+      if (!wallet?.wallet_address) {
+        // Guest — show message
+        setInteractionText('🪙 Connect Phantom wallet to collect $TRENCHERI');
+        return;
+      }
+      trencheri.tryCollectCoin(pos.x, pos.z, (msg) => {
+        // Use the existing notification system
+        setInteractionText(msg);
+        setTimeout(() => setInteractionText(null), 2000);
+      });
+    }
+  }, [trencheri, playerPositionRef, setInteractionText]);
 
   // Preload remote character GLBs
   useEffect(() => {
@@ -327,6 +373,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         mapOpen={mapOpen}
         onCloseMap={() => setMapOpen(false)}
         isSpeaking={voice.isTalking}
+        trencheriBalance={trencheri.balance}
       />
 
       {/* Leaderboard (L key) */}
@@ -421,6 +468,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
             lootPickups={lootPickups}
             onCollectLoot={collectLoot}
             onEatFood={eatFood}
+            onTryCollectCoin={handleTryCollectCoin}
             horse={horse}
             isMounted={isMounted}
             onMountHorse={mountHorse}
@@ -451,6 +499,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
             highlightedResourceRef={highlightedResourceRef}
           />
           <LootPickups pickups={lootPickups} />
+          <TrencheriCoins coins={trencheri.coins} playerPositionRef={playerPositionRef} />
           <Horse horse={horse} playerPositionRef={playerPositionRef} onUpdateHorse={updateHorse} isMounted={isMounted} />
           <Enemies
             ref={enemiesHandleRef}

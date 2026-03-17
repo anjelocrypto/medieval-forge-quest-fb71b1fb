@@ -53,6 +53,7 @@ interface PlayerProps {
   lootPickups: LootPickup[];
   onCollectLoot: (id: string) => void;
   onEatFood: () => void;
+  onTryCollectCoin?: () => void;
   horse: HorseData;
   isMounted: boolean;
   onMountHorse: () => void;
@@ -103,7 +104,7 @@ const LAND_RECOVERY_TIME = 0.15;   // landing stiffness duration
 export function Player({
   onSurvivalUpdate, survival, playerPositionRef, playerRotationRef,
   cameraAzimuthRef, enemiesHandleRef, onRespawn, buildMode,
-  structures, lootPickups, onCollectLoot, onEatFood,
+  structures, lootPickups, onCollectLoot, onEatFood, onTryCollectCoin,
   horse, isMounted, onMountHorse, onDismountHorse, onCallHorse, onSetInteractionText,
   onAddResource, onDepleteResource, onHitResource, inventory,
   shakeResourceRef, highlightedResourceRef,
@@ -658,7 +659,7 @@ export function Player({
     pos.z = THREE.MathUtils.clamp(pos.z, -halfWorld, halfWorld);
     playerPositionRef.current.copy(pos);
 
-    // Loot collection
+    // Loot + coin collection
     if (!isMounted) {
       lootCheckRef.current += dt;
       if (lootCheckRef.current > 0.2) {
@@ -669,6 +670,8 @@ export function Player({
           const dz = pos.z - loot.position[2];
           if (dx * dx + dz * dz < 4) onCollectLoot(loot.id);
         }
+        // Try coin collection
+        if (onTryCollectCoin) onTryCollectCoin();
       }
     }
 
