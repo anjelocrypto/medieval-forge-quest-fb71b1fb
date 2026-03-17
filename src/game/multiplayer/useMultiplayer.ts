@@ -607,13 +607,27 @@ export function useMultiplayer() {
     }
   }, [connected, sendInitialState]);
 
-  // ===== Send chat =====
-  const sendChat = useCallback((text: string) => {
+  // ===== Send chat (server-validated rate limit) =====
+  const sendChat = useCallback(async (text: string) => {
     if (!channelRef.current || !text.trim()) return;
     const currentDisplayName = sessionStorage.getItem('mp_display_name') || 'Knight';
-    // Sanitize chat text: strip HTML tags, limit length
     const sanitized = text.trim().replace(/<[^>]*>/g, '').slice(0, 200);
     if (!sanitized) return;
+
+    // Server-side rate limit check
+    try {
+      const session = loadWalletSession();
+      const { data } = await supabase.rpc('validate_chat', {
+        _wallet_address: session?.wallet_address || '',
+        _session_token: session?.session_token || '',
+        _message_length: sanitized.length,
+      } as any);
+      const result = data as unknown as { allowed: boolean; reason?: string };
+      if (!result?.allowed) return; // Silently drop rate-limited messages
+    } catch {
+      // If validation fails, still allow (graceful degradation)
+    }
+
     const msg: ChatMessage = {
       id: crypto.randomUUID(), playerId,
       displayName: currentDisplayName,
