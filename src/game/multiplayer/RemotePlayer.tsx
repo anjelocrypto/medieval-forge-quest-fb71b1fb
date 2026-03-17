@@ -132,7 +132,7 @@ export function RemotePlayer({ player, playerPositionRef }: Props) {
 
   const healthPct = player.maxHealth > 0 ? player.health / player.maxHealth : 1;
   const emoteText = player.emote ? EMOTES[player.emote] || player.emote : null;
-  const charType = player.characterType || 'goblin';
+  const charType = (player.characterType || 'goblin') as string;
   const nametagY = player.isMounted
     ? NAMETAG_HEIGHT_MOUNTED
     : charType === 'goblin' ? NAMETAG_HEIGHT_GOBLIN
