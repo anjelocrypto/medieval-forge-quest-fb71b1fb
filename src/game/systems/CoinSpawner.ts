@@ -1,5 +1,8 @@
 /**
- * CoinSpawner — Generates terrain-safe random positions for $TRENCHERI coins.
+ * CoinSpawner — Generates terrain-safe random candidate positions for $TRENCHERI coins.
+ * 
+ * IMPORTANT: This only generates CANDIDATE positions. The actual coin IDs are
+ * assigned by the server via issue_trencheri_coins RPC. Client cannot forge coin IDs.
  * 
  * Avoids: water, buildings, railway tracks, underground positions.
  * Uses the same terrain height system as SafeSpawn.
@@ -7,7 +10,6 @@
 import { getTerrainHeight } from '../components/Terrain';
 import { getLakeHeight, getRiverHeight } from '../world/WaterData';
 import { HALF_WORLD } from '../constants';
-import { TrencheriCoin } from '../hooks/useTrencheriCoins';
 
 // Spawn radius around player — coins appear 40-150m away
 const MIN_SPAWN_DIST = 40;
@@ -23,27 +25,23 @@ const EXCLUSION_ZONES = [
   { x: 0, z: 82, r: 15 },     // Spawn area
 ];
 
-let coinIdCounter = 0;
-
-function seededRandom(): number {
-  return Math.random(); // Not seeded — coins are ephemeral
-}
-
-export function generateCoinPosition(
+/**
+ * Generate a single terrain-safe candidate position near the player.
+ * Returns {x, y, z} or null if no valid position found after attempts.
+ */
+export function generateCoinCandidatePosition(
   playerX: number,
   playerZ: number,
-): [number, number, number] | null {
-  // Try up to 10 random positions
+): { x: number; y: number; z: number } | null {
   for (let attempt = 0; attempt < 10; attempt++) {
-    const angle = seededRandom() * Math.PI * 2;
-    const dist = MIN_SPAWN_DIST + seededRandom() * (MAX_SPAWN_DIST - MIN_SPAWN_DIST);
+    const angle = Math.random() * Math.PI * 2;
+    const dist = MIN_SPAWN_DIST + Math.random() * (MAX_SPAWN_DIST - MIN_SPAWN_DIST);
     const x = playerX + Math.cos(angle) * dist;
     const z = playerZ + Math.sin(angle) * dist;
 
     // Clamp to world bounds
     if (Math.abs(x) > HALF_WORLD - 20 || Math.abs(z) > HALF_WORLD - 20) continue;
 
-    // Check terrain height
     const y = getTerrainHeight(x, z);
     if (y < MIN_HEIGHT || y > MAX_HEIGHT) continue;
 
@@ -65,29 +63,23 @@ export function generateCoinPosition(
     }
     if (blocked) continue;
 
-    return [x, y + 0.5, z]; // Slightly above ground
+    return { x, y: y + 0.5, z }; // Slightly above ground
   }
   return null;
 }
 
-export function spawnCoin(playerX: number, playerZ: number): TrencheriCoin | null {
-  const pos = generateCoinPosition(playerX, playerZ);
-  if (!pos) return null;
-
-  coinIdCounter++;
-  return {
-    id: `coin_${Date.now()}_${coinIdCounter}`,
-    position: pos,
-    spawnedAt: Date.now(),
-    amount: 1,
-    collected: false,
-  };
-}
-
-export function despawnExpiredCoins(
-  coins: TrencheriCoin[],
-  lifetimeMs: number,
-): TrencheriCoin[] {
-  const now = Date.now();
-  return coins.filter(c => !c.collected && now - c.spawnedAt < lifetimeMs);
+/**
+ * Generate up to `count` candidate positions for server issuance.
+ */
+export function generateCoinCandidates(
+  playerX: number,
+  playerZ: number,
+  count: number = 2,
+): Array<{ x: number; y: number; z: number }> {
+  const positions: Array<{ x: number; y: number; z: number }> = [];
+  for (let i = 0; i < count; i++) {
+    const pos = generateCoinCandidatePosition(playerX, playerZ);
+    if (pos) positions.push(pos);
+  }
+  return positions;
 }

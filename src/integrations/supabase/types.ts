@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      active_coins: {
+        Row: {
+          amount: number
+          claimed_at: string | null
+          claimed_by: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          position_x: number
+          position_y: number
+          position_z: number
+        }
+        Insert: {
+          amount?: number
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string
+          expires_at: string
+          id: string
+          position_x: number
+          position_y: number
+          position_z: number
+        }
+        Update: {
+          amount?: number
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          position_x?: number
+          position_y?: number
+          position_z?: number
+        }
+        Relationships: []
+      }
       coin_claims: {
         Row: {
           claimed_at: string
@@ -252,6 +288,7 @@ export type Database = {
         }
         Returns: string
       }
+      get_active_coins: { Args: { _limit?: number }; Returns: Json }
       get_leaderboard: {
         Args: { _limit?: number }
         Returns: {
@@ -275,6 +312,14 @@ export type Database = {
         Returns: undefined
       }
       is_valid_character_type: { Args: { _type: string }; Returns: boolean }
+      issue_trencheri_coins: {
+        Args: {
+          _lifetime_seconds?: number
+          _positions: Json
+          _wallet_address: string
+        }
+        Returns: Json
+      }
       join_game_room: {
         Args: { _display_name: string; _player_id: string; _room_code: string }
         Returns: string

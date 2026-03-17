@@ -36,7 +36,7 @@ import { useProgressionPersistence } from './hooks/useProgressionPersistence';
 import { loadWalletSession } from './hooks/usePlayerAccount';
 import { generateWorldResources, WorldResource, generateLootDrop } from './systems/WorldResources';
 import { useTrencheriCoins } from './hooks/useTrencheriCoins';
-import { spawnCoin, despawnExpiredCoins } from './systems/CoinSpawner';
+import { generateCoinCandidates } from './systems/CoinSpawner';
 import { TrencheriCoins } from './components/TrencheriCoins';
 import { initInput } from './systems/InputSystem';
 import { POIS, POI_ZONE_RADIUS } from './constants';
@@ -145,26 +145,46 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
   }, [progression, progressionPersistence]);
 
   // $TRENCHERI coin system — load balance + spawn/despawn loop
+  // $TRENCHERI: Load balance on mount
   useEffect(() => {
     trencheri.loadBalance();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const coinSpawnTimerRef = useRef(0);
+  // $TRENCHERI: Server-issued coin spawn loop + fetch active coins
   useEffect(() => {
-    const interval = setInterval(() => {
+    // Fetch existing active coins immediately
+    trencheri.fetchActiveCoins();
+
+    const spawnInterval = setInterval(async () => {
       const pos = playerPositionRef.current;
-      // Despawn expired coins
-      trencheri.setCoins(prev => {
-        const alive = despawnExpiredCoins(prev, trencheri.COIN_LIFETIME_MS);
-        // Spawn new coin if under max
-        if (alive.length < trencheri.MAX_ACTIVE_COINS) {
-          const newCoin = spawnCoin(pos.x, pos.z);
-          if (newCoin) return [...alive, newCoin];
+      // Prune expired local coins
+      trencheri.pruneExpired();
+
+      // Only wallet users can issue new coins
+      const session = loadWalletSession();
+      if (!session?.wallet_address) return;
+
+      // Generate candidate positions and send to server for ID assignment
+      if (trencheri.coins.filter(c => !c.collected).length < trencheri.MAX_LOCAL_COINS) {
+        const candidates = generateCoinCandidates(pos.x, pos.z, 2);
+        if (candidates.length > 0) {
+          const issued = await trencheri.issueCoins(candidates);
+          if (issued.length > 0) {
+            trencheri.setCoins(prev => [...prev.filter(c => !c.collected && c.expiresAt > Date.now()), ...issued].slice(0, trencheri.MAX_LOCAL_COINS));
+          }
         }
-        return alive;
-      });
+      }
     }, trencheri.SPAWN_INTERVAL_MS);
-    return () => clearInterval(interval);
+
+    // Periodically fetch all active coins (so you see coins from other players too)
+    const fetchInterval = setInterval(() => {
+      trencheri.fetchActiveCoins();
+    }, trencheri.FETCH_INTERVAL_MS);
+
+    return () => {
+      clearInterval(spawnInterval);
+      clearInterval(fetchInterval);
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Coin collection callback for Player
