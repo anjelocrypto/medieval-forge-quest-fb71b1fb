@@ -17,7 +17,7 @@ export function CharacterSelect() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'Tab') {
+      if (e.code === 'F4') {
         e.preventDefault();
         setOpen(prev => !prev);
       }
@@ -49,7 +49,7 @@ export function CharacterSelect() {
             SELECT YOUR CHAMPION
           </h2>
           <p className="text-xs mt-1" style={{ color: 'hsl(40,15%,45%)' }}>
-            Press Tab to toggle · Click to select
+            Press F4 to toggle · Click to select
           </p>
         </div>
 

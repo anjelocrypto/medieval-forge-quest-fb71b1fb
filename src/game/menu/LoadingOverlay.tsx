@@ -97,7 +97,7 @@ export function LoadingOverlay({ ready, onFadeComplete }: Props) {
             textShadow: '0 0 20px rgba(212, 168, 84, 0.4), 0 2px 8px rgba(0,0,0,0.8)',
           }}
         >
-          MEDIEVAL FORGE QUEST
+          TRENCHERIA
         </h1>
       </div>
 

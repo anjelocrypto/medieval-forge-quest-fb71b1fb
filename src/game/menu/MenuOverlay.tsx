@@ -2,7 +2,7 @@
  * Menu UI overlay with Guest / Create Account / Log In flows.
  * Wallet connection via Phantom is optional — guests play without a DB account.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { usePhantomWallet } from '../hooks/usePhantomWallet';
 import { usePlayerAccount, loadWalletSession, clearWalletSession } from '../hooks/usePlayerAccount';
 import { useCharacter, CharacterType } from '../context/CharacterContext';
@@ -25,6 +25,13 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
   const playerAccount = usePlayerAccount();
   const { character, setCharacter } = useCharacter();
 
+  // Detect mobile/touch devices
+  const isMobile = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      || ('ontouchstart' in window && window.innerWidth < 1024);
+  }, []);
+
   // Check for existing wallet session on mount
   const [walletSession, setWalletSession] = useState(() => loadWalletSession());
 
@@ -37,8 +44,19 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
   }, [playerAccount.error]);
 
   // === GUEST FLOW ===
+  // Basic display name sanitization
+  const sanitizeName = (name: string): string => {
+    // Strip HTML/script tags, control chars, excessive whitespace
+    return name
+      .replace(/<[^>]*>/g, '')
+      .replace(/[^\w\s\-_.!?]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 20) || 'Knight';
+  };
+
   const handleGuestPlay = async () => {
-    const name = playerName.trim() || 'Knight';
+    const name = sanitizeName(playerName);
     setBusy(true);
     setError(null);
     try {
@@ -63,10 +81,9 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     }
 
     // 2. Create DB account
-    const name = playerName.trim() || 'Knight';
-    const community = communityName.trim() || null;
-    // character_type: only goblin/soldier are DB-valid
-    const dbCharType = (character === 'goblin' || character === 'soldier') ? character : 'goblin';
+    const name = sanitizeName(playerName);
+    const community = communityName.replace(/<[^>]*>/g, '').trim().slice(0, 30) || null;
+    const dbCharType = character;
 
     const account = await playerAccount.createAccount(walletAddress, name, community, dbCharType);
     if (!account) {
@@ -75,9 +92,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     }
 
     // 3. Restore character from DB
-    if (account.character_type === 'goblin' || account.character_type === 'soldier') {
-      setCharacter(account.character_type as CharacterType);
-    }
+    setCharacter(account.character_type as CharacterType);
 
     // 4. Enter world
     try {
@@ -111,9 +126,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     // 3. Restore profile data
     setPlayerName(account.display_name);
     setCommunityName(account.community_name || '');
-    if (account.character_type === 'goblin' || account.character_type === 'soldier') {
-      setCharacter(account.character_type as CharacterType);
-    }
+    setCharacter(account.character_type as CharacterType);
     setWalletSession({
       wallet_address: account.wallet_address,
       display_name: account.display_name,
@@ -189,7 +202,29 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
           boxShadow: '0 25px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
         }}>
 
-        {/* Title */}
+        {/* Mobile warning */}
+        {isMobile && (
+          <div className="mb-4 px-4 py-3 rounded-lg text-xs text-center" style={{
+            background: 'rgba(255,160,0,0.1)',
+            color: '#ffaa44',
+            border: '1px solid rgba(255,160,0,0.25)',
+          }}>
+            ⚠️ Trencheria is designed for desktop browsers with keyboard & mouse.
+            Mobile experience is not yet supported.
+          </div>
+        )}
+
+        {/* Alpha badge */}
+        <div className="mb-4 text-center">
+          <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full" style={{
+            background: 'rgba(232,168,56,0.1)',
+            color: '#d4a854',
+            border: '1px solid rgba(232,168,56,0.2)',
+          }}>
+            Alpha Preview
+          </span>
+        </div>
+
         <div className="text-center mb-6">
           <div className="text-5xl mb-2" style={{
             color: '#e8d5b7',

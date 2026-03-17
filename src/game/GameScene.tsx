@@ -74,7 +74,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
   const [resources, setResources] = useState<WorldResource[]>(() => generateWorldResources());
   const enemiesHandleRef = useRef<EnemiesHandle>(null);
   const [mapOpen, setMapOpen] = useState(false);
-  const [debugMounted, setDebugMounted] = useState(false);
+  // debugMounted disabled for production
   const [currentEmote, setCurrentEmote] = useState<string | null>(null);
   const [activeEmote, setActiveEmote] = useState<{ key: string; id: number } | null>(null);
   const emoteIdRef = useRef(0);
@@ -169,7 +169,6 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'KeyM') setMapOpen(prev => !prev);
-      if (e.code === 'F3') { e.preventDefault(); setDebugMounted(prev => !prev); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -266,7 +265,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
 
   return (
     <div className="w-screen h-screen bg-background overflow-hidden cursor-crosshair">
-      <PerfBaselineHUD />
+      {/* PerfBaselineHUD removed from production — use F3 for debug */}
       <SurvivalHUD
         survival={survival}
         inventory={inventory}
@@ -341,7 +340,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
 
         <WebGLRecovery />
         {onSceneReady && <StartupReadiness onReady={onSceneReady} />}
-        <PerfBaselineR3F />
+        {/* PerfBaselineR3F disabled for production */}
         <InputFlusher />
         <SceneDiagnosticsBoundary>
           <BuildModeController
@@ -465,10 +464,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         </SceneDiagnosticsBoundary>
       </Canvas>
 
-      {/* Mounted grounding debug overlay */}
-      {debugMounted && isMounted && (
-        <MountedDebugOverlay debugRef={mountedDebugRef} posRef={playerPositionRef} />
-      )}
+      {/* Debug overlay disabled for production */}
     </div>
   );
 }
