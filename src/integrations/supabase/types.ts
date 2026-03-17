@@ -22,6 +22,7 @@ export type Database = {
           created_at: string
           expires_at: string
           id: string
+          issued_by: string | null
           position_x: number
           position_y: number
           position_z: number
@@ -33,6 +34,7 @@ export type Database = {
           created_at?: string
           expires_at: string
           id: string
+          issued_by?: string | null
           position_x: number
           position_y: number
           position_z: number
@@ -44,6 +46,7 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          issued_by?: string | null
           position_x?: number
           position_y?: number
           position_z?: number
@@ -259,15 +262,81 @@ export type Database = {
           },
         ]
       }
+      security_logs: {
+        Row: {
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          wallet_address: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          wallet_address?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
+      wallet_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          last_used_at: string
+          session_token: string
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          last_used_at?: string
+          session_token: string
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          last_used_at?: string
+          session_token?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      claim_trencheri_coin: {
-        Args: { _amount?: number; _coin_id: string; _wallet_address: string }
-        Returns: Json
-      }
+      claim_trencheri_coin:
+        | {
+            Args: {
+              _amount?: number
+              _coin_id: string
+              _wallet_address: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _amount?: number
+              _coin_id: string
+              _session_token?: string
+              _wallet_address: string
+            }
+            Returns: Json
+          }
+      cleanup_expired_sessions: { Args: never; Returns: undefined }
       cleanup_old_coin_claims: { Args: never; Returns: undefined }
       cleanup_stale_rooms: { Args: never; Returns: undefined }
       create_game_room: {
@@ -286,6 +355,10 @@ export type Database = {
           _display_name?: string
           _wallet_address: string
         }
+        Returns: string
+      }
+      create_wallet_session: {
+        Args: { _wallet_address: string }
         Returns: string
       }
       get_active_coins: { Args: { _limit?: number }; Returns: Json }
@@ -312,14 +385,24 @@ export type Database = {
         Returns: undefined
       }
       is_valid_character_type: { Args: { _type: string }; Returns: boolean }
-      issue_trencheri_coins: {
-        Args: {
-          _lifetime_seconds?: number
-          _positions: Json
-          _wallet_address: string
-        }
-        Returns: Json
-      }
+      issue_trencheri_coins:
+        | {
+            Args: {
+              _lifetime_seconds?: number
+              _positions: Json
+              _wallet_address: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _lifetime_seconds?: number
+              _positions: Json
+              _session_token?: string
+              _wallet_address: string
+            }
+            Returns: Json
+          }
       join_game_room: {
         Args: { _display_name: string; _player_id: string; _room_code: string }
         Returns: string
@@ -337,35 +420,75 @@ export type Database = {
         Args: { _room_id: string }
         Returns: undefined
       }
-      save_player_progression: {
-        Args: {
-          _areas_secured: string[]
-          _enemies_killed: number
-          _structures_built: number
-          _tier: number
-          _total_stone_gathered: number
-          _total_wood_gathered: number
-          _wallet_address: string
-        }
-        Returns: undefined
-      }
-      update_wallet_last_position: {
-        Args: {
-          _last_position_x: number
-          _last_position_y: number
-          _last_position_z: number
-          _wallet_address: string
-        }
-        Returns: undefined
-      }
-      update_wallet_profile: {
-        Args: {
-          _character_type?: string
-          _community_name?: string
-          _display_name?: string
-          _wallet_address: string
-        }
-        Returns: undefined
+      save_player_progression:
+        | {
+            Args: {
+              _areas_secured: string[]
+              _enemies_killed: number
+              _structures_built: number
+              _tier: number
+              _total_stone_gathered: number
+              _total_wood_gathered: number
+              _wallet_address: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              _areas_secured: string[]
+              _enemies_killed: number
+              _session_token?: string
+              _structures_built: number
+              _tier: number
+              _total_stone_gathered: number
+              _total_wood_gathered: number
+              _wallet_address: string
+            }
+            Returns: undefined
+          }
+      update_wallet_last_position:
+        | {
+            Args: {
+              _last_position_x: number
+              _last_position_y: number
+              _last_position_z: number
+              _wallet_address: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              _last_position_x: number
+              _last_position_y: number
+              _last_position_z: number
+              _session_token?: string
+              _wallet_address: string
+            }
+            Returns: undefined
+          }
+      update_wallet_profile:
+        | {
+            Args: {
+              _character_type?: string
+              _community_name?: string
+              _display_name?: string
+              _wallet_address: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              _character_type?: string
+              _community_name?: string
+              _display_name?: string
+              _session_token?: string
+              _wallet_address: string
+            }
+            Returns: undefined
+          }
+      verify_wallet_session: {
+        Args: { _session_token: string; _wallet_address: string }
+        Returns: boolean
       }
     }
     Enums: {
