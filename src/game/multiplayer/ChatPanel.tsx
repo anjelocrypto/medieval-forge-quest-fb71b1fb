@@ -63,7 +63,7 @@ export function ChatPanel({ messages, onSendChat, onSendEmote, displayName }: Pr
     }
     sendTimestamps.current.push(now);
 
-    onSendChat(text);
+    onSendChat(censorText(text));
     setInput('');
   };
 
