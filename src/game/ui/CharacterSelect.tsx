@@ -54,7 +54,7 @@ export function CharacterSelect() {
         </div>
 
         {/* Character Grid */}
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-5 gap-3">
           {CHARACTERS.map((c, idx) => {
             const selected = character === c.type;
             const hovered = hoveredIdx === idx;
