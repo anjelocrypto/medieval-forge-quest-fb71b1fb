@@ -6,6 +6,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { usePhantomWallet } from '../hooks/usePhantomWallet';
 import { usePlayerAccount, loadWalletSession, clearWalletSession } from '../hooks/usePlayerAccount';
 import { useCharacter, CharacterType } from '../context/CharacterContext';
+import { sanitizeDisplayName } from '../utils/profanityFilter';
 
 interface Props {
   onEnterWorld: (playerName: string) => Promise<void>;
