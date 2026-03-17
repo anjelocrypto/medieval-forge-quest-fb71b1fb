@@ -74,9 +74,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     }
 
     // 3. Restore character from DB
-    if (account.character_type === 'goblin' || account.character_type === 'soldier') {
-      setCharacter(account.character_type as CharacterType);
-    }
+    setCharacter(account.character_type as CharacterType);
 
     // 4. Enter world
     try {
