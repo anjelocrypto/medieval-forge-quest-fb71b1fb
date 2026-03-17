@@ -37,8 +37,19 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
   }, [playerAccount.error]);
 
   // === GUEST FLOW ===
+  // Basic display name sanitization
+  const sanitizeName = (name: string): string => {
+    // Strip HTML/script tags, control chars, excessive whitespace
+    return name
+      .replace(/<[^>]*>/g, '')
+      .replace(/[^\w\s\-_.!?]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 20) || 'Knight';
+  };
+
   const handleGuestPlay = async () => {
-    const name = playerName.trim() || 'Knight';
+    const name = sanitizeName(playerName);
     setBusy(true);
     setError(null);
     try {
