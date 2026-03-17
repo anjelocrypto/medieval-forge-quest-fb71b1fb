@@ -468,6 +468,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
             lootPickups={lootPickups}
             onCollectLoot={collectLoot}
             onEatFood={eatFood}
+            onTryCollectCoin={handleTryCollectCoin}
             horse={horse}
             isMounted={isMounted}
             onMountHorse={mountHorse}
