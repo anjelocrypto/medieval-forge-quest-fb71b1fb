@@ -35,6 +35,9 @@ import { useGameState } from './hooks/useGameState';
 import { useProgressionPersistence } from './hooks/useProgressionPersistence';
 import { loadWalletSession } from './hooks/usePlayerAccount';
 import { generateWorldResources, WorldResource, generateLootDrop } from './systems/WorldResources';
+import { useTrencheriCoins } from './hooks/useTrencheriCoins';
+import { spawnCoin, despawnExpiredCoins } from './systems/CoinSpawner';
+import { TrencheriCoins } from './components/TrencheriCoins';
 import { initInput } from './systems/InputSystem';
 import { POIS, POI_ZONE_RADIUS } from './constants';
 // Multiplayer
