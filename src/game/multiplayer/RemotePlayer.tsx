@@ -67,6 +67,7 @@ const NAMETAG_HEIGHT_GOBLIN = 2.0;
 const NAMETAG_HEIGHT_SOLDIER = 2.8;
 const NAMETAG_HEIGHT_OCTOPUS = 2.0;
 const NAMETAG_HEIGHT_NEMOCLAW = 2.4;
+const NAMETAG_HEIGHT_CHILLHOUSE = 2.6;
 const NAMETAG_HEIGHT_MOUNTED = 4.5;
 
 const remoteAuditCounts: Record<string, number> = {};
