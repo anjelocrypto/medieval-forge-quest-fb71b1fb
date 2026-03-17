@@ -249,6 +249,8 @@ function MountedRemoteModel({ moveSpeed, horsePitch, charType, player }: {
             <RemoteOctopusModel moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
           ) : charType === 'nemoclaw' ? (
             <RemoteNemoClawModel moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
+          ) : charType === 'chillhouse' ? (
+            <RemoteChillhouseModel moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
           ) : (
             <RemoteSoldierModel moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
           )}

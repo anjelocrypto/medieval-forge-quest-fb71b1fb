@@ -58,6 +58,10 @@ export function preloadRemoteCharacterModels() {
   useGLTF.preload(nemoStandingUrl);
   useGLTF.preload(nemoWalkingUrl);
 
+  // Chillhouse
+  useGLTF.preload(chillhouseStandingUrl);
+  useGLTF.preload(chillhouseWalkingUrl);
+
   // Horse (for mounted remote players)
   useGLTF.preload(horseStandUrl);
   useGLTF.preload(horseWalkUrl);

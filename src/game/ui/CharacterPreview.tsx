@@ -25,6 +25,7 @@ const STANDING_URLS: Record<string, string> = {
   soldier: soldierStandingUrl,
   octopus: octopusStandingUrl,
   nemoclaw: nemoStandingUrl,
+  chillhouse: chillhouseStandingUrl,
 };
 
 const PREVIEW_HEIGHT = 1.85;

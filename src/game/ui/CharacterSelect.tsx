@@ -7,6 +7,7 @@ const CHARACTERS: { type: CharacterType; name: string; desc: string }[] = [
   { type: 'soldier', name: 'Soldier', desc: 'Armored human warrior' },
   { type: 'octopus', name: 'Octopus', desc: 'Tentacled sea creature' },
   { type: 'nemoclaw', name: 'NemoClaw', desc: 'Fierce dual-claw beast' },
+  { type: 'chillhouse', name: 'Chillhouse', desc: 'Cool & relaxed brawler' },
 ];
 
 export function CharacterSelect() {
