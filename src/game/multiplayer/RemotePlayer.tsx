@@ -138,6 +138,7 @@ export function RemotePlayer({ player, playerPositionRef }: Props) {
     : charType === 'goblin' ? NAMETAG_HEIGHT_GOBLIN
     : charType === 'octopus' ? NAMETAG_HEIGHT_OCTOPUS
     : charType === 'nemoclaw' ? NAMETAG_HEIGHT_NEMOCLAW
+    : charType === 'chillhouse' ? NAMETAG_HEIGHT_CHILLHOUSE
     : NAMETAG_HEIGHT_SOLDIER;
 
   // LOD tier based on distance
