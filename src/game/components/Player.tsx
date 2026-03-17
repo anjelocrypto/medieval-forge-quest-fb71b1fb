@@ -104,7 +104,7 @@ const LAND_RECOVERY_TIME = 0.15;   // landing stiffness duration
 export function Player({
   onSurvivalUpdate, survival, playerPositionRef, playerRotationRef,
   cameraAzimuthRef, enemiesHandleRef, onRespawn, buildMode,
-  structures, lootPickups, onCollectLoot, onEatFood,
+  structures, lootPickups, onCollectLoot, onEatFood, onTryCollectCoin,
   horse, isMounted, onMountHorse, onDismountHorse, onCallHorse, onSetInteractionText,
   onAddResource, onDepleteResource, onHitResource, inventory,
   shakeResourceRef, highlightedResourceRef,
