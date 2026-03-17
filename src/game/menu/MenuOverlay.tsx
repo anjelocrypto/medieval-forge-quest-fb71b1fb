@@ -108,9 +108,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     // 3. Restore profile data
     setPlayerName(account.display_name);
     setCommunityName(account.community_name || '');
-    if (account.character_type === 'goblin' || account.character_type === 'soldier') {
-      setCharacter(account.character_type as CharacterType);
-    }
+    setCharacter(account.character_type as CharacterType);
     setWalletSession({
       wallet_address: account.wallet_address,
       display_name: account.display_name,

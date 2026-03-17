@@ -465,10 +465,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         </SceneDiagnosticsBoundary>
       </Canvas>
 
-      {/* Mounted grounding debug overlay */}
-      {debugMounted && isMounted && (
-        <MountedDebugOverlay debugRef={mountedDebugRef} posRef={playerPositionRef} />
-      )}
+      {/* Debug overlay disabled for production */}
     </div>
   );
 }

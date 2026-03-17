@@ -26,7 +26,7 @@ export function MultiplayerHUD({ connectionStatus, playerCount, playerId, voiceS
       style={{ background: 'rgba(0,0,0,0.6)', padding: '6px 10px', borderRadius: 6, border: '1px solid #333' }}>
       <div style={{ color: statusColor }}>● {statusLabel}</div>
       <div style={{ color: '#aaa' }}>Players Online: {playerCount}</div>
-      <div style={{ color: '#666', fontSize: 9 }}>ID: {playerId.slice(0, 10)}</div>
+      {/* Player ID hidden from production HUD */}
       {voiceState && (
         <div style={{
           marginTop: 4,

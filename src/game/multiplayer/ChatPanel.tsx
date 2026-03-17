@@ -45,9 +45,24 @@ export function ChatPanel({ messages, onSendChat, onSendEmote, displayName }: Pr
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
+  // Rate limiting: max 3 messages per 5 seconds
+  const sendTimestamps = useRef<number[]>([]);
+  const RATE_LIMIT_WINDOW = 5000;
+  const RATE_LIMIT_MAX = 3;
+
   const handleSend = () => {
-    if (!input.trim()) return;
-    onSendChat(input);
+    const text = input.trim();
+    if (!text) return;
+
+    // Rate limit check
+    const now = Date.now();
+    sendTimestamps.current = sendTimestamps.current.filter(t => now - t < RATE_LIMIT_WINDOW);
+    if (sendTimestamps.current.length >= RATE_LIMIT_MAX) {
+      return; // silently drop — avoid spamming error messages too
+    }
+    sendTimestamps.current.push(now);
+
+    onSendChat(text);
     setInput('');
   };
 
