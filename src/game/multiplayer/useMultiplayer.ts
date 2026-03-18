@@ -348,6 +348,8 @@ export function useMultiplayer() {
       p.horseState = payload.hs;
       p.emote = payload.em;
       p.isSpeaking = payload.sp;
+      p.clanName = payload.cn ?? null;
+      p.clanColor = payload.cc ?? null;
       p.lastUpdateTime = Date.now();
 
       scheduleRemotePlayersCommit(isNew || charChanged || nameChanged);
