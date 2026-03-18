@@ -23,7 +23,7 @@ interface Props {
   playerZ: number;
 }
 
-type Tab = 'my_clan' | 'browse' | 'territories' | 'create';
+type Tab = 'my_clan' | 'browse' | 'territories' | 'history' | 'create';
 
 const panelStyle: React.CSSProperties = {
   background: 'linear-gradient(160deg, hsla(0,0%,6%,0.97), hsla(0,0%,10%,0.97))',
