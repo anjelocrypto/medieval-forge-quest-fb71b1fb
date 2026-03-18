@@ -6,6 +6,7 @@ import { getTerrainHeight } from '../components/Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
 import { Html } from '@react-three/drei';
 import { HorseGLBModel } from '../components/HorseGLBModel';
+import { CLAN_COLOR_HEX, ClanColor } from '../hooks/useClanSystem';
 
 import { RemoteGoblinModel } from './RemoteGoblinModel';
 import { RemoteSoldierModel } from './RemoteSoldierModel';
