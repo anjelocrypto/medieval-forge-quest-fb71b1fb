@@ -908,7 +908,7 @@ export function Player({
         ) : character === 'octopus' ? (
           <OctopusDeadModel />
         ) : (
-          // Generic death pose for soldier, nemoclaw, chillhouse
+          // Generic death pose for soldier, nemoclaw, chillhouse, yeti, dog
           <group rotation={[Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
             <mesh castShadow>
               <capsuleGeometry args={[0.3, 1, 4, 8]} />
