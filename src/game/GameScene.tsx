@@ -116,11 +116,17 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
   const attackAnimRef = useRef(0);
 
   // === PVP STATE ===
-  const lastDamageSourceRef = useRef<{ attackerId: string; attackerWallet: string; timestamp: number } | null>(null);
+  const lastDamageSourceRef = useRef<{ attackerId: string; attackerWallet: string; attackerName: string; attackerClanColor: string; timestamp: number } | null>(null);
   const pvpKillLoggedRef = useRef(false);
   const pvpDeathLogCooldownRef = useRef(0);
   const [pvpHitMarker, setPvpHitMarker] = useState(false);
+  const [pvpDamageFlash, setPvpDamageFlash] = useState(false);
   const [pvpNotification, setPvpNotification] = useState<string | null>(null);
+  // Respawn invulnerability (4 seconds)
+  const respawnInvulnRef = useRef(0);
+  const [invulnTimeLeft, setInvulnTimeLeft] = useState(0);
+  // Kill feed
+  const [killFeedEntries, setKillFeedEntries] = useState<KillEntry[]>([]);
   const progressionLoadedRef = useRef(false);
   const latestProgressionRef = useRef(progression);
   latestProgressionRef.current = progression;
