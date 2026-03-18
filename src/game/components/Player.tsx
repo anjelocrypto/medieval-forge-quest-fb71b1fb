@@ -10,7 +10,7 @@ import { NemoClawGLBModel } from './NemoClawCharacterModel';
 import { ChillhouseGLBModel } from './ChillhouseCharacterModel';
 import { PlaceholderLocalModel } from './PlaceholderCharacterModel';
 import { useCharacter } from '../context/CharacterContext';
-import { getFactionByCharacter } from '../systems/FactionData';
+import { getFactionByCharacter, getFactionById } from '../systems/FactionData';
 import { getTerrainHeight } from './Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
 import { getMovementInput } from '../systems/InputSystem';
@@ -561,19 +561,19 @@ export function Player({
 
       // === PVP HIT DETECTION ===
       // Faction-based: different factions can damage each other, same faction cannot
-      // Uses stable faction UUID (localClanId) for protection, NOT string names
+      // Uses stable faction color (1:1 with faction UUID) for same-faction protection
       if (onPvpHit && localClanId && remotePlayersRef?.current) {
         const pvpDmg = isCombo ? PVP_COMBO_DAMAGE : PVP_DAMAGE;
+        // Resolve our local faction color from FactionData for stable comparison
+        const localFaction = getFactionById(localClanId);
+        const localFactionColor = localFaction?.color ?? null;
         remotePlayersRef.current.forEach((remote) => {
           // Skip: dead players (health <= 0)
           if (remote.health <= 0) return;
-          // Skip: same faction — compare via faction color which maps 1:1 to faction
-          // The remote's clanName is actually the faction name broadcast by MultiplayerBroadcaster
-          // The remote's clanColor is the faction color. We use localClanId (UUID) vs checking
-          // if the remote belongs to our faction by matching faction name to our localClanName
-          if (localClanName && remote.clanName === localClanName) return;
           // Skip: remote has no faction (guests can't PvP)
-          if (!remote.clanName) return;
+          if (!remote.clanColor) return;
+          // Skip: same faction — compare via faction color slug (1:1 with faction, immutable)
+          if (localFactionColor && remote.clanColor === localFactionColor) return;
           const dx = remote.renderPosition[0] - pos.x;
           const dz = remote.renderPosition[2] - pos.z;
           const distSq = dx * dx + dz * dz;

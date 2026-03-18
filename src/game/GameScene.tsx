@@ -813,7 +813,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
             damageFlash={damageFlash}
             remotePlayersRef={multiplayer.remotePlayersRef}
             localClanId={loadWalletSession()?.faction_id ?? null}
-            localClanName={clanSystem.myClan?.clan_name ?? null}
+            localClanName={null /* unused — PvP uses faction color comparison */}
             onPvpHit={handlePvpHit}
           />
           <WorldObjects

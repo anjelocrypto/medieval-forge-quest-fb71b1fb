@@ -158,23 +158,28 @@ export function RemotePlayer({ player, playerPositionRef }: Props) {
           textAlign: 'center', whiteSpace: 'nowrap',
           textShadow: '0 1px 4px rgba(0,0,0,0.8)', fontFamily: 'monospace',
         }}>
-          {/* Clan tag */}
-          {player.clanName && player.clanColor && (
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 3,
-              fontSize: 8, fontWeight: 700, letterSpacing: '0.06em',
-              color: CLAN_COLOR_HEX[player.clanColor as ClanColor] || '#aaa',
-              marginBottom: 1,
-            }}>
-              <span style={{
-                width: 6, height: 6, borderRadius: '50%',
-                background: CLAN_COLOR_HEX[player.clanColor as ClanColor] || '#aaa',
-                display: 'inline-block',
-                boxShadow: `0 0 4px ${CLAN_COLOR_HEX[player.clanColor as ClanColor] || '#aaa'}80`,
-              }} />
-              {player.clanName}
-            </div>
-          )}
+          {/* Faction tag */}
+          {player.clanName && player.clanColor && (() => {
+            const faction = getFactionByCharacter(player.characterType);
+            const colorHex = faction?.colorHex || CLAN_COLOR_HEX[player.clanColor as ClanColor] || '#aaa';
+            return (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 3,
+                fontSize: 8, fontWeight: 700, letterSpacing: '0.06em',
+                color: colorHex,
+                marginBottom: 1,
+              }}>
+                {faction && <span style={{ fontSize: 8 }}>{faction.icon}</span>}
+                <span style={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: colorHex,
+                  display: 'inline-block',
+                  boxShadow: `0 0 4px ${colorHex}80`,
+                }} />
+                {player.clanName}
+              </div>
+            );
+          })()}
           <div style={{ color: '#fff', fontSize: 11, fontWeight: 700, marginBottom: 2 }}>
             {player.isSpeaking && <span style={{ marginRight: 3 }}>🎙️</span>}
             {player.displayName}
