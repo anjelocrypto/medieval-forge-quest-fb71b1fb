@@ -13,6 +13,8 @@ import { RemoteSoldierModel } from './RemoteSoldierModel';
 import { RemoteOctopusModel } from './RemoteOctopusModel';
 import { RemoteNemoClawModel } from './RemoteNemoClawModel';
 import { RemoteChillhouseModel } from './RemoteChillhouseModel';
+import { PlaceholderRemoteModel } from '../components/PlaceholderCharacterModel';
+import { getFactionByCharacter } from '../systems/FactionData';
 
 // Visible placeholder capsule shown while remote character GLBs are loading
 function RemotePlayerFallback() {
@@ -219,6 +221,8 @@ export function RemotePlayer({ player, playerPositionRef }: Props) {
               <RemoteNemoClawModel moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
             ) : charType === 'chillhouse' ? (
               <RemoteChillhouseModel moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
+            ) : (charType === 'yeti' || charType === 'dog') ? (
+              <PlaceholderRemoteModel factionColor={getFactionByCharacter(charType)?.colorHex || '#888'} label={charType} moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
             ) : (
               <RemoteSoldierModel moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
             )}
@@ -269,6 +273,8 @@ function MountedRemoteModel({ moveSpeed, horsePitch, charType, player }: {
             <RemoteNemoClawModel moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
           ) : charType === 'chillhouse' ? (
             <RemoteChillhouseModel moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
+          ) : (charType === 'yeti' || charType === 'dog') ? (
+            <PlaceholderRemoteModel factionColor={getFactionByCharacter(charType)?.colorHex || '#888'} label={charType} moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
           ) : (
             <RemoteSoldierModel moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
           )}

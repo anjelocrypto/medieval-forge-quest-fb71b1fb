@@ -48,9 +48,8 @@ import { MultiplayerHUD } from './multiplayer/MultiplayerHUD';
 import { ChatPanel } from './multiplayer/ChatPanel';
 import { useProximityVoice } from './multiplayer/useProximityVoice';
 import { EmoteWheel } from './ui/EmoteWheel';
-import { CharacterSelect } from './ui/CharacterSelect';
 import { SettingsPanel } from './ui/SettingsPanel';
-import { ClanPanel } from './ui/ClanPanel';
+import { FactionPanel } from './ui/FactionPanel';
 import { TerritoryIndicator } from './components/TerritoryIndicator';
 import { TerritoryMarkers } from './components/TerritoryMarkers';
 import { TerritoryGateBanners } from './components/TerritoryGateBanners';
@@ -708,9 +707,6 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         </button>
       )}
 
-      {/* Character Select (F4) */}
-      <CharacterSelect />
-
       {/* Settings Panel (P key) */}
       <SettingsPanel
         open={settingsOpen}
@@ -722,8 +718,8 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         currentCommunityName={loadWalletSession()?.community_name}
       />
 
-      {/* Clan Panel (C key) */}
-      <ClanPanel
+      {/* Faction Panel (C key) */}
+      <FactionPanel
         open={clanOpen}
         onClose={() => setClanOpen(false)}
         playerX={playerPositionRef.current.x}

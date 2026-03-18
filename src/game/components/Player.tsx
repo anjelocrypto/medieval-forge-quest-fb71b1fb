@@ -8,7 +8,9 @@ import { OctopusGLBModel } from './OctopusCharacterModel';
 import { OctopusDeadModel } from './OctopusDeadModel';
 import { NemoClawGLBModel } from './NemoClawCharacterModel';
 import { ChillhouseGLBModel } from './ChillhouseCharacterModel';
+import { PlaceholderLocalModel } from './PlaceholderCharacterModel';
 import { useCharacter } from '../context/CharacterContext';
+import { getFactionByCharacter } from '../systems/FactionData';
 import { getTerrainHeight } from './Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
 import { getMovementInput } from '../systems/InputSystem';
@@ -179,10 +181,13 @@ export function Player({
         return;
       }
       
-      // Fresh spawn — use safe spawn system
-      const spawn = findSafeSpawn(undefined, undefined, PLAYER_HEIGHT);
+      // Fresh spawn — use faction-based safe spawn system
+      const { loadWalletSession: loadSession } = require('../hooks/usePlayerAccount');
+      const spawnSession = loadSession();
+      const spawnFactionId = (spawnSession as any)?.faction_id || undefined;
+      const spawn = findSafeSpawn(undefined, undefined, PLAYER_HEIGHT, spawnFactionId);
       console.log('[Player] SPAWN FRESH —', spawn.x.toFixed(1), spawn.z.toFixed(1), 'y=', spawn.y.toFixed(2),
-        spawn.fallbackUsed ? `(fallback: ${spawn.rejectedReason})` : '(canonical)');
+        spawn.fallbackUsed ? `(fallback: ${spawn.rejectedReason})` : '(canonical)', 'faction:', spawnFactionId || 'guest');
       groupRef.current.position.set(spawn.x, spawn.y, spawn.z);
       playerPositionRef.current.set(spawn.x, spawn.y, spawn.z);
       hasSpawnedRef.current = true;
@@ -200,9 +205,12 @@ export function Player({
       if (isMounted) onDismountHorse();
       const timer = setTimeout(() => {
         if (groupRef.current) {
-          // Use safe spawn for respawn too
-          const spawn = findSafeSpawn(undefined, undefined, PLAYER_HEIGHT);
-          console.log('[Player] RESPAWN COMPLETE — teleporting to', spawn.x.toFixed(1), spawn.z.toFixed(1));
+          // Respawn at faction home kingdom
+          const { loadWalletSession: loadSession2 } = require('../hooks/usePlayerAccount');
+          const respawnSession = loadSession2();
+          const respawnFactionId = (respawnSession as any)?.faction_id || undefined;
+          const spawn = findSafeSpawn(undefined, undefined, PLAYER_HEIGHT, respawnFactionId);
+          console.log('[Player] RESPAWN COMPLETE — teleporting to', spawn.x.toFixed(1), spawn.z.toFixed(1), 'faction:', respawnFactionId || 'guest');
           groupRef.current.position.set(spawn.x, spawn.y, spawn.z);
           playerPositionRef.current.set(spawn.x, spawn.y, spawn.z);
           velocityRef.current.set(0, 0, 0);
@@ -904,7 +912,7 @@ export function Player({
         ) : character === 'octopus' ? (
           <OctopusDeadModel />
         ) : (
-          // Generic death pose for soldier, nemoclaw, chillhouse
+          // Generic death pose for soldier, nemoclaw, chillhouse, yeti, dog
           <group rotation={[Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
             <mesh castShadow>
               <capsuleGeometry args={[0.3, 1, 4, 8]} />
@@ -952,6 +960,8 @@ export function Player({
             <NemoClawGLBModel moveSpeedRef={isMounted ? mountedZeroRef : moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={isMounted ? mountedZeroRef : attackAnimRef} isFightingRef={isFightingRef} />
           ) : character === 'chillhouse' ? (
             <ChillhouseGLBModel moveSpeedRef={isMounted ? mountedZeroRef : moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={isMounted ? mountedZeroRef : attackAnimRef} isFightingRef={isFightingRef} />
+          ) : (character === 'yeti' || character === 'dog') ? (
+            <PlaceholderLocalModel factionColor={getFactionByCharacter(character)?.colorHex || '#888'} label={character} moveSpeedRef={isMounted ? mountedZeroRef : moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={isMounted ? mountedZeroRef : attackAnimRef} isFightingRef={isFightingRef} />
           ) : (
             <PlayerGLBModel moveSpeedRef={isMounted ? mountedZeroRef : moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={isMounted ? mountedZeroRef : attackAnimRef} isFightingRef={isFightingRef} />
           )}
