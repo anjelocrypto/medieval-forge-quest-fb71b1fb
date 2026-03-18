@@ -109,6 +109,11 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
     if (open && clan.myClan) clan.loadClanMembers(clan.myClan.clan_id);
   }, [open, clan.myClan?.clan_id]); // eslint-disable-line
 
+  // Load history when history tab is selected
+  useEffect(() => {
+    if (open && tab === 'history') clan.loadHistory();
+  }, [open, tab]); // eslint-disable-line
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
