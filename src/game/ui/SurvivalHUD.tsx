@@ -26,6 +26,7 @@ interface HUDProps {
   isSpeaking?: boolean;
   trencheriBalance?: number | null;
   territories?: TerritoryInfo[];
+  myClan?: { clan_name: string; clan_color: string; clan_id: string } | null;
 }
 
 /* ── shared panel style ── */
