@@ -109,6 +109,8 @@ interface SentMeta {
   horseState: string;
   emote: string | null;
   isSpeaking: boolean;
+  clanName: string | null;
+  clanColor: string | null;
 }
 
 function metaChanged(prev: SentMeta | null, state: NetworkPlayerState): boolean {
@@ -124,7 +126,9 @@ function metaChanged(prev: SentMeta | null, state: NetworkPlayerState): boolean 
     prev.buildMode !== state.buildMode ||
     prev.horseState !== state.horseState ||
     prev.emote !== state.emote ||
-    prev.isSpeaking !== state.isSpeaking
+    prev.isSpeaking !== state.isSpeaking ||
+    prev.clanName !== state.clanName ||
+    prev.clanColor !== state.clanColor
   );
 }
 
@@ -141,6 +145,8 @@ function extractSentMeta(state: NetworkPlayerState): SentMeta {
     horseState: state.horseState,
     emote: state.emote,
     isSpeaking: state.isSpeaking,
+    clanName: state.clanName,
+    clanColor: state.clanColor,
   };
 }
 
@@ -250,6 +256,8 @@ export function useMultiplayer() {
         horseState: 'idle',
         emote: null,
         isSpeaking: false,
+        clanName: null,
+        clanColor: null,
         lastUpdateTime: Date.now(),
         interpolationT: 0,
       };
@@ -340,6 +348,8 @@ export function useMultiplayer() {
       p.horseState = payload.hs;
       p.emote = payload.em;
       p.isSpeaking = payload.sp;
+      p.clanName = payload.cn ?? null;
+      p.clanColor = payload.cc ?? null;
       p.lastUpdateTime = Date.now();
 
       scheduleRemotePlayersCommit(isNew || charChanged || nameChanged);
@@ -483,6 +493,8 @@ export function useMultiplayer() {
           hs: state.horseState,
           em: state.emote,
           sp: state.isSpeaking,
+          cn: state.clanName,
+          cc: state.clanColor,
         };
 
         ch.send({ type: 'broadcast', event: 'pme', payload });
@@ -532,6 +544,7 @@ export function useMultiplayer() {
       st: Math.round(state.stamina), hu: Math.round(state.hunger),
       tp: Math.round(state.temperature), bm: state.buildMode,
       hs: state.horseState, em: state.emote, sp: state.isSpeaking,
+      cn: state.clanName, cc: state.clanColor,
     };
     ch.send({ type: 'broadcast', event: 'pme', payload: metaPayload });
     mpAudit('initial split state sent');

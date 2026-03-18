@@ -6,6 +6,7 @@ import { getTerrainHeight } from '../components/Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
 import { Html } from '@react-three/drei';
 import { HorseGLBModel } from '../components/HorseGLBModel';
+import { CLAN_COLOR_HEX, ClanColor } from '../hooks/useClanSystem';
 
 import { RemoteGoblinModel } from './RemoteGoblinModel';
 import { RemoteSoldierModel } from './RemoteSoldierModel';
@@ -148,13 +149,30 @@ export function RemotePlayer({ player, playerPositionRef }: Props) {
 
   return (
     <group ref={groupRef}>
-      {/* Nametag + health — always visible within render range */}
+      {/* Nametag + health + clan — always visible within render range */}
       <Html position={[0, nametagY, 0]} center distanceFactor={20}
         style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div style={{
           textAlign: 'center', whiteSpace: 'nowrap',
           textShadow: '0 1px 4px rgba(0,0,0,0.8)', fontFamily: 'monospace',
         }}>
+          {/* Clan tag */}
+          {player.clanName && player.clanColor && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 3,
+              fontSize: 8, fontWeight: 700, letterSpacing: '0.06em',
+              color: CLAN_COLOR_HEX[player.clanColor as ClanColor] || '#aaa',
+              marginBottom: 1,
+            }}>
+              <span style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: CLAN_COLOR_HEX[player.clanColor as ClanColor] || '#aaa',
+                display: 'inline-block',
+                boxShadow: `0 0 4px ${CLAN_COLOR_HEX[player.clanColor as ClanColor] || '#aaa'}80`,
+              }} />
+              {player.clanName}
+            </div>
+          )}
           <div style={{ color: '#fff', fontSize: 11, fontWeight: 700, marginBottom: 2 }}>
             {player.isSpeaking && <span style={{ marginRight: 3 }}>🎙️</span>}
             {player.displayName}

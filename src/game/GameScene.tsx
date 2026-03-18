@@ -51,6 +51,7 @@ import { CharacterSelect } from './ui/CharacterSelect';
 import { SettingsPanel } from './ui/SettingsPanel';
 import { ClanPanel } from './ui/ClanPanel';
 import { TerritoryIndicator } from './components/TerritoryIndicator';
+import { TerritoryMarkers } from './components/TerritoryMarkers';
 import { useClanSystem } from './hooks/useClanSystem';
 import { useCharacter } from './context/CharacterContext';
 import { WebGLRecovery } from './systems/WebGLRecovery';
@@ -598,6 +599,9 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
 
           {/* Remote players from multiplayer */}
           <RemotePlayers remotePlayers={multiplayer.remotePlayers} playerPositionRef={playerPositionRef} />
+
+          {/* 3D Territory ownership banners */}
+          <TerritoryMarkers territories={clanSystem.territories} playerPositionRef={playerPositionRef} />
 
           {/* Multiplayer broadcaster — samples local state and pushes to network hook */}
           {multiplayer.connected && (

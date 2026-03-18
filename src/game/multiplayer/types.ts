@@ -25,6 +25,8 @@ export interface NetworkPlayerState {
   horseState: string;
   emote: string | null; // current emote key or null
   isSpeaking: boolean; // voice chat push-to-talk active
+  clanName: string | null;
+  clanColor: string | null;
   timestamp: number;
 }
 
@@ -58,6 +60,8 @@ export interface MetaPayload {
   hs: string;      // horseState
   em: string | null; // emote
   sp: boolean;     // isSpeaking
+  cn?: string | null; // clanName
+  cc?: string | null; // clanColor
 }
 
 /** Discrete action event — sent once per trigger, NOT spammed */
@@ -95,6 +99,9 @@ export interface InterpolatedPlayer {
   horseState: string;
   emote: string | null;
   isSpeaking: boolean;
+  // Clan identity
+  clanName: string | null;
+  clanColor: string | null;
   // Timing
   lastUpdateTime: number;
   interpolationT: number;
