@@ -111,7 +111,10 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
   const isGroundedRef = useRef(true);
   const attackAnimRef = useRef(0);
 
-  // Progression persistence — load on mount, save on changes
+  // === PVP STATE ===
+  const lastDamageSourceRef = useRef<{ attackerId: string; attackerWallet: string; timestamp: number } | null>(null);
+  const pvpKillLoggedRef = useRef(false);
+  const pvpDeathLogCooldownRef = useRef(0);
   const progressionLoadedRef = useRef(false);
   const latestProgressionRef = useRef(progression);
   latestProgressionRef.current = progression;
