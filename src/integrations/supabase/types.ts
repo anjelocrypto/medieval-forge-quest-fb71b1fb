@@ -902,26 +902,16 @@ export type Database = {
             }
             Returns: undefined
           }
-      update_wallet_profile:
-        | {
-            Args: {
-              _character_type?: string
-              _community_name?: string
-              _display_name?: string
-              _wallet_address: string
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              _character_type?: string
-              _community_name?: string
-              _display_name?: string
-              _session_token?: string
-              _wallet_address: string
-            }
-            Returns: undefined
-          }
+      update_wallet_profile: {
+        Args: {
+          _character_type?: string
+          _community_name?: string
+          _display_name?: string
+          _session_token?: string
+          _wallet_address: string
+        }
+        Returns: undefined
+      }
       validate_chat: {
         Args: {
           _message_length?: number
