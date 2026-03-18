@@ -13,6 +13,8 @@ import { RemoteSoldierModel } from './RemoteSoldierModel';
 import { RemoteOctopusModel } from './RemoteOctopusModel';
 import { RemoteNemoClawModel } from './RemoteNemoClawModel';
 import { RemoteChillhouseModel } from './RemoteChillhouseModel';
+import { PlaceholderRemoteModel } from '../components/PlaceholderCharacterModel';
+import { getFactionByCharacter } from '../systems/FactionData';
 
 // Visible placeholder capsule shown while remote character GLBs are loading
 function RemotePlayerFallback() {
