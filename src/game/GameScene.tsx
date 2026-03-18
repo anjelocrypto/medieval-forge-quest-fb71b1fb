@@ -62,7 +62,6 @@ import { CLAN_COLOR_HEX, ClanColor } from './hooks/useClanSystem';
 import { useCharacter } from './context/CharacterContext';
 import { WebGLRecovery } from './systems/WebGLRecovery';
 import { SceneDiagnosticsBoundary } from './debug/SceneDiagnostics';
-import { preloadRemoteCharacterModels } from './multiplayer/preloadRemoteModels';
 import { StartupReadiness } from './systems/StartupReadiness';
 
 interface GameSceneProps {
