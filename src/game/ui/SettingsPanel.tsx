@@ -1,7 +1,7 @@
 /**
- * In-game Settings panel for managing display name and account info.
- * Wallet users can edit their name; guests see a locked state.
- * Opens with ESC key, styled to match Trencheria's medieval aesthetic.
+ * In-game Settings panel for managing display name, community name, and account info.
+ * Wallet users can edit; guests see a locked state.
+ * Opens with P key, styled to match Trencheria's medieval aesthetic.
  */
 import { useState, useEffect, useCallback } from 'react';
 import { loadWalletSession, WalletSession } from '../hooks/usePlayerAccount';
@@ -13,6 +13,8 @@ interface Props {
   onClose: () => void;
   currentDisplayName: string;
   onNameUpdated: (newName: string) => void;
+  currentCommunityName?: string | null;
+  onCommunityUpdated?: (newCommunity: string | null) => void;
 }
 
 const panelStyle: React.CSSProperties = {
@@ -22,9 +24,10 @@ const panelStyle: React.CSSProperties = {
   backdropFilter: 'blur(20px)',
 };
 
-export function SettingsPanel({ open, onClose, currentDisplayName, onNameUpdated }: Props) {
+export function SettingsPanel({ open, onClose, currentDisplayName, onNameUpdated, currentCommunityName, onCommunityUpdated }: Props) {
   const [walletSession, setWalletSession] = useState<WalletSession | null>(null);
   const [nameInput, setNameInput] = useState('');
+  const [communityInput, setCommunityInput] = useState('');
   const [nameError, setNameError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -35,10 +38,11 @@ export function SettingsPanel({ open, onClose, currentDisplayName, onNameUpdated
       const session = loadWalletSession();
       setWalletSession(session);
       setNameInput(currentDisplayName);
+      setCommunityInput(currentCommunityName || session?.community_name || '');
       setNameError(null);
       setSaveSuccess(false);
     }
-  }, [open, currentDisplayName]);
+  }, [open, currentDisplayName, currentCommunityName]);
 
   // Close on ESC
   useEffect(() => {
@@ -75,8 +79,11 @@ export function SettingsPanel({ open, onClose, currentDisplayName, onNameUpdated
       return;
     }
 
-    // Don't save if unchanged
-    if (result.cleaned === currentDisplayName) {
+    const cleanedCommunity = communityInput.replace(/<[^>]*>/g, '').trim().slice(0, 30) || null;
+    const nameUnchanged = result.cleaned === currentDisplayName;
+    const communityUnchanged = (cleanedCommunity || null) === (currentCommunityName || walletSession.community_name || null);
+
+    if (nameUnchanged && communityUnchanged) {
       setNameError(null);
       setSaveSuccess(true);
       return;
@@ -89,12 +96,13 @@ export function SettingsPanel({ open, onClose, currentDisplayName, onNameUpdated
     try {
       const { error: rpcError } = await supabase.rpc('update_wallet_profile', {
         _wallet_address: walletSession.wallet_address,
-        _display_name: result.cleaned,
+        _display_name: nameUnchanged ? undefined : result.cleaned,
+        _community_name: communityUnchanged ? undefined : (cleanedCommunity || ''),
         _session_token: walletSession.session_token,
       } as any);
 
       if (rpcError) {
-        setNameError(rpcError.message || 'Failed to update name');
+        setNameError(rpcError.message || 'Failed to update profile');
         setSaving(false);
         return;
       }
@@ -103,19 +111,21 @@ export function SettingsPanel({ open, onClose, currentDisplayName, onNameUpdated
       const updatedSession: WalletSession = {
         ...walletSession,
         display_name: result.cleaned,
+        community_name: cleanedCommunity,
       };
       localStorage.setItem('wallet_account_session', JSON.stringify(updatedSession));
       setWalletSession(updatedSession);
 
       // Propagate to game
-      onNameUpdated(result.cleaned);
+      if (!nameUnchanged) onNameUpdated(result.cleaned);
+      if (!communityUnchanged && onCommunityUpdated) onCommunityUpdated(cleanedCommunity);
       setSaveSuccess(true);
     } catch (err: any) {
-      setNameError(err.message || 'Failed to update name');
+      setNameError(err.message || 'Failed to update profile');
     } finally {
       setSaving(false);
     }
-  }, [walletSession, nameInput, currentDisplayName, onNameUpdated]);
+  }, [walletSession, nameInput, communityInput, currentDisplayName, currentCommunityName, onNameUpdated, onCommunityUpdated]);
 
   if (!open) return null;
 
@@ -195,57 +205,36 @@ export function SettingsPanel({ open, onClose, currentDisplayName, onNameUpdated
           )}
         </div>
 
-        {/* Display Name Section */}
-        <div className="mb-6">
-          <label
-            className="block text-xs font-bold mb-2 uppercase tracking-wider"
-            style={{ color: 'hsl(40,20%,65%)' }}
-          >
-            Display Name
-          </label>
-
-          {isWalletUser && hasValidSession ? (
-            <>
-              <div className="flex gap-2">
-                <input
-                  value={nameInput}
-                  onChange={e => handleNameChange(e.target.value)}
-                  onKeyDown={e => {
-                    e.stopPropagation();
-                    if (e.key === 'Enter') handleSave();
-                  }}
-                  onKeyUp={e => e.stopPropagation()}
-                  placeholder="Enter display name..."
-                  maxLength={NAME_MAX_LENGTH}
-                  disabled={saving}
-                  className="flex-1 px-4 py-3 rounded-lg text-sm outline-none transition-all focus:ring-2"
-                  style={{
-                    background: 'hsla(0,0%,100%,0.06)',
-                    border: nameError
-                      ? '1px solid hsla(0,60%,50%,0.5)'
-                      : saveSuccess
-                        ? '1px solid hsla(120,50%,50%,0.4)'
-                        : '1px solid hsla(0,0%,100%,0.1)',
-                    color: 'hsl(40,30%,85%)',
-                  }}
-                />
-                <button
-                  onClick={handleSave}
-                  disabled={saving || !!nameError || !nameInput.trim()}
-                  className="px-5 py-3 rounded-lg font-bold text-xs uppercase tracking-wider transition-all hover:scale-[1.02] disabled:opacity-40 disabled:hover:scale-100"
-                  style={{
-                    background: saving
-                      ? 'hsla(40,30%,40%,0.2)'
-                      : 'linear-gradient(135deg, hsl(35,60%,45%), hsl(30,50%,35%))',
-                    color: saving ? 'hsl(40,15%,50%)' : 'hsl(40,30%,90%)',
-                    border: '1px solid hsla(40,30%,50%,0.3)',
-                  }}
-                >
-                  {saving ? '⏳' : 'Save'}
-                </button>
-              </div>
-
-              {/* Character count */}
+        {isWalletUser && hasValidSession ? (
+          <>
+            {/* Display Name Section */}
+            <div className="mb-4">
+              <label
+                className="block text-xs font-bold mb-2 uppercase tracking-wider"
+                style={{ color: 'hsl(40,20%,65%)' }}
+              >
+                Display Name
+              </label>
+              <input
+                value={nameInput}
+                onChange={e => handleNameChange(e.target.value)}
+                onKeyDown={e => {
+                  e.stopPropagation();
+                  if (e.key === 'Enter') handleSave();
+                }}
+                onKeyUp={e => e.stopPropagation()}
+                placeholder="Enter display name..."
+                maxLength={NAME_MAX_LENGTH}
+                disabled={saving}
+                className="w-full px-4 py-3 rounded-lg text-sm outline-none transition-all focus:ring-2"
+                style={{
+                  background: 'hsla(0,0%,100%,0.06)',
+                  border: nameError
+                    ? '1px solid hsla(0,60%,50%,0.5)'
+                    : '1px solid hsla(0,0%,100%,0.1)',
+                  color: 'hsl(40,30%,85%)',
+                }}
+              />
               <div className="flex justify-between mt-1.5 px-1">
                 <span style={{
                   fontSize: 10,
@@ -256,44 +245,88 @@ export function SettingsPanel({ open, onClose, currentDisplayName, onNameUpdated
                   {nameInput.trim().length}/{NAME_MAX_LENGTH} characters (min {NAME_MIN_LENGTH})
                 </span>
               </div>
-
-              {/* Validation error */}
-              {nameError && (
-                <div className="mt-2 px-3 py-2 rounded-lg text-xs" style={{
-                  background: 'hsla(0,50%,40%,0.1)',
-                  color: 'hsl(0,60%,65%)',
-                  border: '1px solid hsla(0,50%,50%,0.2)',
-                }}>
-                  ⚠️ {nameError}
-                </div>
-              )}
-
-              {/* Success feedback */}
-              {saveSuccess && !nameError && (
-                <div className="mt-2 px-3 py-2 rounded-lg text-xs" style={{
-                  background: 'hsla(120,40%,40%,0.1)',
-                  color: 'hsl(120,50%,65%)',
-                  border: '1px solid hsla(120,40%,50%,0.2)',
-                }}>
-                  ✓ Display name updated successfully
-                </div>
-              )}
-            </>
-          ) : (
-            /* Guest locked state */
-            <div className="px-4 py-4 rounded-lg text-center" style={{
-              background: 'hsla(0,0%,100%,0.03)',
-              border: '1px dashed hsla(0,0%,100%,0.1)',
-            }}>
-              <div className="text-sm mb-2" style={{ color: 'hsl(40,20%,65%)' }}>
-                {currentDisplayName}
-              </div>
-              <p className="text-xs leading-relaxed" style={{ color: 'hsl(40,15%,40%)' }}>
-                🔒 Connect a Phantom wallet and register an account to manage your permanent display name
-              </p>
             </div>
-          )}
-        </div>
+
+            {/* Community Name Section */}
+            <div className="mb-5">
+              <label
+                className="block text-xs font-bold mb-2 uppercase tracking-wider"
+                style={{ color: 'hsl(40,20%,65%)' }}
+              >
+                Community Name <span className="font-normal" style={{ color: 'hsl(40,15%,40%)' }}>(optional)</span>
+              </label>
+              <input
+                value={communityInput}
+                onChange={e => { setCommunityInput(e.target.value); setSaveSuccess(false); }}
+                onKeyDown={e => {
+                  e.stopPropagation();
+                  if (e.key === 'Enter') handleSave();
+                }}
+                onKeyUp={e => e.stopPropagation()}
+                placeholder="Your guild or group..."
+                maxLength={30}
+                disabled={saving}
+                className="w-full px-4 py-3 rounded-lg text-sm outline-none transition-all focus:ring-2"
+                style={{
+                  background: 'hsla(0,0%,100%,0.06)',
+                  border: '1px solid hsla(0,0%,100%,0.1)',
+                  color: 'hsl(40,30%,85%)',
+                }}
+              />
+            </div>
+
+            {/* Save button */}
+            <button
+              onClick={handleSave}
+              disabled={saving || !!nameError || !nameInput.trim()}
+              className="w-full py-3 rounded-lg font-bold text-xs uppercase tracking-wider transition-all hover:scale-[1.02] disabled:opacity-40 disabled:hover:scale-100 mb-4"
+              style={{
+                background: saving
+                  ? 'hsla(40,30%,40%,0.2)'
+                  : 'linear-gradient(135deg, hsl(35,60%,45%), hsl(30,50%,35%))',
+                color: saving ? 'hsl(40,15%,50%)' : 'hsl(40,30%,90%)',
+                border: '1px solid hsla(40,30%,50%,0.3)',
+              }}
+            >
+              {saving ? '⏳ Saving...' : 'Save Changes'}
+            </button>
+
+            {/* Validation error */}
+            {nameError && (
+              <div className="mb-3 px-3 py-2 rounded-lg text-xs" style={{
+                background: 'hsla(0,50%,40%,0.1)',
+                color: 'hsl(0,60%,65%)',
+                border: '1px solid hsla(0,50%,50%,0.2)',
+              }}>
+                ⚠️ {nameError}
+              </div>
+            )}
+
+            {/* Success feedback */}
+            {saveSuccess && !nameError && (
+              <div className="mb-3 px-3 py-2 rounded-lg text-xs" style={{
+                background: 'hsla(120,40%,40%,0.1)',
+                color: 'hsl(120,50%,65%)',
+                border: '1px solid hsla(120,40%,50%,0.2)',
+              }}>
+                ✓ Profile updated successfully
+              </div>
+            )}
+          </>
+        ) : (
+          /* Guest locked state */
+          <div className="mb-6 px-4 py-4 rounded-lg text-center" style={{
+            background: 'hsla(0,0%,100%,0.03)',
+            border: '1px dashed hsla(0,0%,100%,0.1)',
+          }}>
+            <div className="text-sm mb-2" style={{ color: 'hsl(40,20%,65%)' }}>
+              {currentDisplayName}
+            </div>
+            <p className="text-xs leading-relaxed" style={{ color: 'hsl(40,15%,40%)' }}>
+              🔒 Connect a Phantom wallet and register an account to manage your permanent display name and community tag
+            </p>
+          </div>
+        )}
 
         {/* Name Rules Info */}
         <div className="px-4 py-3 rounded-lg" style={{
@@ -316,6 +349,7 @@ export function SettingsPanel({ open, onClose, currentDisplayName, onNameUpdated
               'Letters, numbers, spaces, hyphens, underscores, periods',
               'No profanity or offensive content',
               'Reserved names (Admin, Moderator, etc.) are blocked',
+              '"Knight" is allowed (it is the default name)',
             ].map((rule, i) => (
               <li key={i} className="text-xs flex items-start gap-1.5" style={{ color: 'hsl(40,15%,40%)' }}>
                 <span style={{ color: 'hsl(40,30%,50%)' }}>•</span> {rule}

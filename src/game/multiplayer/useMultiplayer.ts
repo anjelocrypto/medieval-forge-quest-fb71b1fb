@@ -185,6 +185,15 @@ export function useMultiplayer() {
     const trimmed = name.trim().slice(0, 20) || 'Knight';
     setDisplayName(trimmed);
     sessionStorage.setItem('mp_display_name', trimmed);
+    // Also sync wallet session localStorage so refresh restores the new name
+    try {
+      const raw = localStorage.getItem('wallet_account_session');
+      if (raw) {
+        const session = JSON.parse(raw);
+        session.display_name = trimmed;
+        localStorage.setItem('wallet_account_session', JSON.stringify(session));
+      }
+    } catch {}
   }, []);
 
   // ===== Canonical cleanup helper =====

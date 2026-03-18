@@ -454,6 +454,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         onNameUpdated={(newName) => {
           multiplayer.updateDisplayName(newName);
         }}
+        currentCommunityName={loadWalletSession()?.community_name}
       />
 
       {/* Emote Wheel */}
