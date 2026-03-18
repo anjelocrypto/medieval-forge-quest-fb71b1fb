@@ -250,6 +250,8 @@ export function useMultiplayer() {
         horseState: 'idle',
         emote: null,
         isSpeaking: false,
+        clanName: null,
+        clanColor: null,
         lastUpdateTime: Date.now(),
         interpolationT: 0,
       };
