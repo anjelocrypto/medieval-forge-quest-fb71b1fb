@@ -6,7 +6,8 @@
  */
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { CLAN_COLOR_HEX, ClanColor, TerritoryInfo } from '../game/hooks/useClanSystem';
+import { CLAN_COLOR_HEX, ClanColor, TerritoryInfo, ChallengeInfo } from '../game/hooks/useClanSystem';
+import { loadWalletSession } from '../game/hooks/usePlayerAccount';
 // ===== Real world data imports =====
 import { WORLD_SIZE, HALF_WORLD } from '../game/constants';
 import { REGIONS, SETTLEMENTS, ROADS, SMALL_POIS, LANDMARKS } from '../game/world/RegionData';
