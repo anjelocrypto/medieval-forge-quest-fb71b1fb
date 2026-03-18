@@ -5,7 +5,7 @@ import { resetSpawnIndex } from '../systems/SafeSpawn';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import {
   NetworkPlayerState, InterpolatedPlayer, ChatMessage, WorldEvent,
-  MovePayload, MetaPayload, ActionPayload,
+  MovePayload, MetaPayload, ActionPayload, PvpHitData, PvpDeathData,
   MOVE_BROADCAST_MS, META_BROADCAST_MS, STALE_PLAYER_TIMEOUT_MS,
 } from './types';
 
@@ -168,6 +168,7 @@ export function useMultiplayer() {
   const timingsRef = useRef<StartupTimings>(createTimings());
   const firstRemoteReceivedRef = useRef(false);
   const initialStateSentRef = useRef(false);
+  const pvpHitCallbackRef = useRef<((data: PvpHitData) => void) | null>(null);
 
   const connected = connectionStatus === 'connected';
 
@@ -364,6 +365,17 @@ export function useMultiplayer() {
       if (payload.t === 'attack') {
         p.attackAnim = typeof payload.d === 'number' ? payload.d : 0.4;
       }
+
+      // PvP hit: forward to callback for victim-side processing
+      if (payload.t === 'pvp_hit' && payload.d) {
+        const hitData = payload.d as PvpHitData;
+        if (hitData.victimId === playerId) {
+          pvpHitCallbackRef.current?.({ ...hitData, _attackerPlayerId: payload.i } as any);
+        }
+      }
+
+      // PvP death: informational only (victim broadcasts their death)
+      // No processing needed — just for remote player death animations
 
       scheduleRemotePlayersCommit();
     });
@@ -679,6 +691,25 @@ export function useMultiplayer() {
     setWorldEvents(prev => [...prev.slice(-49), event]);
   }, []);
 
+  // ===== PvP: broadcast hit to victim =====
+  const broadcastPvpHit = useCallback((hitData: PvpHitData) => {
+    if (!channelRef.current) return;
+    const payload: ActionPayload = { i: playerId, t: 'pvp_hit', d: hitData };
+    channelRef.current.send({ type: 'broadcast', event: 'pa', payload });
+  }, [playerId]);
+
+  // ===== PvP: broadcast own death (informational for remote animations) =====
+  const broadcastPvpDeath = useCallback((deathData: PvpDeathData) => {
+    if (!channelRef.current) return;
+    const payload: ActionPayload = { i: playerId, t: 'pvp_death', d: deathData };
+    channelRef.current.send({ type: 'broadcast', event: 'pa', payload });
+  }, [playerId]);
+
+  // ===== PvP: register hit callback =====
+  const setPvpHitCallback = useCallback((cb: ((data: PvpHitData) => void) | null) => {
+    pvpHitCallbackRef.current = cb;
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -702,6 +733,7 @@ export function useMultiplayer() {
     displayName,
     updateDisplayName,
     remotePlayers: remotePlayersRef.current,
+    remotePlayersRef,
     chatMessages,
     worldEvents,
     enterWorld,
@@ -710,6 +742,9 @@ export function useMultiplayer() {
     sendChat,
     sendEmote,
     broadcastWorldEvent,
+    broadcastPvpHit,
+    broadcastPvpDeath,
+    setPvpHitCallback,
     channelRef,
   };
 }

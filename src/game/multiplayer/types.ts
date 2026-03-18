@@ -67,9 +67,32 @@ export interface MetaPayload {
 /** Discrete action event — sent once per trigger, NOT spammed */
 export interface ActionPayload {
   i: string;       // playerId
-  t: 'attack' | 'emote' | 'mount' | 'dismount';
-  d?: unknown;     // optional data (e.g. emote key, attack duration)
+  t: 'attack' | 'emote' | 'mount' | 'dismount' | 'pvp_hit' | 'pvp_death';
+  d?: unknown;     // optional data (e.g. emote key, attack duration, pvp hit info)
 }
+
+/** PvP hit payload data — carried in ActionPayload.d */
+export interface PvpHitData {
+  victimId: string;
+  damage: number;
+  attackerWallet: string;
+  attackerClanId: string;
+}
+
+/** PvP death payload — victim reports own death for kill logging */
+export interface PvpDeathData {
+  victimWallet: string;
+  killerPlayerId: string;
+  killerWallet: string;
+  victimX: number;
+  victimZ: number;
+}
+
+/** PvP damage constants */
+export const PVP_DAMAGE = 12;           // base PvP hit damage
+export const PVP_COMBO_DAMAGE = 16;     // combo PvP hit damage
+export const PVP_HIT_COOLDOWN_MS = 500; // min ms between taking PvP hits from same attacker
+export const PVP_DEATH_LOG_COOLDOWN_MS = 5000; // min ms between logging deaths
 
 // ===== Internal interpolated representation =====
 export interface InterpolatedPlayer {

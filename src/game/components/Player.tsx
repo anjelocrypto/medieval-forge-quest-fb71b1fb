@@ -21,6 +21,8 @@ import {
   POIS, POI_ZONE_RADIUS,
 } from '../constants';
 import { PLAYER_ATTACK_COOLDOWN, PLAYER_ATTACK_RANGE, PLAYER_ATTACK_DAMAGE, PLAYER_ATTACK_ARC } from '../systems/EnemyData';
+import { PVP_DAMAGE, PVP_COMBO_DAMAGE } from '../multiplayer/types';
+import type { InterpolatedPlayer } from '../multiplayer/types';
 import { SurvivalState, LootPickup, ResourceInventory } from '../types';
 import { findSafeSpawn } from '../systems/SafeSpawn';
 
@@ -78,6 +80,11 @@ interface PlayerProps {
   activeEmoteId?: number;
   onEmoteComplete: () => void;
   damageFlash?: number;
+  // PvP
+  remotePlayersRef?: React.RefObject<Map<string, InterpolatedPlayer>>;
+  localClanId?: string | null;
+  localClanName?: string | null;
+  onPvpHit?: (victimId: string, damage: number, isCombo: boolean) => void;
 }
 
 const _camForward = new THREE.Vector3();
@@ -111,6 +118,7 @@ export function Player({
   resources, mountedDebugRef,
   externalMoveSpeedRef, externalIsRunningRef, externalIsGroundedRef, externalAttackAnimRef,
   activeEmote, activeEmoteId, onEmoteComplete, damageFlash,
+  remotePlayersRef, localClanId, localClanName, onPvpHit,
 }: PlayerProps) {
   const { character } = useCharacter();
   const groupRef = useRef<THREE.Group>(null);
@@ -540,6 +548,28 @@ export function Player({
           _toEnemy.set(dx / dist, 0, dz / dist);
           if (_forward.dot(_toEnemy) > cosArc) {
             handle.hitEnemy(enemy.id, atkDamage);
+          }
+        });
+      }
+
+      // === PVP HIT DETECTION ===
+      // Only if: we have a clan, remote players exist, and callback is provided
+      if (onPvpHit && localClanId && remotePlayersRef?.current) {
+        const pvpDmg = isCombo ? PVP_COMBO_DAMAGE : PVP_DAMAGE;
+        remotePlayersRef.current.forEach((remote) => {
+          // Skip: same clan (friendly fire OFF)
+          if (!remote.clanName || remote.clanName === localClanName) return;
+          // Skip: dead players (health <= 0)
+          if (remote.health <= 0) return;
+          const dx = remote.renderPosition[0] - pos.x;
+          const dz = remote.renderPosition[2] - pos.z;
+          const distSq = dx * dx + dz * dz;
+          if (distSq > PLAYER_ATTACK_RANGE * PLAYER_ATTACK_RANGE) return;
+          const dist = Math.sqrt(distSq);
+          if (dist < 0.01) return;
+          _toEnemy.set(dx / dist, 0, dz / dist);
+          if (_forward.dot(_toEnemy) > cosArc) {
+            onPvpHit(remote.playerId, pvpDmg, isCombo);
           }
         });
       }

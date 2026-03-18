@@ -871,13 +871,39 @@ export default function AdminWorldMap() {
   const [challenges, setChallenges] = useState<ChallengeInfo[]>([]);
   const [resolving, setResolving] = useState<string | null>(null);
   const [resolveError, setResolveError] = useState<string | null>(null);
+  const [warKillStats, setWarKillStats] = useState<Record<string, { attacker_kills: number; defender_kills: number; total: number }>>({});
 
   useEffect(() => {
     const loadChallenges = async () => {
       try {
         const { data } = await supabase.rpc('get_active_challenges' as any, { _limit: 50 });
         const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-        setChallenges(Array.isArray(parsed) ? parsed : []);
+        const challengeList: ChallengeInfo[] = Array.isArray(parsed) ? parsed : [];
+        setChallenges(challengeList);
+
+        // Fetch kill stats for active + pending_resolution wars
+        const activeWars = challengeList.filter(c => c.status === 'active' || c.status === 'pending_resolution');
+        const killStats: Record<string, { attacker_kills: number; defender_kills: number; total: number }> = {};
+        for (const war of activeWars) {
+          try {
+            const { data: killData } = await supabase.rpc('get_war_kills' as any, { _challenge_id: war.id });
+            const kd = typeof killData === 'string' ? JSON.parse(killData) : killData;
+            if (kd && typeof kd === 'object' && !Array.isArray(kd)) {
+              const kills = kd.kills || [];
+              let attackerKills = 0, defenderKills = 0;
+              for (const k of kills) {
+                if (k.killer_clan_id === war.attacker_clan_id) attackerKills++;
+                else if (k.killer_clan_id === war.defender_clan_id) defenderKills++;
+              }
+              killStats[war.id] = { attacker_kills: attackerKills, defender_kills: defenderKills, total: attackerKills + defenderKills };
+            } else {
+              killStats[war.id] = { attacker_kills: 0, defender_kills: 0, total: 0 };
+            }
+          } catch {
+            killStats[war.id] = { attacker_kills: 0, defender_kills: 0, total: 0 };
+          }
+        }
+        setWarKillStats(killStats);
       } catch { /* silent */ }
     };
     loadChallenges();
@@ -886,6 +912,7 @@ export default function AdminWorldMap() {
   }, []);
 
   const pendingResolutions = challenges.filter(c => c.status === 'pending_resolution');
+  const activeWars = challenges.filter(c => c.status === 'active');
 
   const handleResolveWar = async (challengeId: string, resolution: 'attacker_won' | 'defender_held') => {
     const session = loadWalletSession();
@@ -1161,17 +1188,31 @@ export default function AdminWorldMap() {
                   ⚠️ {resolveError}
                 </div>
               )}
-              {pendingResolutions.map(ch => (
+              {pendingResolutions.map(ch => {
+                const ks = warKillStats[ch.id] || { attacker_kills: 0, defender_kills: 0, total: 0 };
+                return (
                 <div key={ch.id} style={{ marginBottom: 10, padding: 8, background: '#0c0c1c', borderRadius: 4, border: '1px solid #252545' }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#e0e4ea', marginBottom: 4 }}>
                     {ch.territory_name}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, marginBottom: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, marginBottom: 4 }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: CLAN_COLOR_HEX[ch.attacker_clan_color as ClanColor] || '#888', display: 'inline-block' }} />
                     <span style={{ color: '#bcc' }}>{ch.attacker_clan_name}</span>
                     <span style={{ color: '#556' }}>vs</span>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: CLAN_COLOR_HEX[ch.defender_clan_color as ClanColor] || '#888', display: 'inline-block' }} />
                     <span style={{ color: '#bcc' }}>{ch.defender_clan_name}</span>
+                  </div>
+                  {/* Kill stats */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, marginBottom: 6, padding: '3px 6px', background: '#0a0a1a', borderRadius: 3, border: '1px solid #1a1a3a' }}>
+                    <span style={{ color: CLAN_COLOR_HEX[ch.attacker_clan_color as ClanColor] || '#e74c3c' }}>
+                      ⚔️ {ks.attacker_kills} kills
+                    </span>
+                    <span style={{ color: '#556', fontSize: 9 }}>
+                      {ks.total} total
+                    </span>
+                    <span style={{ color: CLAN_COLOR_HEX[ch.defender_clan_color as ClanColor] || '#27ae60' }}>
+                      🛡️ {ks.defender_kills} kills
+                    </span>
                   </div>
                   <div style={{ display: 'flex', gap: 4 }}>
                     <button
@@ -1190,7 +1231,45 @@ export default function AdminWorldMap() {
                     </button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
+            </div>
+          )}
+
+          {/* Active Wars with Kill Stats */}
+          {activeWars.length > 0 && (
+            <div style={{ ...S.section, background: '#1a0505', border: '1px solid #3a1010', borderRadius: 6, padding: 10, marginBottom: 8 }}>
+              <div style={{ ...S.sectionLabel, color: '#e74c3c', borderColor: '#3a1010' }}>
+                🔥 ACTIVE WARS ({activeWars.length})
+              </div>
+              {activeWars.map(ch => {
+                const ks = warKillStats[ch.id] || { attacker_kills: 0, defender_kills: 0, total: 0 };
+                return (
+                <div key={ch.id} style={{ marginBottom: 8, padding: 8, background: '#0c0c1c', borderRadius: 4, border: '1px solid #252545' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#e0e4ea', marginBottom: 4 }}>
+                    {ch.territory_name}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, marginBottom: 4 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: CLAN_COLOR_HEX[ch.attacker_clan_color as ClanColor] || '#888', display: 'inline-block' }} />
+                    <span style={{ color: '#bcc' }}>{ch.attacker_clan_name}</span>
+                    <span style={{ color: '#556' }}>vs</span>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: CLAN_COLOR_HEX[ch.defender_clan_color as ClanColor] || '#888', display: 'inline-block' }} />
+                    <span style={{ color: '#bcc' }}>{ch.defender_clan_name}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, padding: '3px 6px', background: '#0a0a1a', borderRadius: 3, border: '1px solid #1a1a3a' }}>
+                    <span style={{ color: CLAN_COLOR_HEX[ch.attacker_clan_color as ClanColor] || '#e74c3c' }}>
+                      ⚔️ {ks.attacker_kills} kills
+                    </span>
+                    <span style={{ color: '#556', fontSize: 9 }}>
+                      LIVE • {ks.total} total
+                    </span>
+                    <span style={{ color: CLAN_COLOR_HEX[ch.defender_clan_color as ClanColor] || '#27ae60' }}>
+                      🛡️ {ks.defender_kills} kills
+                    </span>
+                  </div>
+                </div>
+                );
+              })}
             </div>
           )}
 
