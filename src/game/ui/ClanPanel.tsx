@@ -462,7 +462,8 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
                           }}>
                             ⚔️ {ch.attacker_clan_name} → {ch.defender_clan_name}
                             {ch.status === 'pending' && ` · War in ${formatCountdown(ch.war_starts_at)}`}
-                            {ch.status === 'active' && ` · Ends ${formatCountdown(ch.war_ends_at)}`}
+                            {ch.status === 'active' && ` · War ends ${formatCountdown(ch.war_ends_at)}`}
+                            {ch.status === 'resolved' && ` · ${ch.resolution === 'defender_held' ? 'Defender held' : 'Resolved'}`}
                           </div>
                         )}
                         {/* Claim button */}
