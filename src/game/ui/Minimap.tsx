@@ -275,7 +275,7 @@ function drawMinimap(
 
 export function Minimap({
   playerX, playerZ, playerRotation,
-  horseX, horseZ, isMounted, mapOpen, onCloseMap,
+  horseX, horseZ, isMounted, mapOpen, onCloseMap, territories,
 }: MinimapProps) {
   const miniRef = useRef<HTMLCanvasElement>(null);
   const fullRef = useRef<HTMLCanvasElement>(null);
@@ -286,8 +286,8 @@ export function Minimap({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     drawMinimap(ctx, MAP_SIZE, MAP_WORLD_RADIUS, playerX, playerZ, playerRotation,
-      horseX, horseZ, isMounted, false);
-  }, [playerX, playerZ, playerRotation, horseX, horseZ, isMounted]);
+      horseX, horseZ, isMounted, false, territories);
+  }, [playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories]);
 
   const drawFull = useCallback(() => {
     const canvas = fullRef.current;
@@ -295,8 +295,8 @@ export function Minimap({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     drawMinimap(ctx, 600, FULL_MAP_WORLD, playerX, playerZ, playerRotation,
-      horseX, horseZ, isMounted, true);
-  }, [playerX, playerZ, playerRotation, horseX, horseZ, isMounted]);
+      horseX, horseZ, isMounted, true, territories);
+  }, [playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories]);
 
   useEffect(() => {
     if (!mapOpen) drawMini();
