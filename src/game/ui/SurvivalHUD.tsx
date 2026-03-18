@@ -223,7 +223,7 @@ export function SurvivalHUD({
           const labelColor = isPending ? 'hsl(30,70%,65%)' : isActive ? 'hsl(0,70%,65%)' : isPendingRes ? 'hsl(40,70%,65%)' : 'hsl(210,50%,65%)';
           const timeLabel = isPending ? `Starts ${timeStr}` : isActive ? `Ends ${timeStr}` : isPendingRes ? 'Admin review pending' : `Ends ${timeStr}`;
           return (
-            <div className={`flex items-center gap-2.5 px-3.5 py-2 rounded-lg ${isActive ? 'animate-pulse' : ''}`} style={{
+            <div className={`flex items-center gap-2.5 px-3.5 py-2 rounded-lg ${isActive || isPendingRes ? 'animate-pulse' : ''}`} style={{
               ...panelStyle,
               border: `1px solid ${borderColor}`,
               boxShadow: `0 0 12px ${borderColor}`,

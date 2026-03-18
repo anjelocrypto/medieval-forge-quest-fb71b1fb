@@ -37,6 +37,7 @@ function TerritoryBanner({ territory }: { territory: TerritoryInfo }) {
 
   const statusText = warState === 'contested' ? '⚔️ CHALLENGED'
     : warState === 'active_war' ? '🔥 WAR ACTIVE'
+    : warState === 'pending_resolution' ? '⏳ AWAITING RESOLUTION'
     : warState === 'cooldown' ? '🛡️ Cooldown'
     : territory.owning_clan_name ? `🏴 ${territory.owning_clan_name}` : '⬜ Unclaimed';
 
