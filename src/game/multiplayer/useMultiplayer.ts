@@ -493,6 +493,8 @@ export function useMultiplayer() {
           hs: state.horseState,
           em: state.emote,
           sp: state.isSpeaking,
+          cn: state.clanName,
+          cc: state.clanColor,
         };
 
         ch.send({ type: 'broadcast', event: 'pme', payload });
