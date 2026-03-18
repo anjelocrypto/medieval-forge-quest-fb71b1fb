@@ -244,8 +244,7 @@ export function SurvivalHUD({
 
         {/* Faction identity badge */}
         {myClan && (() => {
-          const { FACTIONS } = require('../systems/FactionData');
-          const faction = FACTIONS.find((f: any) => f.id === myClan.clan_id);
+          const faction = FACTIONS.find((f: FactionDef) => f.id === myClan.clan_id);
           const colorHex = faction?.colorHex || CLAN_COLOR_HEX[myClan.clan_color as import('../hooks/useClanSystem').ClanColor] || '#888';
           return (
             <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg" style={{
