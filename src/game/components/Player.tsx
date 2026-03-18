@@ -182,8 +182,8 @@ export function Player({
       }
       
       // Fresh spawn — use faction-based safe spawn system
-      const session = (await import('../hooks/usePlayerAccount')).loadWalletSession();
-      const factionId = (session as any)?.faction_id || undefined;
+      const { loadWalletSession: loadSession } = require('../hooks/usePlayerAccount');
+      const session = loadSession();
       const spawn = findSafeSpawn(undefined, undefined, PLAYER_HEIGHT, factionId);
       console.log('[Player] SPAWN FRESH —', spawn.x.toFixed(1), spawn.z.toFixed(1), 'y=', spawn.y.toFixed(2),
         spawn.fallbackUsed ? `(fallback: ${spawn.rejectedReason})` : '(canonical)', 'faction:', factionId || 'guest');
