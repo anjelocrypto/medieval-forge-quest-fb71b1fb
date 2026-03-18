@@ -208,11 +208,14 @@ export function SurvivalHUD({
           );
           if (!myCh) return null;
           const isAttacker = myCh.attacker_clan_id === myClan.clan_id;
-          const diff = new Date(myCh.status === 'pending' ? myCh.war_starts_at : myCh.war_ends_at).getTime() - Date.now();
+          const isPending = myCh.status === 'pending';
+          const isActive = myCh.status === 'active';
+          const isResolved = myCh.status === 'resolved';
+          const targetTime = isPending ? myCh.war_starts_at : isActive ? myCh.war_ends_at : myCh.cooldown_ends_at;
+          const diff = new Date(targetTime).getTime() - Date.now();
           const mins = Math.max(0, Math.floor(diff / 60000));
           const secs = Math.max(0, Math.floor((diff % 60000) / 1000));
           const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-          const isPending = myCh.status === 'pending';
           return (
             <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg animate-pulse" style={{
               ...panelStyle,
