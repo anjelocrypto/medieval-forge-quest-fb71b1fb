@@ -58,6 +58,8 @@ export interface MetaPayload {
   hs: string;      // horseState
   em: string | null; // emote
   sp: boolean;     // isSpeaking
+  cn?: string | null; // clanName
+  cc?: string | null; // clanColor
 }
 
 /** Discrete action event — sent once per trigger, NOT spammed */
