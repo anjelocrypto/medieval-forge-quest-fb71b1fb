@@ -274,6 +274,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
 
   useEffect(() => {
     const checkInterval = setInterval(() => {
+      if (document.hidden) return; // COST: skip when tab hidden
       const handle = enemiesHandleRef.current;
       if (!handle) return;
       const enemyMap = handle.getEnemies();
@@ -292,7 +293,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
           secureArea(key);
         }
       }
-    }, 2000);
+    }, 5000); // reduced from 2s to 5s
     return () => clearInterval(checkInterval);
   }, [progression.areasSecured, secureArea]);
 
