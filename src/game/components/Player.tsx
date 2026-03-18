@@ -79,6 +79,11 @@ interface PlayerProps {
   activeEmoteId?: number;
   onEmoteComplete: () => void;
   damageFlash?: number;
+  // PvP
+  remotePlayersRef?: React.RefObject<Map<string, InterpolatedPlayer>>;
+  localClanId?: string | null;
+  localClanName?: string | null;
+  onPvpHit?: (victimId: string, damage: number, isCombo: boolean) => void;
 }
 
 const _camForward = new THREE.Vector3();
