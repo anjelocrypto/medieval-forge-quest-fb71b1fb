@@ -342,6 +342,7 @@ export function SurvivalHUD({
           <ControlRow keys="L" action="Leaderboard" />
           <ControlRow keys="K" action="Voice (Hold)" />
           <ControlRow keys="F4" action="Character" />
+          <ControlRow keys="P" action="Settings" />
           <ControlRow keys="SCROLL" action="Zoom" />
         </ControlSection>
       </div>
