@@ -221,6 +221,8 @@ export function RemotePlayer({ player, playerPositionRef }: Props) {
               <RemoteNemoClawModel moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
             ) : charType === 'chillhouse' ? (
               <RemoteChillhouseModel moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
+            ) : (charType === 'yeti' || charType === 'dog') ? (
+              <PlaceholderRemoteModel factionColor={getFactionByCharacter(charType)?.colorHex || '#888'} label={charType} moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
             ) : (
               <RemoteSoldierModel moveSpeed={player.moveSpeed} isRunning={player.isRunning} isGrounded={player.isGrounded} attackAnim={player.attackAnim} health={player.health} emote={player.emote} />
             )}
