@@ -7,6 +7,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { loadWalletSession } from './usePlayerAccount';
 
 // ========== Types ==========
+export interface TerritoryHistoryEntry {
+  id: string;
+  territory_id: string;
+  territory_name: string;
+  clan_id: string | null;
+  clan_name: string | null;
+  clan_color: string | null;
+  event_type: string;
+  created_at: string;
+}
 export interface ClanMemberInfo {
   wallet_address: string;
   role: 'leader' | 'member';
