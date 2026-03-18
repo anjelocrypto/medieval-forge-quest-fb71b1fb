@@ -418,10 +418,9 @@ export function SurvivalHUD({
         <ControlSection title="Utility">
           {!isMounted && <ControlRow keys="H" action="Call Horse" />}
           <ControlRow keys="M" action="Map" />
-          <ControlRow keys="C" action="Clan" />
+          <ControlRow keys="C" action="Faction" />
           <ControlRow keys="L" action="Leaderboard" />
           <ControlRow keys="K" action="Voice (Hold)" />
-          <ControlRow keys="C" action="Faction" />
           <ControlRow keys="P" action="Settings" />
           <ControlRow keys="SCROLL" action="Zoom" />
         </ControlSection>
