@@ -198,8 +198,40 @@ export function SurvivalHUD({
         territories={territories}
       />
 
-      {/* ═══ BOTTOM LEFT — Survival bars + Clan identity ═══ */}
+      {/* ═══ BOTTOM LEFT — Survival bars + Clan identity + War alerts ═══ */}
       <div className="absolute bottom-6 left-6 flex flex-col gap-2">
+        {/* War alert — shown when player's clan has an active challenge */}
+        {myClan && challenges && (() => {
+          const myCh = challenges.find(
+            c => (c.attacker_clan_id === myClan.clan_id || c.defender_clan_id === myClan.clan_id)
+              && (c.status === 'pending' || c.status === 'active')
+          );
+          if (!myCh) return null;
+          const isAttacker = myCh.attacker_clan_id === myClan.clan_id;
+          const diff = new Date(myCh.status === 'pending' ? myCh.war_starts_at : myCh.war_ends_at).getTime() - Date.now();
+          const mins = Math.max(0, Math.floor(diff / 60000));
+          const secs = Math.max(0, Math.floor((diff % 60000) / 1000));
+          const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+          const isPending = myCh.status === 'pending';
+          return (
+            <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg animate-pulse" style={{
+              ...panelStyle,
+              border: isPending ? '1px solid hsla(30,70%,50%,0.5)' : '1px solid hsla(0,70%,50%,0.5)',
+              boxShadow: isPending ? '0 0 12px hsla(30,70%,50%,0.2)' : '0 0 12px hsla(0,70%,50%,0.3)',
+            }}>
+              <span style={{ fontSize: 14 }}>{isPending ? '⚔️' : '🔥'}</span>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: isPending ? 'hsl(30,70%,65%)' : 'hsl(0,70%,65%)', letterSpacing: '0.06em' }}>
+                  {isPending ? 'WAR PENDING' : 'WAR ACTIVE'}
+                </div>
+                <div style={{ fontSize: 9, color: 'hsl(40,15%,50%)' }}>
+                  {myCh.territory_name} · {isAttacker ? 'Attacking' : 'Defending'} · {isPending ? `Starts ${timeStr}` : `Ends ${timeStr}`}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Clan identity badge */}
         {myClan && (
           <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg" style={{
