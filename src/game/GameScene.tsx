@@ -412,17 +412,17 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     if (!multiplayer.connected) return;
     const session = loadWalletSession();
     const myWallet = session?.wallet_address;
-    const myClanName = clanSystem.myClan?.clan_name ?? null;
+    const myFactionId = session?.faction_id ?? null;
 
     multiplayer.setPvpHitCallback((hitData) => {
       // Only process if we are wallet-authenticated
       if (!myWallet) return;
       // Don't take PvP damage if dead
       if (survival.health <= 0) return;
-      // Same-clan protection (should be filtered by attacker, but double-check)
-      if (myClanName && hitData.attackerClanId && clanSystem.myClan?.clan_id === hitData.attackerClanId) return;
-      // Must be in a clan to participate in PvP
-      if (!myClanName) return;
+      // Same-faction protection — uses stable faction UUID, not string names
+      if (myFactionId && hitData.attackerClanId && myFactionId === hitData.attackerClanId) return;
+      // Must be in a faction to participate in PvP
+      if (!myFactionId) return;
       // Respawn invulnerability — cannot receive PvP damage
       if (Date.now() < respawnInvulnRef.current) return;
 
@@ -458,7 +458,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     });
 
     return () => multiplayer.setPvpHitCallback(null);
-  }, [multiplayer.connected, multiplayer, survival.health, clanSystem.myClan]);
+  }, [multiplayer.connected, multiplayer, survival.health]);
 
   // === PVP: Detect death → log war kill ===
   useEffect(() => {
