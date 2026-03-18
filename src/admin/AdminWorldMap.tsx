@@ -889,13 +889,15 @@ export default function AdminWorldMap() {
             const { data: killData } = await supabase.rpc('get_war_kills' as any, { _challenge_id: war.id });
             const kd = typeof killData === 'string' ? JSON.parse(killData) : killData;
             if (kd && typeof kd === 'object' && !Array.isArray(kd)) {
-              const kills = kd.kills || [];
+              const kills: { clan_id: string; kill_count: number }[] = kd.kills || [];
               let attackerKills = 0, defenderKills = 0;
               for (const k of kills) {
-                if (k.killer_clan_id === war.attacker_clan_id) attackerKills++;
-                else if (k.killer_clan_id === war.defender_clan_id) defenderKills++;
+                const count = Number(k.kill_count) || 0;
+                if (k.clan_id === war.attacker_clan_id) attackerKills += count;
+                else if (k.clan_id === war.defender_clan_id) defenderKills += count;
               }
-              killStats[war.id] = { attacker_kills: attackerKills, defender_kills: defenderKills, total: attackerKills + defenderKills };
+              const total = Number(kd.total) || (attackerKills + defenderKills);
+              killStats[war.id] = { attacker_kills: attackerKills, defender_kills: defenderKills, total };
             } else {
               killStats[war.id] = { attacker_kills: 0, defender_kills: 0, total: 0 };
             }

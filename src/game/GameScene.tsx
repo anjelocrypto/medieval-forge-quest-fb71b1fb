@@ -56,6 +56,7 @@ import { TerritoryMarkers } from './components/TerritoryMarkers';
 import { TerritoryGateBanners } from './components/TerritoryGateBanners';
 import { useClanSystem } from './hooks/useClanSystem';
 import { WarNotifications } from './ui/WarNotifications';
+import { WarScoreboard } from './ui/WarScoreboard';
 import { useCharacter } from './context/CharacterContext';
 import { WebGLRecovery } from './systems/WebGLRecovery';
 import { SceneDiagnosticsBoundary } from './debug/SceneDiagnostics';
@@ -116,6 +117,8 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
   const lastDamageSourceRef = useRef<{ attackerId: string; attackerWallet: string; timestamp: number } | null>(null);
   const pvpKillLoggedRef = useRef(false);
   const pvpDeathLogCooldownRef = useRef(0);
+  const [pvpHitMarker, setPvpHitMarker] = useState(false);
+  const [pvpNotification, setPvpNotification] = useState<string | null>(null);
   const progressionLoadedRef = useRef(false);
   const latestProgressionRef = useRef(progression);
   latestProgressionRef.current = progression;
@@ -382,6 +385,8 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     // Reset PvP state on respawn
     lastDamageSourceRef.current = null;
     pvpKillLoggedRef.current = false;
+    setPvpNotification('⚔️ You have respawned');
+    setTimeout(() => setPvpNotification(null), 3000);
   }, [updateSurvival]);
 
   // === PVP: Register incoming hit callback ===
@@ -429,6 +434,10 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     const source = lastDamageSourceRef.current;
     if (!source) return; // not a PvP death
 
+    // Show death notification
+    setPvpNotification('💀 You were killed in PvP combat');
+    setTimeout(() => setPvpNotification(null), 4000);
+
     const session = loadWalletSession();
     if (!session?.wallet_address || !session?.session_token) return;
 
@@ -468,6 +477,10 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     const session = loadWalletSession();
     if (!session?.wallet_address) return;
     if (!clanSystem.myClan?.clan_id) return;
+
+    // Show hit marker feedback
+    setPvpHitMarker(true);
+    setTimeout(() => setPvpHitMarker(false), 200);
 
     multiplayer.broadcastPvpHit({
       victimId,
@@ -530,6 +543,42 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         playerX={playerPositionRef.current.x}
         playerZ={playerPositionRef.current.z}
       />
+
+      {/* War Scoreboard — visible during active/pending_resolution wars inside territory */}
+      <WarScoreboard
+        playerX={playerPositionRef.current.x}
+        playerZ={playerPositionRef.current.z}
+        territories={clanSystem.territories}
+        challenges={clanSystem.challenges}
+        myClan={clanSystem.myClan ? { clan_name: clanSystem.myClan.clan_name, clan_color: clanSystem.myClan.clan_color, clan_id: clanSystem.myClan.clan_id } : null}
+      />
+
+      {/* PvP hit marker — crosshair flash */}
+      {pvpHitMarker && (
+        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none">
+          <div style={{
+            width: 16, height: 16, borderRadius: '50%',
+            border: '2px solid hsl(0,70%,55%)',
+            boxShadow: '0 0 12px hsla(0,70%,50%,0.6), inset 0 0 6px hsla(0,70%,50%,0.3)',
+          }} />
+        </div>
+      )}
+
+      {/* PvP notification text */}
+      {pvpNotification && (
+        <div className="fixed top-1/3 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-fade-in">
+          <div className="px-6 py-3 rounded-lg text-sm font-bold" style={{
+            background: 'linear-gradient(135deg, hsla(0,0%,0%,0.85), hsla(0,0%,0%,0.7))',
+            border: '1px solid hsla(0,60%,45%,0.5)',
+            color: 'hsl(40,30%,90%)',
+            backdropFilter: 'blur(8px)',
+            boxShadow: '0 0 24px hsla(0,60%,40%,0.3)',
+            textShadow: '0 1px 4px hsla(0,0%,0%,0.5)',
+          }}>
+            {pvpNotification}
+          </div>
+        </div>
+      )}
 
       {/* Leaderboard (L key) */}
       <Leaderboard />
