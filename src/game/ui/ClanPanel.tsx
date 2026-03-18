@@ -285,6 +285,7 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
                               <span style={{ fontSize: 9, color: 'hsl(30,50%,55%)' }}>
                                 {ch.status === 'pending' ? `⏳ War in ${formatCountdown(ch.war_starts_at)}`
                                   : ch.status === 'active' ? `🔥 Ends ${formatCountdown(ch.war_ends_at)}`
+                                  : ch.status === 'pending_resolution' ? `⏳ Awaiting admin resolution`
                                   : `🛡️ Cooldown ${formatCountdown(ch.cooldown_ends_at)}`}
                               </span>
                               {isAttacker && ch.status === 'pending' && clan.myClan?.role === 'leader' && (
