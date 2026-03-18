@@ -420,7 +420,7 @@ export function SurvivalHUD({
           <ControlRow keys="C" action="Clan" />
           <ControlRow keys="L" action="Leaderboard" />
           <ControlRow keys="K" action="Voice (Hold)" />
-          <ControlRow keys="F4" action="Character" />
+          <ControlRow keys="C" action="Faction" />
           <ControlRow keys="P" action="Settings" />
           <ControlRow keys="SCROLL" action="Zoom" />
         </ControlSection>
