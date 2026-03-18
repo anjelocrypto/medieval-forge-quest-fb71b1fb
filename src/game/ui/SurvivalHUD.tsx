@@ -199,7 +199,7 @@ export function SurvivalHUD({
         territories={territories}
       />
 
-      {/* ═══ BOTTOM LEFT — Survival bars + Clan identity + War alerts ═══ */}
+      {/* ═══ BOTTOM LEFT — Survival bars + Faction identity + War alerts ═══ */}
       <div className="absolute bottom-6 left-6 flex flex-col gap-2">
         {/* War alert — shown when player's clan has an active challenge */}
         {myClan && challenges && (() => {

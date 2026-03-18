@@ -86,7 +86,6 @@ interface PlayerProps {
   // PvP
   remotePlayersRef?: React.RefObject<Map<string, InterpolatedPlayer>>;
   localClanId?: string | null;
-  localClanName?: string | null;
   onPvpHit?: (victimId: string, damage: number, isCombo: boolean) => void;
 }
 
@@ -121,7 +120,7 @@ export function Player({
   resources, mountedDebugRef,
   externalMoveSpeedRef, externalIsRunningRef, externalIsGroundedRef, externalAttackAnimRef,
   activeEmote, activeEmoteId, onEmoteComplete, damageFlash,
-  remotePlayersRef, localClanId, localClanName, onPvpHit,
+  remotePlayersRef, localClanId, onPvpHit,
 }: PlayerProps) {
   const { character } = useCharacter();
   const groupRef = useRef<THREE.Group>(null);

@@ -151,7 +151,7 @@ export function RemotePlayer({ player, playerPositionRef }: Props) {
 
   return (
     <group ref={groupRef}>
-      {/* Nametag + health + clan — always visible within render range */}
+      {/* Nametag + health + faction — always visible within render range */}
       <Html position={[0, nametagY, 0]} center distanceFactor={20}
         style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div style={{
