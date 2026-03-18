@@ -532,7 +532,9 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
                         challenged: { icon: '⚔️', label: 'Challenged', color: 'hsl(30,60%,60%)' },
                         war_cancelled: { icon: '🚫', label: 'Challenge Cancelled', color: 'hsl(0,30%,55%)' },
                         war_started: { icon: '🔥', label: 'War Started', color: 'hsl(0,60%,60%)' },
+                        war_ended_pending_resolution: { icon: '⏳', label: 'Awaiting Resolution', color: 'hsl(40,60%,60%)' },
                         war_resolved_defender_held: { icon: '🛡️', label: 'Defender Held', color: 'hsl(210,50%,60%)' },
+                        war_resolved_attacker_won: { icon: '⚔️', label: 'Attacker Won', color: 'hsl(0,60%,60%)' },
                       };
                       const cfg = eventConfig[h.event_type] || { icon: '📋', label: h.event_type, color: 'hsl(40,15%,55%)' };
                       const clanHex = h.clan_color ? (CLAN_COLOR_HEX[h.clan_color as ClanColor] || '#888') : null;
