@@ -78,15 +78,23 @@ export function WarNotifications({ challenges, territories, myClan, playerX, pla
           color: 'hsl(0,70%,65%)',
           borderColor: 'hsla(0,70%,50%,0.6)',
         });
-      } else if (prevStatus === 'active' && ch.status === 'resolved') {
+      } else if (prevStatus === 'active' && ch.status === 'pending_resolution') {
+        addToast({
+          icon: '⏳',
+          title: 'War Ended — Awaiting Resolution',
+          subtitle: `${ch.territory_name} — Admin will decide the outcome`,
+          color: 'hsl(40,70%,65%)',
+          borderColor: 'hsla(40,70%,50%,0.5)',
+        });
+      } else if ((prevStatus === 'pending_resolution' || prevStatus === 'active') && ch.status === 'resolved') {
         const defenderHeld = ch.resolution === 'defender_held';
         const weWon = (defenderHeld && !isAttacker) || (!defenderHeld && isAttacker);
         addToast({
           icon: defenderHeld ? '🛡️' : '⚔️',
-          title: weWon ? 'Victory!' : 'Territory Defended',
+          title: weWon ? 'Victory!' : defenderHeld ? 'Territory Defended' : 'Territory Lost!',
           subtitle: `${ch.territory_name} — ${defenderHeld ? ch.defender_clan_name + ' holds' : ch.attacker_clan_name + ' conquers'}`,
-          color: weWon ? 'hsl(120,50%,60%)' : 'hsl(210,50%,65%)',
-          borderColor: weWon ? 'hsla(120,50%,50%,0.4)' : 'hsla(210,50%,50%,0.4)',
+          color: weWon ? 'hsl(120,50%,60%)' : 'hsl(0,50%,60%)',
+          borderColor: weWon ? 'hsla(120,50%,50%,0.4)' : 'hsla(0,50%,50%,0.4)',
         });
       } else if (ch.status === 'cancelled') {
         addToast({
