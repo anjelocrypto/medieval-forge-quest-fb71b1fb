@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
-export type CharacterType = 'soldier' | 'goblin' | 'octopus' | 'nemoclaw' | 'chillhouse';
+// Extended to include placeholder types for Yetis and Dogs
+export type CharacterType = 'soldier' | 'goblin' | 'octopus' | 'nemoclaw' | 'chillhouse' | 'yeti' | 'dog';
 
 interface CharacterContextValue {
   character: CharacterType;
@@ -15,10 +16,7 @@ const CharacterContext = createContext<CharacterContextValue>({
 export function CharacterProvider({ children }: { children: ReactNode }) {
   const [character, setCharacterState] = useState<CharacterType>(() => {
     const saved = localStorage.getItem('selected-character');
-    if (saved === 'soldier') return 'soldier';
-    if (saved === 'octopus') return 'octopus';
-    if (saved === 'nemoclaw') return 'nemoclaw';
-    if (saved === 'chillhouse') return 'chillhouse';
+    if (saved && isValidCharacterType(saved)) return saved as CharacterType;
     return 'goblin';
   });
 
@@ -36,4 +34,8 @@ export function CharacterProvider({ children }: { children: ReactNode }) {
 
 export function useCharacter() {
   return useContext(CharacterContext);
+}
+
+function isValidCharacterType(s: string): boolean {
+  return ['soldier', 'goblin', 'octopus', 'nemoclaw', 'chillhouse', 'yeti', 'dog'].includes(s);
 }
