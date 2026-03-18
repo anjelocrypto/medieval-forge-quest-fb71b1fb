@@ -1150,6 +1150,50 @@ export default function AdminWorldMap() {
             </div>
           </div>
 
+          {/* War Resolution Panel */}
+          {pendingResolutions.length > 0 && (
+            <div style={{ ...S.section, background: '#1a1400', border: '1px solid #3a2800', borderRadius: 6, padding: 10, marginBottom: 8 }}>
+              <div style={{ ...S.sectionLabel, color: '#f39c12', borderColor: '#3a2800' }}>
+                ⏳ PENDING WAR RESOLUTIONS ({pendingResolutions.length})
+              </div>
+              {resolveError && (
+                <div style={{ fontSize: 9, color: '#f44', marginBottom: 6, padding: '3px 6px', background: '#2a0000', borderRadius: 3 }}>
+                  ⚠️ {resolveError}
+                </div>
+              )}
+              {pendingResolutions.map(ch => (
+                <div key={ch.id} style={{ marginBottom: 10, padding: 8, background: '#0c0c1c', borderRadius: 4, border: '1px solid #252545' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#e0e4ea', marginBottom: 4 }}>
+                    {ch.territory_name}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, marginBottom: 6 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: CLAN_COLOR_HEX[ch.attacker_clan_color as ClanColor] || '#888', display: 'inline-block' }} />
+                    <span style={{ color: '#bcc' }}>{ch.attacker_clan_name}</span>
+                    <span style={{ color: '#556' }}>vs</span>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: CLAN_COLOR_HEX[ch.defender_clan_color as ClanColor] || '#888', display: 'inline-block' }} />
+                    <span style={{ color: '#bcc' }}>{ch.defender_clan_name}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button
+                      onClick={() => handleResolveWar(ch.id, 'attacker_won')}
+                      disabled={resolving === ch.id}
+                      style={{ ...S.btn, flex: 1, background: '#1a0a0a', borderColor: '#4a1515', color: '#e74c3c', fontSize: 9, fontWeight: 700, textAlign: 'center' as const }}
+                    >
+                      ⚔️ Attacker Wins
+                    </button>
+                    <button
+                      onClick={() => handleResolveWar(ch.id, 'defender_held')}
+                      disabled={resolving === ch.id}
+                      style={{ ...S.btn, flex: 1, background: '#0a1a0a', borderColor: '#154a15', color: '#27ae60', fontSize: 9, fontWeight: 700, textAlign: 'center' as const }}
+                    >
+                      🛡️ Defender Holds
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div style={S.footer}>
             Scroll to zoom • Drag to pan<br />
             Hover for info • Click to inspect
