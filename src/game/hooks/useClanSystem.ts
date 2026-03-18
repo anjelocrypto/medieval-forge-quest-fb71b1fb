@@ -312,5 +312,6 @@ export function useClanSystem() {
     claimTerritory, releaseTerritory,
     challengeTerritory, cancelChallenge,
     loadClanMembers, refresh, loadTerritories, loadChallenges,
+    transitionWarStates,
   };
 }
