@@ -464,7 +464,22 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         currentCommunityName={loadWalletSession()?.community_name}
       />
 
-      {/* Emote Wheel */}
+      {/* Clan Panel (C key) */}
+      <ClanPanel
+        open={clanOpen}
+        onClose={() => setClanOpen(false)}
+        playerX={playerPositionRef.current.x}
+        playerZ={playerPositionRef.current.z}
+      />
+
+      {/* Territory entry indicator */}
+      <TerritoryIndicator
+        territories={clanSystem.territories}
+        playerX={playerPositionRef.current.x}
+        playerZ={playerPositionRef.current.z}
+      />
+
+
       <EmoteWheel
         onSelectEmote={(key) => {
           emoteIdRef.current += 1;
