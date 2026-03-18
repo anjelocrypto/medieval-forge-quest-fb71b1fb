@@ -11,6 +11,7 @@ import {
   CLAN_COLOR_HEX,
   ClanInfo,
   TerritoryInfo,
+  ClanMemberInfo,
 } from '../hooks/useClanSystem';
 
 interface Props {
@@ -47,6 +48,7 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
   const [createName, setCreateName] = useState('');
   const [createColor, setCreateColor] = useState<ClanColor>('crimson');
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [confirmRelease, setConfirmRelease] = useState<string | null>(null);
 
   const wallet = loadWalletSession();
   const isWallet = !!wallet?.wallet_address && !!wallet?.session_token;
@@ -56,9 +58,17 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
     if (open) {
       clan.refresh();
       setConfirmLeave(false);
+      setConfirmRelease(null);
       clan.setError(null);
     }
   }, [open]); // eslint-disable-line
+
+  // Load members when myClan changes
+  useEffect(() => {
+    if (open && clan.myClan) {
+      clan.loadClanMembers(clan.myClan.clan_id);
+    }
+  }, [open, clan.myClan?.clan_id]); // eslint-disable-line
 
   // Close on ESC
   useEffect(() => {
@@ -70,7 +80,7 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
     return () => window.removeEventListener('keydown', onKey, { capture: true });
   }, [open, onClose]);
 
-  // Auto-switch to my_clan if we have one, or create if we don't
+  // Auto-switch tab
   useEffect(() => {
     if (open && isWallet) {
       setTab(clan.myClan ? 'my_clan' : 'browse');
@@ -101,7 +111,15 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
     await clan.claimTerritory(t.id, playerX, playerZ);
   }, [clan, playerX, playerZ]);
 
+  const handleRelease = useCallback(async (territoryId: string) => {
+    if (confirmRelease !== territoryId) { setConfirmRelease(territoryId); return; }
+    const ok = await clan.releaseTerritory(territoryId);
+    if (ok) setConfirmRelease(null);
+  }, [clan, confirmRelease]);
+
   if (!open) return null;
+
+  const ownedTerritories = clan.territories.filter(t => t.owning_clan_id === clan.myClan?.clan_id);
 
   return (
     <div
@@ -142,7 +160,7 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
               {(['my_clan', 'browse', 'territories', 'create'] as Tab[]).map(t => (
                 <button
                   key={t}
-                  onClick={() => { setTab(t); clan.setError(null); setConfirmLeave(false); }}
+                  onClick={() => { setTab(t); clan.setError(null); setConfirmLeave(false); setConfirmRelease(null); }}
                   className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
                   style={btnStyle(tab === t)}
                 >
@@ -178,17 +196,31 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
                     <div className="ml-auto w-5 h-5 rounded-full" style={{ background: CLAN_COLOR_HEX[clan.myClan.clan_color] }} />
                   </div>
 
-                  {/* Owned territories */}
+                  {/* Owned territories with release */}
                   <div className="mb-4">
                     <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'hsl(40,20%,55%)' }}>
                       Owned Territories
                     </div>
-                    {clan.territories.filter(t => t.owning_clan_id === clan.myClan!.clan_id).length > 0 ? (
-                      clan.territories.filter(t => t.owning_clan_id === clan.myClan!.clan_id).map(t => (
+                    {ownedTerritories.length > 0 ? (
+                      ownedTerritories.map(t => (
                         <div key={t.id} className="flex items-center gap-2 px-3 py-2 rounded-lg mb-1" style={{
                           background: 'hsla(120,30%,30%,0.08)', border: '1px solid hsla(120,30%,40%,0.15)',
                         }}>
-                          <span className="text-xs font-bold" style={{ color: 'hsl(120,40%,65%)' }}>🏴 {t.name}</span>
+                          <span className="text-xs font-bold flex-1" style={{ color: 'hsl(120,40%,65%)' }}>🏴 {t.name}</span>
+                          {clan.myClan?.role === 'leader' && (
+                            <button
+                              onClick={() => handleRelease(t.id)}
+                              disabled={clan.loading}
+                              className="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider"
+                              style={{
+                                background: confirmRelease === t.id ? 'hsla(0,60%,40%,0.25)' : 'hsla(0,30%,30%,0.1)',
+                                color: confirmRelease === t.id ? 'hsl(0,70%,70%)' : 'hsl(0,25%,55%)',
+                                border: '1px solid hsla(0,30%,40%,0.2)',
+                              }}
+                            >
+                              {confirmRelease === t.id ? '⚠️ Confirm?' : 'Release'}
+                            </button>
+                          )}
                         </div>
                       ))
                     ) : (
@@ -198,6 +230,36 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
                         No territories claimed yet. Visit a territory and claim it!
                       </div>
                     )}
+                  </div>
+
+                  {/* Member roster */}
+                  <div className="mb-4">
+                    <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'hsl(40,20%,55%)' }}>
+                      Members ({clan.clanMembers.length})
+                    </div>
+                    <div className="space-y-1 max-h-[25vh] overflow-y-auto">
+                      {clan.clanMembers.map((m: ClanMemberInfo) => (
+                        <div key={m.wallet_address} className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{
+                          background: m.role === 'leader' ? 'hsla(45,50%,40%,0.08)' : 'hsla(0,0%,100%,0.02)',
+                          border: m.role === 'leader' ? '1px solid hsla(45,50%,50%,0.12)' : '1px solid hsla(0,0%,100%,0.04)',
+                        }}>
+                          <span style={{ fontSize: 12 }}>
+                            {m.role === 'leader' ? '👑' : '⚔️'}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-bold truncate" style={{ color: 'hsl(40,40%,80%)' }}>
+                              {m.display_name}
+                            </div>
+                            <div className="text-[9px]" style={{ color: 'hsl(40,15%,40%)' }}>
+                              {m.role} · {m.character_type}
+                            </div>
+                          </div>
+                          <div className="text-[9px]" style={{ color: 'hsl(40,15%,35%)' }}>
+                            {new Date(m.joined_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <button
@@ -210,7 +272,7 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
                       border: '1px solid hsla(0,40%,40%,0.2)',
                     }}
                   >
-                    {confirmLeave ? '⚠️ Confirm Leave? (territories will be released if you are the last member)' : 'Leave Clan'}
+                    {confirmLeave ? '⚠️ Confirm Leave? (territories released if last member)' : 'Leave Clan'}
                   </button>
                 </div>
               ) : (
@@ -398,7 +460,7 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
         {/* Footer info */}
         <div className="mt-4 pt-3" style={{ borderTop: '1px solid hsla(0,0%,100%,0.05)' }}>
           <p className="text-[9px] text-center" style={{ color: 'hsl(40,15%,35%)' }}>
-            Press C to toggle · Press ESC to close · Ironhold remains neutral
+            Press C to toggle · Press ESC to close · Ironhold remains neutral · 1 territory per clan
           </p>
         </div>
       </div>
