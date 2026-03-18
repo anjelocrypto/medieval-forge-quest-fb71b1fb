@@ -5,7 +5,8 @@
  * Zoom-based LOD for progressive detail reveal.
  */
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
-
+import { supabase } from '@/integrations/supabase/client';
+import { CLAN_COLOR_HEX, ClanColor, TerritoryInfo } from '../game/hooks/useClanSystem';
 // ===== Real world data imports =====
 import { WORLD_SIZE, HALF_WORLD } from '../game/constants';
 import { REGIONS, SETTLEMENTS, ROADS, SMALL_POIS, LANDMARKS } from '../game/world/RegionData';
