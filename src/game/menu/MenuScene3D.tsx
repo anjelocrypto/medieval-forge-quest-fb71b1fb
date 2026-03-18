@@ -1,66 +1,41 @@
 /**
- * Cinematic 3D scene for the main menu.
- * Renders the world in presentation-only mode without gameplay systems.
+ * Lightweight cinematic landing screen.
+ * NO 3D Canvas, NO GLB loading, NO terrain, NO realtime.
+ * Pure CSS atmosphere to eliminate all asset egress on the landing page.
  */
-import { Canvas } from '@react-three/fiber';
-import { Terrain } from '../components/Terrain';
-import { Water } from '../components/Water';
-import { Atmosphere } from '../components/Atmosphere';
-import { Sky } from '../components/Sky';
-import { Settlements } from '../components/Settlements';
-import { WorldPOIs } from '../components/WorldPOIs';
-import { AmbientEffects } from '../components/AmbientEffects';
-import { CinematicCamera } from './CinematicCamera';
-import { MenuCanvasCleanup } from '../systems/WebGLRecovery';
-import { useRef } from 'react';
-import * as THREE from 'three';
-
 export function MenuScene3D() {
-  // Dummy ref for components that require playerPositionRef (won't be used in menu)
-  const dummyPositionRef = useRef(new THREE.Vector3(0, 0, 0));
-
   return (
-    <div className="absolute inset-0 z-0">
-      <Canvas
-        shadows
-        camera={{ fov: 55, near: 0.5, far: 600, position: [60, 40, 60] }}
-        style={{ width: '100%', height: '100%' }}
-        gl={{ antialias: true, powerPreference: 'high-performance' }}
-      >
-        {/* Cleanup on unmount to free GPU memory */}
-        <MenuCanvasCleanup />
-        {/* Core atmosphere */}
-        <Atmosphere playerPositionRef={dummyPositionRef} />
-        <Sky />
-        
-        {/* World geometry */}
-        <Terrain />
-        <Water />
-        
-        {/* Settlements and POIs - use far position to render all */}
-        <MenuSettlements />
-        <MenuWorldPOIs />
-        
-        {/* Ambient particles */}
-        <AmbientEffects />
-        
-        {/* Cinematic automated camera */}
-        <CinematicCamera />
-      </Canvas>
+    <div className="absolute inset-0 z-0" style={{
+      background: 'linear-gradient(135deg, #0a0a14 0%, #1a1020 30%, #0d1520 60%, #0a0a14 100%)',
+    }}>
+      {/* Animated gradient overlay for depth */}
+      <div className="absolute inset-0" style={{
+        background: 'radial-gradient(ellipse 80% 60% at 50% 40%, hsla(30,40%,15%,0.4) 0%, transparent 70%)',
+      }} />
+      
+      {/* Subtle star-like particles via CSS */}
+      <div className="absolute inset-0 overflow-hidden">
+        {Array.from({ length: 30 }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full"
+            style={{
+              width: Math.random() * 2 + 1,
+              height: Math.random() * 2 + 1,
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              background: `hsla(${40 + Math.random() * 20}, 30%, ${50 + Math.random() * 30}%, ${0.2 + Math.random() * 0.4})`,
+              animation: `pulse ${4 + Math.random() * 6}s ease-in-out infinite`,
+              animationDelay: `${Math.random() * 5}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Ground fog gradient */}
+      <div className="absolute bottom-0 left-0 right-0 h-1/3" style={{
+        background: 'linear-gradient(to top, hsla(220,20%,8%,0.8) 0%, transparent 100%)',
+      }} />
     </div>
   );
-}
-
-// Wrapper that renders settlements without LOD distance culling
-function MenuSettlements() {
-  // Create a ref at a far position so all settlements render
-  const farRef = useRef(new THREE.Vector3(0, 0, 0));
-  return <Settlements playerPositionRef={farRef} />;
-}
-
-// Wrapper that renders POIs without LOD distance culling
-function MenuWorldPOIs() {
-  // Create a ref at center so POIs within range render
-  const centerRef = useRef(new THREE.Vector3(0, 0, 0));
-  return <WorldPOIs playerPositionRef={centerRef} />;
 }

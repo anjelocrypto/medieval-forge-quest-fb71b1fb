@@ -55,7 +55,7 @@ export const MultiplayerBroadcaster = forwardRef<THREE.Object3D, Props>(function
       } catch { clanRef.current = { name: null, color: null }; }
     };
     loadClan();
-    const interval = setInterval(loadClan, 15000); // refresh every 15s
+    const interval = setInterval(() => { if (!document.hidden) loadClan(); }, 60000); // reduced from 15s to 60s
     return () => clearInterval(interval);
   }, []);
 

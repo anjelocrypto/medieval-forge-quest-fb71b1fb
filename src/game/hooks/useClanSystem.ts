@@ -207,14 +207,15 @@ export function useClanSystem() {
     loadChallenges();
   }, [loadMyClan, loadClans, loadTerritories, loadChallenges]);
 
-  // Poll war-state transitions every 15s when challenges exist
+  // Poll territories/challenges every 60s (reduced from 15s for cost)
+  // transition_war_states is now called via backend cron, not every client
   useEffect(() => {
     const iv = setInterval(async () => {
-      await transitionWarStates();
+      if (document.hidden) return; // skip when tab not visible
       await Promise.all([loadTerritories(), loadChallenges()]);
-    }, 15000);
+    }, 60000);
     return () => clearInterval(iv);
-  }, [transitionWarStates, loadTerritories, loadChallenges]);
+  }, [loadTerritories, loadChallenges]);
 
   // ========== Mutations ==========
   const withLoading = useCallback(async <T>(fn: () => Promise<T>): Promise<T> => {

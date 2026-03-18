@@ -62,7 +62,6 @@ import { CLAN_COLOR_HEX, ClanColor } from './hooks/useClanSystem';
 import { useCharacter } from './context/CharacterContext';
 import { WebGLRecovery } from './systems/WebGLRecovery';
 import { SceneDiagnosticsBoundary } from './debug/SceneDiagnostics';
-import { preloadRemoteCharacterModels } from './multiplayer/preloadRemoteModels';
 import { StartupReadiness } from './systems/StartupReadiness';
 
 interface GameSceneProps {
@@ -177,6 +176,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     trencheri.fetchActiveCoins();
 
     const spawnInterval = setInterval(async () => {
+      if (document.hidden) return; // COST: skip when tab hidden
       const pos = playerPositionRef.current;
       // Prune expired local coins
       trencheri.pruneExpired();
@@ -199,6 +199,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
 
     // Periodically fetch all active coins (so you see coins from other players too)
     const fetchInterval = setInterval(() => {
+      if (document.hidden) return; // COST: skip when tab hidden
       trencheri.fetchActiveCoins();
     }, trencheri.FETCH_INTERVAL_MS);
 
@@ -233,10 +234,8 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     }
   }, [trencheri, playerPositionRef, setInteractionText]);
 
-  // Preload remote character GLBs
-  useEffect(() => {
-    preloadRemoteCharacterModels();
-  }, []);
+  // Remote character GLBs are no longer eagerly preloaded.
+  // They load on-demand when a remote player of that type first appears.
 
   useEffect(() => { initInput(); }, []);
 
@@ -275,6 +274,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
 
   useEffect(() => {
     const checkInterval = setInterval(() => {
+      if (document.hidden) return; // COST: skip when tab hidden
       const handle = enemiesHandleRef.current;
       if (!handle) return;
       const enemyMap = handle.getEnemies();
@@ -293,7 +293,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
           secureArea(key);
         }
       }
-    }, 2000);
+    }, 5000); // reduced from 2s to 5s
     return () => clearInterval(checkInterval);
   }, [progression.areasSecured, secureArea]);
 
