@@ -117,6 +117,7 @@ export function Player({
   resources, mountedDebugRef,
   externalMoveSpeedRef, externalIsRunningRef, externalIsGroundedRef, externalAttackAnimRef,
   activeEmote, activeEmoteId, onEmoteComplete, damageFlash,
+  remotePlayersRef, localClanId, localClanName, onPvpHit,
 }: PlayerProps) {
   const { character } = useCharacter();
   const groupRef = useRef<THREE.Group>(null);
