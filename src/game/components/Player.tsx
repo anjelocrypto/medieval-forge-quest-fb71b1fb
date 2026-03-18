@@ -23,6 +23,7 @@ import {
 import { PLAYER_ATTACK_COOLDOWN, PLAYER_ATTACK_RANGE, PLAYER_ATTACK_DAMAGE, PLAYER_ATTACK_ARC } from '../systems/EnemyData';
 import { PVP_DAMAGE, PVP_COMBO_DAMAGE } from '../multiplayer/types';
 import type { InterpolatedPlayer } from '../multiplayer/types';
+import { SurvivalState, LootPickup, ResourceInventory } from '../types';
 import { findSafeSpawn } from '../systems/SafeSpawn';
 
 import { PlacedStructure } from '../systems/BuildingData';
