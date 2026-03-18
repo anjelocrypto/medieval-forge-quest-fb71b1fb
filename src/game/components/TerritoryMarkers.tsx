@@ -21,8 +21,8 @@ const BANNER_HEIGHT = 2.5;
 
 function TerritoryBanner({ territory }: { territory: TerritoryInfo }) {
   const terrainY = getTerrainHeight(territory.center_x, territory.center_z);
-  const warState = territory.war_state || 'peaceful';
-  const isContested = warState === 'contested' || warState === 'active_war';
+  const warState = (territory.war_state as string) || 'peaceful';
+  const isContested = warState === 'contested' || warState === 'active_war' || warState === 'pending_resolution';
   const color = territory.owning_clan_color
     ? CLAN_COLOR_HEX[territory.owning_clan_color as ClanColor] || '#888888'
     : '#666666';
