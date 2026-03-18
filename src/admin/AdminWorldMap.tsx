@@ -870,6 +870,7 @@ export default function AdminWorldMap() {
     'collision objects': collisionData.circles.length + collisionData.boxes.length,
     territories: territories.length,
     'claimed territories': territories.filter(t => t.owning_clan_id).length,
+    'contested territories': territories.filter(t => (t as any).war_state === 'contested' || (t as any).war_state === 'active_war').length,
   }), [collisionData, territories]);
 
   // Render
