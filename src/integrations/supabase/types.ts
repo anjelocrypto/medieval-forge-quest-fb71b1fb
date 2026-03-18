@@ -440,6 +440,42 @@ export type Database = {
           },
         ]
       }
+      territory_history: {
+        Row: {
+          actor_wallet: string | null
+          clan_color: string | null
+          clan_id: string | null
+          clan_name: string | null
+          created_at: string
+          event_type: string
+          id: string
+          territory_id: string
+          territory_name: string
+        }
+        Insert: {
+          actor_wallet?: string | null
+          clan_color?: string | null
+          clan_id?: string | null
+          clan_name?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          territory_id: string
+          territory_name: string
+        }
+        Update: {
+          actor_wallet?: string | null
+          clan_color?: string | null
+          clan_id?: string | null
+          clan_name?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          territory_id?: string
+          territory_name?: string
+        }
+        Relationships: []
+      }
       wallet_sessions: {
         Row: {
           created_at: string
@@ -568,6 +604,10 @@ export type Database = {
       }
       get_my_clan: { Args: { _wallet_address: string }; Returns: Json }
       get_territories: { Args: never; Returns: Json }
+      get_territory_history: {
+        Args: { _limit?: number; _territory_id?: string }
+        Returns: Json
+      }
       get_trencheri_balance: {
         Args: { _wallet_address: string }
         Returns: number
