@@ -98,7 +98,7 @@ export const PVP_DEATH_LOG_COOLDOWN_MS = 5000; // min ms between logging deaths
 export interface InterpolatedPlayer {
   playerId: string;
   displayName: string;
-  characterType: 'soldier' | 'goblin' | 'octopus' | 'nemoclaw' | 'chillhouse';
+  characterType: 'soldier' | 'goblin' | 'octopus' | 'nemoclaw' | 'chillhouse' | 'yeti' | 'dog';
   // Interpolation buffers
   prevPosition: [number, number, number];
   targetPosition: [number, number, number];
