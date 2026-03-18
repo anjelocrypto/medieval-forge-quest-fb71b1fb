@@ -122,7 +122,8 @@ export function WarNotifications({ challenges, territories, myClan, playerX, pla
 
   // Territory awareness — check if player is inside a non-peaceful territory
   const currentTerritory = territories.find(t => {
-    if (t.war_state === 'peaceful') return false;
+    const ws = t.war_state as string;
+    if (ws === 'peaceful') return false;
     const dx = playerX - t.center_x;
     const dz = playerZ - t.center_z;
     return Math.sqrt(dx * dx + dz * dz) < t.radius;
