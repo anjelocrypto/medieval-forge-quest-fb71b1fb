@@ -867,6 +867,58 @@ export default function AdminWorldMap() {
     return () => clearInterval(interval);
   }, []);
 
+  // Challenge data for admin resolution
+  const [challenges, setChallenges] = useState<ChallengeInfo[]>([]);
+  const [resolving, setResolving] = useState<string | null>(null);
+  const [resolveError, setResolveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadChallenges = async () => {
+      try {
+        const { data } = await supabase.rpc('get_active_challenges' as any, { _limit: 50 });
+        const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+        setChallenges(Array.isArray(parsed) ? parsed : []);
+      } catch { /* silent */ }
+    };
+    loadChallenges();
+    const interval = setInterval(loadChallenges, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const pendingResolutions = challenges.filter(c => c.status === 'pending_resolution');
+
+  const handleResolveWar = async (challengeId: string, resolution: 'attacker_won' | 'defender_held') => {
+    const session = loadWalletSession();
+    if (!session?.wallet_address || !session.session_token) {
+      setResolveError('No admin session');
+      return;
+    }
+    setResolving(challengeId);
+    setResolveError(null);
+    try {
+      const { data, error } = await supabase.rpc('resolve_war' as any, {
+        _wallet_address: session.wallet_address,
+        _session_token: session.session_token,
+        _challenge_id: challengeId,
+        _resolution: resolution,
+      });
+      if (error || !(data as any)?.success) {
+        setResolveError((data as any)?.error || error?.message || 'Failed');
+      } else {
+        // Refresh data
+        const { data: tData } = await supabase.rpc('get_territories' as any);
+        const tp = typeof tData === 'string' ? JSON.parse(tData) : tData;
+        setTerritories(Array.isArray(tp) ? tp : []);
+        const { data: cData } = await supabase.rpc('get_active_challenges' as any, { _limit: 50 });
+        const cp = typeof cData === 'string' ? JSON.parse(cData) : cData;
+        setChallenges(Array.isArray(cp) ? cp : []);
+      }
+    } catch (e: any) {
+      setResolveError(e.message || 'Failed');
+    }
+    setResolving(null);
+  };
+
   const stats = useMemo(() => ({
     regions: REGIONS.length,
     settlements: SETTLEMENTS.length,
