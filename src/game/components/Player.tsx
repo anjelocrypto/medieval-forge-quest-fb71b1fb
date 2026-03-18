@@ -27,6 +27,7 @@ import { PVP_DAMAGE, PVP_COMBO_DAMAGE } from '../multiplayer/types';
 import type { InterpolatedPlayer } from '../multiplayer/types';
 import { SurvivalState, LootPickup, ResourceInventory } from '../types';
 import { findSafeSpawn } from '../systems/SafeSpawn';
+import { loadWalletSession } from '../hooks/usePlayerAccount';
 
 import { PlacedStructure } from '../systems/BuildingData';
 import { HorseData, HORSE_SPEED, HORSE_RUN_SPEED, MOUNT_RANGE, DISMOUNT_OFFSET } from '../systems/HorseData';
