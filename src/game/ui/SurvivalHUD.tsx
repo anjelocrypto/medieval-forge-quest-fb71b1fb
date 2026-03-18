@@ -161,7 +161,7 @@ export function SurvivalHUD({
   survival, inventory, interactionText, buildMode, selectedBuildIndex,
   buildFeedback, damageFlash, progression, notification, availableBuildables,
   isMounted = false, playerX, playerZ, playerRotation, horseX, horseZ,
-  mapOpen, onCloseMap, isSpeaking = false, trencheriBalance,
+  mapOpen, onCloseMap, isSpeaking = false, trencheriBalance, territories,
 }: HUDProps) {
   const lowHealth = survival.health < 25;
 
