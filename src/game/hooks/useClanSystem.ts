@@ -328,12 +328,12 @@ export function useClanSystem() {
   }, [loadMyClan, loadClans, loadTerritories, loadChallenges]);
 
   return {
-    myClan, clans, territories, clanMembers, challenges,
+    myClan, clans, territories, clanMembers, challenges, history,
     loading, error, setError,
     createClan, joinClan, leaveClan,
     claimTerritory, releaseTerritory,
     challengeTerritory, cancelChallenge,
-    loadClanMembers, refresh, loadTerritories, loadChallenges,
+    loadClanMembers, loadHistory, refresh, loadTerritories, loadChallenges,
     transitionWarStates,
   };
 }
