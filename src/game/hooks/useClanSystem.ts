@@ -273,6 +273,37 @@ export function useClanSystem() {
     }
   }, [loadTerritories]);
 
+  // Release territory
+  const releaseTerritory = useCallback(async (territoryId: string): Promise<boolean> => {
+    const session = loadWalletSession();
+    if (!session?.wallet_address || !session.session_token) {
+      setError('Wallet session required');
+      return false;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await supabase.rpc('release_territory' as any, {
+        _wallet_address: session.wallet_address,
+        _session_token: session.session_token,
+        _territory_id: territoryId,
+      });
+      const result = data as any;
+      if (!result?.success) {
+        setError(result?.error || 'Failed to release territory');
+        setLoading(false);
+        return false;
+      }
+      await loadTerritories();
+      setLoading(false);
+      return true;
+    } catch (err: any) {
+      setError(err.message || 'Failed to release territory');
+      setLoading(false);
+      return false;
+    }
+  }, [loadTerritories]);
+
   // Refresh all
   const refresh = useCallback(async () => {
     await Promise.all([loadMyClan(), loadClans(), loadTerritories()]);
@@ -282,6 +313,7 @@ export function useClanSystem() {
     myClan,
     clans,
     territories,
+    clanMembers,
     loading,
     error,
     setError,
@@ -289,6 +321,8 @@ export function useClanSystem() {
     joinClan,
     leaveClan,
     claimTerritory,
+    releaseTerritory,
+    loadClanMembers,
     refresh,
     loadTerritories,
   };
