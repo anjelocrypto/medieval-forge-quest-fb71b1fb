@@ -212,13 +212,13 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
           <>
             {/* Tabs */}
             <div className="flex gap-2 mb-4">
-              {(['my_clan', 'browse', 'territories', 'create'] as Tab[]).map(t => (
+              {(['my_clan', 'browse', 'territories', 'history', 'create'] as Tab[]).map(t => (
                 <button key={t}
                   onClick={() => { setTab(t); clan.setError(null); setConfirmLeave(false); setConfirmRelease(null); setConfirmChallenge(null); setConfirmCancel(null); }}
                   className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
                   style={btnStyle(tab === t)}
                 >
-                  {t === 'my_clan' ? 'My Clan' : t === 'browse' ? 'Browse' : t === 'territories' ? 'Territories' : '+ Create'}
+                  {t === 'my_clan' ? 'My Clan' : t === 'browse' ? 'Browse' : t === 'territories' ? 'Territories' : t === 'history' ? 'History' : '+ Create'}
                 </button>
               ))}
             </div>
