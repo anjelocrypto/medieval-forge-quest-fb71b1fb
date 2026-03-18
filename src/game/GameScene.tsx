@@ -117,6 +117,8 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
   const lastDamageSourceRef = useRef<{ attackerId: string; attackerWallet: string; timestamp: number } | null>(null);
   const pvpKillLoggedRef = useRef(false);
   const pvpDeathLogCooldownRef = useRef(0);
+  const [pvpHitMarker, setPvpHitMarker] = useState(false);
+  const [pvpNotification, setPvpNotification] = useState<string | null>(null);
   const progressionLoadedRef = useRef(false);
   const latestProgressionRef = useRef(progression);
   latestProgressionRef.current = progression;
