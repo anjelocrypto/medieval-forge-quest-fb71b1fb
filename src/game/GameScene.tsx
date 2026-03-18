@@ -56,6 +56,7 @@ import { TerritoryMarkers } from './components/TerritoryMarkers';
 import { TerritoryGateBanners } from './components/TerritoryGateBanners';
 import { useClanSystem } from './hooks/useClanSystem';
 import { WarNotifications } from './ui/WarNotifications';
+import { WarScoreboard } from './ui/WarScoreboard';
 import { useCharacter } from './context/CharacterContext';
 import { WebGLRecovery } from './systems/WebGLRecovery';
 import { SceneDiagnosticsBoundary } from './debug/SceneDiagnostics';
