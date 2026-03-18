@@ -204,7 +204,7 @@ export function SurvivalHUD({
         {myClan && challenges && (() => {
           const myCh = challenges.find(
             c => (c.attacker_clan_id === myClan.clan_id || c.defender_clan_id === myClan.clan_id)
-              && (c.status === 'pending' || c.status === 'active')
+              && (c.status === 'pending' || c.status === 'active' || c.status === 'resolved')
           );
           if (!myCh) return null;
           const isAttacker = myCh.attacker_clan_id === myClan.clan_id;
