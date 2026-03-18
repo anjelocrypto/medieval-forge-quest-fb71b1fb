@@ -3,6 +3,7 @@ import { BuildableConfig } from '../systems/BuildingData';
 import { TIER2_KILLS_REQUIRED, TIER2_STRUCTURES_REQUIRED } from '../constants';
 import { Minimap } from './Minimap';
 import type { TerritoryInfo } from '../hooks/useClanSystem';
+import { CLAN_COLOR_HEX } from '../hooks/useClanSystem';
 
 interface HUDProps {
   survival: SurvivalState;
