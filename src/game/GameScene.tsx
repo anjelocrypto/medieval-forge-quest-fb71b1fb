@@ -49,6 +49,9 @@ import { useProximityVoice } from './multiplayer/useProximityVoice';
 import { EmoteWheel } from './ui/EmoteWheel';
 import { CharacterSelect } from './ui/CharacterSelect';
 import { SettingsPanel } from './ui/SettingsPanel';
+import { ClanPanel } from './ui/ClanPanel';
+import { TerritoryIndicator } from './components/TerritoryIndicator';
+import { useClanSystem } from './hooks/useClanSystem';
 import { useCharacter } from './context/CharacterContext';
 import { WebGLRecovery } from './systems/WebGLRecovery';
 import { SceneDiagnosticsBoundary } from './debug/SceneDiagnostics';
@@ -278,16 +281,20 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
 
   // Settings panel state
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [clanOpen, setClanOpen] = useState(false);
+  const clanSystem = useClanSystem();
 
-  // Map toggle + settings toggle
+  // Map toggle + settings toggle + clan toggle
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'KeyM') setMapOpen(prev => !prev);
-      if (e.code === 'KeyP' && !e.ctrlKey && !e.metaKey) {
-        // Don't toggle if chat input is focused
-        const active = document.activeElement;
-        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
+      const active = document.activeElement;
+      const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
+      if (e.code === 'KeyP' && !e.ctrlKey && !e.metaKey && !isTyping) {
         setSettingsOpen(prev => !prev);
+      }
+      if (e.code === 'KeyC' && !e.ctrlKey && !e.metaKey && !isTyping) {
+        setClanOpen(prev => !prev);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -407,6 +414,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         onCloseMap={() => setMapOpen(false)}
         isSpeaking={voice.isTalking}
         trencheriBalance={trencheri.balance}
+        territories={clanSystem.territories}
       />
 
       {/* Leaderboard (L key) */}
@@ -457,7 +465,22 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         currentCommunityName={loadWalletSession()?.community_name}
       />
 
-      {/* Emote Wheel */}
+      {/* Clan Panel (C key) */}
+      <ClanPanel
+        open={clanOpen}
+        onClose={() => setClanOpen(false)}
+        playerX={playerPositionRef.current.x}
+        playerZ={playerPositionRef.current.z}
+      />
+
+      {/* Territory entry indicator */}
+      <TerritoryIndicator
+        territories={clanSystem.territories}
+        playerX={playerPositionRef.current.x}
+        playerZ={playerPositionRef.current.z}
+      />
+
+
       <EmoteWheel
         onSelectEmote={(key) => {
           emoteIdRef.current += 1;

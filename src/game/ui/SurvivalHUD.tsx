@@ -2,6 +2,7 @@ import { SurvivalState, ResourceInventory, ProgressionState } from '../types';
 import { BuildableConfig } from '../systems/BuildingData';
 import { TIER2_KILLS_REQUIRED, TIER2_STRUCTURES_REQUIRED } from '../constants';
 import { Minimap } from './Minimap';
+import type { TerritoryInfo } from '../hooks/useClanSystem';
 
 interface HUDProps {
   survival: SurvivalState;
@@ -24,6 +25,7 @@ interface HUDProps {
   onCloseMap: () => void;
   isSpeaking?: boolean;
   trencheriBalance?: number | null;
+  territories?: TerritoryInfo[];
 }
 
 /* ── shared panel style ── */
@@ -159,7 +161,7 @@ export function SurvivalHUD({
   survival, inventory, interactionText, buildMode, selectedBuildIndex,
   buildFeedback, damageFlash, progression, notification, availableBuildables,
   isMounted = false, playerX, playerZ, playerRotation, horseX, horseZ,
-  mapOpen, onCloseMap, isSpeaking = false, trencheriBalance,
+  mapOpen, onCloseMap, isSpeaking = false, trencheriBalance, territories,
 }: HUDProps) {
   const lowHealth = survival.health < 25;
 
@@ -189,6 +191,7 @@ export function SurvivalHUD({
         playerX={playerX} playerZ={playerZ} playerRotation={playerRotation}
         horseX={horseX} horseZ={horseZ} isMounted={isMounted}
         mapOpen={mapOpen} onCloseMap={onCloseMap}
+        territories={territories}
       />
 
       {/* ═══ BOTTOM LEFT — Survival bars ═══ */}

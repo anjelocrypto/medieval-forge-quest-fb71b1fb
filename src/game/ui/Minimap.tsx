@@ -1,9 +1,10 @@
 /**
- * Minimap HUD — top-right corner showing player position, settlements, roads, horse.
+ * Minimap HUD — top-right corner showing player position, settlements, roads, horse, territory ownership.
  * Medieval-styled circular minimap with parchment aesthetic.
  */
 import { useRef, useEffect, useCallback } from 'react';
 import { SETTLEMENTS, REGIONS, ROADS, SMALL_POIS, LANDMARKS, getRegionAt } from '../world/RegionData';
+import { TerritoryInfo, CLAN_COLOR_HEX, ClanColor } from '../hooks/useClanSystem';
 
 interface MinimapProps {
   playerX: number;
@@ -14,6 +15,7 @@ interface MinimapProps {
   isMounted: boolean;
   mapOpen: boolean;
   onCloseMap: () => void;
+  territories?: TerritoryInfo[];
 }
 
 const MAP_SIZE = 160; // minimap size in pixels
@@ -31,6 +33,7 @@ function drawMinimap(
   horseZ: number,
   isMounted: boolean,
   fullMap: boolean,
+  territories?: TerritoryInfo[],
 ) {
   const half = size / 2;
   const scale = half / worldRadius;
@@ -52,15 +55,29 @@ function drawMinimap(
   const cx = fullMap ? 0 : playerX;
   const cz = fullMap ? 0 : playerZ;
 
-  // Region colors
+  // Region colors (base)
   for (const r of REGIONS) {
     const rx = (r.center[0] - cx) * scale + half;
     const rz = (r.center[1] - cz) * scale + half;
     const rr = r.radius * scale;
-    ctx.fillStyle = r.color + '40';
-    ctx.beginPath();
-    ctx.arc(rx, rz, rr, 0, Math.PI * 2);
-    ctx.fill();
+    // Check if this region has territory ownership
+    const territory = territories?.find(t => t.id === r.id);
+    if (territory?.owning_clan_color) {
+      const clanHex = CLAN_COLOR_HEX[territory.owning_clan_color as ClanColor] || r.color;
+      ctx.fillStyle = clanHex + '50';
+      ctx.beginPath();
+      ctx.arc(rx, rz, rr, 0, Math.PI * 2);
+      ctx.fill();
+      // Border ring
+      ctx.strokeStyle = clanHex + '80';
+      ctx.lineWidth = fullMap ? 2.5 : 1.5;
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = r.color + '40';
+      ctx.beginPath();
+      ctx.arc(rx, rz, rr, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   // Roads
@@ -143,6 +160,26 @@ function drawMinimap(
       ctx.lineTo(lx - 3, lz + 2);
       ctx.closePath();
       ctx.fill();
+    }
+  }
+
+  // Territory ownership labels on full map
+  if (fullMap && territories) {
+    for (const t of territories) {
+      const tx = (t.center_x - cx) * scale + half;
+      const tz = (t.center_z - cz) * scale + half;
+      if (t.owning_clan_name && t.owning_clan_color) {
+        const cHex = CLAN_COLOR_HEX[t.owning_clan_color as ClanColor] || '#888';
+        ctx.fillStyle = cHex;
+        ctx.font = 'bold 8px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`🏴 ${t.owning_clan_name}`, tx, tz + 12);
+      } else {
+        ctx.fillStyle = '#6a6a6a80';
+        ctx.font = 'italic 7px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Unclaimed', tx, tz + 12);
+      }
     }
   }
 
@@ -238,7 +275,7 @@ function drawMinimap(
 
 export function Minimap({
   playerX, playerZ, playerRotation,
-  horseX, horseZ, isMounted, mapOpen, onCloseMap,
+  horseX, horseZ, isMounted, mapOpen, onCloseMap, territories,
 }: MinimapProps) {
   const miniRef = useRef<HTMLCanvasElement>(null);
   const fullRef = useRef<HTMLCanvasElement>(null);
@@ -249,8 +286,8 @@ export function Minimap({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     drawMinimap(ctx, MAP_SIZE, MAP_WORLD_RADIUS, playerX, playerZ, playerRotation,
-      horseX, horseZ, isMounted, false);
-  }, [playerX, playerZ, playerRotation, horseX, horseZ, isMounted]);
+      horseX, horseZ, isMounted, false, territories);
+  }, [playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories]);
 
   const drawFull = useCallback(() => {
     const canvas = fullRef.current;
@@ -258,8 +295,8 @@ export function Minimap({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     drawMinimap(ctx, 600, FULL_MAP_WORLD, playerX, playerZ, playerRotation,
-      horseX, horseZ, isMounted, true);
-  }, [playerX, playerZ, playerRotation, horseX, horseZ, isMounted]);
+      horseX, horseZ, isMounted, true, territories);
+  }, [playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories]);
 
   useEffect(() => {
     if (!mapOpen) drawMini();

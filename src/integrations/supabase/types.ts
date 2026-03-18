@@ -89,6 +89,71 @@ export type Database = {
         }
         Relationships: []
       }
+      clan_members: {
+        Row: {
+          clan_id: string
+          id: string
+          joined_at: string
+          role: string
+          wallet_address: string
+        }
+        Insert: {
+          clan_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          wallet_address: string
+        }
+        Update: {
+          clan_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          wallet_address?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clan_members_clan_id_fkey"
+            columns: ["clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clans: {
+        Row: {
+          color: Database["public"]["Enums"]["clan_color"]
+          created_at: string
+          id: string
+          leader_wallet: string
+          max_members: number
+          member_count: number
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color: Database["public"]["Enums"]["clan_color"]
+          created_at?: string
+          id?: string
+          leader_wallet: string
+          max_members?: number
+          member_count?: number
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: Database["public"]["Enums"]["clan_color"]
+          created_at?: string
+          id?: string
+          leader_wallet?: string
+          max_members?: number
+          member_count?: number
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       coin_claims: {
         Row: {
           claimed_at: string
@@ -322,6 +387,59 @@ export type Database = {
         }
         Relationships: []
       }
+      territories: {
+        Row: {
+          center_x: number
+          center_z: number
+          claimed_at: string | null
+          created_at: string
+          id: string
+          name: string
+          owning_clan_id: string | null
+          radius: number
+          region_id: string
+          updated_at: string
+          war_cooldown_until: string | null
+          war_state: Database["public"]["Enums"]["territory_war_state"]
+        }
+        Insert: {
+          center_x?: number
+          center_z?: number
+          claimed_at?: string | null
+          created_at?: string
+          id: string
+          name: string
+          owning_clan_id?: string | null
+          radius?: number
+          region_id: string
+          updated_at?: string
+          war_cooldown_until?: string | null
+          war_state?: Database["public"]["Enums"]["territory_war_state"]
+        }
+        Update: {
+          center_x?: number
+          center_z?: number
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          owning_clan_id?: string | null
+          radius?: number
+          region_id?: string
+          updated_at?: string
+          war_cooldown_until?: string | null
+          war_state?: Database["public"]["Enums"]["territory_war_state"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "territories_owning_clan_id_fkey"
+            columns: ["owning_clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wallet_sessions: {
         Row: {
           created_at: string
@@ -358,6 +476,16 @@ export type Database = {
         Args: { _session_token: string; _wallet_address: string }
         Returns: Json
       }
+      claim_territory: {
+        Args: {
+          _player_x?: number
+          _player_z?: number
+          _session_token: string
+          _territory_id: string
+          _wallet_address: string
+        }
+        Returns: Json
+      }
       claim_trencheri_coin:
         | {
             Args: {
@@ -390,6 +518,15 @@ export type Database = {
       cleanup_expired_sessions: { Args: never; Returns: undefined }
       cleanup_old_coin_claims: { Args: never; Returns: undefined }
       cleanup_stale_rooms: { Args: never; Returns: undefined }
+      create_clan: {
+        Args: {
+          _clan_color: string
+          _clan_name: string
+          _session_token: string
+          _wallet_address: string
+        }
+        Returns: Json
+      }
       create_game_room: {
         Args: {
           _display_name: string
@@ -413,6 +550,7 @@ export type Database = {
         Returns: string
       }
       get_active_coins: { Args: { _limit?: number }; Returns: Json }
+      get_clans: { Args: { _limit?: number }; Returns: Json }
       get_leaderboard: {
         Args: { _limit?: number }
         Returns: {
@@ -427,6 +565,8 @@ export type Database = {
           total_wood_gathered: number
         }[]
       }
+      get_my_clan: { Args: { _wallet_address: string }; Returns: Json }
+      get_territories: { Args: never; Returns: Json }
       get_trencheri_balance: {
         Args: { _wallet_address: string }
         Returns: number
@@ -454,9 +594,21 @@ export type Database = {
             }
             Returns: Json
           }
+      join_clan: {
+        Args: {
+          _clan_id: string
+          _session_token: string
+          _wallet_address: string
+        }
+        Returns: Json
+      }
       join_game_room: {
         Args: { _display_name: string; _player_id: string; _room_code: string }
         Returns: string
+      }
+      leave_clan: {
+        Args: { _session_token: string; _wallet_address: string }
+        Returns: Json
       }
       leave_game_room: {
         Args: { _player_id: string; _room_id: string }
@@ -555,7 +707,18 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      clan_color:
+        | "crimson"
+        | "azure"
+        | "emerald"
+        | "gold"
+        | "violet"
+        | "silver"
+        | "amber"
+        | "teal"
+        | "ivory"
+        | "obsidian"
+      territory_war_state: "peaceful" | "contested" | "cooldown"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -682,6 +845,20 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      clan_color: [
+        "crimson",
+        "azure",
+        "emerald",
+        "gold",
+        "violet",
+        "silver",
+        "amber",
+        "teal",
+        "ivory",
+        "obsidian",
+      ],
+      territory_war_state: ["peaceful", "contested", "cooldown"],
+    },
   },
 } as const
