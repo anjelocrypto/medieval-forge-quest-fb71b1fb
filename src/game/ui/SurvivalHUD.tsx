@@ -204,28 +204,36 @@ export function SurvivalHUD({
         {myClan && challenges && (() => {
           const myCh = challenges.find(
             c => (c.attacker_clan_id === myClan.clan_id || c.defender_clan_id === myClan.clan_id)
-              && (c.status === 'pending' || c.status === 'active')
+              && (c.status === 'pending' || c.status === 'active' || c.status === 'resolved')
           );
           if (!myCh) return null;
           const isAttacker = myCh.attacker_clan_id === myClan.clan_id;
-          const diff = new Date(myCh.status === 'pending' ? myCh.war_starts_at : myCh.war_ends_at).getTime() - Date.now();
+          const isPending = myCh.status === 'pending';
+          const isActive = myCh.status === 'active';
+          const isResolved = myCh.status === 'resolved';
+          const targetTime = isPending ? myCh.war_starts_at : isActive ? myCh.war_ends_at : myCh.cooldown_ends_at;
+          const diff = new Date(targetTime).getTime() - Date.now();
           const mins = Math.max(0, Math.floor(diff / 60000));
           const secs = Math.max(0, Math.floor((diff % 60000) / 1000));
           const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-          const isPending = myCh.status === 'pending';
+          const borderColor = isPending ? 'hsla(30,70%,50%,0.5)' : isActive ? 'hsla(0,70%,50%,0.5)' : 'hsla(210,50%,50%,0.4)';
+          const icon = isPending ? '⚔️' : isActive ? '🔥' : '🛡️';
+          const label = isPending ? 'WAR PENDING' : isActive ? 'WAR ACTIVE' : 'COOLDOWN';
+          const labelColor = isPending ? 'hsl(30,70%,65%)' : isActive ? 'hsl(0,70%,65%)' : 'hsl(210,50%,65%)';
+          const timeLabel = isPending ? `Starts ${timeStr}` : isActive ? `Ends ${timeStr}` : `Ends ${timeStr}`;
           return (
-            <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg animate-pulse" style={{
+            <div className={`flex items-center gap-2.5 px-3.5 py-2 rounded-lg ${isActive ? 'animate-pulse' : ''}`} style={{
               ...panelStyle,
-              border: isPending ? '1px solid hsla(30,70%,50%,0.5)' : '1px solid hsla(0,70%,50%,0.5)',
-              boxShadow: isPending ? '0 0 12px hsla(30,70%,50%,0.2)' : '0 0 12px hsla(0,70%,50%,0.3)',
+              border: `1px solid ${borderColor}`,
+              boxShadow: `0 0 12px ${borderColor}`,
             }}>
-              <span style={{ fontSize: 14 }}>{isPending ? '⚔️' : '🔥'}</span>
+              <span style={{ fontSize: 14 }}>{icon}</span>
               <div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: isPending ? 'hsl(30,70%,65%)' : 'hsl(0,70%,65%)', letterSpacing: '0.06em' }}>
-                  {isPending ? 'WAR PENDING' : 'WAR ACTIVE'}
+                <div style={{ fontSize: 10, fontWeight: 700, color: labelColor, letterSpacing: '0.06em' }}>
+                  {label}
                 </div>
                 <div style={{ fontSize: 9, color: 'hsl(40,15%,50%)' }}>
-                  {myCh.territory_name} · {isAttacker ? 'Attacking' : 'Defending'} · {isPending ? `Starts ${timeStr}` : `Ends ${timeStr}`}
+                  {myCh.territory_name} · {isAttacker ? 'Attacking' : 'Defending'} · {timeLabel}
                 </div>
               </div>
             </div>

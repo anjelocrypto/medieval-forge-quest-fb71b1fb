@@ -271,7 +271,9 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
                             </div>
                             <div className="flex items-center gap-3">
                               <span style={{ fontSize: 9, color: 'hsl(30,50%,55%)' }}>
-                                {ch.status === 'pending' ? `⏳ War in ${formatCountdown(ch.war_starts_at)}` : `🔥 Ends ${formatCountdown(ch.war_ends_at)}`}
+                                {ch.status === 'pending' ? `⏳ War in ${formatCountdown(ch.war_starts_at)}`
+                                  : ch.status === 'active' ? `🔥 Ends ${formatCountdown(ch.war_ends_at)}`
+                                  : `🛡️ Cooldown ${formatCountdown(ch.cooldown_ends_at)}`}
                               </span>
                               {isAttacker && ch.status === 'pending' && clan.myClan?.role === 'leader' && (
                                 <button
@@ -460,7 +462,8 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
                           }}>
                             ⚔️ {ch.attacker_clan_name} → {ch.defender_clan_name}
                             {ch.status === 'pending' && ` · War in ${formatCountdown(ch.war_starts_at)}`}
-                            {ch.status === 'active' && ` · Ends ${formatCountdown(ch.war_ends_at)}`}
+                            {ch.status === 'active' && ` · War ends ${formatCountdown(ch.war_ends_at)}`}
+                            {ch.status === 'resolved' && ` · ${ch.resolution === 'defender_held' ? 'Defender held' : 'Resolved'}`}
                           </div>
                         )}
                         {/* Claim button */}

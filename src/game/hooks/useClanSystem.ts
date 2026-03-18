@@ -60,6 +60,7 @@ export interface ChallengeInfo {
   defender_clan_name: string;
   defender_clan_color: string;
   status: 'pending' | 'active' | 'resolved' | 'cancelled' | 'expired';
+  resolution?: string | null;
   war_starts_at: string;
   war_ends_at: string;
   cooldown_ends_at: string;
@@ -168,6 +169,13 @@ export function useClanSystem() {
     } catch { /* silent */ }
   }, []);
 
+  // Trigger war-state transitions on backend
+  const transitionWarStates = useCallback(async () => {
+    try {
+      await supabase.rpc('transition_war_states' as any);
+    } catch { /* silent */ }
+  }, []);
+
   // Initial load
   useEffect(() => {
     if (loadedRef.current) return;
@@ -177,6 +185,15 @@ export function useClanSystem() {
     loadTerritories();
     loadChallenges();
   }, [loadMyClan, loadClans, loadTerritories, loadChallenges]);
+
+  // Poll war-state transitions every 15s when challenges exist
+  useEffect(() => {
+    const iv = setInterval(async () => {
+      await transitionWarStates();
+      await Promise.all([loadTerritories(), loadChallenges()]);
+    }, 15000);
+    return () => clearInterval(iv);
+  }, [transitionWarStates, loadTerritories, loadChallenges]);
 
   // ========== Mutations ==========
   const withLoading = useCallback(async <T>(fn: () => Promise<T>): Promise<T> => {
@@ -296,5 +313,6 @@ export function useClanSystem() {
     claimTerritory, releaseTerritory,
     challengeTerritory, cancelChallenge,
     loadClanMembers, refresh, loadTerritories, loadChallenges,
+    transitionWarStates,
   };
 }
