@@ -147,10 +147,11 @@ export interface WorldEvent {
 }
 
 // ===== Broadcast timing =====
-export const MOVE_BROADCAST_MS = 100;    // 10Hz — position/movement
+// COST OPTIMIZATION: Reduced from 10Hz (100ms) to 5Hz (200ms) to halve realtime traffic
+export const MOVE_BROADCAST_MS = 200;    // 5Hz — position/movement (was 100ms/10Hz)
 export const META_BROADCAST_MS = 500;    // 2Hz max — metadata (only on change)
-export const BROADCAST_RATE_MS = 100;    // legacy alias for interpolation math
-export const INTERPOLATION_DELAY_MS = 100; // smoothing buffer
+export const BROADCAST_RATE_MS = 200;    // alias for interpolation math (updated to match)
+export const INTERPOLATION_DELAY_MS = 200; // smoothing buffer (updated to match broadcast rate)
 export const STALE_PLAYER_TIMEOUT_MS = 8000;
 
 // ===== Scalability constants =====

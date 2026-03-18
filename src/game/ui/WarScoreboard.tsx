@@ -54,7 +54,7 @@ export function WarScoreboard({ playerX, playerZ, territories, challenges, myCla
   useEffect(() => {
     if (!activeChallenge) { setKillStats(null); return; }
     fetchKills();
-    const interval = setInterval(fetchKills, 5000);
+    const interval = setInterval(() => { if (!document.hidden) fetchKills(); }, 30000);
     return () => clearInterval(interval);
   }, [fetchKills, activeChallenge?.id]);
 

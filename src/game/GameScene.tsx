@@ -233,10 +233,8 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     }
   }, [trencheri, playerPositionRef, setInteractionText]);
 
-  // Preload remote character GLBs
-  useEffect(() => {
-    preloadRemoteCharacterModels();
-  }, []);
+  // Remote character GLBs are no longer eagerly preloaded.
+  // They load on-demand when a remote player of that type first appears.
 
   useEffect(() => { initInput(); }, []);
 
