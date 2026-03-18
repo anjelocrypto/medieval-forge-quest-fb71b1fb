@@ -169,12 +169,13 @@ export function WarNotifications({ challenges, territories, myClan, playerX, pla
       {/* Territory awareness bar — shown when inside a contested/active/cooldown zone */}
       {currentTerritory && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[52] pointer-events-none">
-          <div className={`flex items-center gap-2.5 px-4 py-2 rounded-lg ${currentTerritory.war_state === 'active_war' ? 'animate-pulse' : ''}`}
+          <div className={`flex items-center gap-2.5 px-4 py-2 rounded-lg ${(currentTerritory.war_state as string) === 'active_war' ? 'animate-pulse' : ''}`}
             style={{
               background: 'linear-gradient(135deg, hsla(0,0%,0%,0.75), hsla(0,0%,5%,0.75))',
               border: `1px solid ${
-                currentTerritory.war_state === 'active_war' ? 'hsla(0,70%,50%,0.5)'
-                : currentTerritory.war_state === 'contested' ? 'hsla(30,70%,50%,0.4)'
+                (currentTerritory.war_state as string) === 'active_war' ? 'hsla(0,70%,50%,0.5)'
+                : (currentTerritory.war_state as string) === 'contested' ? 'hsla(30,70%,50%,0.4)'
+                : (currentTerritory.war_state as string) === 'pending_resolution' ? 'hsla(40,70%,50%,0.5)'
                 : 'hsla(210,50%,50%,0.3)'
               }`,
               boxShadow: `0 2px 12px hsla(0,0%,0%,0.4)`,
