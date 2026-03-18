@@ -378,7 +378,102 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
   const handleRespawn = useCallback(() => {
     updateSurvival({ health: 100, stamina: 100, hunger: 80, temperature: 70 });
     pendingPlayerDamageRef.current = 0;
+    // Reset PvP state on respawn
+    lastDamageSourceRef.current = null;
+    pvpKillLoggedRef.current = false;
   }, [updateSurvival]);
+
+  // === PVP: Register incoming hit callback ===
+  useEffect(() => {
+    if (!multiplayer.connected) return;
+    const session = loadWalletSession();
+    const myWallet = session?.wallet_address;
+    const myClanName = clanSystem.myClan?.clan_name ?? null;
+
+    multiplayer.setPvpHitCallback((hitData) => {
+      // Only process if we are wallet-authenticated
+      if (!myWallet) return;
+      // Don't take PvP damage if dead
+      if (survival.health <= 0) return;
+      // Same-clan protection (should be filtered by attacker, but double-check)
+      if (myClanName && hitData.attackerClanId && clanSystem.myClan?.clan_id === hitData.attackerClanId) return;
+      // Must be in a clan to participate in PvP
+      if (!myClanName) return;
+
+      // Anti-spam: cooldown per attacker
+      const now = Date.now();
+      const last = lastDamageSourceRef.current;
+      if (last && last.attackerId === hitData.victimId && now - last.timestamp < 500) return;
+
+      // Apply damage
+      const clampedDmg = Math.min(hitData.damage, 20); // cap max PvP damage per hit
+      pendingPlayerDamageRef.current += clampedDmg;
+
+      // Track last damage source
+      lastDamageSourceRef.current = {
+        attackerId: hitData.victimId, // the sender's playerId (confusing naming: victimId in hitData = who they targeted, but i = sender)
+        attackerWallet: hitData.attackerWallet,
+        timestamp: now,
+      };
+    });
+
+    return () => multiplayer.setPvpHitCallback(null);
+  }, [multiplayer.connected, multiplayer, survival.health, clanSystem.myClan]);
+
+  // === PVP: Detect death → log war kill ===
+  useEffect(() => {
+    if (survival.health > 0) return;
+    if (pvpKillLoggedRef.current) return;
+    const source = lastDamageSourceRef.current;
+    if (!source) return; // not a PvP death
+
+    const session = loadWalletSession();
+    if (!session?.wallet_address || !session?.session_token) return;
+
+    // Cooldown check
+    const now = Date.now();
+    if (now - pvpDeathLogCooldownRef.current < 5000) return;
+    pvpDeathLogCooldownRef.current = now;
+    pvpKillLoggedRef.current = true;
+
+    // Broadcast death for remote animation
+    multiplayer.broadcastPvpDeath({
+      victimWallet: session.wallet_address,
+      killerPlayerId: source.attackerId,
+      killerWallet: source.attackerWallet,
+      victimX: playerPositionRef.current.x,
+      victimZ: playerPositionRef.current.z,
+    });
+
+    // Log to server (victim-initiated, server validates everything)
+    const pos = playerPositionRef.current;
+    supabase.rpc('log_war_kill' as any, {
+      _wallet_address: source.attackerWallet,
+      _session_token: session.session_token,
+      _victim_wallet: session.wallet_address,
+      _kill_x: pos.x,
+      _kill_z: pos.z,
+    }).then(({ data, error }: any) => {
+      if (error) console.warn('[PvP] War kill log failed:', error.message);
+      else if (data?.success) console.log('[PvP] War kill logged successfully');
+      else console.log('[PvP] War kill not logged (no active war or not in territory):', data?.error);
+    });
+  }, [survival.health, multiplayer, playerPositionRef]);
+
+  // === PVP: Attacker broadcasts hit ===
+  const handlePvpHit = useCallback((victimId: string, damage: number, _isCombo: boolean) => {
+    if (!multiplayer.connected) return;
+    const session = loadWalletSession();
+    if (!session?.wallet_address) return;
+    if (!clanSystem.myClan?.clan_id) return;
+
+    multiplayer.broadcastPvpHit({
+      victimId,
+      damage,
+      attackerWallet: session.wallet_address,
+      attackerClanId: clanSystem.myClan.clan_id,
+    });
+  }, [multiplayer, clanSystem.myClan]);
 
 
   // Wrap placeStructure to broadcast building placement
