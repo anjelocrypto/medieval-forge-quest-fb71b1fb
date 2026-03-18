@@ -84,6 +84,7 @@ export function useClanSystem() {
   const [myClan, setMyClan] = useState<MyClanInfo | null>(null);
   const [clans, setClans] = useState<ClanInfo[]>([]);
   const [territories, setTerritories] = useState<TerritoryInfo[]>([]);
+  const [clanMembers, setClanMembers] = useState<ClanMemberInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const loadedRef = useRef(false);
