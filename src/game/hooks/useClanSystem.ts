@@ -110,6 +110,17 @@ export function useClanSystem() {
     } catch { /* silent */ }
   }, []);
 
+  // Load clan members
+  const loadClanMembers = useCallback(async (clanId?: string) => {
+    const id = clanId || myClan?.clan_id;
+    if (!id) { setClanMembers([]); return; }
+    try {
+      const { data } = await supabase.rpc('get_clan_members' as any, { _clan_id: id });
+      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+      setClanMembers(Array.isArray(parsed) ? parsed : []);
+    } catch { setClanMembers([]); }
+  }, [myClan?.clan_id]);
+
   // Load territories
   const loadTerritories = useCallback(async () => {
     try {
