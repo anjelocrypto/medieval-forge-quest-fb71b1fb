@@ -25,6 +25,7 @@ interface HUDProps {
   onCloseMap: () => void;
   isSpeaking?: boolean;
   trencheriBalance?: number | null;
+  territories?: TerritoryInfo[];
 }
 
 /* ── shared panel style ── */
