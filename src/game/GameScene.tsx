@@ -604,15 +604,58 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         myClan={clanSystem.myClan ? { clan_name: clanSystem.myClan.clan_name, clan_color: clanSystem.myClan.clan_color, clan_id: clanSystem.myClan.clan_id } : null}
       />
 
-      {/* PvP hit marker — crosshair flash */}
+      {/* War Kill Feed — top-right during active wars */}
+      <WarKillFeed
+        playerX={playerPositionRef.current.x}
+        playerZ={playerPositionRef.current.z}
+        territories={clanSystem.territories}
+        challenges={clanSystem.challenges}
+        killEvents={killFeedEntries}
+      />
+
+      {/* Respawn invulnerability indicator */}
+      {invulnTimeLeft > 0 && (
+        <div className="fixed top-28 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+          <div className="px-4 py-1.5 rounded-full text-xs font-bold" style={{
+            background: 'hsla(200,70%,50%,0.2)',
+            border: '1px solid hsla(200,70%,60%,0.5)',
+            color: 'hsl(200,70%,75%)',
+            boxShadow: '0 0 16px hsla(200,70%,50%,0.3)',
+            letterSpacing: '0.06em',
+          }}>
+            🛡️ INVULNERABLE — {invulnTimeLeft}s
+          </div>
+        </div>
+      )}
+
+      {/* PvP hit marker — crosshair flash (improved) */}
       {pvpHitMarker && (
         <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none">
           <div style={{
-            width: 16, height: 16, borderRadius: '50%',
-            border: '2px solid hsl(0,70%,55%)',
-            boxShadow: '0 0 12px hsla(0,70%,50%,0.6), inset 0 0 6px hsla(0,70%,50%,0.3)',
-          }} />
+            width: 24, height: 24, position: 'relative',
+          }}>
+            {/* Crosshair lines */}
+            <div style={{ position: 'absolute', top: 0, left: '50%', width: 2, height: 8, marginLeft: -1, background: 'hsl(0,70%,55%)' }} />
+            <div style={{ position: 'absolute', bottom: 0, left: '50%', width: 2, height: 8, marginLeft: -1, background: 'hsl(0,70%,55%)' }} />
+            <div style={{ position: 'absolute', left: 0, top: '50%', width: 8, height: 2, marginTop: -1, background: 'hsl(0,70%,55%)' }} />
+            <div style={{ position: 'absolute', right: 0, top: '50%', width: 8, height: 2, marginTop: -1, background: 'hsl(0,70%,55%)' }} />
+            {/* Center dot */}
+            <div style={{
+              position: 'absolute', top: '50%', left: '50%', width: 4, height: 4,
+              marginTop: -2, marginLeft: -2, borderRadius: '50%',
+              background: 'hsl(0,80%,60%)',
+              boxShadow: '0 0 8px hsla(0,80%,55%,0.8)',
+            }} />
+          </div>
         </div>
+      )}
+
+      {/* PvP damage flash — red vignette distinct from NPC damage */}
+      {pvpDamageFlash && (
+        <div className="fixed inset-0 z-40 pointer-events-none" style={{
+          background: 'radial-gradient(ellipse at center, transparent 40%, hsla(0,80%,30%,0.4) 100%)',
+          animation: 'fadeOut 0.3s ease-out forwards',
+        }} />
       )}
 
       {/* PvP notification text */}
