@@ -10,7 +10,7 @@ import { NemoClawGLBModel } from './NemoClawCharacterModel';
 import { ChillhouseGLBModel } from './ChillhouseCharacterModel';
 import { PlaceholderLocalModel } from './PlaceholderCharacterModel';
 import { useCharacter } from '../context/CharacterContext';
-import { getFactionByCharacter } from '../systems/FactionData';
+import { getFactionByCharacter, getFactionById } from '../systems/FactionData';
 import { getTerrainHeight } from './Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
 import { getMovementInput } from '../systems/InputSystem';
