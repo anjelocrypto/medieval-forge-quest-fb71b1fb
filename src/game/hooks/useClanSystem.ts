@@ -60,6 +60,7 @@ export interface ChallengeInfo {
   defender_clan_name: string;
   defender_clan_color: string;
   status: 'pending' | 'active' | 'resolved' | 'cancelled' | 'expired';
+  resolution?: string | null;
   war_starts_at: string;
   war_ends_at: string;
   cooldown_ends_at: string;
