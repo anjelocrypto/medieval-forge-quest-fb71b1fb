@@ -2,6 +2,7 @@ import { SurvivalState, ResourceInventory, ProgressionState } from '../types';
 import { BuildableConfig } from '../systems/BuildingData';
 import { TIER2_KILLS_REQUIRED, TIER2_STRUCTURES_REQUIRED } from '../constants';
 import { Minimap } from './Minimap';
+import type { TerritoryInfo } from '../hooks/useClanSystem';
 
 interface HUDProps {
   survival: SurvivalState;
