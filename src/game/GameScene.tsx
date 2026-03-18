@@ -434,6 +434,10 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     const source = lastDamageSourceRef.current;
     if (!source) return; // not a PvP death
 
+    // Show death notification
+    setPvpNotification('💀 You were killed in PvP combat');
+    setTimeout(() => setPvpNotification(null), 4000);
+
     const session = loadWalletSession();
     if (!session?.wallet_address || !session?.session_token) return;
 
