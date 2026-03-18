@@ -21,12 +21,24 @@ const BANNER_HEIGHT = 2.5;
 
 function TerritoryBanner({ territory }: { territory: TerritoryInfo }) {
   const terrainY = getTerrainHeight(territory.center_x, territory.center_z);
+  const warState = territory.war_state || 'peaceful';
+  const isContested = warState === 'contested' || warState === 'active_war';
   const color = territory.owning_clan_color
     ? CLAN_COLOR_HEX[territory.owning_clan_color as ClanColor] || '#888888'
     : '#666666';
   const colorObj = useMemo(() => new THREE.Color(color), [color]);
   const neutralColor = useMemo(() => new THREE.Color('#555555'), []);
+  const warColor = useMemo(() => new THREE.Color(warState === 'active_war' ? '#e74c3c' : '#e67e22'), [warState]);
   const isClaimed = !!territory.owning_clan_id;
+
+  // Ring color depends on war state
+  const ringColor = isContested ? warColor : isClaimed ? colorObj : neutralColor;
+  const ringOpacity = warState === 'active_war' ? 0.5 : isContested ? 0.4 : isClaimed ? 0.3 : 0.1;
+
+  const statusText = warState === 'contested' ? '⚔️ CHALLENGED'
+    : warState === 'active_war' ? '🔥 WAR ACTIVE'
+    : warState === 'cooldown' ? '🛡️ Cooldown'
+    : territory.owning_clan_name ? `🏴 ${territory.owning_clan_name}` : '⬜ Unclaimed';
 
   return (
     <group position={[territory.center_x, terrainY, territory.center_z]}>
@@ -43,8 +55,8 @@ function TerritoryBanner({ territory }: { territory: TerritoryInfo }) {
           color={isClaimed ? colorObj : neutralColor}
           side={THREE.DoubleSide}
           roughness={0.7}
-          emissive={isClaimed ? colorObj : neutralColor}
-          emissiveIntensity={isClaimed ? 0.15 : 0.05}
+          emissive={isContested ? warColor : isClaimed ? colorObj : neutralColor}
+          emissiveIntensity={warState === 'active_war' ? 0.4 : isContested ? 0.25 : isClaimed ? 0.15 : 0.05}
         />
       </mesh>
 
@@ -52,11 +64,11 @@ function TerritoryBanner({ territory }: { territory: TerritoryInfo }) {
       <mesh position={[0, POLE_HEIGHT + 0.15, 0]} castShadow>
         <sphereGeometry args={[0.12, 8, 8]} />
         <meshStandardMaterial
-          color={isClaimed ? colorObj : neutralColor}
+          color={isContested ? warColor : isClaimed ? colorObj : neutralColor}
           metalness={0.6}
           roughness={0.3}
-          emissive={isClaimed ? colorObj : neutralColor}
-          emissiveIntensity={isClaimed ? 0.3 : 0}
+          emissive={isContested ? warColor : isClaimed ? colorObj : neutralColor}
+          emissiveIntensity={warState === 'active_war' ? 0.5 : isContested ? 0.3 : isClaimed ? 0.3 : 0}
         />
       </mesh>
 
@@ -70,34 +82,44 @@ function TerritoryBanner({ territory }: { territory: TerritoryInfo }) {
         }}>
           <div style={{
             fontSize: 12, fontWeight: 800,
-            color: isClaimed ? color : '#999',
+            color: isContested ? (warState === 'active_war' ? '#e74c3c' : '#e67e22') : isClaimed ? color : '#999',
             letterSpacing: '0.08em',
           }}>
             {territory.name}
           </div>
           <div style={{
             fontSize: 9, fontWeight: 600,
-            color: isClaimed ? color : '#666',
+            color: isContested ? (warState === 'active_war' ? '#e74c3c' : '#e67e22') : isClaimed ? color : '#666',
             marginTop: 2,
           }}>
-            {territory.owning_clan_name
-              ? `🏴 ${territory.owning_clan_name}`
-              : '⬜ Unclaimed'
-            }
+            {statusText}
           </div>
         </div>
       </Html>
 
-      {/* Ground ring for visual emphasis */}
+      {/* Ground ring — war-state aware */}
       <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[2.5, 3, 32]} />
         <meshStandardMaterial
-          color={isClaimed ? colorObj : neutralColor}
+          color={ringColor}
           transparent
-          opacity={isClaimed ? 0.3 : 0.1}
+          opacity={ringOpacity}
           side={THREE.DoubleSide}
         />
       </mesh>
+
+      {/* Extra war indicator ring */}
+      {isContested && (
+        <mesh position={[0, 0.06, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[4, 4.5, 32]} />
+          <meshStandardMaterial
+            color={warColor}
+            transparent
+            opacity={0.2}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      )}
     </group>
   );
 }
