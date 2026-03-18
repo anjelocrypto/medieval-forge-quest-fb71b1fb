@@ -13,6 +13,7 @@ import {
   TerritoryInfo,
   ClanMemberInfo,
   ChallengeInfo,
+  TerritoryHistoryEntry,
 } from '../hooks/useClanSystem';
 
 interface Props {
@@ -22,7 +23,7 @@ interface Props {
   playerZ: number;
 }
 
-type Tab = 'my_clan' | 'browse' | 'territories' | 'create';
+type Tab = 'my_clan' | 'browse' | 'territories' | 'history' | 'create';
 
 const panelStyle: React.CSSProperties = {
   background: 'linear-gradient(160deg, hsla(0,0%,6%,0.97), hsla(0,0%,10%,0.97))',
@@ -107,6 +108,11 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
   useEffect(() => {
     if (open && clan.myClan) clan.loadClanMembers(clan.myClan.clan_id);
   }, [open, clan.myClan?.clan_id]); // eslint-disable-line
+
+  // Load history when history tab is selected
+  useEffect(() => {
+    if (open && tab === 'history') clan.loadHistory();
+  }, [open, tab]); // eslint-disable-line
 
   useEffect(() => {
     if (!open) return;
@@ -206,13 +212,13 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
           <>
             {/* Tabs */}
             <div className="flex gap-2 mb-4">
-              {(['my_clan', 'browse', 'territories', 'create'] as Tab[]).map(t => (
+              {(['my_clan', 'browse', 'territories', 'history', 'create'] as Tab[]).map(t => (
                 <button key={t}
                   onClick={() => { setTab(t); clan.setError(null); setConfirmLeave(false); setConfirmRelease(null); setConfirmChallenge(null); setConfirmCancel(null); }}
                   className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
                   style={btnStyle(tab === t)}
                 >
-                  {t === 'my_clan' ? 'My Clan' : t === 'browse' ? 'Browse' : t === 'territories' ? 'Territories' : '+ Create'}
+                  {t === 'my_clan' ? 'My Clan' : t === 'browse' ? 'Browse' : t === 'territories' ? 'Territories' : t === 'history' ? 'History' : '+ Create'}
                 </button>
               ))}
             </div>
@@ -496,6 +502,67 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
                     );
                   })}
                 </div>
+              </div>
+            )}
+
+            {/* HISTORY TAB */}
+            {tab === 'history' && (
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'hsl(40,20%,55%)' }}>
+                  📜 Territory History ({clan.history.length})
+                </div>
+                {clan.history.length === 0 ? (
+                  <div className="text-xs text-center py-6" style={{ color: 'hsl(40,15%,40%)' }}>
+                    No territory events recorded yet.
+                  </div>
+                ) : (
+                  <div className="space-y-1 max-h-[50vh] overflow-y-auto">
+                    {clan.history.map((h: TerritoryHistoryEntry) => {
+                      const eventConfig: Record<string, { icon: string; label: string; color: string }> = {
+                        claimed: { icon: '🏴', label: 'Claimed', color: 'hsl(120,40%,60%)' },
+                        released: { icon: '🏳️', label: 'Released', color: 'hsl(40,40%,60%)' },
+                        dissolved: { icon: '💀', label: 'Dissolved', color: 'hsl(0,40%,55%)' },
+                        challenged: { icon: '⚔️', label: 'Challenged', color: 'hsl(30,60%,60%)' },
+                        war_cancelled: { icon: '🚫', label: 'Challenge Cancelled', color: 'hsl(0,30%,55%)' },
+                        war_started: { icon: '🔥', label: 'War Started', color: 'hsl(0,60%,60%)' },
+                        war_resolved_defender_held: { icon: '🛡️', label: 'Defender Held', color: 'hsl(210,50%,60%)' },
+                      };
+                      const cfg = eventConfig[h.event_type] || { icon: '📋', label: h.event_type, color: 'hsl(40,15%,55%)' };
+                      const clanHex = h.clan_color ? (CLAN_COLOR_HEX[h.clan_color as ClanColor] || '#888') : null;
+                      const timeAgo = (() => {
+                        const diff = Date.now() - new Date(h.created_at).getTime();
+                        const mins = Math.floor(diff / 60000);
+                        if (mins < 1) return 'just now';
+                        if (mins < 60) return `${mins}m ago`;
+                        const hrs = Math.floor(mins / 60);
+                        if (hrs < 24) return `${hrs}h ago`;
+                        return `${Math.floor(hrs / 24)}d ago`;
+                      })();
+
+                      return (
+                        <div key={h.id} className="flex items-start gap-2.5 px-3 py-2 rounded-lg" style={{
+                          background: 'hsla(0,0%,100%,0.02)', border: '1px solid hsla(0,0%,100%,0.04)',
+                        }}>
+                          <span style={{ fontSize: 13, lineHeight: '18px' }}>{cfg.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span style={{ fontSize: 10, fontWeight: 700, color: cfg.color }}>{cfg.label}</span>
+                              <span style={{ fontSize: 9, color: 'hsl(40,15%,40%)' }}>·</span>
+                              <span className="truncate" style={{ fontSize: 10, fontWeight: 600, color: 'hsl(40,30%,70%)' }}>{h.territory_name}</span>
+                            </div>
+                            {h.clan_name && (
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                {clanHex && <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: clanHex }} />}
+                                <span style={{ fontSize: 9, color: clanHex || 'hsl(40,15%,45%)' }}>{h.clan_name}</span>
+                              </div>
+                            )}
+                          </div>
+                          <span style={{ fontSize: 9, color: 'hsl(40,15%,35%)', whiteSpace: 'nowrap' }}>{timeAgo}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 

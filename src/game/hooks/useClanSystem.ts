@@ -7,6 +7,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { loadWalletSession } from './usePlayerAccount';
 
 // ========== Types ==========
+export interface TerritoryHistoryEntry {
+  id: string;
+  territory_id: string;
+  territory_name: string;
+  clan_id: string | null;
+  clan_name: string | null;
+  clan_color: string | null;
+  event_type: string;
+  created_at: string;
+}
 export interface ClanMemberInfo {
   wallet_address: string;
   role: 'leader' | 'member';
@@ -121,6 +131,7 @@ export function useClanSystem() {
   const [territories, setTerritories] = useState<TerritoryInfo[]>([]);
   const [clanMembers, setClanMembers] = useState<ClanMemberInfo[]>([]);
   const [challenges, setChallenges] = useState<ChallengeInfo[]>([]);
+  const [history, setHistory] = useState<TerritoryHistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const loadedRef = useRef(false);
@@ -167,6 +178,16 @@ export function useClanSystem() {
       const parsed = typeof data === 'string' ? JSON.parse(data) : data;
       setChallenges(Array.isArray(parsed) ? parsed : []);
     } catch { /* silent */ }
+  }, []);
+
+  const loadHistory = useCallback(async (territoryId?: string) => {
+    try {
+      const params: Record<string, unknown> = { _limit: 30 };
+      if (territoryId) params._territory_id = territoryId;
+      const { data } = await supabase.rpc('get_territory_history' as any, params);
+      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+      setHistory(Array.isArray(parsed) ? parsed : []);
+    } catch { setHistory([]); }
   }, []);
 
   // Trigger war-state transitions on backend
@@ -307,12 +328,12 @@ export function useClanSystem() {
   }, [loadMyClan, loadClans, loadTerritories, loadChallenges]);
 
   return {
-    myClan, clans, territories, clanMembers, challenges,
+    myClan, clans, territories, clanMembers, challenges, history,
     loading, error, setError,
     createClan, joinClan, leaveClan,
     claimTerritory, releaseTerritory,
     challengeTerritory, cancelChallenge,
-    loadClanMembers, refresh, loadTerritories, loadChallenges,
+    loadClanMembers, loadHistory, refresh, loadTerritories, loadChallenges,
     transitionWarStates,
   };
 }
