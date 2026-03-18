@@ -217,6 +217,7 @@ function drawMap(
   layers: LayerState,
   collisionData: { circles: CollisionCircle[]; boxes: CollisionBox[] },
   selectedObj: InspectInfo | null,
+  territories: TerritoryInfo[],
 ) {
   const W = ctx.canvas.width;
   const H = ctx.canvas.height;
