@@ -551,6 +551,28 @@ export function Player({
           }
         });
       }
+
+      // === PVP HIT DETECTION ===
+      // Only if: we have a clan, remote players exist, and callback is provided
+      if (onPvpHit && localClanId && remotePlayersRef?.current) {
+        const pvpDmg = isCombo ? PVP_COMBO_DAMAGE : PVP_DAMAGE;
+        remotePlayersRef.current.forEach((remote) => {
+          // Skip: same clan (friendly fire OFF)
+          if (!remote.clanName || remote.clanName === localClanName) return;
+          // Skip: dead players (health <= 0)
+          if (remote.health <= 0) return;
+          const dx = remote.renderPosition[0] - pos.x;
+          const dz = remote.renderPosition[2] - pos.z;
+          const distSq = dx * dx + dz * dz;
+          if (distSq > PLAYER_ATTACK_RANGE * PLAYER_ATTACK_RANGE) return;
+          const dist = Math.sqrt(distSq);
+          if (dist < 0.01) return;
+          _toEnemy.set(dx / dist, 0, dz / dist);
+          if (_forward.dot(_toEnemy) > cosArc) {
+            onPvpHit(remote.playerId, pvpDmg, isCombo);
+          }
+        });
+      }
     }
 
     // === GRAVITY & VERTICAL PHYSICS ===
