@@ -18,7 +18,7 @@ const BLOCKED_WORDS: string[] = [
 const RESERVED_NAMES: string[] = [
   'system', 'admin', 'administrator', 'moderator', 'mod',
   'support', 'developer', 'dev', 'official', 'staff',
-  'trencheria', 'trencheri', 'knight',
+  'trencheria', 'trencheri',
   'server', 'bot', 'ai', 'gm', 'gamemaster',
   'owner', 'founder', 'ceo',
 ];
