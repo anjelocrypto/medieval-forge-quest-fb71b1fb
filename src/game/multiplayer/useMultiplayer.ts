@@ -455,9 +455,10 @@ export function useMultiplayer() {
         }
       });
 
-      // ===== HIGH-FREQ broadcast timer (movement) =====
+      // ===== HIGH-FREQ broadcast timer (movement) — paused when tab hidden =====
       if (moveTimerRef.current) clearInterval(moveTimerRef.current);
       moveTimerRef.current = setInterval(() => {
+        if (document.hidden) return; // COST: skip when tab not visible
         const state = localStateRef.current;
         const ch = channelRef.current;
         if (!state || !ch) return;
