@@ -550,6 +550,7 @@ export type Database = {
         Returns: string
       }
       get_active_coins: { Args: { _limit?: number }; Returns: Json }
+      get_clan_members: { Args: { _clan_id: string }; Returns: Json }
       get_clans: { Args: { _limit?: number }; Returns: Json }
       get_leaderboard: {
         Args: { _limit?: number }
@@ -622,6 +623,14 @@ export type Database = {
       refresh_game_room_state: {
         Args: { _room_id: string }
         Returns: undefined
+      }
+      release_territory: {
+        Args: {
+          _session_token: string
+          _territory_id: string
+          _wallet_address: string
+        }
+        Returns: Json
       }
       save_player_progression:
         | {
