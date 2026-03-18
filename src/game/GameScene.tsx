@@ -403,8 +403,9 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
 
       // Anti-spam: cooldown per attacker
       const now = Date.now();
+      const attackerPlayerId = (hitData as any)._attackerPlayerId || 'unknown';
       const last = lastDamageSourceRef.current;
-      if (last && last.attackerId === hitData.victimId && now - last.timestamp < 500) return;
+      if (last && last.attackerId === attackerPlayerId && now - last.timestamp < 500) return;
 
       // Apply damage
       const clampedDmg = Math.min(hitData.damage, 20); // cap max PvP damage per hit
@@ -412,7 +413,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
 
       // Track last damage source
       lastDamageSourceRef.current = {
-        attackerId: hitData.victimId, // the sender's playerId (confusing naming: victimId in hitData = who they targeted, but i = sender)
+        attackerId: attackerPlayerId,
         attackerWallet: hitData.attackerWallet,
         timestamp: now,
       };
