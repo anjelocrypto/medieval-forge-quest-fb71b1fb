@@ -416,6 +416,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         isSpeaking={voice.isTalking}
         trencheriBalance={trencheri.balance}
         territories={clanSystem.territories}
+        myClan={clanSystem.myClan ? { clan_name: clanSystem.myClan.clan_name, clan_color: clanSystem.myClan.clan_color, clan_id: clanSystem.myClan.clan_id } : null}
       />
 
       {/* Leaderboard (L key) */}
