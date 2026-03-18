@@ -168,6 +168,7 @@ export function useMultiplayer() {
   const timingsRef = useRef<StartupTimings>(createTimings());
   const firstRemoteReceivedRef = useRef(false);
   const initialStateSentRef = useRef(false);
+  const pvpHitCallbackRef = useRef<((data: PvpHitData) => void) | null>(null);
 
   const connected = connectionStatus === 'connected';
 
