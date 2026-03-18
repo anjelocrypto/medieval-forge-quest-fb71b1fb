@@ -163,6 +163,26 @@ function drawMinimap(
     }
   }
 
+  // Territory ownership labels on full map
+  if (fullMap && territories) {
+    for (const t of territories) {
+      const tx = (t.center_x - cx) * scale + half;
+      const tz = (t.center_z - cz) * scale + half;
+      if (t.owning_clan_name && t.owning_clan_color) {
+        const cHex = CLAN_COLOR_HEX[t.owning_clan_color as ClanColor] || '#888';
+        ctx.fillStyle = cHex;
+        ctx.font = 'bold 8px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`🏴 ${t.owning_clan_name}`, tx, tz + 12);
+      } else {
+        ctx.fillStyle = '#6a6a6a80';
+        ctx.font = 'italic 7px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Unclaimed', tx, tz + 12);
+      }
+    }
+  }
+
   // Horse position
   if (!isMounted) {
     const hx = (horseX - cx) * scale + half;
