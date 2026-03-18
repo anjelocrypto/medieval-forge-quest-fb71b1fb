@@ -191,7 +191,7 @@ export function SurvivalHUD({
         playerX={playerX} playerZ={playerZ} playerRotation={playerRotation}
         horseX={horseX} horseZ={horseZ} isMounted={isMounted}
         mapOpen={mapOpen} onCloseMap={onCloseMap}
-        territories={props.territories}
+        territories={territories}
       />
 
       {/* ═══ BOTTOM LEFT — Survival bars ═══ */}
