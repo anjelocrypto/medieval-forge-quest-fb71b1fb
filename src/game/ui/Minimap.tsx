@@ -1,9 +1,10 @@
 /**
- * Minimap HUD — top-right corner showing player position, settlements, roads, horse.
+ * Minimap HUD — top-right corner showing player position, settlements, roads, horse, territory ownership.
  * Medieval-styled circular minimap with parchment aesthetic.
  */
 import { useRef, useEffect, useCallback } from 'react';
 import { SETTLEMENTS, REGIONS, ROADS, SMALL_POIS, LANDMARKS, getRegionAt } from '../world/RegionData';
+import { TerritoryInfo, CLAN_COLOR_HEX, ClanColor } from '../hooks/useClanSystem';
 
 interface MinimapProps {
   playerX: number;
@@ -14,6 +15,7 @@ interface MinimapProps {
   isMounted: boolean;
   mapOpen: boolean;
   onCloseMap: () => void;
+  territories?: TerritoryInfo[];
 }
 
 const MAP_SIZE = 160; // minimap size in pixels
