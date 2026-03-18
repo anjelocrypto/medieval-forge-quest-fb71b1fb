@@ -52,6 +52,7 @@ import { SettingsPanel } from './ui/SettingsPanel';
 import { ClanPanel } from './ui/ClanPanel';
 import { TerritoryIndicator } from './components/TerritoryIndicator';
 import { TerritoryMarkers } from './components/TerritoryMarkers';
+import { TerritoryGateBanners } from './components/TerritoryGateBanners';
 import { useClanSystem } from './hooks/useClanSystem';
 import { useCharacter } from './context/CharacterContext';
 import { WebGLRecovery } from './systems/WebGLRecovery';
@@ -416,6 +417,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         isSpeaking={voice.isTalking}
         trencheriBalance={trencheri.balance}
         territories={clanSystem.territories}
+        myClan={clanSystem.myClan ? { clan_name: clanSystem.myClan.clan_name, clan_color: clanSystem.myClan.clan_color, clan_id: clanSystem.myClan.clan_id } : null}
       />
 
       {/* Leaderboard (L key) */}
@@ -602,6 +604,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
 
           {/* 3D Territory ownership banners */}
           <TerritoryMarkers territories={clanSystem.territories} playerPositionRef={playerPositionRef} />
+          <TerritoryGateBanners territories={clanSystem.territories} playerPositionRef={playerPositionRef} />
 
           {/* Multiplayer broadcaster — samples local state and pushes to network hook */}
           {multiplayer.connected && (

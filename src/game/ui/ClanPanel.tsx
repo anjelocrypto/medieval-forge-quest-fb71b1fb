@@ -273,7 +273,10 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
                 </div>
                 <div className="space-y-2">
                   {clan.territories.map((t: TerritoryInfo) => {
-                    const canClaim = !t.owning_clan_id && clan.myClan?.role === 'leader' && t.war_state === 'peaceful';
+                    const alreadyOwnsTerritory = clan.territories.some(
+                      tt => tt.owning_clan_id === clan.myClan?.clan_id
+                    );
+                    const canClaim = !t.owning_clan_id && clan.myClan?.role === 'leader' && t.war_state === 'peaceful' && !alreadyOwnsTerritory;
                     const dist = Math.sqrt((playerX - t.center_x) ** 2 + (playerZ - t.center_z) ** 2);
                     const inRange = dist <= t.radius + 30;
                     return (

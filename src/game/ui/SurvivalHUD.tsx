@@ -3,6 +3,7 @@ import { BuildableConfig } from '../systems/BuildingData';
 import { TIER2_KILLS_REQUIRED, TIER2_STRUCTURES_REQUIRED } from '../constants';
 import { Minimap } from './Minimap';
 import type { TerritoryInfo } from '../hooks/useClanSystem';
+import { CLAN_COLOR_HEX } from '../hooks/useClanSystem';
 
 interface HUDProps {
   survival: SurvivalState;
@@ -26,6 +27,7 @@ interface HUDProps {
   isSpeaking?: boolean;
   trencheriBalance?: number | null;
   territories?: TerritoryInfo[];
+  myClan?: { clan_name: string; clan_color: string; clan_id: string } | null;
 }
 
 /* ── shared panel style ── */
@@ -162,6 +164,7 @@ export function SurvivalHUD({
   buildFeedback, damageFlash, progression, notification, availableBuildables,
   isMounted = false, playerX, playerZ, playerRotation, horseX, horseZ,
   mapOpen, onCloseMap, isSpeaking = false, trencheriBalance, territories,
+  myClan,
 }: HUDProps) {
   const lowHealth = survival.health < 25;
 
@@ -194,17 +197,47 @@ export function SurvivalHUD({
         territories={territories}
       />
 
-      {/* ═══ BOTTOM LEFT — Survival bars ═══ */}
-      <div className="absolute bottom-6 left-6 flex flex-col gap-2 p-4 rounded-lg" style={panelStyle}>
-        <StatBar label="HP" icon="❤️" value={survival.health} max={100} color="hsl(0,70%,50%)" warning={lowHealth} />
-        <StatBar label="STA" icon="⚡" value={survival.stamina} max={100} color="hsl(45,80%,50%)" />
-
-        {(lowHealth || isMounted) && (
-          <div className="flex flex-wrap gap-1.5 mt-1 pt-2" style={{ borderTop: '1px solid hsla(40,30%,45%,0.2)' }}>
-            {lowHealth && <StatusBadge icon="💔" text="Wounded" hue="0,70%,60%" />}
-            {isMounted && <StatusBadge icon="🐴" text="Mounted" hue="35,40%,55%" />}
+      {/* ═══ BOTTOM LEFT — Survival bars + Clan identity ═══ */}
+      <div className="absolute bottom-6 left-6 flex flex-col gap-2">
+        {/* Clan identity badge */}
+        {myClan && (
+          <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg" style={{
+            ...panelStyle,
+            border: `1px solid ${CLAN_COLOR_HEX[myClan.clan_color as import('../hooks/useClanSystem').ClanColor] || 'hsla(40,30%,45%,0.4)'}50`,
+          }}>
+            <div className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{
+              background: CLAN_COLOR_HEX[myClan.clan_color as import('../hooks/useClanSystem').ClanColor] || '#888',
+              boxShadow: `0 0 6px ${CLAN_COLOR_HEX[myClan.clan_color as import('../hooks/useClanSystem').ClanColor] || '#888'}40`,
+            }} />
+            <span style={{
+              fontSize: 11, fontWeight: 700,
+              color: CLAN_COLOR_HEX[myClan.clan_color as import('../hooks/useClanSystem').ClanColor] || 'hsl(40,30%,80%)',
+              letterSpacing: '0.06em',
+            }}>
+              {myClan.clan_name}
+            </span>
+            {(() => {
+              const ownedTerritory = territories?.find(t => t.owning_clan_id === myClan.clan_id);
+              return ownedTerritory ? (
+                <span style={{ fontSize: 9, color: 'hsl(40,15%,50%)', marginLeft: 4 }}>
+                  🏴 {ownedTerritory.name}
+                </span>
+              ) : null;
+            })()}
           </div>
         )}
+
+        <div className="flex flex-col gap-2 p-4 rounded-lg" style={panelStyle}>
+          <StatBar label="HP" icon="❤️" value={survival.health} max={100} color="hsl(0,70%,50%)" warning={lowHealth} />
+          <StatBar label="STA" icon="⚡" value={survival.stamina} max={100} color="hsl(45,80%,50%)" />
+
+          {(lowHealth || isMounted) && (
+            <div className="flex flex-wrap gap-1.5 mt-1 pt-2" style={{ borderTop: '1px solid hsla(40,30%,45%,0.2)' }}>
+              {lowHealth && <StatusBadge icon="💔" text="Wounded" hue="0,70%,60%" />}
+              {isMounted && <StatusBadge icon="🐴" text="Mounted" hue="35,40%,55%" />}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ═══ BOTTOM RIGHT — Inventory + $TRENCHERI ═══ */}
