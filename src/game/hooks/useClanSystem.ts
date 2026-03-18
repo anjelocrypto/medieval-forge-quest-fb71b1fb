@@ -131,6 +131,7 @@ export function useClanSystem() {
   const [territories, setTerritories] = useState<TerritoryInfo[]>([]);
   const [clanMembers, setClanMembers] = useState<ClanMemberInfo[]>([]);
   const [challenges, setChallenges] = useState<ChallengeInfo[]>([]);
+  const [history, setHistory] = useState<TerritoryHistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const loadedRef = useRef(false);
