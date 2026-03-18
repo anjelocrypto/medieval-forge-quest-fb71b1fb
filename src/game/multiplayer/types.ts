@@ -97,6 +97,9 @@ export interface InterpolatedPlayer {
   horseState: string;
   emote: string | null;
   isSpeaking: boolean;
+  // Clan identity
+  clanName: string | null;
+  clanColor: string | null;
   // Timing
   lastUpdateTime: number;
   interpolationT: number;
