@@ -57,6 +57,8 @@ import { TerritoryGateBanners } from './components/TerritoryGateBanners';
 import { useClanSystem } from './hooks/useClanSystem';
 import { WarNotifications } from './ui/WarNotifications';
 import { WarScoreboard } from './ui/WarScoreboard';
+import { WarKillFeed, KillEntry } from './ui/WarKillFeed';
+import { CLAN_COLOR_HEX, ClanColor } from './hooks/useClanSystem';
 import { useCharacter } from './context/CharacterContext';
 import { WebGLRecovery } from './systems/WebGLRecovery';
 import { SceneDiagnosticsBoundary } from './debug/SceneDiagnostics';
@@ -114,11 +116,17 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
   const attackAnimRef = useRef(0);
 
   // === PVP STATE ===
-  const lastDamageSourceRef = useRef<{ attackerId: string; attackerWallet: string; timestamp: number } | null>(null);
+  const lastDamageSourceRef = useRef<{ attackerId: string; attackerWallet: string; attackerName: string; attackerClanColor: string; timestamp: number } | null>(null);
   const pvpKillLoggedRef = useRef(false);
   const pvpDeathLogCooldownRef = useRef(0);
   const [pvpHitMarker, setPvpHitMarker] = useState(false);
+  const [pvpDamageFlash, setPvpDamageFlash] = useState(false);
   const [pvpNotification, setPvpNotification] = useState<string | null>(null);
+  // Respawn invulnerability (4 seconds)
+  const respawnInvulnRef = useRef(0);
+  const [invulnTimeLeft, setInvulnTimeLeft] = useState(0);
+  // Kill feed
+  const [killFeedEntries, setKillFeedEntries] = useState<KillEntry[]>([]);
   const progressionLoadedRef = useRef(false);
   const latestProgressionRef = useRef(progression);
   latestProgressionRef.current = progression;
@@ -385,9 +393,20 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     // Reset PvP state on respawn
     lastDamageSourceRef.current = null;
     pvpKillLoggedRef.current = false;
-    setPvpNotification('⚔️ You have respawned');
-    setTimeout(() => setPvpNotification(null), 3000);
+    // Respawn invulnerability: 4 seconds
+    respawnInvulnRef.current = Date.now() + 4000;
+    setPvpNotification('⚔️ Respawned — invulnerable for 4s');
+    setTimeout(() => setPvpNotification(null), 4000);
   }, [updateSurvival]);
+
+  // Invulnerability countdown display
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const remaining = Math.max(0, respawnInvulnRef.current - Date.now());
+      setInvulnTimeLeft(remaining > 100 ? Math.ceil(remaining / 1000) : 0);
+    }, 200);
+    return () => clearInterval(timer);
+  }, []);
 
   // === PVP: Register incoming hit callback ===
   useEffect(() => {
@@ -405,6 +424,8 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
       if (myClanName && hitData.attackerClanId && clanSystem.myClan?.clan_id === hitData.attackerClanId) return;
       // Must be in a clan to participate in PvP
       if (!myClanName) return;
+      // Respawn invulnerability — cannot receive PvP damage
+      if (Date.now() < respawnInvulnRef.current) return;
 
       // Anti-spam: cooldown per attacker
       const now = Date.now();
@@ -416,10 +437,23 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
       const clampedDmg = Math.min(hitData.damage, 20); // cap max PvP damage per hit
       pendingPlayerDamageRef.current += clampedDmg;
 
+      // PvP-specific damage flash (distinct from NPC)
+      setPvpDamageFlash(true);
+      setTimeout(() => setPvpDamageFlash(false), 300);
+
+      // Resolve attacker display info from remote players
+      const attackerRemote = multiplayer.remotePlayersRef?.current?.get(attackerPlayerId);
+      const attackerName = attackerRemote?.displayName || 'Unknown';
+      const attackerClanColor = attackerRemote?.clanColor
+        ? CLAN_COLOR_HEX[attackerRemote.clanColor as ClanColor] || '#e74c3c'
+        : '#e74c3c';
+
       // Track last damage source
       lastDamageSourceRef.current = {
         attackerId: attackerPlayerId,
         attackerWallet: hitData.attackerWallet,
+        attackerName,
+        attackerClanColor,
         timestamp: now,
       };
     });
@@ -434,8 +468,8 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     const source = lastDamageSourceRef.current;
     if (!source) return; // not a PvP death
 
-    // Show death notification
-    setPvpNotification('💀 You were killed in PvP combat');
+    // Show death notification with killer info
+    setPvpNotification(`💀 Killed by ${source.attackerName}`);
     setTimeout(() => setPvpNotification(null), 4000);
 
     const session = loadWalletSession();
@@ -446,6 +480,20 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     if (now - pvpDeathLogCooldownRef.current < 5000) return;
     pvpDeathLogCooldownRef.current = now;
     pvpKillLoggedRef.current = true;
+
+    // Add to kill feed
+    const myName = multiplayer.displayName;
+    const myClanColor = clanSystem.myClan?.clan_color
+      ? CLAN_COLOR_HEX[clanSystem.myClan.clan_color as ClanColor] || '#27ae60'
+      : '#27ae60';
+    setKillFeedEntries(prev => [...prev, {
+      id: crypto.randomUUID(),
+      killerName: source.attackerName,
+      killerColor: source.attackerClanColor,
+      victimName: myName,
+      victimColor: myClanColor,
+      timestamp: now,
+    }].slice(-5));
 
     // Broadcast death for remote animation
     multiplayer.broadcastPvpDeath({
@@ -469,7 +517,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
       else if (data?.success) console.log('[PvP] War kill logged successfully');
       else console.log('[PvP] War kill not logged (no active war or not in territory):', data?.error);
     });
-  }, [survival.health, multiplayer, playerPositionRef]);
+  }, [survival.health, multiplayer, playerPositionRef, clanSystem.myClan]);
 
   // === PVP: Attacker broadcasts hit ===
   const handlePvpHit = useCallback((victimId: string, damage: number, _isCombo: boolean) => {
@@ -477,11 +525,14 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     const session = loadWalletSession();
     if (!session?.wallet_address) return;
     if (!clanSystem.myClan?.clan_id) return;
+    // Cannot deal PvP damage during respawn invulnerability
+    if (Date.now() < respawnInvulnRef.current) return;
 
     // Show hit marker feedback
     setPvpHitMarker(true);
-    setTimeout(() => setPvpHitMarker(false), 200);
+    setTimeout(() => setPvpHitMarker(false), 300);
 
+    // Add to local kill feed (attacker side sees it too via remote death broadcast)
     multiplayer.broadcastPvpHit({
       victimId,
       damage,
@@ -553,15 +604,58 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         myClan={clanSystem.myClan ? { clan_name: clanSystem.myClan.clan_name, clan_color: clanSystem.myClan.clan_color, clan_id: clanSystem.myClan.clan_id } : null}
       />
 
-      {/* PvP hit marker — crosshair flash */}
+      {/* War Kill Feed — top-right during active wars */}
+      <WarKillFeed
+        playerX={playerPositionRef.current.x}
+        playerZ={playerPositionRef.current.z}
+        territories={clanSystem.territories}
+        challenges={clanSystem.challenges}
+        killEvents={killFeedEntries}
+      />
+
+      {/* Respawn invulnerability indicator */}
+      {invulnTimeLeft > 0 && (
+        <div className="fixed top-28 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+          <div className="px-4 py-1.5 rounded-full text-xs font-bold" style={{
+            background: 'hsla(200,70%,50%,0.2)',
+            border: '1px solid hsla(200,70%,60%,0.5)',
+            color: 'hsl(200,70%,75%)',
+            boxShadow: '0 0 16px hsla(200,70%,50%,0.3)',
+            letterSpacing: '0.06em',
+          }}>
+            🛡️ INVULNERABLE — {invulnTimeLeft}s
+          </div>
+        </div>
+      )}
+
+      {/* PvP hit marker — crosshair flash (improved) */}
       {pvpHitMarker && (
         <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none">
           <div style={{
-            width: 16, height: 16, borderRadius: '50%',
-            border: '2px solid hsl(0,70%,55%)',
-            boxShadow: '0 0 12px hsla(0,70%,50%,0.6), inset 0 0 6px hsla(0,70%,50%,0.3)',
-          }} />
+            width: 24, height: 24, position: 'relative',
+          }}>
+            {/* Crosshair lines */}
+            <div style={{ position: 'absolute', top: 0, left: '50%', width: 2, height: 8, marginLeft: -1, background: 'hsl(0,70%,55%)' }} />
+            <div style={{ position: 'absolute', bottom: 0, left: '50%', width: 2, height: 8, marginLeft: -1, background: 'hsl(0,70%,55%)' }} />
+            <div style={{ position: 'absolute', left: 0, top: '50%', width: 8, height: 2, marginTop: -1, background: 'hsl(0,70%,55%)' }} />
+            <div style={{ position: 'absolute', right: 0, top: '50%', width: 8, height: 2, marginTop: -1, background: 'hsl(0,70%,55%)' }} />
+            {/* Center dot */}
+            <div style={{
+              position: 'absolute', top: '50%', left: '50%', width: 4, height: 4,
+              marginTop: -2, marginLeft: -2, borderRadius: '50%',
+              background: 'hsl(0,80%,60%)',
+              boxShadow: '0 0 8px hsla(0,80%,55%,0.8)',
+            }} />
+          </div>
         </div>
+      )}
+
+      {/* PvP damage flash — red vignette distinct from NPC damage */}
+      {pvpDamageFlash && (
+        <div className="fixed inset-0 z-40 pointer-events-none" style={{
+          background: 'radial-gradient(ellipse at center, transparent 40%, hsla(0,80%,30%,0.4) 100%)',
+          animation: 'fadeOut 0.3s ease-out forwards',
+        }} />
       )}
 
       {/* PvP notification text */}
