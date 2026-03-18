@@ -370,7 +370,7 @@ export function useMultiplayer() {
       if (payload.t === 'pvp_hit' && payload.d) {
         const hitData = payload.d as PvpHitData;
         if (hitData.victimId === playerId) {
-          pvpHitCallbackRef.current?.(hitData);
+          pvpHitCallbackRef.current?.({ ...hitData, _attackerPlayerId: payload.i } as any);
         }
       }
 
