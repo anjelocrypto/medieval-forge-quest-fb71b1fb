@@ -200,6 +200,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
 
     // Periodically fetch all active coins (so you see coins from other players too)
     const fetchInterval = setInterval(() => {
+      if (document.hidden) return; // COST: skip when tab hidden
       trencheri.fetchActiveCoins();
     }, trencheri.FETCH_INTERVAL_MS);
 

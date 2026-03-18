@@ -21,7 +21,7 @@ const MAX_LOCAL_COINS = 30;
 const SPAWN_INTERVAL_MS = 20_000;
 const CLAIM_COOLDOWN_MS = 3500;
 const COLLECTION_RADIUS = 3.0;
-const FETCH_INTERVAL_MS = 30_000;
+const FETCH_INTERVAL_MS = 60_000;
 
 export function useTrencheriCoins() {
   const [balance, setBalance] = useState<number | null>(null);
