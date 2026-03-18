@@ -5,7 +5,7 @@ import { resetSpawnIndex } from '../systems/SafeSpawn';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import {
   NetworkPlayerState, InterpolatedPlayer, ChatMessage, WorldEvent,
-  MovePayload, MetaPayload, ActionPayload,
+  MovePayload, MetaPayload, ActionPayload, PvpHitData, PvpDeathData,
   MOVE_BROADCAST_MS, META_BROADCAST_MS, STALE_PLAYER_TIMEOUT_MS,
 } from './types';
 
