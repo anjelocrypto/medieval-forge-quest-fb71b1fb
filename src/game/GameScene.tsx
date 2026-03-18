@@ -422,6 +422,15 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         myClan={clanSystem.myClan ? { clan_name: clanSystem.myClan.clan_name, clan_color: clanSystem.myClan.clan_color, clan_id: clanSystem.myClan.clan_id } : null}
       />
 
+      {/* War notifications — toast alerts + territory awareness */}
+      <WarNotifications
+        challenges={clanSystem.challenges}
+        territories={clanSystem.territories}
+        myClan={clanSystem.myClan ? { clan_name: clanSystem.myClan.clan_name, clan_color: clanSystem.myClan.clan_color, clan_id: clanSystem.myClan.clan_id } : null}
+        playerX={playerPositionRef.current.x}
+        playerZ={playerPositionRef.current.z}
+      />
+
       {/* Leaderboard (L key) */}
       <Leaderboard />
 
