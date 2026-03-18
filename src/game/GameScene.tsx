@@ -414,6 +414,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         onCloseMap={() => setMapOpen(false)}
         isSpeaking={voice.isTalking}
         trencheriBalance={trencheri.balance}
+        territories={clanSystem.territories}
       />
 
       {/* Leaderboard (L key) */}
