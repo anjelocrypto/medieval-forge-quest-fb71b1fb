@@ -588,6 +588,45 @@ export type Database = {
         }
         Relationships: []
       }
+      war_kills: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          id: string
+          kill_x: number
+          kill_z: number
+          killer_clan_id: string
+          killer_wallet: string
+          territory_id: string
+          victim_clan_id: string
+          victim_wallet: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          id?: string
+          kill_x: number
+          kill_z: number
+          killer_clan_id: string
+          killer_wallet: string
+          territory_id: string
+          victim_clan_id: string
+          victim_wallet: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          id?: string
+          kill_x?: number
+          kill_z?: number
+          killer_clan_id?: string
+          killer_wallet?: string
+          territory_id?: string
+          victim_clan_id?: string
+          victim_wallet?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -714,6 +753,7 @@ export type Database = {
         Args: { _wallet_address: string }
         Returns: number
       }
+      get_war_kills: { Args: { _challenge_id: string }; Returns: Json }
       heartbeat_room_player: {
         Args: { _player_id: string; _room_id: string }
         Returns: undefined
@@ -759,6 +799,16 @@ export type Database = {
       }
       load_player_progression: {
         Args: { _wallet_address: string }
+        Returns: Json
+      }
+      log_war_kill: {
+        Args: {
+          _kill_x: number
+          _kill_z: number
+          _session_token: string
+          _victim_wallet: string
+          _wallet_address: string
+        }
         Returns: Json
       }
       login_wallet_account: { Args: { _wallet_address: string }; Returns: Json }
