@@ -206,9 +206,8 @@ export function Player({
       const timer = setTimeout(() => {
         if (groupRef.current) {
           // Respawn at faction home kingdom
-          const { loadWalletSession: loadSession2 } = require('../hooks/usePlayerAccount');
-          const respawnSession = loadSession2();
-          const respawnFactionId = (respawnSession as any)?.faction_id || undefined;
+          const respawnSession = loadWalletSession();
+          const respawnFactionId = respawnSession?.faction_id || undefined;
           const spawn = findSafeSpawn(undefined, undefined, PLAYER_HEIGHT, respawnFactionId);
           console.log('[Player] RESPAWN COMPLETE — teleporting to', spawn.x.toFixed(1), spawn.z.toFixed(1), 'faction:', respawnFactionId || 'guest');
           groupRef.current.position.set(spawn.x, spawn.y, spawn.z);
