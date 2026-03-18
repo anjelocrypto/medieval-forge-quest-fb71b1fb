@@ -448,12 +448,12 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
 
     // Log to server (victim-initiated, server validates everything)
     const pos = playerPositionRef.current;
-    supabase.rpc('log_war_kill' as any, {
-      _wallet_address: source.attackerWallet,
-      _session_token: session.session_token,
+    supabase.rpc('report_pvp_death' as any, {
       _victim_wallet: session.wallet_address,
-      _kill_x: pos.x,
-      _kill_z: pos.z,
+      _session_token: session.session_token,
+      _killer_wallet: source.attackerWallet,
+      _death_x: pos.x,
+      _death_z: pos.z,
     }).then(({ data, error }: any) => {
       if (error) console.warn('[PvP] War kill log failed:', error.message);
       else if (data?.success) console.log('[PvP] War kill logged successfully');
