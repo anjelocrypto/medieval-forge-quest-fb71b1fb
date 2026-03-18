@@ -483,9 +483,10 @@ export function useMultiplayer() {
         ch.send({ type: 'broadcast', event: 'pm', payload });
       }, MOVE_BROADCAST_MS);
 
-      // ===== LOW-FREQ broadcast timer (metadata, only on change) =====
+      // ===== LOW-FREQ broadcast timer (metadata, only on change) — paused when tab hidden =====
       if (metaTimerRef.current) clearInterval(metaTimerRef.current);
       metaTimerRef.current = setInterval(() => {
+        if (document.hidden) return; // COST: skip when tab not visible
         const state = localStateRef.current;
         const ch = channelRef.current;
         if (!state || !ch) return;
