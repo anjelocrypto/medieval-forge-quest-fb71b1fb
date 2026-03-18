@@ -370,8 +370,12 @@ function drawMap(
         if (warState !== 'peaceful') {
           const stateLabel = warState === 'contested' ? '⚔️ CHALLENGED'
             : warState === 'active_war' ? '🔥 WAR ACTIVE'
+            : warState === 'pending_resolution' ? '⏳ PENDING RESOLUTION'
             : '🛡️ COOLDOWN';
-          const stateColor = warState === 'contested' ? '#e67e22' : warState === 'active_war' ? '#e74c3c' : '#3498db';
+          const stateColor = warState === 'contested' ? '#e67e22'
+            : warState === 'active_war' ? '#e74c3c'
+            : warState === 'pending_resolution' ? '#f39c12'
+            : '#3498db';
           ctx.font = `bold ${Math.max(8, labelSize - 1)}px sans-serif`;
           ctx.fillStyle = stateColor + 'dd';
           ctx.fillText(stateLabel, cx, cy + sr * 0.35);
