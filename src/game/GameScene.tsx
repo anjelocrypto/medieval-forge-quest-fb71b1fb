@@ -276,10 +276,19 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     return () => clearInterval(checkInterval);
   }, [progression.areasSecured, secureArea]);
 
-  // Map toggle + debug
+  // Settings panel state
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Map toggle + settings toggle
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'KeyM') setMapOpen(prev => !prev);
+      if (e.code === 'KeyP' && !e.ctrlKey && !e.metaKey) {
+        // Don't toggle if chat input is focused
+        const active = document.activeElement;
+        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
+        setSettingsOpen(prev => !prev);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
