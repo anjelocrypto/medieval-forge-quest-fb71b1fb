@@ -446,6 +446,16 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
       {/* Character Select (F4) */}
       <CharacterSelect />
 
+      {/* Settings Panel (P key) */}
+      <SettingsPanel
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        currentDisplayName={multiplayer.displayName}
+        onNameUpdated={(newName) => {
+          multiplayer.updateDisplayName(newName);
+        }}
+      />
+
       {/* Emote Wheel */}
       <EmoteWheel
         onSelectEmote={(key) => {
