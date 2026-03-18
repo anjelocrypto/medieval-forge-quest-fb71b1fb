@@ -55,15 +55,29 @@ function drawMinimap(
   const cx = fullMap ? 0 : playerX;
   const cz = fullMap ? 0 : playerZ;
 
-  // Region colors
+  // Region colors (base)
   for (const r of REGIONS) {
     const rx = (r.center[0] - cx) * scale + half;
     const rz = (r.center[1] - cz) * scale + half;
     const rr = r.radius * scale;
-    ctx.fillStyle = r.color + '40';
-    ctx.beginPath();
-    ctx.arc(rx, rz, rr, 0, Math.PI * 2);
-    ctx.fill();
+    // Check if this region has territory ownership
+    const territory = territories?.find(t => t.id === r.id);
+    if (territory?.owning_clan_color) {
+      const clanHex = CLAN_COLOR_HEX[territory.owning_clan_color as ClanColor] || r.color;
+      ctx.fillStyle = clanHex + '50';
+      ctx.beginPath();
+      ctx.arc(rx, rz, rr, 0, Math.PI * 2);
+      ctx.fill();
+      // Border ring
+      ctx.strokeStyle = clanHex + '80';
+      ctx.lineWidth = fullMap ? 2.5 : 1.5;
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = r.color + '40';
+      ctx.beginPath();
+      ctx.arc(rx, rz, rr, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   // Roads
