@@ -824,6 +824,16 @@ export type Database = {
         }
         Returns: Json
       }
+      report_pvp_death: {
+        Args: {
+          _death_x: number
+          _death_z: number
+          _killer_wallet: string
+          _session_token: string
+          _victim_wallet: string
+        }
+        Returns: Json
+      }
       resolve_war: {
         Args: {
           _challenge_id: string
