@@ -440,6 +440,91 @@ export type Database = {
           },
         ]
       }
+      territory_challenges: {
+        Row: {
+          attacker_clan_color: string
+          attacker_clan_id: string
+          attacker_clan_name: string
+          cancelled_by: string | null
+          challenge_created_at: string
+          cooldown_ends_at: string
+          created_at: string
+          defender_clan_color: string
+          defender_clan_id: string
+          defender_clan_name: string
+          id: string
+          resolution: string | null
+          resolved_at: string | null
+          status: string
+          territory_id: string
+          updated_at: string
+          war_ends_at: string
+          war_starts_at: string
+        }
+        Insert: {
+          attacker_clan_color: string
+          attacker_clan_id: string
+          attacker_clan_name: string
+          cancelled_by?: string | null
+          challenge_created_at?: string
+          cooldown_ends_at: string
+          created_at?: string
+          defender_clan_color: string
+          defender_clan_id: string
+          defender_clan_name: string
+          id?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string
+          territory_id: string
+          updated_at?: string
+          war_ends_at: string
+          war_starts_at: string
+        }
+        Update: {
+          attacker_clan_color?: string
+          attacker_clan_id?: string
+          attacker_clan_name?: string
+          cancelled_by?: string | null
+          challenge_created_at?: string
+          cooldown_ends_at?: string
+          created_at?: string
+          defender_clan_color?: string
+          defender_clan_id?: string
+          defender_clan_name?: string
+          id?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string
+          territory_id?: string
+          updated_at?: string
+          war_ends_at?: string
+          war_starts_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "territory_challenges_attacker_clan_id_fkey"
+            columns: ["attacker_clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "territory_challenges_defender_clan_id_fkey"
+            columns: ["defender_clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "territory_challenges_territory_id_fkey"
+            columns: ["territory_id"]
+            isOneToOne: false
+            referencedRelation: "territories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       territory_history: {
         Row: {
           actor_wallet: string | null
@@ -508,6 +593,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_challenge: {
+        Args: {
+          _challenge_id: string
+          _session_token: string
+          _wallet_address: string
+        }
+        Returns: Json
+      }
+      challenge_territory: {
+        Args: {
+          _session_token: string
+          _territory_id: string
+          _wallet_address: string
+        }
+        Returns: Json
+      }
       check_admin_status: {
         Args: { _session_token: string; _wallet_address: string }
         Returns: Json
@@ -585,6 +686,7 @@ export type Database = {
         Args: { _wallet_address: string }
         Returns: string
       }
+      get_active_challenges: { Args: { _limit?: number }; Returns: Json }
       get_active_coins: { Args: { _limit?: number }; Returns: Json }
       get_clan_members: { Args: { _clan_id: string }; Returns: Json }
       get_clans: { Args: { _limit?: number }; Returns: Json }
@@ -767,7 +869,7 @@ export type Database = {
         | "teal"
         | "ivory"
         | "obsidian"
-      territory_war_state: "peaceful" | "contested" | "cooldown"
+      territory_war_state: "peaceful" | "contested" | "active_war" | "cooldown"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -907,7 +1009,7 @@ export const Constants = {
         "ivory",
         "obsidian",
       ],
-      territory_war_state: ["peaceful", "contested", "cooldown"],
+      territory_war_state: ["peaceful", "contested", "active_war", "cooldown"],
     },
   },
 } as const
