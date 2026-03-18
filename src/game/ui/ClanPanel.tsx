@@ -77,6 +77,11 @@ function WarStateBadge({ state, challenge }: { state: string; challenge?: Challe
           Ends {formatCountdown(challenge.war_ends_at)}
         </span>
       )}
+      {state === 'pending_resolution' && (
+        <span style={{ fontSize: 9, color: 'hsl(40,50%,55%)', marginLeft: 4 }}>
+          Admin review
+        </span>
+      )}
     </div>
   );
 }
