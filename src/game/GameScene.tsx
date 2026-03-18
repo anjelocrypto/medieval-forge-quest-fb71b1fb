@@ -812,7 +812,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
             onEmoteComplete={useCallback(() => setActiveEmote(null), [])}
             damageFlash={damageFlash}
             remotePlayersRef={multiplayer.remotePlayersRef}
-            localClanId={clanSystem.myClan?.clan_id ?? null}
+            localClanId={loadWalletSession()?.faction_id ?? null}
             localClanName={clanSystem.myClan?.clan_name ?? null}
             onPvpHit={handlePvpHit}
           />
