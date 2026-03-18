@@ -600,6 +600,9 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
           {/* Remote players from multiplayer */}
           <RemotePlayers remotePlayers={multiplayer.remotePlayers} playerPositionRef={playerPositionRef} />
 
+          {/* 3D Territory ownership banners */}
+          <TerritoryMarkers territories={clanSystem.territories} playerPositionRef={playerPositionRef} />
+
           {/* Multiplayer broadcaster — samples local state and pushes to network hook */}
           {multiplayer.connected && (
             <MultiplayerBroadcaster
