@@ -553,12 +553,14 @@ export function Player({
       }
 
       // === PVP HIT DETECTION ===
-      // Only if: we have a clan, remote players exist, and callback is provided
+      // Faction-based: different factions can damage each other, same faction cannot
       if (onPvpHit && localClanId && remotePlayersRef?.current) {
         const pvpDmg = isCombo ? PVP_COMBO_DAMAGE : PVP_DAMAGE;
         remotePlayersRef.current.forEach((remote) => {
-          // Skip: same clan (friendly fire OFF)
-          if (!remote.clanName || remote.clanName === localClanName) return;
+          // Skip: no clan/faction identity
+          if (!remote.clanName) return;
+          // Skip: same faction (friendly fire OFF)
+          if (remote.clanName === localClanName) return;
           // Skip: dead players (health <= 0)
           if (remote.health <= 0) return;
           const dx = remote.renderPosition[0] - pos.x;
