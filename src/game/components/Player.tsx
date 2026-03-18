@@ -86,7 +86,6 @@ interface PlayerProps {
   // PvP
   remotePlayersRef?: React.RefObject<Map<string, InterpolatedPlayer>>;
   localClanId?: string | null;
-  localClanName?: string | null;
   onPvpHit?: (victimId: string, damage: number, isCombo: boolean) => void;
 }
 
