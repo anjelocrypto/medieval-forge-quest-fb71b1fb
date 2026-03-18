@@ -48,6 +48,7 @@ import { ChatPanel } from './multiplayer/ChatPanel';
 import { useProximityVoice } from './multiplayer/useProximityVoice';
 import { EmoteWheel } from './ui/EmoteWheel';
 import { CharacterSelect } from './ui/CharacterSelect';
+import { SettingsPanel } from './ui/SettingsPanel';
 import { useCharacter } from './context/CharacterContext';
 import { WebGLRecovery } from './systems/WebGLRecovery';
 import { SceneDiagnosticsBoundary } from './debug/SceneDiagnostics';
