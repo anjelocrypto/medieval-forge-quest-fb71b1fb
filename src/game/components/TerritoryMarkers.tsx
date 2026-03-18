@@ -28,7 +28,7 @@ function TerritoryBanner({ territory }: { territory: TerritoryInfo }) {
     : '#666666';
   const colorObj = useMemo(() => new THREE.Color(color), [color]);
   const neutralColor = useMemo(() => new THREE.Color('#555555'), []);
-  const warColor = useMemo(() => new THREE.Color(warState === 'active_war' ? '#e74c3c' : '#e67e22'), [warState]);
+  const warColor = useMemo(() => new THREE.Color(warState === 'active_war' ? '#e74c3c' : warState === 'pending_resolution' ? '#f39c12' : '#e67e22'), [warState]);
   const isClaimed = !!territory.owning_clan_id;
 
   // Ring color depends on war state
