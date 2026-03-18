@@ -61,7 +61,7 @@ function drawMinimap(
     const rz = (r.center[1] - cz) * scale + half;
     const rr = r.radius * scale;
     const territory = territories?.find(t => t.id === r.id);
-    const warState = territory?.war_state || 'peaceful';
+    const warState = (territory?.war_state as string) || 'peaceful';
     if (territory?.owning_clan_color) {
       const clanHex = CLAN_COLOR_HEX[territory.owning_clan_color as ClanColor] || r.color;
       ctx.fillStyle = clanHex + '50';
