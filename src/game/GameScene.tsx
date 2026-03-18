@@ -177,6 +177,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     trencheri.fetchActiveCoins();
 
     const spawnInterval = setInterval(async () => {
+      if (document.hidden) return; // COST: skip when tab hidden
       const pos = playerPositionRef.current;
       // Prune expired local coins
       trencheri.pruneExpired();
