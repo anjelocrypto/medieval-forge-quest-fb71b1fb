@@ -334,12 +334,21 @@ function drawMap(
           ctx.strokeStyle = '#e74c3c40';
           ctx.lineWidth = 7;
           ctx.stroke();
-        } else if (warState === 'cooldown') {
+      } else if (warState === 'cooldown') {
           ctx.strokeStyle = '#3498db80';
           ctx.lineWidth = 2;
           ctx.setLineDash([4, 6]);
           ctx.stroke();
           ctx.setLineDash([]);
+        } else if (warState === 'pending_resolution') {
+          ctx.strokeStyle = '#f39c12dd';
+          ctx.lineWidth = 3;
+          ctx.setLineDash([3, 3]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.strokeStyle = '#f39c1250';
+          ctx.lineWidth = 6;
+          ctx.stroke();
         } else {
           ctx.strokeStyle = color + '60';
           ctx.lineWidth = 2;
