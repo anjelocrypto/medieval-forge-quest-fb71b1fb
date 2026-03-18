@@ -1,6 +1,6 @@
 /**
  * Hook for wallet-based player account management via RPCs.
- * Now includes session token storage for cryptographic auth.
+ * Includes faction_id in session for spawn/PvP identity.
  */
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +15,9 @@ export interface PlayerAccount {
   last_position_y: number | null;
   last_position_z: number | null;
   created_at: string;
+  faction_id?: string | null;
+  faction_name?: string | null;
+  faction_color?: string | null;
 }
 
 const WALLET_SESSION_KEY = 'wallet_account_session';
@@ -26,6 +29,9 @@ export interface WalletSession {
   character_type: string;
   account_id: string;
   session_token: string;
+  faction_id: string | null;
+  faction_name: string | null;
+  faction_color: string | null;
 }
 
 function saveWalletSession(session: WalletSession) {
@@ -80,8 +86,6 @@ export function usePlayerAccount() {
         return null;
       }
 
-      // Account created — now verify wallet signature to get session
-      // The session token is obtained after account creation via a second connect
       const loginResult = await loginAccount(walletAddress, sessionToken);
       setLoading(false);
       return loginResult;
@@ -114,13 +118,27 @@ export function usePlayerAccount() {
         return null;
       }
 
-      const profile = data as unknown as PlayerAccount;
+      // login_wallet_account returns JSON with faction_id, faction_name, faction_color
+      const raw = data as any;
+      const profile: PlayerAccount = {
+        id: raw.id,
+        wallet_address: raw.wallet_address,
+        display_name: raw.display_name,
+        community_name: raw.community_name,
+        character_type: raw.character_type,
+        last_position_x: raw.last_position_x,
+        last_position_y: raw.last_position_y,
+        last_position_z: raw.last_position_z,
+        created_at: raw.created_at,
+        faction_id: raw.faction_id || null,
+        faction_name: raw.faction_name || null,
+        faction_color: raw.faction_color || null,
+      };
       setAccount(profile);
 
-      // If no session token provided, try to get one via edge function
+      // Resolve session token
       let token = sessionToken || '';
       if (!token) {
-        // Try to create session via edge function (requires prior signature verification)
         try {
           const stored = localStorage.getItem('wallet_session_token');
           if (stored) token = stored;
@@ -134,6 +152,9 @@ export function usePlayerAccount() {
         character_type: profile.character_type,
         account_id: profile.id,
         session_token: token,
+        faction_id: profile.faction_id || null,
+        faction_name: profile.faction_name || null,
+        faction_color: profile.faction_color || null,
       });
 
       setLoading(false);
@@ -165,16 +186,16 @@ export function usePlayerAccount() {
 
   const updateProfile = useCallback(async (
     walletAddress: string,
-    updates: { displayName?: string; communityName?: string; characterType?: string },
+    updates: { displayName?: string; communityName?: string },
   ) => {
     setError(null);
     try {
       const session = loadWalletSession();
+      // NOTE: character_type changes are blocked — faction is permanent
       const { error: rpcError } = await supabase.rpc('update_wallet_profile', {
         _wallet_address: walletAddress,
         _display_name: updates.displayName || undefined,
         _community_name: updates.communityName || undefined,
-        _character_type: updates.characterType || undefined,
         _session_token: session?.session_token || undefined,
       } as any);
 
