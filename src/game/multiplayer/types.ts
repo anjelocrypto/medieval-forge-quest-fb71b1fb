@@ -71,7 +71,7 @@ export interface ActionPayload {
 export interface InterpolatedPlayer {
   playerId: string;
   displayName: string;
-  characterType: 'soldier' | 'goblin' | 'octopus' | 'nemoclaw';
+  characterType: 'soldier' | 'goblin' | 'octopus' | 'nemoclaw' | 'chillhouse';
   // Interpolation buffers
   prevPosition: [number, number, number];
   targetPosition: [number, number, number];
