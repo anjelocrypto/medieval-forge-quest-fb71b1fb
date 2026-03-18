@@ -385,6 +385,8 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     // Reset PvP state on respawn
     lastDamageSourceRef.current = null;
     pvpKillLoggedRef.current = false;
+    setPvpNotification('⚔️ You have respawned');
+    setTimeout(() => setPvpNotification(null), 3000);
   }, [updateSurvival]);
 
   // === PVP: Register incoming hit callback ===
