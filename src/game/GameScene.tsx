@@ -523,7 +523,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     if (!multiplayer.connected) return;
     const session = loadWalletSession();
     if (!session?.wallet_address) return;
-    if (!clanSystem.myClan?.clan_id) return;
+    if (!session?.faction_id) return; // Must have faction to PvP
     // Cannot deal PvP damage during respawn invulnerability
     if (Date.now() < respawnInvulnRef.current) return;
 
@@ -531,14 +531,14 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     setPvpHitMarker(true);
     setTimeout(() => setPvpHitMarker(false), 300);
 
-    // Add to local kill feed (attacker side sees it too via remote death broadcast)
+    // Use stable faction UUID as clan ID
     multiplayer.broadcastPvpHit({
       victimId,
       damage,
       attackerWallet: session.wallet_address,
-      attackerClanId: clanSystem.myClan.clan_id,
+      attackerClanId: session.faction_id,
     });
-  }, [multiplayer, clanSystem.myClan]);
+  }, [multiplayer]);
 
 
   // Wrap placeStructure to broadcast building placement
