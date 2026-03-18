@@ -33,6 +33,7 @@ function drawMinimap(
   horseZ: number,
   isMounted: boolean,
   fullMap: boolean,
+  territories?: TerritoryInfo[],
 ) {
   const half = size / 2;
   const scale = half / worldRadius;
