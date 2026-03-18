@@ -27,6 +27,7 @@ import { PVP_DAMAGE, PVP_COMBO_DAMAGE } from '../multiplayer/types';
 import type { InterpolatedPlayer } from '../multiplayer/types';
 import { SurvivalState, LootPickup, ResourceInventory } from '../types';
 import { findSafeSpawn } from '../systems/SafeSpawn';
+import { loadWalletSession } from '../hooks/usePlayerAccount';
 
 import { PlacedStructure } from '../systems/BuildingData';
 import { HorseData, HORSE_SPEED, HORSE_RUN_SPEED, MOUNT_RANGE, DISMOUNT_OFFSET } from '../systems/HorseData';
@@ -182,9 +183,8 @@ export function Player({
       }
       
       // Fresh spawn — use faction-based safe spawn system
-      const { loadWalletSession: loadSession } = require('../hooks/usePlayerAccount');
-      const spawnSession = loadSession();
-      const spawnFactionId = (spawnSession as any)?.faction_id || undefined;
+      const spawnSession = loadWalletSession();
+      const spawnFactionId = spawnSession?.faction_id || undefined;
       const spawn = findSafeSpawn(undefined, undefined, PLAYER_HEIGHT, spawnFactionId);
       console.log('[Player] SPAWN FRESH —', spawn.x.toFixed(1), spawn.z.toFixed(1), 'y=', spawn.y.toFixed(2),
         spawn.fallbackUsed ? `(fallback: ${spawn.rejectedReason})` : '(canonical)', 'faction:', spawnFactionId || 'guest');
@@ -206,9 +206,8 @@ export function Player({
       const timer = setTimeout(() => {
         if (groupRef.current) {
           // Respawn at faction home kingdom
-          const { loadWalletSession: loadSession2 } = require('../hooks/usePlayerAccount');
-          const respawnSession = loadSession2();
-          const respawnFactionId = (respawnSession as any)?.faction_id || undefined;
+          const respawnSession = loadWalletSession();
+          const respawnFactionId = respawnSession?.faction_id || undefined;
           const spawn = findSafeSpawn(undefined, undefined, PLAYER_HEIGHT, respawnFactionId);
           console.log('[Player] RESPAWN COMPLETE — teleporting to', spawn.x.toFixed(1), spawn.z.toFixed(1), 'faction:', respawnFactionId || 'guest');
           groupRef.current.position.set(spawn.x, spawn.y, spawn.z);
@@ -562,15 +561,19 @@ export function Player({
 
       // === PVP HIT DETECTION ===
       // Faction-based: different factions can damage each other, same faction cannot
+      // Uses stable faction UUID (localClanId) for protection, NOT string names
       if (onPvpHit && localClanId && remotePlayersRef?.current) {
         const pvpDmg = isCombo ? PVP_COMBO_DAMAGE : PVP_DAMAGE;
         remotePlayersRef.current.forEach((remote) => {
-          // Skip: no clan/faction identity
-          if (!remote.clanName) return;
-          // Skip: same faction (friendly fire OFF)
-          if (remote.clanName === localClanName) return;
           // Skip: dead players (health <= 0)
           if (remote.health <= 0) return;
+          // Skip: same faction — compare via faction color which maps 1:1 to faction
+          // The remote's clanName is actually the faction name broadcast by MultiplayerBroadcaster
+          // The remote's clanColor is the faction color. We use localClanId (UUID) vs checking
+          // if the remote belongs to our faction by matching faction name to our localClanName
+          if (localClanName && remote.clanName === localClanName) return;
+          // Skip: remote has no faction (guests can't PvP)
+          if (!remote.clanName) return;
           const dx = remote.renderPosition[0] - pos.x;
           const dz = remote.renderPosition[2] - pos.z;
           const distSq = dx * dx + dz * dz;

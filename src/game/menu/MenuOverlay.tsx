@@ -157,13 +157,15 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     setBusy(true);
     setError(null);
 
-    // Use register_with_faction — but account exists, so we need a different approach
-    // For existing accounts, we update their faction_id and clan membership
-    const session = loadWalletSession();
-    const { error: rpcError } = await supabase.rpc('update_wallet_profile' as any, {
+    // Use register_with_faction RPC which handles:
+    // - setting faction_id on player_accounts
+    // - creating clan_members entry
+    // - setting character_type to match faction
+    const { data, error: rpcError } = await supabase.rpc('register_with_faction' as any, {
       _wallet_address: pendingLoginAccount.wallet_address,
-      _session_token: session?.session_token || pendingSessionToken,
-      _character_type: faction.characterType,
+      _display_name: pendingLoginAccount.display_name || 'Knight',
+      _community_name: pendingLoginAccount.community_name || undefined,
+      _faction_id: faction.id,
     });
 
     if (rpcError) {
@@ -172,12 +174,25 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
       return;
     }
 
-    // Set faction in context
+    const result = data as any;
+    if (!result?.success) {
+      setError(result?.error || 'Faction migration failed');
+      setBusy(false);
+      return;
+    }
+
+    // Re-login to get updated faction data into session
+    const account = await playerAccount.loginAccount(pendingLoginAccount.wallet_address, pendingSessionToken);
+    if (!account) {
+      setBusy(false);
+      return;
+    }
+
     setCharacter(faction.characterType);
     setNeedsFactionMigration(false);
 
     try {
-      await onEnterWorld(pendingLoginAccount.display_name);
+      await onEnterWorld(account.display_name);
     } catch (err: any) {
       setError(err.message || 'Failed to enter world');
     } finally {
@@ -218,14 +233,8 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     setPlayerName(account.display_name);
     setCommunityName(account.community_name || '');
     setCharacter(account.character_type as CharacterType);
-    setWalletSession({
-      wallet_address: account.wallet_address,
-      display_name: account.display_name,
-      community_name: account.community_name,
-      character_type: account.character_type,
-      account_id: account.id,
-      session_token: result.sessionToken || '',
-    });
+    // Session is already saved by loginAccount() with faction data
+    setWalletSession(loadWalletSession());
 
     try {
       await onEnterWorld(account.display_name);

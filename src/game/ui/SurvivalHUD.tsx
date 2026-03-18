@@ -4,6 +4,7 @@ import { TIER2_KILLS_REQUIRED, TIER2_STRUCTURES_REQUIRED } from '../constants';
 import { Minimap } from './Minimap';
 import type { TerritoryInfo, ChallengeInfo } from '../hooks/useClanSystem';
 import { CLAN_COLOR_HEX } from '../hooks/useClanSystem';
+import { FACTIONS, FactionDef } from '../systems/FactionData';
 
 interface HUDProps {
   survival: SurvivalState;
@@ -243,8 +244,7 @@ export function SurvivalHUD({
 
         {/* Faction identity badge */}
         {myClan && (() => {
-          const { FACTIONS } = require('../systems/FactionData');
-          const faction = FACTIONS.find((f: any) => f.id === myClan.clan_id);
+          const faction = FACTIONS.find((f: FactionDef) => f.id === myClan.clan_id);
           const colorHex = faction?.colorHex || CLAN_COLOR_HEX[myClan.clan_color as import('../hooks/useClanSystem').ClanColor] || '#888';
           return (
             <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg" style={{
@@ -418,10 +418,9 @@ export function SurvivalHUD({
         <ControlSection title="Utility">
           {!isMounted && <ControlRow keys="H" action="Call Horse" />}
           <ControlRow keys="M" action="Map" />
-          <ControlRow keys="C" action="Clan" />
+          <ControlRow keys="C" action="Faction" />
           <ControlRow keys="L" action="Leaderboard" />
           <ControlRow keys="K" action="Voice (Hold)" />
-          <ControlRow keys="C" action="Faction" />
           <ControlRow keys="P" action="Settings" />
           <ControlRow keys="SCROLL" action="Zoom" />
         </ControlSection>
