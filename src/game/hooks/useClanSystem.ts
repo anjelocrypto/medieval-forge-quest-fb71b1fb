@@ -180,6 +180,16 @@ export function useClanSystem() {
     } catch { /* silent */ }
   }, []);
 
+  const loadHistory = useCallback(async (territoryId?: string) => {
+    try {
+      const params: Record<string, unknown> = { _limit: 30 };
+      if (territoryId) params._territory_id = territoryId;
+      const { data } = await supabase.rpc('get_territory_history' as any, params);
+      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+      setHistory(Array.isArray(parsed) ? parsed : []);
+    } catch { setHistory([]); }
+  }, []);
+
   // Trigger war-state transitions on backend
   const transitionWarStates = useCallback(async () => {
     try {
