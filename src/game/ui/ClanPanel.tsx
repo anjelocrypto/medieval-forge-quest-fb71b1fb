@@ -59,6 +59,7 @@ function WarStateBadge({ state, challenge }: { state: string; challenge?: Challe
     peaceful: { icon: '☮️', label: 'Peaceful', bg: 'hsla(120,30%,30%,0.1)', color: 'hsl(120,40%,60%)', border: 'hsla(120,30%,40%,0.2)' },
     contested: { icon: '⚔️', label: 'Challenged', bg: 'hsla(30,60%,40%,0.15)', color: 'hsl(30,70%,65%)', border: 'hsla(30,60%,50%,0.3)' },
     active_war: { icon: '🔥', label: 'WAR ACTIVE', bg: 'hsla(0,60%,40%,0.2)', color: 'hsl(0,70%,65%)', border: 'hsla(0,60%,50%,0.4)' },
+    pending_resolution: { icon: '⏳', label: 'AWAITING RESOLUTION', bg: 'hsla(40,60%,40%,0.15)', color: 'hsl(40,70%,65%)', border: 'hsla(40,60%,50%,0.3)' },
     cooldown: { icon: '🛡️', label: 'Cooldown', bg: 'hsla(210,40%,40%,0.1)', color: 'hsl(210,50%,65%)', border: 'hsla(210,40%,50%,0.2)' },
   };
   const c = configs[state] || configs.peaceful;
