@@ -309,7 +309,7 @@ function drawMap(
       const [cx, cy] = toS(t.center_x, t.center_z);
       const sr = t.radius * z;
       if (!onScreen(cx, cy, W, H, sr)) continue;
-      const warState = (t as any).war_state || 'peaceful';
+      const warState = ((t as any).war_state as string) || 'peaceful';
       const color = t.owning_clan_color
         ? CLAN_COLOR_HEX[t.owning_clan_color as ClanColor] || '#666'
         : null;
