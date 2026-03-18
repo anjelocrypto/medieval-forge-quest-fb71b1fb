@@ -958,6 +958,8 @@ export function Player({
             <NemoClawGLBModel moveSpeedRef={isMounted ? mountedZeroRef : moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={isMounted ? mountedZeroRef : attackAnimRef} isFightingRef={isFightingRef} />
           ) : character === 'chillhouse' ? (
             <ChillhouseGLBModel moveSpeedRef={isMounted ? mountedZeroRef : moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={isMounted ? mountedZeroRef : attackAnimRef} isFightingRef={isFightingRef} />
+          ) : (character === 'yeti' || character === 'dog') ? (
+            <PlaceholderLocalModel factionColor={getFactionByCharacter(character)?.colorHex || '#888'} label={character} moveSpeedRef={isMounted ? mountedZeroRef : moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={isMounted ? mountedZeroRef : attackAnimRef} isFightingRef={isFightingRef} />
           ) : (
             <PlayerGLBModel moveSpeedRef={isMounted ? mountedZeroRef : moveSpeedRef} controllerHalfHeight={PLAYER_HEIGHT / 2} isGroundedRef={isGroundedRef} activeEmote={activeEmote} activeEmoteId={activeEmoteId} onEmoteComplete={onEmoteComplete} damageFlash={damageFlash} attackAnimRef={isMounted ? mountedZeroRef : attackAnimRef} isFightingRef={isFightingRef} />
           )}

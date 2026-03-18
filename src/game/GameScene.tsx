@@ -718,8 +718,8 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         currentCommunityName={loadWalletSession()?.community_name}
       />
 
-      {/* Clan Panel (C key) */}
-      <ClanPanel
+      {/* Faction Panel (C key) */}
+      <FactionPanel
         open={clanOpen}
         onClose={() => setClanOpen(false)}
         playerX={playerPositionRef.current.x}

@@ -273,6 +273,8 @@ function MountedRemoteModel({ moveSpeed, horsePitch, charType, player }: {
             <RemoteNemoClawModel moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
           ) : charType === 'chillhouse' ? (
             <RemoteChillhouseModel moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
+          ) : (charType === 'yeti' || charType === 'dog') ? (
+            <PlaceholderRemoteModel factionColor={getFactionByCharacter(charType)?.colorHex || '#888'} label={charType} moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
           ) : (
             <RemoteSoldierModel moveSpeed={0} isRunning={false} isGrounded={true} attackAnim={0} health={player.health} emote={null} />
           )}
