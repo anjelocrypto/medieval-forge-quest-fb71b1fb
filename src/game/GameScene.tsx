@@ -478,6 +478,10 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     if (!session?.wallet_address) return;
     if (!clanSystem.myClan?.clan_id) return;
 
+    // Show hit marker feedback
+    setPvpHitMarker(true);
+    setTimeout(() => setPvpHitMarker(false), 200);
+
     multiplayer.broadcastPvpHit({
       victimId,
       damage,
