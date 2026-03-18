@@ -365,6 +365,17 @@ export function useMultiplayer() {
         p.attackAnim = typeof payload.d === 'number' ? payload.d : 0.4;
       }
 
+      // PvP hit: forward to callback for victim-side processing
+      if (payload.t === 'pvp_hit' && payload.d) {
+        const hitData = payload.d as PvpHitData;
+        if (hitData.victimId === playerId) {
+          pvpHitCallbackRef.current?.(hitData);
+        }
+      }
+
+      // PvP death: informational only (victim broadcasts their death)
+      // No processing needed — just for remote player death animations
+
       scheduleRemotePlayersCommit();
     });
 
