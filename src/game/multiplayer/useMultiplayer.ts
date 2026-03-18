@@ -691,6 +691,25 @@ export function useMultiplayer() {
     setWorldEvents(prev => [...prev.slice(-49), event]);
   }, []);
 
+  // ===== PvP: broadcast hit to victim =====
+  const broadcastPvpHit = useCallback((hitData: PvpHitData) => {
+    if (!channelRef.current) return;
+    const payload: ActionPayload = { i: playerId, t: 'pvp_hit', d: hitData };
+    channelRef.current.send({ type: 'broadcast', event: 'pa', payload });
+  }, [playerId]);
+
+  // ===== PvP: broadcast own death (informational for remote animations) =====
+  const broadcastPvpDeath = useCallback((deathData: PvpDeathData) => {
+    if (!channelRef.current) return;
+    const payload: ActionPayload = { i: playerId, t: 'pvp_death', d: deathData };
+    channelRef.current.send({ type: 'broadcast', event: 'pa', payload });
+  }, [playerId]);
+
+  // ===== PvP: register hit callback =====
+  const setPvpHitCallback = useCallback((cb: ((data: PvpHitData) => void) | null) => {
+    pvpHitCallbackRef.current = cb;
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -714,6 +733,7 @@ export function useMultiplayer() {
     displayName,
     updateDisplayName,
     remotePlayers: remotePlayersRef.current,
+    remotePlayersRef,
     chatMessages,
     worldEvents,
     enterWorld,
@@ -722,6 +742,9 @@ export function useMultiplayer() {
     sendChat,
     sendEmote,
     broadcastWorldEvent,
+    broadcastPvpHit,
+    broadcastPvpDeath,
+    setPvpHitCallback,
     channelRef,
   };
 }
