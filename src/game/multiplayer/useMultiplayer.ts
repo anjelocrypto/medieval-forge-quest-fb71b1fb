@@ -544,6 +544,7 @@ export function useMultiplayer() {
       st: Math.round(state.stamina), hu: Math.round(state.hunger),
       tp: Math.round(state.temperature), bm: state.buildMode,
       hs: state.horseState, em: state.emote, sp: state.isSpeaking,
+      cn: state.clanName, cc: state.clanColor,
     };
     ch.send({ type: 'broadcast', event: 'pme', payload: metaPayload });
     mpAudit('initial split state sent');

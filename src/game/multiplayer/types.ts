@@ -25,6 +25,8 @@ export interface NetworkPlayerState {
   horseState: string;
   emote: string | null; // current emote key or null
   isSpeaking: boolean; // voice chat push-to-talk active
+  clanName: string | null;
+  clanColor: string | null;
   timestamp: number;
 }
 
