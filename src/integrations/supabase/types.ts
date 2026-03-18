@@ -800,6 +800,7 @@ export type Database = {
             }
             Returns: undefined
           }
+      transition_war_states: { Args: never; Returns: Json }
       update_wallet_last_position:
         | {
             Args: {
