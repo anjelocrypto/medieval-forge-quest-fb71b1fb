@@ -1,6 +1,6 @@
 /**
- * Hook for clan & territory system — Phase 1 foundation.
- * Handles clan CRUD, membership, territory ownership, and local state.
+ * Hook for clan & territory system — Phase 2: challenge/war foundation.
+ * Handles clan CRUD, membership, territory ownership, challenges, and local state.
  */
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -46,7 +46,24 @@ export interface TerritoryInfo {
   owning_clan_name: string | null;
   owning_clan_color: ClanColor | null;
   claimed_at: string | null;
-  war_state: 'peaceful' | 'contested' | 'cooldown';
+  war_state: 'peaceful' | 'contested' | 'active_war' | 'cooldown';
+}
+
+export interface ChallengeInfo {
+  id: string;
+  territory_id: string;
+  territory_name: string;
+  attacker_clan_id: string;
+  attacker_clan_name: string;
+  attacker_clan_color: string;
+  defender_clan_id: string;
+  defender_clan_name: string;
+  defender_clan_color: string;
+  status: 'pending' | 'active' | 'resolved' | 'cancelled' | 'expired';
+  war_starts_at: string;
+  war_ends_at: string;
+  cooldown_ends_at: string;
+  created_at: string;
 }
 
 export type ClanColor =
@@ -80,28 +97,43 @@ export const CLAN_COLOR_OPTIONS: { value: ClanColor; label: string; hex: string 
   { value: 'obsidian', label: 'Obsidian', hex: '#2c3e50' },
 ];
 
+// ========== Helper for session-authenticated RPCs ==========
+function getSession() {
+  const session = loadWalletSession();
+  if (!session?.wallet_address || !session.session_token) return null;
+  return session;
+}
+
+async function callRpc<T>(name: string, params: Record<string, unknown>): Promise<{ data: T | null; error: string | null }> {
+  try {
+    const { data, error } = await supabase.rpc(name as any, params as any);
+    if (error) return { data: null, error: error.message };
+    return { data: data as T, error: null };
+  } catch (err: any) {
+    return { data: null, error: err.message || 'RPC call failed' };
+  }
+}
+
 export function useClanSystem() {
   const [myClan, setMyClan] = useState<MyClanInfo | null>(null);
   const [clans, setClans] = useState<ClanInfo[]>([]);
   const [territories, setTerritories] = useState<TerritoryInfo[]>([]);
   const [clanMembers, setClanMembers] = useState<ClanMemberInfo[]>([]);
+  const [challenges, setChallenges] = useState<ChallengeInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const loadedRef = useRef(false);
 
-  // Load my clan info
+  // ========== Loaders ==========
   const loadMyClan = useCallback(async () => {
-    const session = loadWalletSession();
-    if (!session?.wallet_address) { setMyClan(null); return; }
+    const session = getSession();
+    if (!session) { setMyClan(null); return; }
     try {
-      const { data } = await supabase.rpc('get_my_clan', {
-        _wallet_address: session.wallet_address,
-      } as any);
+      const { data } = await supabase.rpc('get_my_clan', { _wallet_address: session.wallet_address } as any);
       setMyClan(data as unknown as MyClanInfo | null);
     } catch { /* silent */ }
   }, []);
 
-  // Load all clans
   const loadClans = useCallback(async () => {
     try {
       const { data } = await supabase.rpc('get_clans' as any, { _limit: 50 });
@@ -110,7 +142,6 @@ export function useClanSystem() {
     } catch { /* silent */ }
   }, []);
 
-  // Load clan members
   const loadClanMembers = useCallback(async (clanId?: string) => {
     const id = clanId || myClan?.clan_id;
     if (!id) { setClanMembers([]); return; }
@@ -121,12 +152,19 @@ export function useClanSystem() {
     } catch { setClanMembers([]); }
   }, [myClan?.clan_id]);
 
-  // Load territories
   const loadTerritories = useCallback(async () => {
     try {
       const { data } = await supabase.rpc('get_territories' as any);
       const parsed = typeof data === 'string' ? JSON.parse(data) : data;
       setTerritories(Array.isArray(parsed) ? parsed : []);
+    } catch { /* silent */ }
+  }, []);
+
+  const loadChallenges = useCallback(async () => {
+    try {
+      const { data } = await supabase.rpc('get_active_challenges' as any, { _limit: 50 });
+      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+      setChallenges(Array.isArray(parsed) ? parsed : []);
     } catch { /* silent */ }
   }, []);
 
@@ -137,193 +175,126 @@ export function useClanSystem() {
     loadMyClan();
     loadClans();
     loadTerritories();
-  }, [loadMyClan, loadClans, loadTerritories]);
+    loadChallenges();
+  }, [loadMyClan, loadClans, loadTerritories, loadChallenges]);
 
-  // Create clan
+  // ========== Mutations ==========
+  const withLoading = useCallback(async <T>(fn: () => Promise<T>): Promise<T> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await fn();
+      return result;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const createClan = useCallback(async (name: string, color: ClanColor): Promise<string | null> => {
-    const session = loadWalletSession();
-    if (!session?.wallet_address || !session.session_token) {
-      setError('Wallet session required');
-      return null;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const { data } = await supabase.rpc('create_clan' as any, {
-        _wallet_address: session.wallet_address,
-        _session_token: session.session_token,
-        _clan_name: name,
-        _clan_color: color,
+    const session = getSession();
+    if (!session) { setError('Wallet session required'); return null; }
+    return withLoading(async () => {
+      const { data, error: err } = await callRpc<any>('create_clan', {
+        _wallet_address: session.wallet_address, _session_token: session.session_token,
+        _clan_name: name, _clan_color: color,
       });
-      const result = data as any;
-      if (!result?.success) {
-        setError(result?.error || 'Failed to create clan');
-        setLoading(false);
-        return null;
-      }
-      await loadMyClan();
-      await loadClans();
-      setLoading(false);
-      return result.clan_id;
-    } catch (err: any) {
-      setError(err.message || 'Failed to create clan');
-      setLoading(false);
-      return null;
-    }
-  }, [loadMyClan, loadClans]);
+      if (!data?.success) { setError(data?.error || err || 'Failed'); return null; }
+      await Promise.all([loadMyClan(), loadClans()]);
+      return data.clan_id;
+    });
+  }, [loadMyClan, loadClans, withLoading]);
 
-  // Join clan
   const joinClan = useCallback(async (clanId: string): Promise<boolean> => {
-    const session = loadWalletSession();
-    if (!session?.wallet_address || !session.session_token) {
-      setError('Wallet session required');
-      return false;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const { data } = await supabase.rpc('join_clan' as any, {
-        _wallet_address: session.wallet_address,
-        _session_token: session.session_token,
-        _clan_id: clanId,
+    const session = getSession();
+    if (!session) { setError('Wallet session required'); return false; }
+    return withLoading(async () => {
+      const { data, error: err } = await callRpc<any>('join_clan', {
+        _wallet_address: session.wallet_address, _session_token: session.session_token, _clan_id: clanId,
       });
-      const result = data as any;
-      if (!result?.success) {
-        setError(result?.error || 'Failed to join clan');
-        setLoading(false);
-        return false;
-      }
-      await loadMyClan();
-      await loadClans();
-      setLoading(false);
+      if (!data?.success) { setError(data?.error || err || 'Failed'); return false; }
+      await Promise.all([loadMyClan(), loadClans()]);
       return true;
-    } catch (err: any) {
-      setError(err.message || 'Failed to join clan');
-      setLoading(false);
-      return false;
-    }
-  }, [loadMyClan, loadClans]);
+    });
+  }, [loadMyClan, loadClans, withLoading]);
 
-  // Leave clan
   const leaveClan = useCallback(async (): Promise<boolean> => {
-    const session = loadWalletSession();
-    if (!session?.wallet_address || !session.session_token) {
-      setError('Wallet session required');
-      return false;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const { data } = await supabase.rpc('leave_clan' as any, {
-        _wallet_address: session.wallet_address,
-        _session_token: session.session_token,
+    const session = getSession();
+    if (!session) { setError('Wallet session required'); return false; }
+    return withLoading(async () => {
+      const { data, error: err } = await callRpc<any>('leave_clan', {
+        _wallet_address: session.wallet_address, _session_token: session.session_token,
       });
-      const result = data as any;
-      if (!result?.success) {
-        setError(result?.error || 'Failed to leave clan');
-        setLoading(false);
-        return false;
-      }
+      if (!data?.success) { setError(data?.error || err || 'Failed'); return false; }
       setMyClan(null);
-      await loadClans();
-      await loadTerritories();
-      setLoading(false);
+      await Promise.all([loadClans(), loadTerritories(), loadChallenges()]);
       return true;
-    } catch (err: any) {
-      setError(err.message || 'Failed to leave clan');
-      setLoading(false);
-      return false;
-    }
-  }, [loadClans, loadTerritories]);
+    });
+  }, [loadClans, loadTerritories, loadChallenges, withLoading]);
 
-  // Claim territory
-  const claimTerritory = useCallback(async (
-    territoryId: string,
-    playerX?: number,
-    playerZ?: number,
-  ): Promise<boolean> => {
-    const session = loadWalletSession();
-    if (!session?.wallet_address || !session.session_token) {
-      setError('Wallet session required');
-      return false;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const { data } = await supabase.rpc('claim_territory' as any, {
-        _wallet_address: session.wallet_address,
-        _session_token: session.session_token,
-        _territory_id: territoryId,
-        _player_x: playerX ?? null,
-        _player_z: playerZ ?? null,
+  const claimTerritory = useCallback(async (territoryId: string, playerX?: number, playerZ?: number): Promise<boolean> => {
+    const session = getSession();
+    if (!session) { setError('Wallet session required'); return false; }
+    return withLoading(async () => {
+      const { data, error: err } = await callRpc<any>('claim_territory', {
+        _wallet_address: session.wallet_address, _session_token: session.session_token,
+        _territory_id: territoryId, _player_x: playerX ?? null, _player_z: playerZ ?? null,
       });
-      const result = data as any;
-      if (!result?.success) {
-        setError(result?.error || 'Failed to claim territory');
-        setLoading(false);
-        return false;
-      }
+      if (!data?.success) { setError(data?.error || err || 'Failed'); return false; }
       await loadTerritories();
-      setLoading(false);
       return true;
-    } catch (err: any) {
-      setError(err.message || 'Failed to claim territory');
-      setLoading(false);
-      return false;
-    }
-  }, [loadTerritories]);
+    });
+  }, [loadTerritories, withLoading]);
 
-  // Release territory
   const releaseTerritory = useCallback(async (territoryId: string): Promise<boolean> => {
-    const session = loadWalletSession();
-    if (!session?.wallet_address || !session.session_token) {
-      setError('Wallet session required');
-      return false;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const { data } = await supabase.rpc('release_territory' as any, {
-        _wallet_address: session.wallet_address,
-        _session_token: session.session_token,
-        _territory_id: territoryId,
+    const session = getSession();
+    if (!session) { setError('Wallet session required'); return false; }
+    return withLoading(async () => {
+      const { data, error: err } = await callRpc<any>('release_territory', {
+        _wallet_address: session.wallet_address, _session_token: session.session_token, _territory_id: territoryId,
       });
-      const result = data as any;
-      if (!result?.success) {
-        setError(result?.error || 'Failed to release territory');
-        setLoading(false);
-        return false;
-      }
+      if (!data?.success) { setError(data?.error || err || 'Failed'); return false; }
       await loadTerritories();
-      setLoading(false);
       return true;
-    } catch (err: any) {
-      setError(err.message || 'Failed to release territory');
-      setLoading(false);
-      return false;
-    }
-  }, [loadTerritories]);
+    });
+  }, [loadTerritories, withLoading]);
+
+  const challengeTerritory = useCallback(async (territoryId: string): Promise<boolean> => {
+    const session = getSession();
+    if (!session) { setError('Wallet session required'); return false; }
+    return withLoading(async () => {
+      const { data, error: err } = await callRpc<any>('challenge_territory', {
+        _wallet_address: session.wallet_address, _session_token: session.session_token, _territory_id: territoryId,
+      });
+      if (!data?.success) { setError(data?.error || err || 'Failed'); return false; }
+      await Promise.all([loadTerritories(), loadChallenges()]);
+      return true;
+    });
+  }, [loadTerritories, loadChallenges, withLoading]);
+
+  const cancelChallenge = useCallback(async (challengeId: string): Promise<boolean> => {
+    const session = getSession();
+    if (!session) { setError('Wallet session required'); return false; }
+    return withLoading(async () => {
+      const { data, error: err } = await callRpc<any>('cancel_challenge', {
+        _wallet_address: session.wallet_address, _session_token: session.session_token, _challenge_id: challengeId,
+      });
+      if (!data?.success) { setError(data?.error || err || 'Failed'); return false; }
+      await Promise.all([loadTerritories(), loadChallenges()]);
+      return true;
+    });
+  }, [loadTerritories, loadChallenges, withLoading]);
 
   // Refresh all
   const refresh = useCallback(async () => {
-    await Promise.all([loadMyClan(), loadClans(), loadTerritories()]);
-  }, [loadMyClan, loadClans, loadTerritories]);
+    await Promise.all([loadMyClan(), loadClans(), loadTerritories(), loadChallenges()]);
+  }, [loadMyClan, loadClans, loadTerritories, loadChallenges]);
 
   return {
-    myClan,
-    clans,
-    territories,
-    clanMembers,
-    loading,
-    error,
-    setError,
-    createClan,
-    joinClan,
-    leaveClan,
-    claimTerritory,
-    releaseTerritory,
-    loadClanMembers,
-    refresh,
-    loadTerritories,
+    myClan, clans, territories, clanMembers, challenges,
+    loading, error, setError,
+    createClan, joinClan, leaveClan,
+    claimTerritory, releaseTerritory,
+    challengeTerritory, cancelChallenge,
+    loadClanMembers, refresh, loadTerritories, loadChallenges,
   };
 }

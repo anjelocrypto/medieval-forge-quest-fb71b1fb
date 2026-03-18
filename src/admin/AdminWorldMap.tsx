@@ -303,12 +303,13 @@ function drawMap(
     }
   }
 
-  // ===== TERRITORY OWNERSHIP OVERLAY =====
+  // ===== TERRITORY OWNERSHIP OVERLAY (war-state aware) =====
   if (layers.regions && territories.length > 0) {
     for (const t of territories) {
       const [cx, cy] = toS(t.center_x, t.center_z);
       const sr = t.radius * z;
       if (!onScreen(cx, cy, W, H, sr)) continue;
+      const warState = (t as any).war_state || 'peaceful';
       const color = t.owning_clan_color
         ? CLAN_COLOR_HEX[t.owning_clan_color as ClanColor] || '#666'
         : null;
@@ -318,11 +319,34 @@ function drawMap(
         ctx.arc(cx, cy, sr, 0, Math.PI * 2);
         ctx.fillStyle = color + '18';
         ctx.fill();
-        ctx.strokeStyle = color + '60';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([8, 4]);
-        ctx.stroke();
-        ctx.setLineDash([]);
+        // War-state aware border
+        if (warState === 'contested') {
+          ctx.strokeStyle = '#e67e22cc';
+          ctx.lineWidth = 3;
+          ctx.setLineDash([10, 5]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        } else if (warState === 'active_war') {
+          ctx.strokeStyle = '#e74c3cee';
+          ctx.lineWidth = 3.5;
+          ctx.stroke();
+          // Outer glow ring
+          ctx.strokeStyle = '#e74c3c40';
+          ctx.lineWidth = 7;
+          ctx.stroke();
+        } else if (warState === 'cooldown') {
+          ctx.strokeStyle = '#3498db80';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 6]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        } else {
+          ctx.strokeStyle = color + '60';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([8, 4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
         // Clan name label
         const labelSize = Math.max(9, Math.min(14, z * 12));
         ctx.font = `bold ${labelSize}px sans-serif`;
@@ -333,6 +357,16 @@ function drawMap(
         ctx.font = `${Math.max(8, labelSize - 2)}px sans-serif`;
         ctx.fillStyle = color + '88';
         ctx.fillText(t.name, cx, cy + sr * 0.15);
+        // War state label
+        if (warState !== 'peaceful') {
+          const stateLabel = warState === 'contested' ? '⚔️ CHALLENGED'
+            : warState === 'active_war' ? '🔥 WAR ACTIVE'
+            : '🛡️ COOLDOWN';
+          const stateColor = warState === 'contested' ? '#e67e22' : warState === 'active_war' ? '#e74c3c' : '#3498db';
+          ctx.font = `bold ${Math.max(8, labelSize - 1)}px sans-serif`;
+          ctx.fillStyle = stateColor + 'dd';
+          ctx.fillText(stateLabel, cx, cy + sr * 0.35);
+        }
       } else {
         // Unclaimed — subtle dashed ring
         ctx.beginPath();
@@ -836,6 +870,7 @@ export default function AdminWorldMap() {
     'collision objects': collisionData.circles.length + collisionData.boxes.length,
     territories: territories.length,
     'claimed territories': territories.filter(t => t.owning_clan_id).length,
+    'contested territories': territories.filter(t => (t as any).war_state === 'contested' || (t as any).war_state === 'active_war').length,
   }), [collisionData, territories]);
 
   // Render

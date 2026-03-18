@@ -55,23 +55,45 @@ function drawMinimap(
   const cx = fullMap ? 0 : playerX;
   const cz = fullMap ? 0 : playerZ;
 
-  // Region colors (base)
+  // Region colors (base) — war-state aware
   for (const r of REGIONS) {
     const rx = (r.center[0] - cx) * scale + half;
     const rz = (r.center[1] - cz) * scale + half;
     const rr = r.radius * scale;
-    // Check if this region has territory ownership
     const territory = territories?.find(t => t.id === r.id);
+    const warState = territory?.war_state || 'peaceful';
     if (territory?.owning_clan_color) {
       const clanHex = CLAN_COLOR_HEX[territory.owning_clan_color as ClanColor] || r.color;
       ctx.fillStyle = clanHex + '50';
       ctx.beginPath();
       ctx.arc(rx, rz, rr, 0, Math.PI * 2);
       ctx.fill();
-      // Border ring
-      ctx.strokeStyle = clanHex + '80';
-      ctx.lineWidth = fullMap ? 2.5 : 1.5;
-      ctx.stroke();
+      // War-state ring styling
+      if (warState === 'contested') {
+        ctx.strokeStyle = '#e67e22cc';
+        ctx.lineWidth = fullMap ? 3 : 2;
+        ctx.setLineDash([6, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      } else if (warState === 'active_war') {
+        ctx.strokeStyle = '#e74c3cee';
+        ctx.lineWidth = fullMap ? 3.5 : 2.5;
+        ctx.stroke();
+        // Pulsing inner glow
+        ctx.strokeStyle = '#e74c3c60';
+        ctx.lineWidth = fullMap ? 6 : 4;
+        ctx.stroke();
+      } else if (warState === 'cooldown') {
+        ctx.strokeStyle = '#3498db80';
+        ctx.lineWidth = fullMap ? 2 : 1.5;
+        ctx.setLineDash([3, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      } else {
+        ctx.strokeStyle = clanHex + '80';
+        ctx.lineWidth = fullMap ? 2.5 : 1.5;
+        ctx.stroke();
+      }
     } else {
       ctx.fillStyle = r.color + '40';
       ctx.beginPath();
