@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { NetworkPlayerState } from './types';
@@ -6,6 +6,8 @@ import { SurvivalState } from '../types';
 import { HorseData } from '../systems/HorseData';
 import { MountedDebugData } from '../components/Player';
 import { CharacterType } from '../context/CharacterContext';
+import { loadWalletSession } from '../hooks/usePlayerAccount';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   playerId: string;
@@ -32,6 +34,31 @@ export const MultiplayerBroadcaster = forwardRef<THREE.Object3D, Props>(function
   survival, isMounted, horse, moveSpeedRef, isRunningRef, isGroundedRef, attackAnimRef,
   mountedDebugRef, buildMode, emote, isSpeaking, onUpdateLocalState,
 }, _ref) {
+  const clanRef = useRef<{ name: string | null; color: string | null }>({ name: null, color: null });
+
+  // Load clan info periodically
+  useEffect(() => {
+    const loadClan = async () => {
+      const session = loadWalletSession();
+      if (!session?.wallet_address) {
+        clanRef.current = { name: null, color: null };
+        return;
+      }
+      try {
+        const { data } = await supabase.rpc('get_my_clan', { _wallet_address: session.wallet_address } as any);
+        if (data && typeof data === 'object' && 'clan_name' in (data as any)) {
+          const d = data as any;
+          clanRef.current = { name: d.clan_name, color: d.clan_color };
+        } else {
+          clanRef.current = { name: null, color: null };
+        }
+      } catch { clanRef.current = { name: null, color: null }; }
+    };
+    loadClan();
+    const interval = setInterval(loadClan, 15000); // refresh every 15s
+    return () => clearInterval(interval);
+  }, []);
+
   useFrame(() => {
     const pos = playerPositionRef.current;
     const rot = playerRotationRef.current;
@@ -60,6 +87,8 @@ export const MultiplayerBroadcaster = forwardRef<THREE.Object3D, Props>(function
       horseState: horse.state,
       emote,
       isSpeaking,
+      clanName: clanRef.current.name,
+      clanColor: clanRef.current.color,
       timestamp: Date.now(),
     };
     onUpdateLocalState(state);
