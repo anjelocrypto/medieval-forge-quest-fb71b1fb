@@ -393,9 +393,20 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     // Reset PvP state on respawn
     lastDamageSourceRef.current = null;
     pvpKillLoggedRef.current = false;
-    setPvpNotification('⚔️ You have respawned');
-    setTimeout(() => setPvpNotification(null), 3000);
+    // Respawn invulnerability: 4 seconds
+    respawnInvulnRef.current = Date.now() + 4000;
+    setPvpNotification('⚔️ Respawned — invulnerable for 4s');
+    setTimeout(() => setPvpNotification(null), 4000);
   }, [updateSurvival]);
+
+  // Invulnerability countdown display
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const remaining = Math.max(0, respawnInvulnRef.current - Date.now());
+      setInvulnTimeLeft(remaining > 100 ? Math.ceil(remaining / 1000) : 0);
+    }, 200);
+    return () => clearInterval(timer);
+  }, []);
 
   // === PVP: Register incoming hit callback ===
   useEffect(() => {
@@ -413,6 +424,8 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
       if (myClanName && hitData.attackerClanId && clanSystem.myClan?.clan_id === hitData.attackerClanId) return;
       // Must be in a clan to participate in PvP
       if (!myClanName) return;
+      // Respawn invulnerability — cannot receive PvP damage
+      if (Date.now() < respawnInvulnRef.current) return;
 
       // Anti-spam: cooldown per attacker
       const now = Date.now();
@@ -424,10 +437,23 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
       const clampedDmg = Math.min(hitData.damage, 20); // cap max PvP damage per hit
       pendingPlayerDamageRef.current += clampedDmg;
 
+      // PvP-specific damage flash (distinct from NPC)
+      setPvpDamageFlash(true);
+      setTimeout(() => setPvpDamageFlash(false), 300);
+
+      // Resolve attacker display info from remote players
+      const attackerRemote = multiplayer.remotePlayersRef?.current?.get(attackerPlayerId);
+      const attackerName = attackerRemote?.displayName || 'Unknown';
+      const attackerClanColor = attackerRemote?.clanColor
+        ? CLAN_COLOR_HEX[attackerRemote.clanColor as ClanColor] || '#e74c3c'
+        : '#e74c3c';
+
       // Track last damage source
       lastDamageSourceRef.current = {
         attackerId: attackerPlayerId,
         attackerWallet: hitData.attackerWallet,
+        attackerName,
+        attackerClanColor,
         timestamp: now,
       };
     });
@@ -442,8 +468,8 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     const source = lastDamageSourceRef.current;
     if (!source) return; // not a PvP death
 
-    // Show death notification
-    setPvpNotification('💀 You were killed in PvP combat');
+    // Show death notification with killer info
+    setPvpNotification(`💀 Killed by ${source.attackerName}`);
     setTimeout(() => setPvpNotification(null), 4000);
 
     const session = loadWalletSession();
@@ -454,6 +480,20 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     if (now - pvpDeathLogCooldownRef.current < 5000) return;
     pvpDeathLogCooldownRef.current = now;
     pvpKillLoggedRef.current = true;
+
+    // Add to kill feed
+    const myName = multiplayer.displayName;
+    const myClanColor = clanSystem.myClan?.clan_color
+      ? CLAN_COLOR_HEX[clanSystem.myClan.clan_color as ClanColor] || '#27ae60'
+      : '#27ae60';
+    setKillFeedEntries(prev => [...prev, {
+      id: crypto.randomUUID(),
+      killerName: source.attackerName,
+      killerColor: source.attackerClanColor,
+      victimName: myName,
+      victimColor: myClanColor,
+      timestamp: now,
+    }].slice(-5));
 
     // Broadcast death for remote animation
     multiplayer.broadcastPvpDeath({
@@ -477,7 +517,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
       else if (data?.success) console.log('[PvP] War kill logged successfully');
       else console.log('[PvP] War kill not logged (no active war or not in territory):', data?.error);
     });
-  }, [survival.health, multiplayer, playerPositionRef]);
+  }, [survival.health, multiplayer, playerPositionRef, clanSystem.myClan]);
 
   // === PVP: Attacker broadcasts hit ===
   const handlePvpHit = useCallback((victimId: string, damage: number, _isCombo: boolean) => {
@@ -485,11 +525,14 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     const session = loadWalletSession();
     if (!session?.wallet_address) return;
     if (!clanSystem.myClan?.clan_id) return;
+    // Cannot deal PvP damage during respawn invulnerability
+    if (Date.now() < respawnInvulnRef.current) return;
 
     // Show hit marker feedback
     setPvpHitMarker(true);
-    setTimeout(() => setPvpHitMarker(false), 200);
+    setTimeout(() => setPvpHitMarker(false), 300);
 
+    // Add to local kill feed (attacker side sees it too via remote death broadcast)
     multiplayer.broadcastPvpHit({
       victimId,
       damage,
