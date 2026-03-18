@@ -7,6 +7,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { loadWalletSession } from './usePlayerAccount';
 
 // ========== Types ==========
+export interface ClanMemberInfo {
+  wallet_address: string;
+  role: 'leader' | 'member';
+  joined_at: string;
+  display_name: string;
+  character_type: string;
+}
+
 export interface ClanInfo {
   id: string;
   name: string;
@@ -76,6 +84,7 @@ export function useClanSystem() {
   const [myClan, setMyClan] = useState<MyClanInfo | null>(null);
   const [clans, setClans] = useState<ClanInfo[]>([]);
   const [territories, setTerritories] = useState<TerritoryInfo[]>([]);
+  const [clanMembers, setClanMembers] = useState<ClanMemberInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const loadedRef = useRef(false);
@@ -100,6 +109,17 @@ export function useClanSystem() {
       setClans(Array.isArray(parsed) ? parsed : []);
     } catch { /* silent */ }
   }, []);
+
+  // Load clan members
+  const loadClanMembers = useCallback(async (clanId?: string) => {
+    const id = clanId || myClan?.clan_id;
+    if (!id) { setClanMembers([]); return; }
+    try {
+      const { data } = await supabase.rpc('get_clan_members' as any, { _clan_id: id });
+      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+      setClanMembers(Array.isArray(parsed) ? parsed : []);
+    } catch { setClanMembers([]); }
+  }, [myClan?.clan_id]);
 
   // Load territories
   const loadTerritories = useCallback(async () => {
@@ -253,6 +273,37 @@ export function useClanSystem() {
     }
   }, [loadTerritories]);
 
+  // Release territory
+  const releaseTerritory = useCallback(async (territoryId: string): Promise<boolean> => {
+    const session = loadWalletSession();
+    if (!session?.wallet_address || !session.session_token) {
+      setError('Wallet session required');
+      return false;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await supabase.rpc('release_territory' as any, {
+        _wallet_address: session.wallet_address,
+        _session_token: session.session_token,
+        _territory_id: territoryId,
+      });
+      const result = data as any;
+      if (!result?.success) {
+        setError(result?.error || 'Failed to release territory');
+        setLoading(false);
+        return false;
+      }
+      await loadTerritories();
+      setLoading(false);
+      return true;
+    } catch (err: any) {
+      setError(err.message || 'Failed to release territory');
+      setLoading(false);
+      return false;
+    }
+  }, [loadTerritories]);
+
   // Refresh all
   const refresh = useCallback(async () => {
     await Promise.all([loadMyClan(), loadClans(), loadTerritories()]);
@@ -262,6 +313,7 @@ export function useClanSystem() {
     myClan,
     clans,
     territories,
+    clanMembers,
     loading,
     error,
     setError,
@@ -269,6 +321,8 @@ export function useClanSystem() {
     joinClan,
     leaveClan,
     claimTerritory,
+    releaseTerritory,
+    loadClanMembers,
     refresh,
     loadTerritories,
   };
