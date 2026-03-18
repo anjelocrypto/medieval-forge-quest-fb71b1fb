@@ -2,11 +2,11 @@
  * Menu UI overlay with Guest / Create Account / Log In flows.
  * Wallet connection via Phantom is optional — guests play without a DB account.
  */
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { usePhantomWallet } from '../hooks/usePhantomWallet';
 import { usePlayerAccount, loadWalletSession, clearWalletSession } from '../hooks/usePlayerAccount';
 import { useCharacter, CharacterType } from '../context/CharacterContext';
-import { sanitizeDisplayName } from '../utils/profanityFilter';
+import { sanitizeDisplayName, validateDisplayName, NAME_MIN_LENGTH, NAME_MAX_LENGTH } from '../utils/profanityFilter';
 
 interface Props {
   onEnterWorld: (playerName: string) => Promise<void>;
@@ -19,6 +19,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
   const [playerName, setPlayerName] = useState('');
   const [communityName, setCommunityName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [nameValidation, setNameValidation] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [menuMode, setMenuMode] = useState<MenuMode>('main');
 
@@ -44,11 +45,20 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     if (playerAccount.error) setError(playerAccount.error);
   }, [playerAccount.error]);
 
-  // === GUEST FLOW ===
-  const sanitizeName = (name: string): string => sanitizeDisplayName(name);
+  // Real-time name validation
+  const handleNameChange = useCallback((value: string) => {
+    setPlayerName(value);
+    if (!value.trim()) {
+      setNameValidation(null);
+      return;
+    }
+    const result = validateDisplayName(value);
+    setNameValidation(result.error);
+  }, []);
 
+  // === GUEST FLOW ===
   const handleGuestPlay = async () => {
-    const name = sanitizeName(playerName);
+    const name = sanitizeDisplayName(playerName);
     setBusy(true);
     setError(null);
     try {
@@ -62,7 +72,17 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
 
   // === CREATE ACCOUNT FLOW ===
   const handleCreateAccount = async () => {
+    // Validate name before proceeding
+    if (playerName.trim()) {
+      const result = validateDisplayName(playerName);
+      if (!result.valid) {
+        setError(result.error || 'Invalid display name');
+        return;
+      }
+    }
+
     setBusy(true);
+    setMenuMode('create');
     setError(null);
 
     // 1. Connect Phantom (with signature)
@@ -73,7 +93,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     }
 
     // 2. Create DB account
-    const name = sanitizeName(playerName);
+    const name = sanitizeDisplayName(playerName);
     const community = communityName.replace(/<[^>]*>/g, '').trim().slice(0, 30) || null;
     const dbCharType = character;
 
@@ -99,6 +119,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
   // === LOGIN FLOW ===
   const handleLogin = async () => {
     setBusy(true);
+    setMenuMode('login');
     setError(null);
 
     // 1. Connect Phantom (with signature)
@@ -173,13 +194,15 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     );
   }
 
-  const inputStyle = {
+  const inputStyle: React.CSSProperties = {
     background: 'rgba(255,255,255,0.06)',
     border: '1px solid rgba(255,255,255,0.1)',
     color: '#e8d5b7',
   };
 
-  const labelStyle = { color: '#8a9ab5' };
+  const labelStyle: React.CSSProperties = { color: '#8a9ab5' };
+
+  const nameHasError = !!nameValidation && !!playerName.trim();
 
   return (
     <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
@@ -263,17 +286,35 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
         {/* Name input */}
         <div className="mb-3">
           <label className="block text-xs font-bold mb-1.5 uppercase tracking-wider" style={labelStyle}>
-            Your Name
+            Display Name
           </label>
           <input
             value={playerName}
-            onChange={e => setPlayerName(e.target.value)}
+            onChange={e => handleNameChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Enter your name..."
-            maxLength={20}
+            placeholder="Choose your name (2–20 chars)..."
+            maxLength={NAME_MAX_LENGTH}
             className="w-full px-4 py-3 rounded-lg text-sm outline-none transition-all focus:ring-2"
-            style={inputStyle}
+            style={{
+              ...inputStyle,
+              border: nameHasError
+                ? '1px solid rgba(255,80,80,0.4)'
+                : inputStyle.border,
+            }}
           />
+          <div className="flex justify-between mt-1 px-1">
+            <span style={{
+              fontSize: 10,
+              color: nameHasError ? 'hsl(0,60%,60%)' : 'rgba(138,154,181,0.5)',
+            }}>
+              {nameHasError ? `⚠️ ${nameValidation}` : `${playerName.trim().length}/${NAME_MAX_LENGTH}`}
+            </span>
+            {!playerName.trim() && (
+              <span style={{ fontSize: 10, color: 'rgba(138,154,181,0.4)' }}>
+                Default: Knight
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Community Name */}
@@ -327,7 +368,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
           <div className="flex gap-3">
             <button
               onClick={handleCreateAccount}
-              disabled={isBusy}
+              disabled={isBusy || nameHasError}
               className="flex-1 py-3 rounded-lg font-bold text-xs uppercase tracking-wider transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
               style={{
                 background: 'rgba(138,100,200,0.15)',
@@ -338,7 +379,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
               {isBusy && menuMode === 'create' ? '⏳...' : 'Create Account'}
             </button>
             <button
-              onClick={() => { setMenuMode('login'); handleLogin(); }}
+              onClick={handleLogin}
               disabled={isBusy}
               className="flex-1 py-3 rounded-lg font-bold text-xs uppercase tracking-wider transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
               style={{
