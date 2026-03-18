@@ -168,6 +168,13 @@ export function useClanSystem() {
     } catch { /* silent */ }
   }, []);
 
+  // Trigger war-state transitions on backend
+  const transitionWarStates = useCallback(async () => {
+    try {
+      await supabase.rpc('transition_war_states' as any);
+    } catch { /* silent */ }
+  }, []);
+
   // Initial load
   useEffect(() => {
     if (loadedRef.current) return;
@@ -177,6 +184,15 @@ export function useClanSystem() {
     loadTerritories();
     loadChallenges();
   }, [loadMyClan, loadClans, loadTerritories, loadChallenges]);
+
+  // Poll war-state transitions every 15s when challenges exist
+  useEffect(() => {
+    const iv = setInterval(async () => {
+      await transitionWarStates();
+      await Promise.all([loadTerritories(), loadChallenges()]);
+    }, 15000);
+    return () => clearInterval(iv);
+  }, [transitionWarStates, loadTerritories, loadChallenges]);
 
   // ========== Mutations ==========
   const withLoading = useCallback(async <T>(fn: () => Promise<T>): Promise<T> => {
