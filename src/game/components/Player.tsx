@@ -202,9 +202,11 @@ export function Player({
       if (isMounted) onDismountHorse();
       const timer = setTimeout(() => {
         if (groupRef.current) {
-          // Use safe spawn for respawn too
-          const spawn = findSafeSpawn(undefined, undefined, PLAYER_HEIGHT);
-          console.log('[Player] RESPAWN COMPLETE — teleporting to', spawn.x.toFixed(1), spawn.z.toFixed(1));
+          // Respawn at faction home kingdom
+          const session = (require('../hooks/usePlayerAccount')).loadWalletSession();
+          const factionId = (session as any)?.faction_id || undefined;
+          const spawn = findSafeSpawn(undefined, undefined, PLAYER_HEIGHT, factionId);
+          console.log('[Player] RESPAWN COMPLETE — teleporting to', spawn.x.toFixed(1), spawn.z.toFixed(1), 'faction:', factionId || 'guest');
           groupRef.current.position.set(spawn.x, spawn.y, spawn.z);
           playerPositionRef.current.set(spawn.x, spawn.y, spawn.z);
           velocityRef.current.set(0, 0, 0);
