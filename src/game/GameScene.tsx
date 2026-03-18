@@ -707,9 +707,6 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         </button>
       )}
 
-      {/* Character Select (F4) */}
-      <CharacterSelect />
-
       {/* Settings Panel (P key) */}
       <SettingsPanel
         open={settingsOpen}
