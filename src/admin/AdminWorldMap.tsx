@@ -804,6 +804,21 @@ export default function AdminWorldMap() {
 
   const collisionData = useMemo(() => buildCollisionData(), []);
 
+  // Territory data from backend
+  const [territories, setTerritories] = useState<TerritoryInfo[]>([]);
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const { data } = await supabase.rpc('get_territories' as any);
+        const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+        setTerritories(Array.isArray(parsed) ? parsed : []);
+      } catch { /* silent */ }
+    };
+    load();
+    const interval = setInterval(load, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
   const stats = useMemo(() => ({
     regions: REGIONS.length,
     settlements: SETTLEMENTS.length,
@@ -819,7 +834,9 @@ export default function AdminWorldMap() {
     'kingdom houses': KINGDOM_HOUSE_MAP.reduce((s, v) => s + v.houses.length, 0),
     landmarks: LANDMARKS.length,
     'collision objects': collisionData.circles.length + collisionData.boxes.length,
-  }), [collisionData]);
+    territories: territories.length,
+    'claimed territories': territories.filter(t => t.owning_clan_id).length,
+  }), [collisionData, territories]);
 
   // Render
   useEffect(() => {
@@ -831,8 +848,8 @@ export default function AdminWorldMap() {
     canvas.height = rect.height * dpr;
     const ctx = canvas.getContext('2d')!;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    drawMap(ctx, view, layers, collisionData, inspect);
-  }, [view, layers, collisionData, inspect]);
+    drawMap(ctx, view, layers, collisionData, inspect, territories);
+  }, [view, layers, collisionData, inspect, territories]);
 
   useEffect(() => {
     const handleResize = () => setView(v => ({ ...v }));
