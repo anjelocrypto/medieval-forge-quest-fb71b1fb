@@ -183,16 +183,20 @@ export function WarNotifications({ challenges, territories, myClan, playerX, pla
             }}
           >
             <span style={{ fontSize: 14 }}>
-              {currentTerritory.war_state === 'active_war' ? '🔥' : currentTerritory.war_state === 'contested' ? '⚔️' : '🛡️'}
+              {(currentTerritory.war_state as string) === 'active_war' ? '🔥' : (currentTerritory.war_state as string) === 'contested' ? '⚔️' : (currentTerritory.war_state as string) === 'pending_resolution' ? '⏳' : '🛡️'}
             </span>
             <div>
               <div style={{
                 fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
-                color: currentTerritory.war_state === 'active_war' ? 'hsl(0,70%,65%)'
-                  : currentTerritory.war_state === 'contested' ? 'hsl(30,70%,65%)'
+                color: (currentTerritory.war_state as string) === 'active_war' ? 'hsl(0,70%,65%)'
+                  : (currentTerritory.war_state as string) === 'contested' ? 'hsl(30,70%,65%)'
+                  : (currentTerritory.war_state as string) === 'pending_resolution' ? 'hsl(40,70%,65%)'
                   : 'hsl(210,50%,65%)',
               }}>
-                {currentTerritory.war_state === 'active_war' ? 'WAR ZONE' : currentTerritory.war_state === 'contested' ? 'CONTESTED TERRITORY' : 'COOLDOWN ZONE'}
+                {(currentTerritory.war_state as string) === 'active_war' ? 'WAR ZONE'
+                  : (currentTerritory.war_state as string) === 'contested' ? 'CONTESTED TERRITORY'
+                  : (currentTerritory.war_state as string) === 'pending_resolution' ? 'AWAITING RESOLUTION'
+                  : 'COOLDOWN ZONE'}
               </div>
               <div style={{ fontSize: 9, color: 'hsl(40,15%,50%)' }}>
                 {currentTerritory.name}
