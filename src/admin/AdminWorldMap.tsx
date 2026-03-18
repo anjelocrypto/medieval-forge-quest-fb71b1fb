@@ -303,6 +303,56 @@ function drawMap(
     }
   }
 
+  // ===== TERRITORY OWNERSHIP OVERLAY =====
+  if (layers.regions && territories.length > 0) {
+    for (const t of territories) {
+      const [cx, cy] = toS(t.center_x, t.center_z);
+      const sr = t.radius * z;
+      if (!onScreen(cx, cy, W, H, sr)) continue;
+      const color = t.owning_clan_color
+        ? CLAN_COLOR_HEX[t.owning_clan_color as ClanColor] || '#666'
+        : null;
+      if (color) {
+        // Filled zone
+        ctx.beginPath();
+        ctx.arc(cx, cy, sr, 0, Math.PI * 2);
+        ctx.fillStyle = color + '18';
+        ctx.fill();
+        ctx.strokeStyle = color + '60';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Clan name label
+        const labelSize = Math.max(9, Math.min(14, z * 12));
+        ctx.font = `bold ${labelSize}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = color + 'cc';
+        ctx.fillText(`🏴 ${t.owning_clan_name}`, cx, cy - sr * 0.15);
+        ctx.font = `${Math.max(8, labelSize - 2)}px sans-serif`;
+        ctx.fillStyle = color + '88';
+        ctx.fillText(t.name, cx, cy + sr * 0.15);
+      } else {
+        // Unclaimed — subtle dashed ring
+        ctx.beginPath();
+        ctx.arc(cx, cy, sr, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(150,150,150,0.15)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([6, 8]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        if (z >= LOD.MID) {
+          const labelSize = Math.max(8, Math.min(11, z * 10));
+          ctx.font = `${labelSize}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.fillStyle = 'rgba(150,150,150,0.35)';
+          ctx.fillText(`⬜ ${t.name}`, cx, cy);
+        }
+      }
+    }
+  }
+
   // ===== WATER =====
   if (layers.water) {
     // Rivers
