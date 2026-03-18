@@ -59,6 +59,7 @@ function WarStateBadge({ state, challenge }: { state: string; challenge?: Challe
     peaceful: { icon: '☮️', label: 'Peaceful', bg: 'hsla(120,30%,30%,0.1)', color: 'hsl(120,40%,60%)', border: 'hsla(120,30%,40%,0.2)' },
     contested: { icon: '⚔️', label: 'Challenged', bg: 'hsla(30,60%,40%,0.15)', color: 'hsl(30,70%,65%)', border: 'hsla(30,60%,50%,0.3)' },
     active_war: { icon: '🔥', label: 'WAR ACTIVE', bg: 'hsla(0,60%,40%,0.2)', color: 'hsl(0,70%,65%)', border: 'hsla(0,60%,50%,0.4)' },
+    pending_resolution: { icon: '⏳', label: 'AWAITING RESOLUTION', bg: 'hsla(40,60%,40%,0.15)', color: 'hsl(40,70%,65%)', border: 'hsla(40,60%,50%,0.3)' },
     cooldown: { icon: '🛡️', label: 'Cooldown', bg: 'hsla(210,40%,40%,0.1)', color: 'hsl(210,50%,65%)', border: 'hsla(210,40%,50%,0.2)' },
   };
   const c = configs[state] || configs.peaceful;
@@ -74,6 +75,11 @@ function WarStateBadge({ state, challenge }: { state: string; challenge?: Challe
       {challenge && state === 'active_war' && (
         <span style={{ fontSize: 9, color: 'hsl(0,50%,55%)', marginLeft: 4 }}>
           Ends {formatCountdown(challenge.war_ends_at)}
+        </span>
+      )}
+      {state === 'pending_resolution' && (
+        <span style={{ fontSize: 9, color: 'hsl(40,50%,55%)', marginLeft: 4 }}>
+          Admin review
         </span>
       )}
     </div>
@@ -279,6 +285,7 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
                               <span style={{ fontSize: 9, color: 'hsl(30,50%,55%)' }}>
                                 {ch.status === 'pending' ? `⏳ War in ${formatCountdown(ch.war_starts_at)}`
                                   : ch.status === 'active' ? `🔥 Ends ${formatCountdown(ch.war_ends_at)}`
+                                  : ch.status === 'pending_resolution' ? `⏳ Awaiting admin resolution`
                                   : `🛡️ Cooldown ${formatCountdown(ch.cooldown_ends_at)}`}
                               </span>
                               {isAttacker && ch.status === 'pending' && clan.myClan?.role === 'leader' && (
@@ -525,7 +532,9 @@ export function ClanPanel({ open, onClose, playerX, playerZ }: Props) {
                         challenged: { icon: '⚔️', label: 'Challenged', color: 'hsl(30,60%,60%)' },
                         war_cancelled: { icon: '🚫', label: 'Challenge Cancelled', color: 'hsl(0,30%,55%)' },
                         war_started: { icon: '🔥', label: 'War Started', color: 'hsl(0,60%,60%)' },
+                        war_ended_pending_resolution: { icon: '⏳', label: 'Awaiting Resolution', color: 'hsl(40,60%,60%)' },
                         war_resolved_defender_held: { icon: '🛡️', label: 'Defender Held', color: 'hsl(210,50%,60%)' },
+                        war_resolved_attacker_won: { icon: '⚔️', label: 'Attacker Won', color: 'hsl(0,60%,60%)' },
                       };
                       const cfg = eventConfig[h.event_type] || { icon: '📋', label: h.event_type, color: 'hsl(40,15%,55%)' };
                       const clanHex = h.clan_color ? (CLAN_COLOR_HEX[h.clan_color as ClanColor] || '#888') : null;

@@ -78,15 +78,23 @@ export function WarNotifications({ challenges, territories, myClan, playerX, pla
           color: 'hsl(0,70%,65%)',
           borderColor: 'hsla(0,70%,50%,0.6)',
         });
-      } else if (prevStatus === 'active' && ch.status === 'resolved') {
+      } else if (prevStatus === 'active' && ch.status === 'pending_resolution') {
+        addToast({
+          icon: '⏳',
+          title: 'War Ended — Awaiting Resolution',
+          subtitle: `${ch.territory_name} — Admin will decide the outcome`,
+          color: 'hsl(40,70%,65%)',
+          borderColor: 'hsla(40,70%,50%,0.5)',
+        });
+      } else if ((prevStatus === 'pending_resolution' || prevStatus === 'active') && ch.status === 'resolved') {
         const defenderHeld = ch.resolution === 'defender_held';
         const weWon = (defenderHeld && !isAttacker) || (!defenderHeld && isAttacker);
         addToast({
           icon: defenderHeld ? '🛡️' : '⚔️',
-          title: weWon ? 'Victory!' : 'Territory Defended',
+          title: weWon ? 'Victory!' : defenderHeld ? 'Territory Defended' : 'Territory Lost!',
           subtitle: `${ch.territory_name} — ${defenderHeld ? ch.defender_clan_name + ' holds' : ch.attacker_clan_name + ' conquers'}`,
-          color: weWon ? 'hsl(120,50%,60%)' : 'hsl(210,50%,65%)',
-          borderColor: weWon ? 'hsla(120,50%,50%,0.4)' : 'hsla(210,50%,50%,0.4)',
+          color: weWon ? 'hsl(120,50%,60%)' : 'hsl(0,50%,60%)',
+          borderColor: weWon ? 'hsla(120,50%,50%,0.4)' : 'hsla(0,50%,50%,0.4)',
         });
       } else if (ch.status === 'cancelled') {
         addToast({
@@ -114,7 +122,8 @@ export function WarNotifications({ challenges, territories, myClan, playerX, pla
 
   // Territory awareness — check if player is inside a non-peaceful territory
   const currentTerritory = territories.find(t => {
-    if (t.war_state === 'peaceful') return false;
+    const ws = t.war_state as string;
+    if (ws === 'peaceful') return false;
     const dx = playerX - t.center_x;
     const dz = playerZ - t.center_z;
     return Math.sqrt(dx * dx + dz * dz) < t.radius;
@@ -160,12 +169,13 @@ export function WarNotifications({ challenges, territories, myClan, playerX, pla
       {/* Territory awareness bar — shown when inside a contested/active/cooldown zone */}
       {currentTerritory && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[52] pointer-events-none">
-          <div className={`flex items-center gap-2.5 px-4 py-2 rounded-lg ${currentTerritory.war_state === 'active_war' ? 'animate-pulse' : ''}`}
+          <div className={`flex items-center gap-2.5 px-4 py-2 rounded-lg ${(currentTerritory.war_state as string) === 'active_war' ? 'animate-pulse' : ''}`}
             style={{
               background: 'linear-gradient(135deg, hsla(0,0%,0%,0.75), hsla(0,0%,5%,0.75))',
               border: `1px solid ${
-                currentTerritory.war_state === 'active_war' ? 'hsla(0,70%,50%,0.5)'
-                : currentTerritory.war_state === 'contested' ? 'hsla(30,70%,50%,0.4)'
+                (currentTerritory.war_state as string) === 'active_war' ? 'hsla(0,70%,50%,0.5)'
+                : (currentTerritory.war_state as string) === 'contested' ? 'hsla(30,70%,50%,0.4)'
+                : (currentTerritory.war_state as string) === 'pending_resolution' ? 'hsla(40,70%,50%,0.5)'
                 : 'hsla(210,50%,50%,0.3)'
               }`,
               boxShadow: `0 2px 12px hsla(0,0%,0%,0.4)`,
@@ -173,16 +183,20 @@ export function WarNotifications({ challenges, territories, myClan, playerX, pla
             }}
           >
             <span style={{ fontSize: 14 }}>
-              {currentTerritory.war_state === 'active_war' ? '🔥' : currentTerritory.war_state === 'contested' ? '⚔️' : '🛡️'}
+              {(currentTerritory.war_state as string) === 'active_war' ? '🔥' : (currentTerritory.war_state as string) === 'contested' ? '⚔️' : (currentTerritory.war_state as string) === 'pending_resolution' ? '⏳' : '🛡️'}
             </span>
             <div>
               <div style={{
                 fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
-                color: currentTerritory.war_state === 'active_war' ? 'hsl(0,70%,65%)'
-                  : currentTerritory.war_state === 'contested' ? 'hsl(30,70%,65%)'
+                color: (currentTerritory.war_state as string) === 'active_war' ? 'hsl(0,70%,65%)'
+                  : (currentTerritory.war_state as string) === 'contested' ? 'hsl(30,70%,65%)'
+                  : (currentTerritory.war_state as string) === 'pending_resolution' ? 'hsl(40,70%,65%)'
                   : 'hsl(210,50%,65%)',
               }}>
-                {currentTerritory.war_state === 'active_war' ? 'WAR ZONE' : currentTerritory.war_state === 'contested' ? 'CONTESTED TERRITORY' : 'COOLDOWN ZONE'}
+                {(currentTerritory.war_state as string) === 'active_war' ? 'WAR ZONE'
+                  : (currentTerritory.war_state as string) === 'contested' ? 'CONTESTED TERRITORY'
+                  : (currentTerritory.war_state as string) === 'pending_resolution' ? 'AWAITING RESOLUTION'
+                  : 'COOLDOWN ZONE'}
               </div>
               <div style={{ fontSize: 9, color: 'hsl(40,15%,50%)' }}>
                 {currentTerritory.name}

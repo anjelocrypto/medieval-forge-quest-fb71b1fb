@@ -774,6 +774,15 @@ export type Database = {
         }
         Returns: Json
       }
+      resolve_war: {
+        Args: {
+          _challenge_id: string
+          _resolution: string
+          _session_token: string
+          _wallet_address: string
+        }
+        Returns: Json
+      }
       save_player_progression:
         | {
             Args: {
@@ -870,7 +879,12 @@ export type Database = {
         | "teal"
         | "ivory"
         | "obsidian"
-      territory_war_state: "peaceful" | "contested" | "active_war" | "cooldown"
+      territory_war_state:
+        | "peaceful"
+        | "contested"
+        | "active_war"
+        | "cooldown"
+        | "pending_resolution"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1010,7 +1024,13 @@ export const Constants = {
         "ivory",
         "obsidian",
       ],
-      territory_war_state: ["peaceful", "contested", "active_war", "cooldown"],
+      territory_war_state: [
+        "peaceful",
+        "contested",
+        "active_war",
+        "cooldown",
+        "pending_resolution",
+      ],
     },
   },
 } as const

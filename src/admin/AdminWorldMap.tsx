@@ -6,7 +6,8 @@
  */
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { CLAN_COLOR_HEX, ClanColor, TerritoryInfo } from '../game/hooks/useClanSystem';
+import { CLAN_COLOR_HEX, ClanColor, TerritoryInfo, ChallengeInfo } from '../game/hooks/useClanSystem';
+import { loadWalletSession } from '../game/hooks/usePlayerAccount';
 // ===== Real world data imports =====
 import { WORLD_SIZE, HALF_WORLD } from '../game/constants';
 import { REGIONS, SETTLEMENTS, ROADS, SMALL_POIS, LANDMARKS } from '../game/world/RegionData';
@@ -309,7 +310,7 @@ function drawMap(
       const [cx, cy] = toS(t.center_x, t.center_z);
       const sr = t.radius * z;
       if (!onScreen(cx, cy, W, H, sr)) continue;
-      const warState = (t as any).war_state || 'peaceful';
+      const warState = ((t as any).war_state as string) || 'peaceful';
       const color = t.owning_clan_color
         ? CLAN_COLOR_HEX[t.owning_clan_color as ClanColor] || '#666'
         : null;
@@ -334,12 +335,21 @@ function drawMap(
           ctx.strokeStyle = '#e74c3c40';
           ctx.lineWidth = 7;
           ctx.stroke();
-        } else if (warState === 'cooldown') {
+      } else if (warState === 'cooldown') {
           ctx.strokeStyle = '#3498db80';
           ctx.lineWidth = 2;
           ctx.setLineDash([4, 6]);
           ctx.stroke();
           ctx.setLineDash([]);
+        } else if (warState === 'pending_resolution') {
+          ctx.strokeStyle = '#f39c12dd';
+          ctx.lineWidth = 3;
+          ctx.setLineDash([3, 3]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.strokeStyle = '#f39c1250';
+          ctx.lineWidth = 6;
+          ctx.stroke();
         } else {
           ctx.strokeStyle = color + '60';
           ctx.lineWidth = 2;
@@ -361,8 +371,12 @@ function drawMap(
         if (warState !== 'peaceful') {
           const stateLabel = warState === 'contested' ? '⚔️ CHALLENGED'
             : warState === 'active_war' ? '🔥 WAR ACTIVE'
+            : warState === 'pending_resolution' ? '⏳ PENDING RESOLUTION'
             : '🛡️ COOLDOWN';
-          const stateColor = warState === 'contested' ? '#e67e22' : warState === 'active_war' ? '#e74c3c' : '#3498db';
+          const stateColor = warState === 'contested' ? '#e67e22'
+            : warState === 'active_war' ? '#e74c3c'
+            : warState === 'pending_resolution' ? '#f39c12'
+            : '#3498db';
           ctx.font = `bold ${Math.max(8, labelSize - 1)}px sans-serif`;
           ctx.fillStyle = stateColor + 'dd';
           ctx.fillText(stateLabel, cx, cy + sr * 0.35);
@@ -853,6 +867,58 @@ export default function AdminWorldMap() {
     return () => clearInterval(interval);
   }, []);
 
+  // Challenge data for admin resolution
+  const [challenges, setChallenges] = useState<ChallengeInfo[]>([]);
+  const [resolving, setResolving] = useState<string | null>(null);
+  const [resolveError, setResolveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadChallenges = async () => {
+      try {
+        const { data } = await supabase.rpc('get_active_challenges' as any, { _limit: 50 });
+        const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+        setChallenges(Array.isArray(parsed) ? parsed : []);
+      } catch { /* silent */ }
+    };
+    loadChallenges();
+    const interval = setInterval(loadChallenges, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const pendingResolutions = challenges.filter(c => c.status === 'pending_resolution');
+
+  const handleResolveWar = async (challengeId: string, resolution: 'attacker_won' | 'defender_held') => {
+    const session = loadWalletSession();
+    if (!session?.wallet_address || !session.session_token) {
+      setResolveError('No admin session');
+      return;
+    }
+    setResolving(challengeId);
+    setResolveError(null);
+    try {
+      const { data, error } = await supabase.rpc('resolve_war' as any, {
+        _wallet_address: session.wallet_address,
+        _session_token: session.session_token,
+        _challenge_id: challengeId,
+        _resolution: resolution,
+      });
+      if (error || !(data as any)?.success) {
+        setResolveError((data as any)?.error || error?.message || 'Failed');
+      } else {
+        // Refresh data
+        const { data: tData } = await supabase.rpc('get_territories' as any);
+        const tp = typeof tData === 'string' ? JSON.parse(tData) : tData;
+        setTerritories(Array.isArray(tp) ? tp : []);
+        const { data: cData } = await supabase.rpc('get_active_challenges' as any, { _limit: 50 });
+        const cp = typeof cData === 'string' ? JSON.parse(cData) : cData;
+        setChallenges(Array.isArray(cp) ? cp : []);
+      }
+    } catch (e: any) {
+      setResolveError(e.message || 'Failed');
+    }
+    setResolving(null);
+  };
+
   const stats = useMemo(() => ({
     regions: REGIONS.length,
     settlements: SETTLEMENTS.length,
@@ -870,7 +936,7 @@ export default function AdminWorldMap() {
     'collision objects': collisionData.circles.length + collisionData.boxes.length,
     territories: territories.length,
     'claimed territories': territories.filter(t => t.owning_clan_id).length,
-    'contested territories': territories.filter(t => (t as any).war_state === 'contested' || (t as any).war_state === 'active_war').length,
+    'contested territories': territories.filter(t => {const ws = (t as any).war_state; return ws === 'contested' || ws === 'active_war' || ws === 'pending_resolution';}).length,
   }), [collisionData, territories]);
 
   // Render
@@ -1083,6 +1149,50 @@ export default function AdminWorldMap() {
               </div>
             </div>
           </div>
+
+          {/* War Resolution Panel */}
+          {pendingResolutions.length > 0 && (
+            <div style={{ ...S.section, background: '#1a1400', border: '1px solid #3a2800', borderRadius: 6, padding: 10, marginBottom: 8 }}>
+              <div style={{ ...S.sectionLabel, color: '#f39c12', borderColor: '#3a2800' }}>
+                ⏳ PENDING WAR RESOLUTIONS ({pendingResolutions.length})
+              </div>
+              {resolveError && (
+                <div style={{ fontSize: 9, color: '#f44', marginBottom: 6, padding: '3px 6px', background: '#2a0000', borderRadius: 3 }}>
+                  ⚠️ {resolveError}
+                </div>
+              )}
+              {pendingResolutions.map(ch => (
+                <div key={ch.id} style={{ marginBottom: 10, padding: 8, background: '#0c0c1c', borderRadius: 4, border: '1px solid #252545' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#e0e4ea', marginBottom: 4 }}>
+                    {ch.territory_name}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, marginBottom: 6 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: CLAN_COLOR_HEX[ch.attacker_clan_color as ClanColor] || '#888', display: 'inline-block' }} />
+                    <span style={{ color: '#bcc' }}>{ch.attacker_clan_name}</span>
+                    <span style={{ color: '#556' }}>vs</span>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: CLAN_COLOR_HEX[ch.defender_clan_color as ClanColor] || '#888', display: 'inline-block' }} />
+                    <span style={{ color: '#bcc' }}>{ch.defender_clan_name}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button
+                      onClick={() => handleResolveWar(ch.id, 'attacker_won')}
+                      disabled={resolving === ch.id}
+                      style={{ ...S.btn, flex: 1, background: '#1a0a0a', borderColor: '#4a1515', color: '#e74c3c', fontSize: 9, fontWeight: 700, textAlign: 'center' as const }}
+                    >
+                      ⚔️ Attacker Wins
+                    </button>
+                    <button
+                      onClick={() => handleResolveWar(ch.id, 'defender_held')}
+                      disabled={resolving === ch.id}
+                      style={{ ...S.btn, flex: 1, background: '#0a1a0a', borderColor: '#154a15', color: '#27ae60', fontSize: 9, fontWeight: 700, textAlign: 'center' as const }}
+                    >
+                      🛡️ Defender Holds
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div style={S.footer}>
             Scroll to zoom • Drag to pan<br />

@@ -204,25 +204,26 @@ export function SurvivalHUD({
         {myClan && challenges && (() => {
           const myCh = challenges.find(
             c => (c.attacker_clan_id === myClan.clan_id || c.defender_clan_id === myClan.clan_id)
-              && (c.status === 'pending' || c.status === 'active' || c.status === 'resolved')
+              && (c.status === 'pending' || c.status === 'active' || c.status === 'pending_resolution' || c.status === 'resolved')
           );
           if (!myCh) return null;
           const isAttacker = myCh.attacker_clan_id === myClan.clan_id;
           const isPending = myCh.status === 'pending';
           const isActive = myCh.status === 'active';
+          const isPendingRes = myCh.status === 'pending_resolution';
           const isResolved = myCh.status === 'resolved';
           const targetTime = isPending ? myCh.war_starts_at : isActive ? myCh.war_ends_at : myCh.cooldown_ends_at;
           const diff = new Date(targetTime).getTime() - Date.now();
           const mins = Math.max(0, Math.floor(diff / 60000));
           const secs = Math.max(0, Math.floor((diff % 60000) / 1000));
           const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-          const borderColor = isPending ? 'hsla(30,70%,50%,0.5)' : isActive ? 'hsla(0,70%,50%,0.5)' : 'hsla(210,50%,50%,0.4)';
-          const icon = isPending ? '⚔️' : isActive ? '🔥' : '🛡️';
-          const label = isPending ? 'WAR PENDING' : isActive ? 'WAR ACTIVE' : 'COOLDOWN';
-          const labelColor = isPending ? 'hsl(30,70%,65%)' : isActive ? 'hsl(0,70%,65%)' : 'hsl(210,50%,65%)';
-          const timeLabel = isPending ? `Starts ${timeStr}` : isActive ? `Ends ${timeStr}` : `Ends ${timeStr}`;
+          const borderColor = isPending ? 'hsla(30,70%,50%,0.5)' : isActive ? 'hsla(0,70%,50%,0.5)' : isPendingRes ? 'hsla(40,70%,50%,0.5)' : 'hsla(210,50%,50%,0.4)';
+          const icon = isPending ? '⚔️' : isActive ? '🔥' : isPendingRes ? '⏳' : '🛡️';
+          const label = isPending ? 'WAR PENDING' : isActive ? 'WAR ACTIVE' : isPendingRes ? 'AWAITING RESOLUTION' : 'COOLDOWN';
+          const labelColor = isPending ? 'hsl(30,70%,65%)' : isActive ? 'hsl(0,70%,65%)' : isPendingRes ? 'hsl(40,70%,65%)' : 'hsl(210,50%,65%)';
+          const timeLabel = isPending ? `Starts ${timeStr}` : isActive ? `Ends ${timeStr}` : isPendingRes ? 'Admin review pending' : `Ends ${timeStr}`;
           return (
-            <div className={`flex items-center gap-2.5 px-3.5 py-2 rounded-lg ${isActive ? 'animate-pulse' : ''}`} style={{
+            <div className={`flex items-center gap-2.5 px-3.5 py-2 rounded-lg ${isActive || isPendingRes ? 'animate-pulse' : ''}`} style={{
               ...panelStyle,
               border: `1px solid ${borderColor}`,
               boxShadow: `0 0 12px ${borderColor}`,

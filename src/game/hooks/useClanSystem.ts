@@ -56,7 +56,7 @@ export interface TerritoryInfo {
   owning_clan_name: string | null;
   owning_clan_color: ClanColor | null;
   claimed_at: string | null;
-  war_state: 'peaceful' | 'contested' | 'active_war' | 'cooldown';
+  war_state: 'peaceful' | 'contested' | 'active_war' | 'pending_resolution' | 'cooldown';
 }
 
 export interface ChallengeInfo {
@@ -69,7 +69,7 @@ export interface ChallengeInfo {
   defender_clan_id: string;
   defender_clan_name: string;
   defender_clan_color: string;
-  status: 'pending' | 'active' | 'resolved' | 'cancelled' | 'expired';
+  status: 'pending' | 'active' | 'pending_resolution' | 'resolved' | 'cancelled' | 'expired';
   resolution?: string | null;
   war_starts_at: string;
   war_ends_at: string;

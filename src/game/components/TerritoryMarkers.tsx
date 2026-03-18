@@ -21,14 +21,14 @@ const BANNER_HEIGHT = 2.5;
 
 function TerritoryBanner({ territory }: { territory: TerritoryInfo }) {
   const terrainY = getTerrainHeight(territory.center_x, territory.center_z);
-  const warState = territory.war_state || 'peaceful';
-  const isContested = warState === 'contested' || warState === 'active_war';
+  const warState = (territory.war_state as string) || 'peaceful';
+  const isContested = warState === 'contested' || warState === 'active_war' || warState === 'pending_resolution';
   const color = territory.owning_clan_color
     ? CLAN_COLOR_HEX[territory.owning_clan_color as ClanColor] || '#888888'
     : '#666666';
   const colorObj = useMemo(() => new THREE.Color(color), [color]);
   const neutralColor = useMemo(() => new THREE.Color('#555555'), []);
-  const warColor = useMemo(() => new THREE.Color(warState === 'active_war' ? '#e74c3c' : '#e67e22'), [warState]);
+  const warColor = useMemo(() => new THREE.Color(warState === 'active_war' ? '#e74c3c' : warState === 'pending_resolution' ? '#f39c12' : '#e67e22'), [warState]);
   const isClaimed = !!territory.owning_clan_id;
 
   // Ring color depends on war state
@@ -37,6 +37,7 @@ function TerritoryBanner({ territory }: { territory: TerritoryInfo }) {
 
   const statusText = warState === 'contested' ? '⚔️ CHALLENGED'
     : warState === 'active_war' ? '🔥 WAR ACTIVE'
+    : warState === 'pending_resolution' ? '⏳ AWAITING RESOLUTION'
     : warState === 'cooldown' ? '🛡️ Cooldown'
     : territory.owning_clan_name ? `🏴 ${territory.owning_clan_name}` : '⬜ Unclaimed';
 

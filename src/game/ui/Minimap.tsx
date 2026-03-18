@@ -61,7 +61,7 @@ function drawMinimap(
     const rz = (r.center[1] - cz) * scale + half;
     const rr = r.radius * scale;
     const territory = territories?.find(t => t.id === r.id);
-    const warState = territory?.war_state || 'peaceful';
+    const warState = (territory?.war_state as string) || 'peaceful';
     if (territory?.owning_clan_color) {
       const clanHex = CLAN_COLOR_HEX[territory.owning_clan_color as ClanColor] || r.color;
       ctx.fillStyle = clanHex + '50';
@@ -89,6 +89,15 @@ function drawMinimap(
         ctx.setLineDash([3, 5]);
         ctx.stroke();
         ctx.setLineDash([]);
+      } else if (warState === 'pending_resolution') {
+        ctx.strokeStyle = '#f39c12dd';
+        ctx.lineWidth = fullMap ? 3 : 2;
+        ctx.setLineDash([2, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.strokeStyle = '#f39c1250';
+        ctx.lineWidth = fullMap ? 5 : 3;
+        ctx.stroke();
       } else {
         ctx.strokeStyle = clanHex + '80';
         ctx.lineWidth = fullMap ? 2.5 : 1.5;
