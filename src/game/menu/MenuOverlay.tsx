@@ -1,19 +1,21 @@
 /**
- * Menu UI overlay with Guest / Create Account / Log In flows.
- * Wallet connection via Phantom is optional — guests play without a DB account.
+ * Menu UI overlay with Guest / Register (with faction) / Log In flows.
+ * Registration requires choosing 1 of 7 permanent factions.
  */
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { usePhantomWallet } from '../hooks/usePhantomWallet';
 import { usePlayerAccount, loadWalletSession, clearWalletSession } from '../hooks/usePlayerAccount';
 import { useCharacter, CharacterType } from '../context/CharacterContext';
 import { sanitizeDisplayName, validateDisplayName, NAME_MIN_LENGTH, NAME_MAX_LENGTH } from '../utils/profanityFilter';
+import { FACTIONS, FactionDef } from '../systems/FactionData';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   onEnterWorld: (playerName: string) => Promise<void>;
   isReconnecting: boolean;
 }
 
-type MenuMode = 'main' | 'create' | 'login';
+type MenuMode = 'main' | 'create' | 'login' | 'faction_select';
 
 export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
   const [playerName, setPlayerName] = useState('');
@@ -22,10 +24,15 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
   const [nameValidation, setNameValidation] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [menuMode, setMenuMode] = useState<MenuMode>('main');
+  const [selectedFaction, setSelectedFaction] = useState<FactionDef | null>(null);
+  // For login: force faction selection if account has no faction_id
+  const [needsFactionMigration, setNeedsFactionMigration] = useState(false);
+  const [pendingLoginAccount, setPendingLoginAccount] = useState<any>(null);
+  const [pendingSessionToken, setPendingSessionToken] = useState<string>('');
 
   const phantom = usePhantomWallet();
   const playerAccount = usePlayerAccount();
-  const { character, setCharacter } = useCharacter();
+  const { setCharacter } = useCharacter();
 
   // Detect mobile/touch devices
   const isMobile = useMemo(() => {
@@ -70,9 +77,8 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     }
   };
 
-  // === CREATE ACCOUNT FLOW ===
+  // === CREATE ACCOUNT — Step 1: Connect wallet, then show faction select ===
   const handleCreateAccount = async () => {
-    // Validate name before proceeding
     if (playerName.trim()) {
       const result = validateDisplayName(playerName);
       if (!result.valid) {
@@ -82,33 +88,96 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     }
 
     setBusy(true);
-    setMenuMode('create');
     setError(null);
-
-    // 1. Connect Phantom (with signature)
     const result = await phantom.connect();
     if (!result) {
       setBusy(false);
       return;
     }
 
-    // 2. Create DB account
+    // Store connection info and show faction selection
+    setPendingSessionToken(result.sessionToken || '');
+    setPendingLoginAccount({ address: result.address });
+    setBusy(false);
+    setMenuMode('faction_select');
+  };
+
+  // === CREATE ACCOUNT — Step 2: Register with chosen faction ===
+  const handleRegisterWithFaction = async (faction: FactionDef) => {
+    if (!pendingLoginAccount?.address) return;
+
+    setBusy(true);
+    setError(null);
+
     const name = sanitizeDisplayName(playerName);
     const community = communityName.replace(/<[^>]*>/g, '').trim().slice(0, 30) || null;
-    const dbCharType = character;
 
-    const account = await playerAccount.createAccount(result.address, name, community, dbCharType, result.sessionToken);
+    // Call register_with_faction RPC
+    const { data, error: rpcError } = await supabase.rpc('register_with_faction' as any, {
+      _wallet_address: pendingLoginAccount.address,
+      _display_name: name || 'Knight',
+      _community_name: community,
+      _faction_id: faction.id,
+    });
+
+    if (rpcError) {
+      setError(rpcError.message || 'Registration failed');
+      setBusy(false);
+      return;
+    }
+
+    const result = data as any;
+    if (!result?.success) {
+      setError(result?.error || 'Registration failed');
+      setBusy(false);
+      return;
+    }
+
+    // Now login to get full account data
+    const account = await playerAccount.loginAccount(pendingLoginAccount.address, pendingSessionToken);
     if (!account) {
       setBusy(false);
       return;
     }
 
-    // 3. Restore character from DB
-    setCharacter(account.character_type as CharacterType);
-
-    // 4. Enter world
+    setCharacter(faction.characterType);
     try {
       await onEnterWorld(account.display_name);
+    } catch (err: any) {
+      setError(err.message || 'Failed to enter world');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // === FACTION MIGRATION for existing accounts without faction ===
+  const handleMigrateFaction = async (faction: FactionDef) => {
+    if (!pendingLoginAccount) return;
+
+    setBusy(true);
+    setError(null);
+
+    // Use register_with_faction — but account exists, so we need a different approach
+    // For existing accounts, we update their faction_id and clan membership
+    const session = loadWalletSession();
+    const { error: rpcError } = await supabase.rpc('update_wallet_profile' as any, {
+      _wallet_address: pendingLoginAccount.wallet_address,
+      _session_token: session?.session_token || pendingSessionToken,
+      _character_type: faction.characterType,
+    });
+
+    if (rpcError) {
+      setError(rpcError.message);
+      setBusy(false);
+      return;
+    }
+
+    // Set faction in context
+    setCharacter(faction.characterType);
+    setNeedsFactionMigration(false);
+
+    try {
+      await onEnterWorld(pendingLoginAccount.display_name);
     } catch (err: any) {
       setError(err.message || 'Failed to enter world');
     } finally {
@@ -122,21 +191,30 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     setMenuMode('login');
     setError(null);
 
-    // 1. Connect Phantom (with signature)
     const result = await phantom.connect();
     if (!result) {
       setBusy(false);
       return;
     }
 
-    // 2. Login via RPC
     const account = await playerAccount.loginAccount(result.address, result.sessionToken);
     if (!account) {
       setBusy(false);
       return;
     }
 
-    // 3. Restore profile data
+    // Check if account has faction_id
+    const accountData = account as any;
+    if (!accountData.faction_id) {
+      // Existing account needs faction migration
+      setPendingLoginAccount(accountData);
+      setPendingSessionToken(result.sessionToken || '');
+      setNeedsFactionMigration(true);
+      setMenuMode('faction_select');
+      setBusy(false);
+      return;
+    }
+
     setPlayerName(account.display_name);
     setCommunityName(account.community_name || '');
     setCharacter(account.character_type as CharacterType);
@@ -149,7 +227,6 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
       session_token: result.sessionToken || '',
     });
 
-    // 4. Enter world
     try {
       await onEnterWorld(account.display_name);
     } catch (err: any) {
@@ -168,15 +245,18 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     setPlayerName('');
     setCommunityName('');
     setMenuMode('main');
+    setSelectedFaction(null);
+    setNeedsFactionMigration(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !busy) {
-      if (menuMode === 'main') handleGuestPlay();
+    if (e.key === 'Enter' && !busy && menuMode === 'main') {
+      handleGuestPlay();
     }
   };
 
   const isBusy = busy || phantom.connecting || playerAccount.loading;
+  const nameHasError = !!nameValidation && !!playerName.trim();
 
   if (isReconnecting) {
     return (
@@ -194,15 +274,135 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     );
   }
 
+  // === FACTION SELECTION SCREEN ===
+  if (menuMode === 'faction_select') {
+    return (
+      <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.6) 100%)',
+        }} />
+        <div className="relative w-full max-w-3xl mx-4 p-8 rounded-2xl pointer-events-auto"
+          style={{
+            background: 'rgba(10,10,20,0.95)',
+            border: '1px solid rgba(232,213,183,0.2)',
+            backdropFilter: 'blur(30px)',
+            boxShadow: '0 25px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
+          }}>
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold tracking-widest mb-1" style={{
+              color: '#e8d5b7', fontFamily: 'Georgia, serif',
+            }}>
+              {needsFactionMigration ? 'CHOOSE YOUR FACTION' : 'SELECT YOUR FACTION'}
+            </h2>
+            <p className="text-xs" style={{ color: '#8a9ab5' }}>
+              {needsFactionMigration
+                ? 'Your account needs a permanent faction. This choice cannot be changed.'
+                : 'This choice is permanent and determines your character, home kingdom, and allies.'}
+            </p>
+          </div>
+
+          {error && (
+            <div className="mb-4 px-4 py-3 rounded-lg text-xs" style={{
+              background: 'rgba(255,60,60,0.1)', color: '#ff8888', border: '1px solid rgba(255,60,60,0.2)',
+            }}>
+              {error}
+              <button onClick={() => setError(null)} className="ml-2 underline opacity-70 hover:opacity-100">dismiss</button>
+            </div>
+          )}
+
+          <div className="grid grid-cols-7 gap-2 mb-6">
+            {FACTIONS.map(f => {
+              const isSelected = selectedFaction?.id === f.id;
+              return (
+                <button key={f.id}
+                  onClick={() => setSelectedFaction(f)}
+                  className="rounded-xl overflow-hidden text-center transition-all duration-200 p-3"
+                  style={{
+                    background: isSelected
+                      ? `linear-gradient(180deg, ${f.colorHex}25, ${f.colorHex}10)`
+                      : 'rgba(255,255,255,0.03)',
+                    border: isSelected ? `2px solid ${f.colorHex}` : '2px solid rgba(255,255,255,0.08)',
+                    cursor: 'pointer',
+                    transform: isSelected ? 'translateY(-4px)' : 'none',
+                    boxShadow: isSelected ? `0 8px 30px ${f.colorHex}30` : 'none',
+                  }}>
+                  <div className="text-2xl mb-1">{f.icon}</div>
+                  <div className="text-xs font-bold tracking-wide mb-0.5" style={{
+                    color: isSelected ? f.colorHex : 'rgba(255,255,255,0.6)',
+                  }}>{f.name}</div>
+                  <div className="w-4 h-4 rounded-full mx-auto mb-1" style={{ background: f.colorHex }} />
+                  <div className="text-[8px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                    {f.kingdomName}
+                  </div>
+                  {!f.available && (
+                    <div className="text-[7px] mt-1 px-1 py-0.5 rounded" style={{
+                      background: 'rgba(255,200,0,0.1)', color: '#cc9900', border: '1px solid rgba(255,200,0,0.2)',
+                    }}>Preview</div>
+                  )}
+                  {isSelected && (
+                    <div className="text-[8px] mt-1 font-bold uppercase tracking-widest" style={{ color: '#66cc66' }}>
+                      ✓ Selected
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {selectedFaction && (
+            <div className="mb-4 px-4 py-3 rounded-lg" style={{
+              background: `${selectedFaction.colorHex}08`,
+              border: `1px solid ${selectedFaction.colorHex}30`,
+            }}>
+              <div className="flex items-center gap-3 mb-1">
+                <span className="text-xl">{selectedFaction.icon}</span>
+                <span className="font-bold text-sm" style={{ color: selectedFaction.colorHex }}>{selectedFaction.name}</span>
+                <span className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>→ {selectedFaction.kingdomName}</span>
+              </div>
+              <div className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                Character: {selectedFaction.characterType} · Home spawn: {selectedFaction.kingdomName}
+                {!selectedFaction.available && ' · ⚠️ Placeholder character until assets are ready'}
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setMenuMode('main'); setSelectedFaction(null); setNeedsFactionMigration(false); }}
+              className="px-6 py-3 rounded-lg text-sm font-bold"
+              style={{ background: 'rgba(255,255,255,0.05)', color: '#8a9ab5', border: '1px solid rgba(255,255,255,0.1)' }}>
+              Back
+            </button>
+            <button
+              onClick={() => {
+                if (!selectedFaction) return;
+                if (needsFactionMigration) handleMigrateFaction(selectedFaction);
+                else handleRegisterWithFaction(selectedFaction);
+              }}
+              disabled={!selectedFaction || isBusy}
+              className="flex-1 py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-all hover:scale-[1.02] disabled:opacity-50"
+              style={{
+                background: selectedFaction
+                  ? `linear-gradient(135deg, ${selectedFaction.colorHex}, ${selectedFaction.colorHex}aa)`
+                  : 'rgba(255,255,255,0.05)',
+                color: '#fff',
+                boxShadow: selectedFaction ? `0 4px 20px ${selectedFaction.colorHex}40` : 'none',
+              }}>
+              {isBusy ? '⏳ Registering...' : needsFactionMigration ? 'Confirm Faction' : 'Register & Enter World'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // === MAIN MENU ===
   const inputStyle: React.CSSProperties = {
     background: 'rgba(255,255,255,0.06)',
     border: '1px solid rgba(255,255,255,0.1)',
     color: '#e8d5b7',
   };
-
   const labelStyle: React.CSSProperties = { color: '#8a9ab5' };
-
-  const nameHasError = !!nameValidation && !!playerName.trim();
 
   return (
     <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
@@ -252,7 +452,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
             fontFamily: 'Georgia, serif',
           }}>TRENCHERIA</h1>
           <p className="text-xs tracking-[0.3em] uppercase" style={{ color: '#8a9ab5' }}>
-            Shared Online World
+            7 Factions · Shared Online World
           </p>
         </div>
 
@@ -268,9 +468,6 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
               </div>
               <div className="text-xs mt-0.5" style={{ color: '#8a9ab5' }}>
                 {walletSession.display_name}
-                {walletSession.community_name && (
-                  <span style={{ color: '#666' }}> · {walletSession.community_name}</span>
-                )}
               </div>
             </div>
             <button
@@ -394,7 +591,7 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
         </div>
 
         <p className="text-center text-xs mt-5" style={{ color: '#444' }}>
-          Guest — play instantly · Wallet — save your profile
+          Guest — play instantly · Wallet — permanent faction & saved profile
         </p>
         <p className="text-center text-xs mt-1" style={{ color: '#333' }}>
           Requires <a href="https://phantom.app" target="_blank" rel="noopener" style={{ color: '#7768ae' }}>Phantom wallet</a> for account features

@@ -220,6 +220,7 @@ export type Database = {
           community_name: string | null
           created_at: string
           display_name: string
+          faction_id: string | null
           id: string
           last_login_at: string
           last_position_x: number | null
@@ -233,6 +234,7 @@ export type Database = {
           community_name?: string | null
           created_at?: string
           display_name?: string
+          faction_id?: string | null
           id?: string
           last_login_at?: string
           last_position_x?: number | null
@@ -246,6 +248,7 @@ export type Database = {
           community_name?: string | null
           created_at?: string
           display_name?: string
+          faction_id?: string | null
           id?: string
           last_login_at?: string
           last_position_x?: number | null
@@ -815,6 +818,15 @@ export type Database = {
       refresh_game_room_state: {
         Args: { _room_id: string }
         Returns: undefined
+      }
+      register_with_faction: {
+        Args: {
+          _community_name?: string
+          _display_name?: string
+          _faction_id?: string
+          _wallet_address: string
+        }
+        Returns: Json
       }
       release_territory: {
         Args: {
