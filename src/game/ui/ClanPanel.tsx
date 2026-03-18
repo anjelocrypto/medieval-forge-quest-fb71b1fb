@@ -13,6 +13,7 @@ import {
   TerritoryInfo,
   ClanMemberInfo,
   ChallengeInfo,
+  TerritoryHistoryEntry,
 } from '../hooks/useClanSystem';
 
 interface Props {
