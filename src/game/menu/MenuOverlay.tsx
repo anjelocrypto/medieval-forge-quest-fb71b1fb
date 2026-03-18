@@ -218,14 +218,8 @@ export function MenuOverlay({ onEnterWorld, isReconnecting }: Props) {
     setPlayerName(account.display_name);
     setCommunityName(account.community_name || '');
     setCharacter(account.character_type as CharacterType);
-    setWalletSession({
-      wallet_address: account.wallet_address,
-      display_name: account.display_name,
-      community_name: account.community_name,
-      character_type: account.character_type,
-      account_id: account.id,
-      session_token: result.sessionToken || '',
-    });
+    // Session is already saved by loginAccount() with faction data
+    setWalletSession(loadWalletSession());
 
     try {
       await onEnterWorld(account.display_name);
