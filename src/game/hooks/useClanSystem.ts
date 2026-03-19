@@ -292,7 +292,7 @@ export function useClanSystem() {
   return {
     myClan, clans, territories, clanMembers, challenges, history,
     loading, error, setError,
-    createClan, joinClan, leaveClan,
+    // createClan, joinClan, leaveClan removed — factions are permanent
     claimTerritory, releaseTerritory,
     challengeTerritory, cancelChallenge,
     loadClanMembers, loadHistory, refresh, loadTerritories, loadChallenges,
