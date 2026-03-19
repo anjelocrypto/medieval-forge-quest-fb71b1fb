@@ -229,46 +229,7 @@ export function useClanSystem() {
     }
   }, []);
 
-  const createClan = useCallback(async (name: string, color: ClanColor): Promise<string | null> => {
-    const session = getSession();
-    if (!session) { setError('Wallet session required'); return null; }
-    return withLoading(async () => {
-      const { data, error: err } = await callRpc<any>('create_clan', {
-        _wallet_address: session.wallet_address, _session_token: session.session_token,
-        _clan_name: name, _clan_color: color,
-      });
-      if (!data?.success) { setError(data?.error || err || 'Failed'); return null; }
-      await Promise.all([loadMyClan(), loadClans()]);
-      return data.clan_id;
-    });
-  }, [loadMyClan, loadClans, withLoading]);
-
-  const joinClan = useCallback(async (clanId: string): Promise<boolean> => {
-    const session = getSession();
-    if (!session) { setError('Wallet session required'); return false; }
-    return withLoading(async () => {
-      const { data, error: err } = await callRpc<any>('join_clan', {
-        _wallet_address: session.wallet_address, _session_token: session.session_token, _clan_id: clanId,
-      });
-      if (!data?.success) { setError(data?.error || err || 'Failed'); return false; }
-      await Promise.all([loadMyClan(), loadClans()]);
-      return true;
-    });
-  }, [loadMyClan, loadClans, withLoading]);
-
-  const leaveClan = useCallback(async (): Promise<boolean> => {
-    const session = getSession();
-    if (!session) { setError('Wallet session required'); return false; }
-    return withLoading(async () => {
-      const { data, error: err } = await callRpc<any>('leave_clan', {
-        _wallet_address: session.wallet_address, _session_token: session.session_token,
-      });
-      if (!data?.success) { setError(data?.error || err || 'Failed'); return false; }
-      setMyClan(null);
-      await Promise.all([loadClans(), loadTerritories(), loadChallenges()]);
-      return true;
-    });
-  }, [loadClans, loadTerritories, loadChallenges, withLoading]);
+  // NOTE: createClan, joinClan, leaveClan removed — factions are fixed and permanent
 
   const claimTerritory = useCallback(async (territoryId: string, playerX?: number, playerZ?: number): Promise<boolean> => {
     const session = getSession();
@@ -331,7 +292,7 @@ export function useClanSystem() {
   return {
     myClan, clans, territories, clanMembers, challenges, history,
     loading, error, setError,
-    createClan, joinClan, leaveClan,
+    // createClan, joinClan, leaveClan removed — factions are permanent
     claimTerritory, releaseTerritory,
     challengeTerritory, cancelChallenge,
     loadClanMembers, loadHistory, refresh, loadTerritories, loadChallenges,
