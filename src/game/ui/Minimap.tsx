@@ -31,8 +31,55 @@ const MAP_SIZE = 160;
 const MAP_WORLD_RADIUS = 120;
 const FULL_MAP_WORLD = 850;
 
-/** Check if any territory is in a non-peaceful war state */
+/** Smooth color transition cache for territory ownership changes */
+const territoryColorTransitions: Map<string, {
+  fromR: number; fromG: number; fromB: number;
+  toR: number; toG: number; toB: number;
+  startTime: number; duration: number;
+}> = new Map();
+const lastKnownOwnerColor: Map<string, string> = new Map();
+const COLOR_TRANSITION_MS = 2500;
+
+function getTransitionedColor(territoryId: string, targetHex: string, alpha: number): string {
+  const prev = lastKnownOwnerColor.get(territoryId);
+  if (prev && prev !== targetHex) {
+    // Start transition
+    const [fr, fg, fb] = hexToRgb(prev);
+    const [tr, tg, tb] = hexToRgb(targetHex);
+    territoryColorTransitions.set(territoryId, {
+      fromR: fr, fromG: fg, fromB: fb,
+      toR: tr, toG: tg, toB: tb,
+      startTime: performance.now(), duration: COLOR_TRANSITION_MS,
+    });
+  }
+  lastKnownOwnerColor.set(territoryId, targetHex);
+
+  const trans = territoryColorTransitions.get(territoryId);
+  if (trans) {
+    const elapsed = performance.now() - trans.startTime;
+    const t = Math.min(1, elapsed / trans.duration);
+    // Ease out cubic
+    const ease = 1 - Math.pow(1 - t, 3);
+    const r = Math.round(trans.fromR + (trans.toR - trans.fromR) * ease);
+    const g = Math.round(trans.fromG + (trans.toG - trans.fromG) * ease);
+    const b = Math.round(trans.fromB + (trans.toB - trans.fromB) * ease);
+    if (t >= 1) territoryColorTransitions.delete(territoryId);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  return hexToRgba(targetHex, alpha);
+}
+
+function hexToRgb(hex: string): [number, number, number] {
+  return [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+  ];
+}
+
+/** Check if any territory is in a non-peaceful war state or has active color transitions */
 function hasActiveWarState(territories?: TerritoryInfo[]): boolean {
+  if (territoryColorTransitions.size > 0) return true;
   if (!territories) return false;
   return territories.some(t => {
     const ws = t.war_state as string;
