@@ -199,6 +199,7 @@ export function SurvivalHUD({
         horseX={horseX} horseZ={horseZ} isMounted={isMounted}
         mapOpen={mapOpen} onCloseMap={onCloseMap}
         territories={territories}
+        remotePlayersRef={remotePlayersRef}
       />
 
       {/* ═══ BOTTOM LEFT — Survival bars + Faction identity + War alerts ═══ */}
