@@ -859,6 +859,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
           {/* 3D Territory ownership banners */}
           <TerritoryMarkers territories={clanSystem.territories} playerPositionRef={playerPositionRef} />
           <TerritoryGateBanners territories={clanSystem.territories} playerPositionRef={playerPositionRef} />
+          <TerritoryBoundaries territories={clanSystem.territories} playerPositionRef={playerPositionRef} />
 
           {/* Multiplayer broadcaster — samples local state and pushes to network hook */}
           {multiplayer.connected && (
