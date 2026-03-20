@@ -603,7 +603,6 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         territories={clanSystem.territories}
         challenges={clanSystem.challenges}
         myClan={clanSystem.myClan ? { clan_name: clanSystem.myClan.clan_name, clan_color: clanSystem.myClan.clan_color, clan_id: clanSystem.myClan.clan_id } : null}
-        killEvents={killFeedEntries}
       />
 
       {/* WarKillFeed removed — kill feed is now integrated into WarScoreboard */}
