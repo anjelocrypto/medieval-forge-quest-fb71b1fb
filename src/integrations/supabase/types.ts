@@ -747,6 +747,10 @@ export type Database = {
         }[]
       }
       get_my_clan: { Args: { _wallet_address: string }; Returns: Json }
+      get_recent_war_kills: {
+        Args: { _challenge_id: string; _limit?: number }
+        Returns: Json
+      }
       get_territories: { Args: never; Returns: Json }
       get_territory_history: {
         Args: { _limit?: number; _territory_id?: string }

@@ -57,7 +57,7 @@ import { TerritoryBoundaries } from './components/TerritoryBoundaries';
 import { useClanSystem } from './hooks/useClanSystem';
 import { WarNotifications } from './ui/WarNotifications';
 import { WarScoreboard } from './ui/WarScoreboard';
-import { KillEntry } from './ui/WarKillFeed';
+import type { KillEntry } from './ui/WarKillFeed';
 import { CLAN_COLOR_HEX, ClanColor } from './hooks/useClanSystem';
 import { useCharacter } from './context/CharacterContext';
 import { WebGLRecovery } from './systems/WebGLRecovery';
@@ -603,7 +603,6 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         territories={clanSystem.territories}
         challenges={clanSystem.challenges}
         myClan={clanSystem.myClan ? { clan_name: clanSystem.myClan.clan_name, clan_color: clanSystem.myClan.clan_color, clan_id: clanSystem.myClan.clan_id } : null}
-        killEvents={killFeedEntries}
       />
 
       {/* WarKillFeed removed — kill feed is now integrated into WarScoreboard */}

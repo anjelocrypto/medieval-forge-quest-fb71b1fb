@@ -1,7 +1,15 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CLAN_COLOR_HEX, ClanColor, TerritoryInfo, ChallengeInfo } from '../hooks/useClanSystem';
-import type { KillEntry } from './WarKillFeed';
+
+interface ServerKillEntry {
+  id: string;
+  killer_name: string;
+  victim_name: string;
+  killer_clan_color: string;
+  victim_clan_color: string;
+  created_at: string;
+}
 
 interface WarScoreboardProps {
   playerX: number;
@@ -9,7 +17,6 @@ interface WarScoreboardProps {
   territories: TerritoryInfo[];
   challenges: ChallengeInfo[];
   myClan: { clan_name: string; clan_color: string; clan_id: string } | null;
-  killEvents?: KillEntry[];
 }
 
 const panelStyle: React.CSSProperties = {
@@ -19,11 +26,11 @@ const panelStyle: React.CSSProperties = {
   boxShadow: '0 4px 24px hsla(0,0%,0%,0.5), inset 0 1px 0 hsla(40,30%,60%,0.06)',
 };
 
-const MAX_FEED_ENTRIES = 3;
-const FEED_ENTRY_LIFETIME = 10000;
+const MAX_FEED_ENTRIES = 5;
 
-export function WarScoreboard({ playerX, playerZ, territories, challenges, myClan, killEvents }: WarScoreboardProps) {
+export function WarScoreboard({ playerX, playerZ, territories, challenges, myClan }: WarScoreboardProps) {
   const [killStats, setKillStats] = useState<{ attacker_kills: number; defender_kills: number; total: number } | null>(null);
+  const [recentKills, setRecentKills] = useState<ServerKillEntry[]>([]);
   const [timeDisplay, setTimeDisplay] = useState('');
 
   // Find active/pending_resolution war the player is inside of
@@ -39,12 +46,18 @@ export function WarScoreboard({ playerX, playerZ, territories, challenges, myCla
   const territory = activeChallenge ? territories.find(t => t.id === activeChallenge.territory_id) : null;
   const isActive = activeChallenge?.status === 'active';
 
-  // Poll kill stats — faster during active war (10s), slower otherwise (30s)
+  // Poll kill stats + recent kills — faster during active war (10s), slower otherwise (30s)
   const fetchKills = useCallback(async () => {
-    if (!activeChallenge) { setKillStats(null); return; }
+    if (!activeChallenge) { setKillStats(null); setRecentKills([]); return; }
     try {
-      const { data } = await supabase.rpc('get_war_kills' as any, { _challenge_id: activeChallenge.id });
-      const kd = typeof data === 'string' ? JSON.parse(data) : data;
+      // Fetch aggregate stats and recent individual kills in parallel
+      const [statsRes, recentRes] = await Promise.all([
+        supabase.rpc('get_war_kills' as any, { _challenge_id: activeChallenge.id }),
+        supabase.rpc('get_recent_war_kills' as any, { _challenge_id: activeChallenge.id, _limit: MAX_FEED_ENTRIES }),
+      ]);
+
+      // Process aggregate stats
+      const kd = typeof statsRes.data === 'string' ? JSON.parse(statsRes.data) : statsRes.data;
       if (kd && typeof kd === 'object' && !Array.isArray(kd)) {
         const kills: { clan_id: string; kill_count: number }[] = kd.kills || [];
         let attackerKills = 0, defenderKills = 0;
@@ -55,11 +68,17 @@ export function WarScoreboard({ playerX, playerZ, territories, challenges, myCla
         }
         setKillStats({ attacker_kills: attackerKills, defender_kills: defenderKills, total: Number(kd.total) || (attackerKills + defenderKills) });
       }
+
+      // Process recent kills
+      const recentData = typeof recentRes.data === 'string' ? JSON.parse(recentRes.data) : recentRes.data;
+      if (Array.isArray(recentData)) {
+        setRecentKills(recentData.slice(0, MAX_FEED_ENTRIES));
+      }
     } catch { /* silent */ }
   }, [activeChallenge?.id, activeChallenge?.attacker_clan_id, activeChallenge?.defender_clan_id]);
 
   useEffect(() => {
-    if (!activeChallenge) { setKillStats(null); return; }
+    if (!activeChallenge) { setKillStats(null); setRecentKills([]); return; }
     fetchKills();
     const pollMs = isActive ? 10000 : 30000;
     const interval = setInterval(() => { if (!document.hidden) fetchKills(); }, pollMs);
@@ -89,11 +108,6 @@ export function WarScoreboard({ playerX, playerZ, territories, challenges, myCla
   // Progress bar ratio
   const totalKills = ks.attacker_kills + ks.defender_kills;
   const attackerPct = totalKills > 0 ? (ks.attacker_kills / totalKills) * 100 : 50;
-
-  // Filter kill events relevant to this challenge's territory
-  const relevantKills = (killEvents || [])
-    .filter(k => Date.now() - k.timestamp < FEED_ENTRY_LIFETIME)
-    .slice(-MAX_FEED_ENTRIES);
 
   return (
     <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
@@ -174,20 +188,20 @@ export function WarScoreboard({ playerX, playerZ, territories, challenges, myCla
           </div>
         </div>
 
-        {/* Integrated kill feed */}
-        {relevantKills.length > 0 && (
+        {/* Server-sourced global kill feed */}
+        {recentKills.length > 0 && (
           <div className="mt-2 pt-1.5 flex flex-col gap-0.5" style={{ borderTop: '1px solid hsla(40,30%,45%,0.15)' }}>
-            {relevantKills.map((entry) => {
-              const age = Date.now() - entry.timestamp;
-              const opacity = Math.max(0.4, 1 - age / FEED_ENTRY_LIFETIME);
+            {recentKills.map((entry) => {
+              const killerHex = CLAN_COLOR_HEX[entry.killer_clan_color as ClanColor] || '#e74c3c';
+              const victimHex = CLAN_COLOR_HEX[entry.victim_clan_color as ClanColor] || '#27ae60';
               return (
-                <div key={entry.id} className="flex items-center justify-center gap-1" style={{ opacity, fontSize: 9 }}>
-                  <span className="font-bold truncate" style={{ color: entry.killerColor, maxWidth: 80 }}>
-                    {entry.killerName}
+                <div key={entry.id} className="flex items-center justify-center gap-1" style={{ fontSize: 9 }}>
+                  <span className="font-bold truncate" style={{ color: killerHex, maxWidth: 80 }}>
+                    {entry.killer_name}
                   </span>
                   <span style={{ color: 'hsl(0,60%,55%)' }}>⚔️</span>
-                  <span className="font-bold truncate" style={{ color: entry.victimColor, maxWidth: 80 }}>
-                    {entry.victimName}
+                  <span className="font-bold truncate" style={{ color: victimHex, maxWidth: 80 }}>
+                    {entry.victim_name}
                   </span>
                 </div>
               );
