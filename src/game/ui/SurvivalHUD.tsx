@@ -31,6 +31,7 @@ interface HUDProps {
   territories?: TerritoryInfo[];
   challenges?: ChallengeInfo[];
   myClan?: { clan_name: string; clan_color: string; clan_id: string } | null;
+  remotePlayersRef?: React.RefObject<Map<string, InterpolatedPlayer>>;
 }
 
 /* ── shared panel style ── */
