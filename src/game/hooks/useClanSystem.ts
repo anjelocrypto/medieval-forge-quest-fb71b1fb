@@ -208,6 +208,8 @@ export function useClanSystem() {
   }, [loadMyClan, loadClans, loadTerritories, loadChallenges]);
 
   // Realtime subscription for territory changes — instant TERRA-style updates
+  // Debounced to avoid rapid-fire RPC calls when transition_war_states updates multiple rows
+  const realtimeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const channel = supabase
       .channel('territory-updates')
@@ -215,14 +217,21 @@ export function useClanSystem() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'territories' },
         () => {
-          // Territory changed — reload territories and challenges
-          loadTerritories();
-          loadChallenges();
+          // Debounce: batch rapid updates into one reload
+          if (realtimeDebounceRef.current) clearTimeout(realtimeDebounceRef.current);
+          realtimeDebounceRef.current = setTimeout(() => {
+            realtimeDebounceRef.current = null;
+            loadTerritories();
+            loadChallenges();
+          }, 500);
         }
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      if (realtimeDebounceRef.current) clearTimeout(realtimeDebounceRef.current);
+      supabase.removeChannel(channel);
+    };
   }, [loadTerritories, loadChallenges]);
 
   // Fallback poll for challenges every 30s (challenges table not on Realtime)
