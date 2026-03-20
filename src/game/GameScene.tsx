@@ -57,7 +57,7 @@ import { TerritoryBoundaries } from './components/TerritoryBoundaries';
 import { useClanSystem } from './hooks/useClanSystem';
 import { WarNotifications } from './ui/WarNotifications';
 import { WarScoreboard } from './ui/WarScoreboard';
-import { KillEntry } from './ui/WarKillFeed';
+import type { KillEntry } from './ui/WarKillFeed';
 import { CLAN_COLOR_HEX, ClanColor } from './hooks/useClanSystem';
 import { useCharacter } from './context/CharacterContext';
 import { WebGLRecovery } from './systems/WebGLRecovery';
