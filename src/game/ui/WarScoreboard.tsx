@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CLAN_COLOR_HEX, ClanColor, TerritoryInfo, ChallengeInfo } from '../hooks/useClanSystem';
+import type { KillEntry } from './WarKillFeed';
 
 interface WarScoreboardProps {
   playerX: number;
@@ -8,6 +9,7 @@ interface WarScoreboardProps {
   territories: TerritoryInfo[];
   challenges: ChallengeInfo[];
   myClan: { clan_name: string; clan_color: string; clan_id: string } | null;
+  killEvents?: KillEntry[];
 }
 
 const panelStyle: React.CSSProperties = {
@@ -17,8 +19,12 @@ const panelStyle: React.CSSProperties = {
   boxShadow: '0 4px 24px hsla(0,0%,0%,0.5), inset 0 1px 0 hsla(40,30%,60%,0.06)',
 };
 
-export function WarScoreboard({ playerX, playerZ, territories, challenges, myClan }: WarScoreboardProps) {
+const MAX_FEED_ENTRIES = 3;
+const FEED_ENTRY_LIFETIME = 10000;
+
+export function WarScoreboard({ playerX, playerZ, territories, challenges, myClan, killEvents }: WarScoreboardProps) {
   const [killStats, setKillStats] = useState<{ attacker_kills: number; defender_kills: number; total: number } | null>(null);
+  const [timeDisplay, setTimeDisplay] = useState('');
 
   // Find active/pending_resolution war the player is inside of
   const activeChallenge = challenges.find(ch => {
@@ -31,6 +37,7 @@ export function WarScoreboard({ playerX, playerZ, territories, challenges, myCla
   });
 
   const territory = activeChallenge ? territories.find(t => t.id === activeChallenge.territory_id) : null;
+  const isActive = activeChallenge?.status === 'active';
 
   // Poll kill stats — faster during active war (10s), slower otherwise (30s)
   const fetchKills = useCallback(async () => {
@@ -51,8 +58,6 @@ export function WarScoreboard({ playerX, playerZ, territories, challenges, myCla
     } catch { /* silent */ }
   }, [activeChallenge?.id, activeChallenge?.attacker_clan_id, activeChallenge?.defender_clan_id]);
 
-  const isActive = activeChallenge?.status === 'active';
-
   useEffect(() => {
     if (!activeChallenge) { setKillStats(null); return; }
     fetchKills();
@@ -61,26 +66,39 @@ export function WarScoreboard({ playerX, playerZ, territories, challenges, myCla
     return () => clearInterval(interval);
   }, [fetchKills, activeChallenge?.id, isActive]);
 
+  // Live timer — updates every second
+  useEffect(() => {
+    if (!isActive || !activeChallenge) { setTimeDisplay(''); return; }
+    const update = () => {
+      const remainMs = Math.max(0, new Date(activeChallenge.war_ends_at).getTime() - Date.now());
+      const mins = Math.floor(remainMs / 60000);
+      const secs = Math.floor((remainMs % 60000) / 1000);
+      setTimeDisplay(remainMs > 0 ? `${mins}:${secs.toString().padStart(2, '0')}` : '0:00');
+    };
+    update();
+    const iv = setInterval(update, 1000);
+    return () => clearInterval(iv);
+  }, [isActive, activeChallenge?.war_ends_at]);
+
   if (!activeChallenge || !territory) return null;
 
   const ks = killStats || { attacker_kills: 0, defender_kills: 0, total: 0 };
   const attackerColor = CLAN_COLOR_HEX[activeChallenge.attacker_clan_color as ClanColor] || '#e74c3c';
   const defenderColor = CLAN_COLOR_HEX[activeChallenge.defender_clan_color as ClanColor] || '#27ae60';
 
-  // Progress bar: ratio of attacker vs defender kills
+  // Progress bar ratio
   const totalKills = ks.attacker_kills + ks.defender_kills;
   const attackerPct = totalKills > 0 ? (ks.attacker_kills / totalKills) * 100 : 50;
 
-  // Time remaining
-  const endTime = isActive ? new Date(activeChallenge.war_ends_at).getTime() : 0;
-  const remainMs = Math.max(0, endTime - Date.now());
-  const remainMin = Math.floor(remainMs / 60000);
-  const remainSec = Math.floor((remainMs % 60000) / 1000);
+  // Filter kill events relevant to this challenge's territory
+  const relevantKills = (killEvents || [])
+    .filter(k => Date.now() - k.timestamp < FEED_ENTRY_LIFETIME)
+    .slice(-MAX_FEED_ENTRIES);
 
   return (
     <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
       <div className="rounded-lg px-5 py-3 min-w-[320px]" style={panelStyle}>
-        {/* Territory name + state badge */}
+        {/* Territory name + state badge + timer */}
         <div className="flex items-center justify-center gap-2 mb-2">
           <span style={{ fontSize: 12, fontWeight: 700, color: 'hsl(40,30%,85%)', letterSpacing: '0.04em' }}>
             {territory.name}
@@ -94,12 +112,12 @@ export function WarScoreboard({ playerX, playerZ, territories, challenges, myCla
           }}>
             {isActive ? '🔥 WAR ACTIVE' : '⏳ AWAITING RESOLUTION'}
           </span>
-          {isActive && remainMs > 0 && (
+          {isActive && timeDisplay && (
             <span style={{
-              fontSize: 10, fontWeight: 700, color: 'hsl(0,60%,60%)',
+              fontSize: 11, fontWeight: 700, color: 'hsl(0,60%,60%)',
               fontFamily: 'ui-monospace, monospace',
             }}>
-              {remainMin}:{remainSec.toString().padStart(2, '0')}
+              {timeDisplay}
             </span>
           )}
         </div>
@@ -127,7 +145,6 @@ export function WarScoreboard({ playerX, playerZ, territories, challenges, myCla
 
         {/* Scoreboard */}
         <div className="flex items-center justify-between gap-3">
-          {/* Attacker side */}
           <div className="flex flex-col items-center min-w-[80px]">
             <span style={{
               fontSize: 26, fontWeight: 800, color: attackerColor,
@@ -140,13 +157,9 @@ export function WarScoreboard({ playerX, playerZ, territories, challenges, myCla
               KILLS
             </span>
           </div>
-
-          {/* VS divider */}
           <div className="flex flex-col items-center">
             <span style={{ fontSize: 10, fontWeight: 700, color: 'hsl(40,15%,40%)', letterSpacing: '0.06em' }}>VS</span>
           </div>
-
-          {/* Defender side */}
           <div className="flex flex-col items-center min-w-[80px]">
             <span style={{
               fontSize: 26, fontWeight: 800, color: defenderColor,
@@ -160,6 +173,27 @@ export function WarScoreboard({ playerX, playerZ, territories, challenges, myCla
             </span>
           </div>
         </div>
+
+        {/* Integrated kill feed */}
+        {relevantKills.length > 0 && (
+          <div className="mt-2 pt-1.5 flex flex-col gap-0.5" style={{ borderTop: '1px solid hsla(40,30%,45%,0.15)' }}>
+            {relevantKills.map((entry) => {
+              const age = Date.now() - entry.timestamp;
+              const opacity = Math.max(0.4, 1 - age / FEED_ENTRY_LIFETIME);
+              return (
+                <div key={entry.id} className="flex items-center justify-center gap-1" style={{ opacity, fontSize: 9 }}>
+                  <span className="font-bold truncate" style={{ color: entry.killerColor, maxWidth: 80 }}>
+                    {entry.killerName}
+                  </span>
+                  <span style={{ color: 'hsl(0,60%,55%)' }}>⚔️</span>
+                  <span className="font-bold truncate" style={{ color: entry.victimColor, maxWidth: 80 }}>
+                    {entry.victimName}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Alpha notice */}
         <div className="mt-2 pt-1.5 text-center" style={{ borderTop: '1px solid hsla(40,30%,45%,0.15)' }}>
