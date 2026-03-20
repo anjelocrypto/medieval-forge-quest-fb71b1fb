@@ -31,8 +31,55 @@ const MAP_SIZE = 160;
 const MAP_WORLD_RADIUS = 120;
 const FULL_MAP_WORLD = 850;
 
-/** Check if any territory is in a non-peaceful war state */
+/** Smooth color transition cache for territory ownership changes */
+const territoryColorTransitions: Map<string, {
+  fromR: number; fromG: number; fromB: number;
+  toR: number; toG: number; toB: number;
+  startTime: number; duration: number;
+}> = new Map();
+const lastKnownOwnerColor: Map<string, string> = new Map();
+const COLOR_TRANSITION_MS = 2500;
+
+function getTransitionedColor(territoryId: string, targetHex: string, alpha: number): string {
+  const prev = lastKnownOwnerColor.get(territoryId);
+  if (prev && prev !== targetHex) {
+    // Start transition
+    const [fr, fg, fb] = hexToRgb(prev);
+    const [tr, tg, tb] = hexToRgb(targetHex);
+    territoryColorTransitions.set(territoryId, {
+      fromR: fr, fromG: fg, fromB: fb,
+      toR: tr, toG: tg, toB: tb,
+      startTime: performance.now(), duration: COLOR_TRANSITION_MS,
+    });
+  }
+  lastKnownOwnerColor.set(territoryId, targetHex);
+
+  const trans = territoryColorTransitions.get(territoryId);
+  if (trans) {
+    const elapsed = performance.now() - trans.startTime;
+    const t = Math.min(1, elapsed / trans.duration);
+    // Ease out cubic
+    const ease = 1 - Math.pow(1 - t, 3);
+    const r = Math.round(trans.fromR + (trans.toR - trans.fromR) * ease);
+    const g = Math.round(trans.fromG + (trans.toG - trans.fromG) * ease);
+    const b = Math.round(trans.fromB + (trans.toB - trans.fromB) * ease);
+    if (t >= 1) territoryColorTransitions.delete(territoryId);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  return hexToRgba(targetHex, alpha);
+}
+
+function hexToRgb(hex: string): [number, number, number] {
+  return [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+  ];
+}
+
+/** Check if any territory is in a non-peaceful war state or has active color transitions */
 function hasActiveWarState(territories?: TerritoryInfo[]): boolean {
+  if (territoryColorTransitions.size > 0) return true;
   if (!territories) return false;
   return territories.some(t => {
     const ws = t.war_state as string;
@@ -157,13 +204,14 @@ function drawMinimap(
         ctx.setLineDash([]);
 
       } else {
-        // Peaceful — strong stable faction color fill
-        ctx.fillStyle = hexToRgba(clanHex, 0.4);
+        // Peaceful — strong stable faction color fill with smooth transition
+        const tid = territory?.id || r.id;
+        ctx.fillStyle = getTransitionedColor(tid, clanHex, 0.4);
         ctx.beginPath();
         ctx.arc(rx, rz, rr, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = hexToRgba(clanHex, 0.6);
+        ctx.strokeStyle = getTransitionedColor(tid, clanHex, 0.6);
         ctx.lineWidth = fullMap ? 2.5 : 1.5;
         ctx.stroke();
       }
@@ -469,7 +517,7 @@ export function Minimap({
     };
   }, [hasWar, mapOpen, playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories, getPlayerDots]);
 
-  // Static draw when no war is active
+  // Static draw when no war is active — includes lightweight interval for live player dots
   const drawMini = useCallback(() => {
     if (hasWar) return;
     const canvas = miniRef.current;
@@ -494,6 +542,30 @@ export function Minimap({
     if (!mapOpen) drawMini();
     else drawFull();
   }, [drawMini, drawFull, mapOpen]);
+
+  // Lightweight peacetime interval to keep player dots live (500ms)
+  useEffect(() => {
+    if (hasWar) return; // war loop already handles this
+    const iv = setInterval(() => {
+      if (document.hidden) return;
+      if (!mapOpen) {
+        const canvas = miniRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          if (ctx) drawMinimap(ctx, MAP_SIZE, MAP_WORLD_RADIUS, playerX, playerZ, playerRotation,
+            horseX, horseZ, isMounted, false, territories, 0, getPlayerDots());
+        }
+      } else {
+        const canvas = fullRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          if (ctx) drawMinimap(ctx, 600, FULL_MAP_WORLD, playerX, playerZ, playerRotation,
+            horseX, horseZ, isMounted, true, territories, 0, getPlayerDots());
+        }
+      }
+    }, 500);
+    return () => clearInterval(iv);
+  }, [hasWar, mapOpen, playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories, getPlayerDots]);
 
   return (
     <>
