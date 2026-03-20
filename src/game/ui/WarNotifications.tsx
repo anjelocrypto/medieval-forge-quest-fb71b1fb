@@ -73,6 +73,7 @@ export function WarNotifications({ challenges, territories, myClan, playerX, pla
           borderColor: 'hsla(30,70%,50%,0.5)',
         });
       } else if (prevStatus === 'pending' && ch.status === 'active') {
+        playWarStartedSound();
         addToast({
           icon: '🔥',
           title: 'WAR HAS BEGUN!',
