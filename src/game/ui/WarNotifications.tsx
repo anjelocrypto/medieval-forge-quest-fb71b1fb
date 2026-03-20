@@ -62,6 +62,7 @@ export function WarNotifications({ challenges, territories, myClan, playerX, pla
       const opponentName = isAttacker ? ch.defender_clan_name : ch.attacker_clan_name;
 
       if (!prevStatus && (ch.status === 'pending')) {
+        playChallengedSound();
         addToast({
           icon: '⚔️',
           title: isAttacker ? 'Challenge Issued!' : 'Territory Challenged!',
