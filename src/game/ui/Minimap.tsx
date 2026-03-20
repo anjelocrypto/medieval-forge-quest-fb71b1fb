@@ -6,6 +6,13 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { SETTLEMENTS, REGIONS, ROADS, SMALL_POIS, LANDMARKS, getRegionAt } from '../world/RegionData';
 import { TerritoryInfo, CLAN_COLOR_HEX, ClanColor } from '../hooks/useClanSystem';
+import type { InterpolatedPlayer } from '../multiplayer/types';
+
+interface RemotePlayerDot {
+  x: number;
+  z: number;
+  color: string;
+}
 
 interface MinimapProps {
   playerX: number;
@@ -17,6 +24,7 @@ interface MinimapProps {
   mapOpen: boolean;
   onCloseMap: () => void;
   territories?: TerritoryInfo[];
+  remotePlayersRef?: React.RefObject<Map<string, InterpolatedPlayer>>;
 }
 
 const MAP_SIZE = 160;
