@@ -5,6 +5,7 @@ import { Minimap } from './Minimap';
 import type { TerritoryInfo, ChallengeInfo } from '../hooks/useClanSystem';
 import { CLAN_COLOR_HEX } from '../hooks/useClanSystem';
 import { FACTIONS, FactionDef } from '../systems/FactionData';
+import type { InterpolatedPlayer } from '../multiplayer/types';
 
 interface HUDProps {
   survival: SurvivalState;
