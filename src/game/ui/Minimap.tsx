@@ -303,6 +303,22 @@ function drawMinimap(
     }
   }
 
+  // Remote player dots
+  if (remotePlayers) {
+    for (const rp of remotePlayers) {
+      const rpx = (rp.x - cx) * scale + half;
+      const rpz = (rp.z - cz) * scale + half;
+      if (rpx < -5 || rpx > size + 5 || rpz < -5 || rpz > size + 5) continue;
+      ctx.fillStyle = rp.color;
+      ctx.beginPath();
+      ctx.arc(rpx, rpz, fullMap ? 3 : 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+  }
+
   // Player indicator
   const ppx = (playerX - cx) * scale + half;
   const ppz = (playerZ - cz) * scale + half;
