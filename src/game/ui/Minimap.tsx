@@ -52,7 +52,8 @@ function drawMinimap(
   isMounted: boolean,
   fullMap: boolean,
   territories?: TerritoryInfo[],
-  animPhase?: number, // 0-1 animation phase for flashing
+  animPhase?: number,
+  remotePlayers?: RemotePlayerDot[],
 ) {
   const half = size / 2;
   const scale = half / worldRadius;
