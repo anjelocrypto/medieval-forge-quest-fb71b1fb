@@ -1,11 +1,12 @@
 /**
  * War Notifications — toast-style alerts for territory war state changes.
- * Tracks previous challenge states and fires visual alerts on transitions.
+ * Tracks previous challenge states and fires visual alerts + sound cues on transitions.
  * Also shows a territory awareness bar when inside a contested/active/cooldown zone.
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { ChallengeInfo, TerritoryInfo, ClanColor } from '../hooks/useClanSystem';
 import { CLAN_COLOR_HEX } from '../hooks/useClanSystem';
+import { playChallengedSound, playWarStartedSound, playCapturedSound, playResolvedSound } from '../systems/WarSounds';
 
 interface Props {
   challenges: ChallengeInfo[];
