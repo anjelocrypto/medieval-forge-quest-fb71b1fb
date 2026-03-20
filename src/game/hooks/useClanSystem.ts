@@ -207,15 +207,32 @@ export function useClanSystem() {
     loadChallenges();
   }, [loadMyClan, loadClans, loadTerritories, loadChallenges]);
 
-  // Poll territories/challenges every 60s (reduced from 15s for cost)
-  // transition_war_states is now called via backend cron, not every client
+  // Realtime subscription for territory changes — instant TERRA-style updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('territory-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'territories' },
+        () => {
+          // Territory changed — reload territories and challenges
+          loadTerritories();
+          loadChallenges();
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [loadTerritories, loadChallenges]);
+
+  // Fallback poll for challenges every 30s (challenges table not on Realtime)
   useEffect(() => {
     const iv = setInterval(async () => {
-      if (document.hidden) return; // skip when tab not visible
-      await Promise.all([loadTerritories(), loadChallenges()]);
-    }, 60000);
+      if (document.hidden) return;
+      await loadChallenges();
+    }, 30000);
     return () => clearInterval(iv);
-  }, [loadTerritories, loadChallenges]);
+  }, [loadChallenges]);
 
   // ========== Mutations ==========
   const withLoading = useCallback(async <T>(fn: () => Promise<T>): Promise<T> => {
