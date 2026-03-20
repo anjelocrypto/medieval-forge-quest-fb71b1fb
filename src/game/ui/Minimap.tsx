@@ -204,13 +204,14 @@ function drawMinimap(
         ctx.setLineDash([]);
 
       } else {
-        // Peaceful — strong stable faction color fill
-        ctx.fillStyle = hexToRgba(clanHex, 0.4);
+        // Peaceful — strong stable faction color fill with smooth transition
+        const tid = territory?.id || r.id;
+        ctx.fillStyle = getTransitionedColor(tid, clanHex, 0.4);
         ctx.beginPath();
         ctx.arc(rx, rz, rr, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = hexToRgba(clanHex, 0.6);
+        ctx.strokeStyle = getTransitionedColor(tid, clanHex, 0.6);
         ctx.lineWidth = fullMap ? 2.5 : 1.5;
         ctx.stroke();
       }
