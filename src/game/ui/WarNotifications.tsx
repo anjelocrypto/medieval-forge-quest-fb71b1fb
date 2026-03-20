@@ -91,6 +91,7 @@ export function WarNotifications({ challenges, territories, myClan, playerX, pla
           borderColor: 'hsla(40,70%,50%,0.5)',
         });
       } else if ((prevStatus === 'pending_resolution' || prevStatus === 'active') && ch.status === 'resolved') {
+        playCapturedSound();
         const defenderHeld = ch.resolution === 'defender_held';
         const weWon = (defenderHeld && !isAttacker) || (!defenderHeld && isAttacker);
         addToast({
