@@ -53,6 +53,7 @@ import { FactionPanel } from './ui/FactionPanel';
 import { TerritoryIndicator } from './components/TerritoryIndicator';
 import { TerritoryMarkers } from './components/TerritoryMarkers';
 import { TerritoryGateBanners } from './components/TerritoryGateBanners';
+import { TerritoryBoundaries } from './components/TerritoryBoundaries';
 import { useClanSystem } from './hooks/useClanSystem';
 import { WarNotifications } from './ui/WarNotifications';
 import { WarScoreboard } from './ui/WarScoreboard';
@@ -583,6 +584,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         territories={clanSystem.territories}
         challenges={clanSystem.challenges}
         myClan={clanSystem.myClan ? { clan_name: clanSystem.myClan.clan_name, clan_color: clanSystem.myClan.clan_color, clan_id: clanSystem.myClan.clan_id } : null}
+        remotePlayersRef={multiplayer.remotePlayersRef}
       />
 
       {/* War notifications — toast alerts + territory awareness */}
@@ -858,6 +860,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
           {/* 3D Territory ownership banners */}
           <TerritoryMarkers territories={clanSystem.territories} playerPositionRef={playerPositionRef} />
           <TerritoryGateBanners territories={clanSystem.territories} playerPositionRef={playerPositionRef} />
+          <TerritoryBoundaries territories={clanSystem.territories} playerPositionRef={playerPositionRef} />
 
           {/* Multiplayer broadcaster — samples local state and pushes to network hook */}
           {multiplayer.connected && (

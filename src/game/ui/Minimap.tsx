@@ -6,6 +6,13 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { SETTLEMENTS, REGIONS, ROADS, SMALL_POIS, LANDMARKS, getRegionAt } from '../world/RegionData';
 import { TerritoryInfo, CLAN_COLOR_HEX, ClanColor } from '../hooks/useClanSystem';
+import type { InterpolatedPlayer } from '../multiplayer/types';
+
+interface RemotePlayerDot {
+  x: number;
+  z: number;
+  color: string;
+}
 
 interface MinimapProps {
   playerX: number;
@@ -17,6 +24,7 @@ interface MinimapProps {
   mapOpen: boolean;
   onCloseMap: () => void;
   territories?: TerritoryInfo[];
+  remotePlayersRef?: React.RefObject<Map<string, InterpolatedPlayer>>;
 }
 
 const MAP_SIZE = 160;
@@ -44,7 +52,8 @@ function drawMinimap(
   isMounted: boolean,
   fullMap: boolean,
   territories?: TerritoryInfo[],
-  animPhase?: number, // 0-1 animation phase for flashing
+  animPhase?: number,
+  remotePlayers?: RemotePlayerDot[],
 ) {
   const half = size / 2;
   const scale = half / worldRadius;
@@ -294,6 +303,22 @@ function drawMinimap(
     }
   }
 
+  // Remote player dots
+  if (remotePlayers) {
+    for (const rp of remotePlayers) {
+      const rpx = (rp.x - cx) * scale + half;
+      const rpz = (rp.z - cz) * scale + half;
+      if (rpx < -5 || rpx > size + 5 || rpz < -5 || rpz > size + 5) continue;
+      ctx.fillStyle = rp.color;
+      ctx.beginPath();
+      ctx.arc(rpx, rpz, fullMap ? 3 : 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+  }
+
   // Player indicator
   const ppx = (playerX - cx) * scale + half;
   const ppz = (playerZ - cz) * scale + half;
@@ -375,7 +400,7 @@ function hexToRgba(hex: string, alpha: number): string {
 
 export function Minimap({
   playerX, playerZ, playerRotation,
-  horseX, horseZ, isMounted, mapOpen, onCloseMap, territories,
+  horseX, horseZ, isMounted, mapOpen, onCloseMap, territories, remotePlayersRef,
 }: MinimapProps) {
   const miniRef = useRef<HTMLCanvasElement>(null);
   const fullRef = useRef<HTMLCanvasElement>(null);
@@ -384,10 +409,23 @@ export function Minimap({
 
   const hasWar = hasActiveWarState(territories);
 
+  /** Extract remote player dots from ref (read-only snapshot) */
+  const getPlayerDots = useCallback((): RemotePlayerDot[] => {
+    const map = remotePlayersRef?.current;
+    if (!map || map.size === 0) return [];
+    const dots: RemotePlayerDot[] = [];
+    for (const rp of map.values()) {
+      const color = rp.clanColor
+        ? (CLAN_COLOR_HEX[rp.clanColor as ClanColor] || '#aaa')
+        : '#aaaaaa';
+      dots.push({ x: rp.renderPosition[0], z: rp.renderPosition[2], color });
+    }
+    return dots;
+  }, [remotePlayersRef]);
+
   // Animation loop for TERRA-style flashing during war states
   useEffect(() => {
     if (!hasWar) {
-      // No war — draw once statically
       animRef.current = 0;
       return;
     }
@@ -398,7 +436,8 @@ export function Minimap({
     const animate = () => {
       if (!running) return;
       const elapsed = performance.now() - startTime;
-      animRef.current = (elapsed % 2000) / 2000; // 2-second cycle
+      animRef.current = (elapsed % 2000) / 2000;
+      const dots = getPlayerDots();
 
       if (!mapOpen) {
         const canvas = miniRef.current;
@@ -406,7 +445,7 @@ export function Minimap({
           const ctx = canvas.getContext('2d');
           if (ctx) {
             drawMinimap(ctx, MAP_SIZE, MAP_WORLD_RADIUS, playerX, playerZ, playerRotation,
-              horseX, horseZ, isMounted, false, territories, animRef.current);
+              horseX, horseZ, isMounted, false, territories, animRef.current, dots);
           }
         }
       } else {
@@ -415,7 +454,7 @@ export function Minimap({
           const ctx = canvas.getContext('2d');
           if (ctx) {
             drawMinimap(ctx, 600, FULL_MAP_WORLD, playerX, playerZ, playerRotation,
-              horseX, horseZ, isMounted, true, territories, animRef.current);
+              horseX, horseZ, isMounted, true, territories, animRef.current, dots);
           }
         }
       }
@@ -428,28 +467,28 @@ export function Minimap({
       running = false;
       cancelAnimationFrame(rafRef.current);
     };
-  }, [hasWar, mapOpen, playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories]);
+  }, [hasWar, mapOpen, playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories, getPlayerDots]);
 
   // Static draw when no war is active
   const drawMini = useCallback(() => {
-    if (hasWar) return; // animation loop handles it
+    if (hasWar) return;
     const canvas = miniRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     drawMinimap(ctx, MAP_SIZE, MAP_WORLD_RADIUS, playerX, playerZ, playerRotation,
-      horseX, horseZ, isMounted, false, territories, 0);
-  }, [playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories, hasWar]);
+      horseX, horseZ, isMounted, false, territories, 0, getPlayerDots());
+  }, [playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories, hasWar, getPlayerDots]);
 
   const drawFull = useCallback(() => {
-    if (hasWar) return; // animation loop handles it
+    if (hasWar) return;
     const canvas = fullRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     drawMinimap(ctx, 600, FULL_MAP_WORLD, playerX, playerZ, playerRotation,
-      horseX, horseZ, isMounted, true, territories, 0);
-  }, [playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories, hasWar]);
+      horseX, horseZ, isMounted, true, territories, 0, getPlayerDots());
+  }, [playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories, hasWar, getPlayerDots]);
 
   useEffect(() => {
     if (!mapOpen) drawMini();

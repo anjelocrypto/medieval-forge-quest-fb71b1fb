@@ -5,6 +5,7 @@ import { Minimap } from './Minimap';
 import type { TerritoryInfo, ChallengeInfo } from '../hooks/useClanSystem';
 import { CLAN_COLOR_HEX } from '../hooks/useClanSystem';
 import { FACTIONS, FactionDef } from '../systems/FactionData';
+import type { InterpolatedPlayer } from '../multiplayer/types';
 
 interface HUDProps {
   survival: SurvivalState;
@@ -30,6 +31,7 @@ interface HUDProps {
   territories?: TerritoryInfo[];
   challenges?: ChallengeInfo[];
   myClan?: { clan_name: string; clan_color: string; clan_id: string } | null;
+  remotePlayersRef?: React.RefObject<Map<string, InterpolatedPlayer>>;
 }
 
 /* ── shared panel style ── */
@@ -166,7 +168,7 @@ export function SurvivalHUD({
   buildFeedback, damageFlash, progression, notification, availableBuildables,
   isMounted = false, playerX, playerZ, playerRotation, horseX, horseZ,
   mapOpen, onCloseMap, isSpeaking = false, trencheriBalance, territories,
-  challenges, myClan,
+  challenges, myClan, remotePlayersRef,
 }: HUDProps) {
   const lowHealth = survival.health < 25;
 
@@ -197,6 +199,7 @@ export function SurvivalHUD({
         horseX={horseX} horseZ={horseZ} isMounted={isMounted}
         mapOpen={mapOpen} onCloseMap={onCloseMap}
         territories={territories}
+        remotePlayersRef={remotePlayersRef}
       />
 
       {/* ═══ BOTTOM LEFT — Survival bars + Faction identity + War alerts ═══ */}
