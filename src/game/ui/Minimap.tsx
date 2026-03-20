@@ -1,6 +1,7 @@
 /**
  * Minimap HUD — top-right corner showing player position, settlements, roads, horse, territory ownership.
  * Medieval-styled circular minimap with parchment aesthetic.
+ * TERRA-style flashing for contested / active_war / pending_resolution zones.
  */
 import { useRef, useEffect, useCallback } from 'react';
 import { SETTLEMENTS, REGIONS, ROADS, SMALL_POIS, LANDMARKS, getRegionAt } from '../world/RegionData';
@@ -18,9 +19,18 @@ interface MinimapProps {
   territories?: TerritoryInfo[];
 }
 
-const MAP_SIZE = 160; // minimap size in pixels
-const MAP_WORLD_RADIUS = 120; // world units visible from center
-const FULL_MAP_WORLD = 850; // full map view radius — expanded world
+const MAP_SIZE = 160;
+const MAP_WORLD_RADIUS = 120;
+const FULL_MAP_WORLD = 850;
+
+/** Check if any territory is in a non-peaceful war state */
+function hasActiveWarState(territories?: TerritoryInfo[]): boolean {
+  if (!territories) return false;
+  return territories.some(t => {
+    const ws = t.war_state as string;
+    return ws === 'contested' || ws === 'active_war' || ws === 'pending_resolution';
+  });
+}
 
 function drawMinimap(
   ctx: CanvasRenderingContext2D,
@@ -34,9 +44,11 @@ function drawMinimap(
   isMounted: boolean,
   fullMap: boolean,
   territories?: TerritoryInfo[],
+  animPhase?: number, // 0-1 animation phase for flashing
 ) {
   const half = size / 2;
   const scale = half / worldRadius;
+  const phase = animPhase ?? 0;
 
   ctx.clearRect(0, 0, size, size);
 
@@ -55,56 +67,100 @@ function drawMinimap(
   const cx = fullMap ? 0 : playerX;
   const cz = fullMap ? 0 : playerZ;
 
-  // Region colors (base) — war-state aware
+  // Territory fills — TERRA-style strong colored zones
   for (const r of REGIONS) {
     const rx = (r.center[0] - cx) * scale + half;
     const rz = (r.center[1] - cz) * scale + half;
     const rr = r.radius * scale;
     const territory = territories?.find(t => t.id === r.id);
     const warState = (territory?.war_state as string) || 'peaceful';
+
     if (territory?.owning_clan_color) {
       const clanHex = CLAN_COLOR_HEX[territory.owning_clan_color as ClanColor] || r.color;
-      ctx.fillStyle = clanHex + '50';
-      ctx.beginPath();
-      ctx.arc(rx, rz, rr, 0, Math.PI * 2);
-      ctx.fill();
-      // War-state ring styling
-      if (warState === 'contested') {
-        ctx.strokeStyle = '#e67e22cc';
+
+      // === TERRA-STYLE TERRITORY FILL ===
+      if (warState === 'active_war') {
+        // Strong pulsing red flash — alternates between clan color and red
+        const flashAlpha = 0.35 + Math.sin(phase * Math.PI * 2) * 0.25; // pulses 0.10 - 0.60
+        const isRedPhase = Math.sin(phase * Math.PI * 2 * 2) > 0; // faster alternation
+        ctx.fillStyle = isRedPhase
+          ? `rgba(231, 76, 60, ${flashAlpha})`
+          : hexToRgba(clanHex, flashAlpha);
+        ctx.beginPath();
+        ctx.arc(rx, rz, rr, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Thick pulsing red border
+        ctx.strokeStyle = `rgba(231, 76, 60, ${0.6 + Math.sin(phase * Math.PI * 2) * 0.3})`;
+        ctx.lineWidth = fullMap ? 4 : 3;
+        ctx.stroke();
+
+        // Inner glow ring
+        ctx.strokeStyle = `rgba(231, 76, 60, ${0.2 + Math.sin(phase * Math.PI * 2) * 0.15})`;
+        ctx.lineWidth = fullMap ? 8 : 5;
+        ctx.stroke();
+
+      } else if (warState === 'contested') {
+        // Orange flashing — alternates opacity
+        const flashAlpha = 0.25 + Math.sin(phase * Math.PI * 2) * 0.2;
+        ctx.fillStyle = hexToRgba(clanHex, flashAlpha);
+        ctx.beginPath();
+        ctx.arc(rx, rz, rr, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Dashed orange border that pulses
+        ctx.strokeStyle = `rgba(230, 126, 34, ${0.5 + Math.sin(phase * Math.PI * 2) * 0.3})`;
         ctx.lineWidth = fullMap ? 3 : 2;
         ctx.setLineDash([6, 4]);
         ctx.stroke();
         ctx.setLineDash([]);
-      } else if (warState === 'active_war') {
-        ctx.strokeStyle = '#e74c3cee';
-        ctx.lineWidth = fullMap ? 3.5 : 2.5;
-        ctx.stroke();
-        // Pulsing inner glow
-        ctx.strokeStyle = '#e74c3c60';
-        ctx.lineWidth = fullMap ? 6 : 4;
-        ctx.stroke();
-      } else if (warState === 'cooldown') {
-        ctx.strokeStyle = '#3498db80';
-        ctx.lineWidth = fullMap ? 2 : 1.5;
-        ctx.setLineDash([3, 5]);
-        ctx.stroke();
-        ctx.setLineDash([]);
+
       } else if (warState === 'pending_resolution') {
-        ctx.strokeStyle = '#f39c12dd';
+        // Amber pulsing glow
+        const flashAlpha = 0.25 + Math.sin(phase * Math.PI * 2 * 0.7) * 0.15;
+        ctx.fillStyle = hexToRgba(clanHex, flashAlpha);
+        ctx.beginPath();
+        ctx.arc(rx, rz, rr, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = `rgba(243, 156, 18, ${0.5 + Math.sin(phase * Math.PI * 2 * 0.7) * 0.2})`;
         ctx.lineWidth = fullMap ? 3 : 2;
         ctx.setLineDash([2, 3]);
         ctx.stroke();
         ctx.setLineDash([]);
-        ctx.strokeStyle = '#f39c1250';
-        ctx.lineWidth = fullMap ? 5 : 3;
+
+        // Outer amber glow
+        ctx.strokeStyle = `rgba(243, 156, 18, ${0.15 + Math.sin(phase * Math.PI * 2 * 0.7) * 0.1})`;
+        ctx.lineWidth = fullMap ? 6 : 4;
         ctx.stroke();
+
+      } else if (warState === 'cooldown') {
+        // Stable blue tint
+        ctx.fillStyle = hexToRgba(clanHex, 0.3);
+        ctx.beginPath();
+        ctx.arc(rx, rz, rr, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = `rgba(52, 152, 219, 0.4)`;
+        ctx.lineWidth = fullMap ? 2 : 1.5;
+        ctx.setLineDash([3, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
       } else {
-        ctx.strokeStyle = clanHex + '80';
+        // Peaceful — strong stable faction color fill
+        ctx.fillStyle = hexToRgba(clanHex, 0.4);
+        ctx.beginPath();
+        ctx.arc(rx, rz, rr, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = hexToRgba(clanHex, 0.6);
         ctx.lineWidth = fullMap ? 2.5 : 1.5;
         ctx.stroke();
       }
     } else {
-      ctx.fillStyle = r.color + '40';
+      // Unclaimed — faint neutral fill
+      ctx.fillStyle = r.color + '30';
       ctx.beginPath();
       ctx.arc(rx, rz, rr, 0, Math.PI * 2);
       ctx.fill();
@@ -153,7 +209,6 @@ function drawMinimap(
 
     ctx.fillStyle = color;
     if (s.type === 'capital') {
-      // Diamond shape for capital
       ctx.beginPath();
       ctx.moveTo(sx, sz - dotSize);
       ctx.lineTo(sx + dotSize, sz);
@@ -170,7 +225,6 @@ function drawMinimap(
       ctx.fill();
     }
 
-    // Labels on full map
     if (fullMap) {
       ctx.fillStyle = '#2a1a0a';
       ctx.font = s.size === 'large' ? 'bold 11px serif' : '9px serif';
@@ -202,9 +256,20 @@ function drawMinimap(
       if (t.owning_clan_name && t.owning_clan_color) {
         const cHex = CLAN_COLOR_HEX[t.owning_clan_color as ClanColor] || '#888';
         ctx.fillStyle = cHex;
-        ctx.font = 'bold 8px serif';
+        ctx.font = 'bold 9px serif';
         ctx.textAlign = 'center';
         ctx.fillText(`🏴 ${t.owning_clan_name}`, tx, tz + 12);
+
+        // War state label
+        const ws = t.war_state as string;
+        if (ws !== 'peaceful') {
+          ctx.fillStyle = ws === 'active_war' ? '#e74c3c' : ws === 'contested' ? '#e67e22' : ws === 'pending_resolution' ? '#f39c12' : '#3498db';
+          ctx.font = 'bold 8px serif';
+          ctx.fillText(
+            ws === 'active_war' ? '🔥 WAR' : ws === 'contested' ? '⚔️ CHALLENGED' : ws === 'pending_resolution' ? '⏳ PENDING' : '🛡️ COOLDOWN',
+            tx, tz + 22
+          );
+        }
       } else {
         ctx.fillStyle = '#6a6a6a80';
         ctx.font = 'italic 7px serif';
@@ -254,7 +319,6 @@ function drawMinimap(
     ctx.beginPath();
     ctx.arc(half, half, half - 2, 0, Math.PI * 2);
     ctx.stroke();
-    // Compass N
     ctx.fillStyle = '#8a2020';
     ctx.font = 'bold 10px serif';
     ctx.textAlign = 'center';
@@ -274,7 +338,6 @@ function drawMinimap(
 
   // Full map title and frame
   if (fullMap) {
-    // Parchment border
     ctx.strokeStyle = '#4a3a20';
     ctx.lineWidth = 4;
     ctx.strokeRect(2, 2, size - 4, size - 4);
@@ -282,13 +345,11 @@ function drawMinimap(
     ctx.lineWidth = 1;
     ctx.strokeRect(6, 6, size - 12, size - 12);
 
-    // Title
     ctx.fillStyle = '#2a1a0a';
     ctx.font = 'bold 16px serif';
     ctx.textAlign = 'center';
     ctx.fillText('The Realm', size / 2, 24);
 
-    // Region names
     for (const r of REGIONS) {
       const rx = (r.center[0] - cx) * scale + half;
       const rz = (r.center[1] - cz) * scale + half;
@@ -304,30 +365,91 @@ function drawMinimap(
   }
 }
 
+/** Convert hex color to rgba string */
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export function Minimap({
   playerX, playerZ, playerRotation,
   horseX, horseZ, isMounted, mapOpen, onCloseMap, territories,
 }: MinimapProps) {
   const miniRef = useRef<HTMLCanvasElement>(null);
   const fullRef = useRef<HTMLCanvasElement>(null);
+  const animRef = useRef(0);
+  const rafRef = useRef<number>(0);
 
+  const hasWar = hasActiveWarState(territories);
+
+  // Animation loop for TERRA-style flashing during war states
+  useEffect(() => {
+    if (!hasWar) {
+      // No war — draw once statically
+      animRef.current = 0;
+      return;
+    }
+
+    let running = true;
+    const startTime = performance.now();
+
+    const animate = () => {
+      if (!running) return;
+      const elapsed = performance.now() - startTime;
+      animRef.current = (elapsed % 2000) / 2000; // 2-second cycle
+
+      if (!mapOpen) {
+        const canvas = miniRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            drawMinimap(ctx, MAP_SIZE, MAP_WORLD_RADIUS, playerX, playerZ, playerRotation,
+              horseX, horseZ, isMounted, false, territories, animRef.current);
+          }
+        }
+      } else {
+        const canvas = fullRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            drawMinimap(ctx, 600, FULL_MAP_WORLD, playerX, playerZ, playerRotation,
+              horseX, horseZ, isMounted, true, territories, animRef.current);
+          }
+        }
+      }
+
+      rafRef.current = requestAnimationFrame(animate);
+    };
+
+    rafRef.current = requestAnimationFrame(animate);
+    return () => {
+      running = false;
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, [hasWar, mapOpen, playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories]);
+
+  // Static draw when no war is active
   const drawMini = useCallback(() => {
+    if (hasWar) return; // animation loop handles it
     const canvas = miniRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     drawMinimap(ctx, MAP_SIZE, MAP_WORLD_RADIUS, playerX, playerZ, playerRotation,
-      horseX, horseZ, isMounted, false, territories);
-  }, [playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories]);
+      horseX, horseZ, isMounted, false, territories, 0);
+  }, [playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories, hasWar]);
 
   const drawFull = useCallback(() => {
+    if (hasWar) return; // animation loop handles it
     const canvas = fullRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     drawMinimap(ctx, 600, FULL_MAP_WORLD, playerX, playerZ, playerRotation,
-      horseX, horseZ, isMounted, true, territories);
-  }, [playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories]);
+      horseX, horseZ, isMounted, true, territories, 0);
+  }, [playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories, hasWar]);
 
   useEffect(() => {
     if (!mapOpen) drawMini();
@@ -336,7 +458,6 @@ export function Minimap({
 
   return (
     <>
-      {/* Minimap — top right */}
       {!mapOpen && (
         <div className="absolute right-4 pointer-events-none" style={{ width: MAP_SIZE, height: MAP_SIZE, top: 130, zIndex: 50 }}>
           <canvas ref={miniRef} width={MAP_SIZE} height={MAP_SIZE}
@@ -344,7 +465,6 @@ export function Minimap({
         </div>
       )}
 
-      {/* Full map overlay */}
       {mapOpen && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-auto"
           style={{ background: 'rgba(0,0,0,0.6)', zIndex: 60 }} onClick={onCloseMap}>

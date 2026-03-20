@@ -20,11 +20,13 @@ const POLE_H = 6;
 // Each territory gets 2 gate banners along primary approach directions
 // Offsets are based on known road approach angles from RegionData/ROADS
 const GATE_OFFSETS: Record<string, [number, number][]> = {
-  'territory_thornwall':  [[60, 50], [-40, 60]],   // SE approach, NE approach
-  'territory_rivermoor':  [[-50, -50], [-60, 20]],  // SW approach, W approach
-  'territory_stonepeak':  [[50, -50], [30, 60]],    // SE approach, E approach
-  'territory_darkhollow': [[-50, 50], [-60, -20]],  // NW approach, W approach
-  'territory_goldenvale': [[50, -50], [50, 20]],    // E approach, SE approach
+  'thornwall':  [[60, 50], [-40, 60]],   // SE approach, NE approach
+  'rivermoor':  [[-50, -50], [-60, 20]],  // SW approach, W approach
+  'stonepeak':  [[50, -50], [30, 60]],    // SE approach, E approach
+  'darkhollow': [[-50, 50], [-60, -20]],  // NW approach, W approach
+  'goldenvale': [[50, -50], [50, 20]],    // E approach, SE approach
+  'frostmere':  [[50, -40], [-40, -50]],  // SE approach, SW approach (Yetis)
+  'blackthorn': [[-40, 40], [50, 30]],    // NW approach, E approach (Dogs)
 };
 
 function GateBanner({ x, z, color, isClaimed, clanName }: {
