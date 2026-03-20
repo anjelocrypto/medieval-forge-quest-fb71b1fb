@@ -606,14 +606,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         killEvents={killFeedEntries}
       />
 
-      {/* War Kill Feed — top-right during active wars */}
-      <WarKillFeed
-        playerX={playerPositionRef.current.x}
-        playerZ={playerPositionRef.current.z}
-        territories={clanSystem.territories}
-        challenges={clanSystem.challenges}
-        killEvents={killFeedEntries}
-      />
+      {/* WarKillFeed removed — kill feed is now integrated into WarScoreboard */}
 
       {/* Respawn invulnerability indicator */}
       {invulnTimeLeft > 0 && (
