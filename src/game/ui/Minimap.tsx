@@ -407,6 +407,31 @@ function drawMinimap(
       ctx.textAlign = 'center';
       ctx.fillText(region.name, half, size - 6);
     }
+
+    // Territory name labels on minimap — only show nearby visible ones
+    if (territories) {
+      ctx.textAlign = 'center';
+      for (const t of territories) {
+        const tx = (t.center_x - cx) * scale + half;
+        const tz = (t.center_z - cz) * scale + half;
+        // Only render if center is within the minimap circle (with margin)
+        const dxp = tx - half;
+        const dzp = tz - half;
+        if (Math.sqrt(dxp * dxp + dzp * dzp) > half - 12) continue;
+
+        const ws = t.war_state as string;
+        if (t.owning_clan_name) {
+          const cHex = CLAN_COLOR_HEX[t.owning_clan_color as ClanColor] || '#888';
+          ctx.fillStyle = ws === 'active_war' ? '#e74c3c' : ws === 'contested' ? '#e67e22' : cHex;
+          ctx.font = 'bold 7px serif';
+          ctx.fillText(t.name.split(' ')[0], tx, tz - 3); // first word only to save space
+        } else {
+          ctx.fillStyle = '#6a6a6a80';
+          ctx.font = 'italic 6px serif';
+          ctx.fillText(t.name.split(' ')[0], tx, tz - 3);
+        }
+      }
+    }
   }
 
   // Full map title and frame
