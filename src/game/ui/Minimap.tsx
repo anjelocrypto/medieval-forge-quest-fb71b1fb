@@ -469,7 +469,7 @@ export function Minimap({
     };
   }, [hasWar, mapOpen, playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories, getPlayerDots]);
 
-  // Static draw when no war is active
+  // Static draw when no war is active — includes lightweight interval for live player dots
   const drawMini = useCallback(() => {
     if (hasWar) return;
     const canvas = miniRef.current;
@@ -494,6 +494,30 @@ export function Minimap({
     if (!mapOpen) drawMini();
     else drawFull();
   }, [drawMini, drawFull, mapOpen]);
+
+  // Lightweight peacetime interval to keep player dots live (500ms)
+  useEffect(() => {
+    if (hasWar) return; // war loop already handles this
+    const iv = setInterval(() => {
+      if (document.hidden) return;
+      if (!mapOpen) {
+        const canvas = miniRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          if (ctx) drawMinimap(ctx, MAP_SIZE, MAP_WORLD_RADIUS, playerX, playerZ, playerRotation,
+            horseX, horseZ, isMounted, false, territories, 0, getPlayerDots());
+        }
+      } else {
+        const canvas = fullRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          if (ctx) drawMinimap(ctx, 600, FULL_MAP_WORLD, playerX, playerZ, playerRotation,
+            horseX, horseZ, isMounted, true, territories, 0, getPlayerDots());
+        }
+      }
+    }, 500);
+    return () => clearInterval(iv);
+  }, [hasWar, mapOpen, playerX, playerZ, playerRotation, horseX, horseZ, isMounted, territories, getPlayerDots]);
 
   return (
     <>
