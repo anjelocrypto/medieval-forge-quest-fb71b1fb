@@ -53,6 +53,7 @@ import { FactionPanel } from './ui/FactionPanel';
 import { TerritoryIndicator } from './components/TerritoryIndicator';
 import { TerritoryMarkers } from './components/TerritoryMarkers';
 import { TerritoryGateBanners } from './components/TerritoryGateBanners';
+import { TerritoryBoundaries } from './components/TerritoryBoundaries';
 import { useClanSystem } from './hooks/useClanSystem';
 import { WarNotifications } from './ui/WarNotifications';
 import { WarScoreboard } from './ui/WarScoreboard';
