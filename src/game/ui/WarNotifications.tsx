@@ -82,6 +82,7 @@ export function WarNotifications({ challenges, territories, myClan, playerX, pla
           borderColor: 'hsla(0,70%,50%,0.6)',
         });
       } else if (prevStatus === 'active' && ch.status === 'pending_resolution') {
+        playResolvedSound();
         addToast({
           icon: '⏳',
           title: 'War Ended — Awaiting Resolution',
