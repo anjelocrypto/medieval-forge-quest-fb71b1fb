@@ -170,16 +170,20 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse, isMounted }: Pr
     if (dx * dx + dz * dz > 200 * 200) return null;
   }
 
+  const horsePlaceholder = (
+    <mesh>
+      <boxGeometry args={[1, 2, 2]} />
+      <meshStandardMaterial color="brown" wireframe />
+    </mesh>
+  );
+
   return (
     <group ref={groupRef} position={[posRef.current[0], posRef.current[1], posRef.current[2]]}>
-      <Suspense fallback={
-        <mesh>
-          <boxGeometry args={[1, 2, 2]} />
-          <meshStandardMaterial color="brown" wireframe />
-        </mesh>
-      }>
-        <HorseGLBModel moveSpeed={moveSpeedRef} renderPath="world-horse" />
-      </Suspense>
+      {horseModelNeeded ? (
+        <Suspense fallback={horsePlaceholder}>
+          <HorseGLBModel moveSpeed={moveSpeedRef} renderPath="world-horse" />
+        </Suspense>
+      ) : horsePlaceholder}
     </group>
   );
 }

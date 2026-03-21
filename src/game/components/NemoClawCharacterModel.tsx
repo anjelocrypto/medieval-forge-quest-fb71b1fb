@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useCallback, useState, Suspense } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -8,8 +8,7 @@ import nemoRunningUrl from '@/assets/nemorunning.glb?url';
 import nemoJumpUrl from '@/assets/nemojump.glb?url';
 import nemoGetHitUrl from '@/assets/nemogethit.glb?url';
 import nemoFightUrl from '@/assets/nemofight.glb?url';
-import nemoDance1Url from '@/assets/nemodance1.glb?url';
-import nemoDance2Url from '@/assets/nemodance2.glb?url';
+import { NemoClawEmotes } from './NemoClawEmotes';
 
 interface NemoClawGLBModelProps {
   moveSpeedRef: React.MutableRefObject<number>;
@@ -166,8 +165,8 @@ export function NemoClawGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounde
   const jumpGltf = useGLTF(nemoJumpUrl);
   const getHitGltf = useGLTF(nemoGetHitUrl);
   const fightGltf = useGLTF(nemoFightUrl);
-  const dance1Gltf = useGLTF(nemoDance1Url);
-  const dance2Gltf = useGLTF(nemoDance2Url);
+
+  const [emoteEverUsed, setEmoteEverUsed] = useState(false);
 
   const idleVisibleRef = useRef<THREE.Group>(null);
   const walkVisibleRef = useRef<THREE.Group>(null);
@@ -175,8 +174,6 @@ export function NemoClawGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounde
   const jumpVisibleRef = useRef<THREE.Group>(null);
   const hitVisibleRef = useRef<THREE.Group>(null);
   const fightVisibleRef = useRef<THREE.Group>(null);
-  const dance1VisibleRef = useRef<THREE.Group>(null);
-  const dance2VisibleRef = useRef<THREE.Group>(null);
 
   const lastEmoteIdRef = useRef<number>(0);
   const hitStartTimeRef = useRef(0);
@@ -191,8 +188,6 @@ export function NemoClawGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounde
   const sanitizedJumpClips = useMemo(() => sanitizeClips(jumpGltf.animations), [jumpGltf.animations]);
   const sanitizedHitClips = useMemo(() => sanitizeClips(getHitGltf.animations), [getHitGltf.animations]);
   const sanitizedFightClips = useMemo(() => sanitizeClips(fightGltf.animations), [fightGltf.animations]);
-  const sanitizedDance1Clips = useMemo(() => sanitizeClips(dance1Gltf.animations), [dance1Gltf.animations]);
-  const sanitizedDance2Clips = useMemo(() => sanitizeClips(dance2Gltf.animations), [dance2Gltf.animations]);
 
   const idleInspection = useMemo(() => inspectModel(idleGltf.scene), [idleGltf.scene]);
   const walkInspection = useMemo(() => inspectModel(walkGltf.scene), [walkGltf.scene]);
@@ -200,8 +195,6 @@ export function NemoClawGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounde
   const jumpInspection = useMemo(() => inspectModel(jumpGltf.scene), [jumpGltf.scene]);
   const hitInspection = useMemo(() => inspectModel(getHitGltf.scene), [getHitGltf.scene]);
   const fightInspection = useMemo(() => inspectModel(fightGltf.scene), [fightGltf.scene]);
-  const dance1Inspection = useMemo(() => inspectModel(dance1Gltf.scene), [dance1Gltf.scene]);
-  const dance2Inspection = useMemo(() => inspectModel(dance2Gltf.scene), [dance2Gltf.scene]);
 
   const canonicalHeight = useMemo(() => {
     if (idleInspection.height > 0.01) return idleInspection.height;
@@ -219,8 +212,6 @@ export function NemoClawGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounde
   const jumpNorm = useMemo(() => buildNormalization(jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const hitNorm = useMemo(() => buildNormalization(hitInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [hitInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const fightNorm = useMemo(() => buildNormalization(fightInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [fightInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
-  const dance1Norm = useMemo(() => buildNormalization(dance1Inspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [dance1Inspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
-  const dance2Norm = useMemo(() => buildNormalization(dance2Inspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [dance2Inspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
 
   const { actions: idleActions, clips: idleClips } = useAnimations(sanitizedIdleClips, idleGltf.scene);
   const idleClipName = useMemo(() => getFirstClipName(idleClips, /idle|stand/i), [idleClips]);
@@ -240,16 +231,10 @@ export function NemoClawGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounde
   const { actions: fightActions, clips: fightClips } = useAnimations(sanitizedFightClips, fightGltf.scene);
   const fightClipName = useMemo(() => getFirstClipName(fightClips, /fight|attack|punch/i), [fightClips]);
 
-  const { actions: dance1Actions, clips: dance1Clips } = useAnimations(sanitizedDance1Clips, dance1Gltf.scene);
-  const dance1ClipName = useMemo(() => getFirstClipName(dance1Clips, /dance/i), [dance1Clips]);
-
-  const { actions: dance2Actions, clips: dance2Clips } = useAnimations(sanitizedDance2Clips, dance2Gltf.scene);
-  const dance2ClipName = useMemo(() => getFirstClipName(dance2Clips, /dance/i), [dance2Clips]);
-
   useEffect(() => {
-    [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, getHitGltf.scene, fightGltf.scene, dance1Gltf.scene, dance2Gltf.scene].forEach(enableMeshShadows);
-    console.log('[NemoClaw] Clip names — idle:', idleClipName, 'walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName, 'hit:', hitClipName, 'fight:', fightClipName, 'dance1:', dance1ClipName, 'dance2:', dance2ClipName);
-  }, [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, getHitGltf.scene, fightGltf.scene, dance1Gltf.scene, dance2Gltf.scene, idleClipName, walkClipName, runClipName, jumpClipName, hitClipName, fightClipName, dance1ClipName, dance2ClipName]);
+    [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, getHitGltf.scene, fightGltf.scene].forEach(enableMeshShadows);
+    console.log('[NemoClaw] Clip names — idle:', idleClipName, 'walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName, 'hit:', hitClipName, 'fight:', fightClipName);
+  }, [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, getHitGltf.scene, fightGltf.scene, idleClipName, walkClipName, runClipName, jumpClipName, hitClipName, fightClipName]);
 
   // Initialize looping animations
   useEffect(() => {
@@ -288,20 +273,36 @@ export function NemoClawGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounde
     if (jumpVisibleRef.current) jumpVisibleRef.current.visible = false;
     if (hitVisibleRef.current) hitVisibleRef.current.visible = false;
     if (fightVisibleRef.current) fightVisibleRef.current.visible = false;
-    if (dance1VisibleRef.current) dance1VisibleRef.current.visible = false;
-    if (dance2VisibleRef.current) dance2VisibleRef.current.visible = false;
   }, []);
 
-  const setVisibleState = useCallback((state: NemoState) => {
+  const setVisibleState = useCallback((state: NemoState | string) => {
     if (idleVisibleRef.current) idleVisibleRef.current.visible = state === 'idle';
     if (walkVisibleRef.current) walkVisibleRef.current.visible = state === 'walk';
     if (runVisibleRef.current) runVisibleRef.current.visible = state === 'run';
     if (jumpVisibleRef.current) jumpVisibleRef.current.visible = state === 'jump';
     if (hitVisibleRef.current) hitVisibleRef.current.visible = state === 'hit';
     if (fightVisibleRef.current) fightVisibleRef.current.visible = state === 'fight';
-    if (dance1VisibleRef.current) dance1VisibleRef.current.visible = state === 'emote_dance1';
-    if (dance2VisibleRef.current) dance2VisibleRef.current.visible = state === 'emote_dance2';
   }, []);
+
+  // Detect first emote request to lazy-load emote GLBs
+  useEffect(() => {
+    if (activeEmote && !emoteEverUsed) setEmoteEverUsed(true);
+  }, [activeEmote, emoteEverUsed]);
+
+  const parentHideLocomotion = useCallback(() => {
+    if (idleVisibleRef.current) idleVisibleRef.current.visible = false;
+    if (walkVisibleRef.current) walkVisibleRef.current.visible = false;
+    if (runVisibleRef.current) runVisibleRef.current.visible = false;
+    if (jumpVisibleRef.current) jumpVisibleRef.current.visible = false;
+    if (hitVisibleRef.current) hitVisibleRef.current.visible = false;
+    if (fightVisibleRef.current) fightVisibleRef.current.visible = false;
+  }, []);
+
+  const onEmoteEnd = useCallback(() => {
+    stateRef.current = 'idle';
+    setVisibleState('idle');
+    onEmoteComplete();
+  }, [setVisibleState, onEmoteComplete]);
 
   useFrame(() => {
     const state = stateRef.current;
@@ -373,48 +374,8 @@ export function NemoClawGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounde
       return;
     }
 
-    // Emote triggers
-    const emoteId = activeEmoteId ?? 0;
-    if (activeEmote === 'nemodance1' && emoteId !== lastEmoteIdRef.current) {
-      lastEmoteIdRef.current = emoteId;
-      stateRef.current = 'emote_dance1';
-      setVisibleState('emote_dance1');
-      if (dance1ClipName) {
-        const a = dance1Actions[dance1ClipName];
-        if (a) { a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.enabled = true; a.play(); a.paused = false; }
-      }
-      return;
-    }
-    if (activeEmote === 'nemodance2' && emoteId !== lastEmoteIdRef.current) {
-      lastEmoteIdRef.current = emoteId;
-      stateRef.current = 'emote_dance2';
-      setVisibleState('emote_dance2');
-      if (dance2ClipName) {
-        const a = dance2Actions[dance2ClipName];
-        if (a) { a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.enabled = true; a.play(); a.paused = false; }
-      }
-      return;
-    }
-
-    // Emote states
-    if (state === 'emote_dance1') {
-      if (dance1ClipName) {
-        const a = dance1Actions[dance1ClipName];
-        if (a && a.time >= a.getClip().duration - 0.05) {
-          a.paused = true; stateRef.current = 'idle'; setVisibleState('idle'); onEmoteComplete();
-        }
-      } else { stateRef.current = 'idle'; setVisibleState('idle'); onEmoteComplete(); }
-      return;
-    }
-    if (state === 'emote_dance2') {
-      if (dance2ClipName) {
-        const a = dance2Actions[dance2ClipName];
-        if (a && a.time >= a.getClip().duration - 0.05) {
-          a.paused = true; stateRef.current = 'idle'; setVisibleState('idle'); onEmoteComplete();
-        }
-      } else { stateRef.current = 'idle'; setVisibleState('idle'); onEmoteComplete(); }
-      return;
-    }
+    // ===== EMOTE STATE — managed by lazy emote sub-component =====
+    if (state.startsWith('emote_')) return;
 
     // NORMAL LOCOMOTION
     let newState: NemoState;
@@ -459,8 +420,20 @@ export function NemoClawGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounde
       {renderModel(jumpVisibleRef, jumpNorm, jumpGltf.scene)}
       {renderModel(hitVisibleRef, hitNorm, getHitGltf.scene)}
       {renderModel(fightVisibleRef, fightNorm, fightGltf.scene)}
-      {renderModel(dance1VisibleRef, dance1Norm, dance1Gltf.scene)}
-      {renderModel(dance2VisibleRef, dance2Norm, dance2Gltf.scene)}
+      {emoteEverUsed && (
+        <Suspense fallback={null}>
+          <NemoClawEmotes
+            activeEmote={activeEmote}
+            activeEmoteId={activeEmoteId}
+            stateRef={stateRef as React.MutableRefObject<string>}
+            onEmoteEnd={onEmoteEnd}
+            parentHideLocomotion={parentHideLocomotion}
+            controllerHalfHeight={controllerHalfHeight}
+            canonicalHeight={canonicalHeight}
+            canonicalYawCorrection={canonicalYawCorrection}
+          />
+        </Suspense>
+      )}
     </group>
   );
 }

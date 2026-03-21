@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useCallback, useState, Suspense } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -8,8 +8,7 @@ import chillhouseRunningUrl from '@/assets/chillhouserunning.glb?url';
 import chillhouseJumpUrl from '@/assets/chillhousejump.glb?url';
 import chillhouseGetHitUrl from '@/assets/chillhousegethit.glb?url';
 import chillhouseFightUrl from '@/assets/chillhousefight.glb?url';
-import hiphopUrl from '@/assets/hiphop.glb?url';
-import gangnamUrl from '@/assets/gangnam.glb?url';
+import { ChillhouseEmotes } from './ChillhouseEmotes';
 
 interface ChillhouseGLBModelProps {
   moveSpeedRef: React.MutableRefObject<number>;
@@ -184,17 +183,15 @@ export function ChillhouseGLBModel({ moveSpeedRef, controllerHalfHeight, isGroun
   const walkGltf = useGLTF(chillhouseWalkingUrl);
   const runGltf = useGLTF(chillhouseRunningUrl);
   const jumpGltf = useGLTF(chillhouseJumpUrl);
-  const hiphopGltf = useGLTF(hiphopUrl);
-  const gangnamGltf = useGLTF(gangnamUrl);
   const getHitGltf = useGLTF(chillhouseGetHitUrl);
   const fightGltf = useGLTF(chillhouseFightUrl);
+
+  const [emoteEverUsed, setEmoteEverUsed] = useState(false);
 
   const idleVisibleRef = useRef<THREE.Group>(null);
   const walkVisibleRef = useRef<THREE.Group>(null);
   const runVisibleRef = useRef<THREE.Group>(null);
   const jumpVisibleRef = useRef<THREE.Group>(null);
-  const hiphopVisibleRef = useRef<THREE.Group>(null);
-  const gangnamVisibleRef = useRef<THREE.Group>(null);
   const hitVisibleRef = useRef<THREE.Group>(null);
   const fightVisibleRef = useRef<THREE.Group>(null);
 
@@ -203,15 +200,12 @@ export function ChillhouseGLBModel({ moveSpeedRef, controllerHalfHeight, isGroun
   const prevDamageFlashRef = useRef(0);
   const prevAttackingRef = useRef(false);
   const fightStartTimeRef = useRef(0);
-
   const stateRef = useRef<ChillhouseState>('idle');
 
   const sanitizedIdleClips = useMemo(() => sanitizeClips(idleGltf.animations), [idleGltf.animations]);
   const sanitizedWalkClips = useMemo(() => sanitizeClips(walkGltf.animations), [walkGltf.animations]);
   const sanitizedRunClips = useMemo(() => sanitizeClips(runGltf.animations), [runGltf.animations]);
   const sanitizedJumpClips = useMemo(() => sanitizeClips(jumpGltf.animations), [jumpGltf.animations]);
-  const sanitizedHiphopClips = useMemo(() => sanitizeClips(hiphopGltf.animations), [hiphopGltf.animations]);
-  const sanitizedGangnamClips = useMemo(() => sanitizeClips(gangnamGltf.animations), [gangnamGltf.animations]);
   const sanitizedHitClips = useMemo(() => sanitizeClips(getHitGltf.animations), [getHitGltf.animations]);
   const sanitizedFightClips = useMemo(() => sanitizeClips(fightGltf.animations), [fightGltf.animations]);
 
@@ -219,8 +213,6 @@ export function ChillhouseGLBModel({ moveSpeedRef, controllerHalfHeight, isGroun
   const walkInspection = useMemo(() => inspectModel('chillhouse_walk', walkGltf.scene), [walkGltf.scene]);
   const runInspection = useMemo(() => inspectModel('chillhouse_run', runGltf.scene), [runGltf.scene]);
   const jumpInspection = useMemo(() => inspectModel('chillhouse_jump', jumpGltf.scene), [jumpGltf.scene]);
-  const hiphopInspection = useMemo(() => inspectModel('chillhouse_hiphop', hiphopGltf.scene), [hiphopGltf.scene]);
-  const gangnamInspection = useMemo(() => inspectModel('chillhouse_gangnam', gangnamGltf.scene), [gangnamGltf.scene]);
   const hitInspection = useMemo(() => inspectModel('chillhouse_hit', getHitGltf.scene), [getHitGltf.scene]);
   const fightInspection = useMemo(() => inspectModel('chillhouse_fight', fightGltf.scene), [fightGltf.scene]);
 
@@ -238,8 +230,6 @@ export function ChillhouseGLBModel({ moveSpeedRef, controllerHalfHeight, isGroun
   const walkNorm = useMemo(() => buildNormalization(walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [walkInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const runNorm = useMemo(() => buildNormalization(runInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [runInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const jumpNorm = useMemo(() => buildNormalization(jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
-  const hiphopNorm = useMemo(() => buildNormalization(hiphopInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [hiphopInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
-  const gangnamNorm = useMemo(() => buildNormalization(gangnamInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [gangnamInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const hitNorm = useMemo(() => buildNormalization(hitInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [hitInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const fightNorm = useMemo(() => buildNormalization(fightInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [fightInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
 
@@ -255,12 +245,6 @@ export function ChillhouseGLBModel({ moveSpeedRef, controllerHalfHeight, isGroun
   const { actions: jumpActions, clips: jumpClips } = useAnimations(sanitizedJumpClips, jumpGltf.scene);
   const jumpClipName = useMemo(() => getFirstClipName(jumpClips, /jump/i), [jumpClips]);
 
-  const { actions: hiphopActions, clips: hiphopClips } = useAnimations(sanitizedHiphopClips, hiphopGltf.scene);
-  const hiphopClipName = useMemo(() => getFirstClipName(hiphopClips, /hip|hop|dance/i), [hiphopClips]);
-
-  const { actions: gangnamActions, clips: gangnamClips } = useAnimations(sanitizedGangnamClips, gangnamGltf.scene);
-  const gangnamClipName = useMemo(() => getFirstClipName(gangnamClips, /gangnam|dance/i), [gangnamClips]);
-
   const { actions: hitActions, clips: hitClips } = useAnimations(sanitizedHitClips, getHitGltf.scene);
   const hitClipName = useMemo(() => getFirstClipName(hitClips, /hit|hurt|damage/i), [hitClips]);
 
@@ -268,11 +252,10 @@ export function ChillhouseGLBModel({ moveSpeedRef, controllerHalfHeight, isGroun
   const fightClipName = useMemo(() => getFirstClipName(fightClips, /fight|attack|punch/i), [fightClips]);
 
   useEffect(() => {
-    [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hiphopGltf.scene, gangnamGltf.scene, getHitGltf.scene, fightGltf.scene].forEach(enableMeshShadows);
+    [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, getHitGltf.scene, fightGltf.scene].forEach(enableMeshShadows);
     console.log('[Chillhouse] Clip names — idle:', idleClipName, 'walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName, 'hit:', hitClipName, 'fight:', fightClipName);
-  }, [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hiphopGltf.scene, gangnamGltf.scene, getHitGltf.scene, fightGltf.scene, idleClipName, walkClipName, runClipName, jumpClipName, hitClipName, fightClipName]);
+  }, [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, getHitGltf.scene, fightGltf.scene, idleClipName, walkClipName, runClipName, jumpClipName, hitClipName, fightClipName]);
 
-  // Initialize idle (looping)
   useEffect(() => {
     if (!idleClipName) return;
     const a = idleActions[idleClipName]; if (!a) return;
@@ -280,7 +263,6 @@ export function ChillhouseGLBModel({ moveSpeedRef, controllerHalfHeight, isGroun
     return () => { a.stop(); };
   }, [idleActions, idleClipName]);
 
-  // Initialize walk (paused looping)
   useEffect(() => {
     if (!walkClipName) return;
     const a = walkActions[walkClipName]; if (!a) return;
@@ -288,7 +270,6 @@ export function ChillhouseGLBModel({ moveSpeedRef, controllerHalfHeight, isGroun
     return () => { a.stop(); };
   }, [walkActions, walkClipName]);
 
-  // Initialize run (paused looping)
   useEffect(() => {
     if (!runClipName) return;
     const a = runActions[runClipName]; if (!a) return;
@@ -296,7 +277,6 @@ export function ChillhouseGLBModel({ moveSpeedRef, controllerHalfHeight, isGroun
     return () => { a.stop(); };
   }, [runActions, runClipName]);
 
-  // Initialize jump (paused looping)
   useEffect(() => {
     if (!jumpClipName) return;
     const a = jumpActions[jumpClipName]; if (!a) return;
@@ -304,35 +284,48 @@ export function ChillhouseGLBModel({ moveSpeedRef, controllerHalfHeight, isGroun
     return () => { a.stop(); };
   }, [jumpActions, jumpClipName]);
 
-  // Initial visibility
   useEffect(() => {
     if (idleVisibleRef.current) idleVisibleRef.current.visible = true;
     if (walkVisibleRef.current) walkVisibleRef.current.visible = false;
     if (runVisibleRef.current) runVisibleRef.current.visible = false;
     if (jumpVisibleRef.current) jumpVisibleRef.current.visible = false;
-    if (hiphopVisibleRef.current) hiphopVisibleRef.current.visible = false;
-    if (gangnamVisibleRef.current) gangnamVisibleRef.current.visible = false;
     if (hitVisibleRef.current) hitVisibleRef.current.visible = false;
     if (fightVisibleRef.current) fightVisibleRef.current.visible = false;
   }, []);
 
-  const setVisibleState = useCallback((state: ChillhouseState) => {
+  const setVisibleState = useCallback((state: ChillhouseState | string) => {
     if (idleVisibleRef.current) idleVisibleRef.current.visible = state === 'idle';
     if (walkVisibleRef.current) walkVisibleRef.current.visible = state === 'walk';
     if (runVisibleRef.current) runVisibleRef.current.visible = state === 'run';
     if (jumpVisibleRef.current) jumpVisibleRef.current.visible = state === 'jump';
     if (hitVisibleRef.current) hitVisibleRef.current.visible = state === 'hit';
     if (fightVisibleRef.current) fightVisibleRef.current.visible = state === 'fight';
-    if (hiphopVisibleRef.current) hiphopVisibleRef.current.visible = state === 'emote_hiphop';
-    if (gangnamVisibleRef.current) gangnamVisibleRef.current.visible = state === 'emote_gangnam';
   }, []);
+
+  useEffect(() => {
+    if (activeEmote && !emoteEverUsed) setEmoteEverUsed(true);
+  }, [activeEmote, emoteEverUsed]);
+
+  const parentHideLocomotion = useCallback(() => {
+    if (idleVisibleRef.current) idleVisibleRef.current.visible = false;
+    if (walkVisibleRef.current) walkVisibleRef.current.visible = false;
+    if (runVisibleRef.current) runVisibleRef.current.visible = false;
+    if (jumpVisibleRef.current) jumpVisibleRef.current.visible = false;
+    if (hitVisibleRef.current) hitVisibleRef.current.visible = false;
+    if (fightVisibleRef.current) fightVisibleRef.current.visible = false;
+  }, []);
+
+  const onEmoteEnd = useCallback(() => {
+    stateRef.current = 'idle';
+    setVisibleState('idle');
+    onEmoteComplete();
+  }, [setVisibleState, onEmoteComplete]);
 
   useFrame(() => {
     const state = stateRef.current;
     const speed = moveSpeedRef.current;
     const grounded = isGroundedRef.current;
 
-    // ===== DAMAGE HIT TRIGGER =====
     const currentFlash = damageFlash ?? 0;
     if (currentFlash > 0 && prevDamageFlashRef.current === 0 && stateRef.current !== 'hit') {
       stateRef.current = 'hit';
@@ -345,7 +338,6 @@ export function ChillhouseGLBModel({ moveSpeedRef, controllerHalfHeight, isGroun
     }
     prevDamageFlashRef.current = currentFlash;
 
-    // ===== HIT STATE =====
     if (stateRef.current === 'hit') {
       const elapsed = (performance.now() - hitStartTimeRef.current) / 1000;
       if (hitClipName) {
@@ -364,7 +356,6 @@ export function ChillhouseGLBModel({ moveSpeedRef, controllerHalfHeight, isGroun
       return;
     }
 
-    // ===== FIGHT ATTACK TRIGGER =====
     const currentlyAttacking = (attackAnimRef?.current ?? 0) > 0;
     if (currentlyAttacking && !prevAttackingRef.current && (stateRef.current as ChillhouseState) !== 'fight' && (stateRef.current as ChillhouseState) !== 'hit') {
       stateRef.current = 'fight';
@@ -378,7 +369,6 @@ export function ChillhouseGLBModel({ moveSpeedRef, controllerHalfHeight, isGroun
     }
     prevAttackingRef.current = currentlyAttacking;
 
-    // ===== FIGHT STATE =====
     if (stateRef.current === 'fight') {
       if (fightClipName) {
         const a = fightActions[fightClipName];
@@ -399,66 +389,9 @@ export function ChillhouseGLBModel({ moveSpeedRef, controllerHalfHeight, isGroun
       return;
     }
 
-    // Handle emote trigger
-    const emoteId = activeEmoteId ?? 0;
-    if (activeEmote === 'hiphop' && emoteId !== lastEmoteIdRef.current) {
-      lastEmoteIdRef.current = emoteId;
-      stateRef.current = 'emote_hiphop';
-      setVisibleState('emote_hiphop');
-      if (hiphopClipName) {
-        const a = hiphopActions[hiphopClipName];
-        if (a) { a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.enabled = true; a.play(); a.paused = false; }
-      }
-      return;
-    }
-    if (activeEmote === 'gangnam' && emoteId !== lastEmoteIdRef.current) {
-      lastEmoteIdRef.current = emoteId;
-      stateRef.current = 'emote_gangnam';
-      setVisibleState('emote_gangnam');
-      if (gangnamClipName) {
-        const a = gangnamActions[gangnamClipName];
-        if (a) { a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.enabled = true; a.play(); a.paused = false; }
-      }
-      return;
-    }
+    // ===== EMOTE STATE — managed by lazy emote sub-component =====
+    if (state.startsWith('emote_')) return;
 
-    // ===== HIPHOP EMOTE STATE =====
-    if (state === 'emote_hiphop') {
-      if (hiphopClipName) {
-        const a = hiphopActions[hiphopClipName];
-        if (a && a.time >= a.getClip().duration - 0.05) {
-          a.paused = true;
-          stateRef.current = 'idle';
-          setVisibleState('idle');
-          onEmoteComplete();
-        }
-      } else {
-        stateRef.current = 'idle';
-        setVisibleState('idle');
-        onEmoteComplete();
-      }
-      return;
-    }
-
-    // ===== GANGNAM EMOTE STATE =====
-    if (state === 'emote_gangnam') {
-      if (gangnamClipName) {
-        const a = gangnamActions[gangnamClipName];
-        if (a && a.time >= a.getClip().duration - 0.05) {
-          a.paused = true;
-          stateRef.current = 'idle';
-          setVisibleState('idle');
-          onEmoteComplete();
-        }
-      } else {
-        stateRef.current = 'idle';
-        setVisibleState('idle');
-        onEmoteComplete();
-      }
-      return;
-    }
-
-    // ===== NORMAL LOCOMOTION =====
     let newState: ChillhouseState;
     if (!grounded) {
       newState = 'jump';
@@ -535,10 +468,22 @@ export function ChillhouseGLBModel({ moveSpeedRef, controllerHalfHeight, isGroun
       {renderModel(walkVisibleRef, walkNorm, walkGltf.scene)}
       {renderModel(runVisibleRef, runNorm, runGltf.scene)}
       {renderModel(jumpVisibleRef, jumpNorm, jumpGltf.scene)}
-      {renderModel(hiphopVisibleRef, hiphopNorm, hiphopGltf.scene)}
-      {renderModel(gangnamVisibleRef, gangnamNorm, gangnamGltf.scene)}
       {renderModel(hitVisibleRef, hitNorm, getHitGltf.scene)}
       {renderModel(fightVisibleRef, fightNorm, fightGltf.scene)}
+      {emoteEverUsed && (
+        <Suspense fallback={null}>
+          <ChillhouseEmotes
+            activeEmote={activeEmote}
+            activeEmoteId={activeEmoteId}
+            stateRef={stateRef as React.MutableRefObject<string>}
+            onEmoteEnd={onEmoteEnd}
+            parentHideLocomotion={parentHideLocomotion}
+            controllerHalfHeight={controllerHalfHeight}
+            canonicalHeight={canonicalHeight}
+            canonicalYawCorrection={canonicalYawCorrection}
+          />
+        </Suspense>
+      )}
     </group>
   );
 }
