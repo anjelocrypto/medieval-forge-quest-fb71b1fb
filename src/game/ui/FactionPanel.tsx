@@ -76,8 +76,7 @@ function WarStateBadge({ state, challenge }: { state: string; challenge?: Challe
   );
 }
 
-export function FactionPanel({ open, onClose, playerX, playerZ }: Props) {
-  const clan = useClanSystem();
+export function FactionPanel({ open, onClose, playerX, playerZ, clanSystem: clan }: Props) {
   const [tab, setTab] = useState<Tab>('my_faction');
   const [, setTick] = useState(0);
 

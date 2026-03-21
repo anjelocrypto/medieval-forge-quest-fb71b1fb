@@ -720,6 +720,7 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
         onClose={() => setClanOpen(false)}
         playerX={playerPositionRef.current.x}
         playerZ={playerPositionRef.current.z}
+        clanSystem={clanSystem}
       />
 
       {/* Territory entry indicator */}
