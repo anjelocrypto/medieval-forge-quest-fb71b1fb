@@ -286,6 +286,8 @@ export function useMultiplayer() {
     scheduleRemotePlayersCommit(true);
     initialStateSentRef.current = false;
     lastSentMetaRef.current = null;
+    lastSentPosRef.current = null;
+    idleTickCountRef.current = 0;
 
     logTiming('Channel creating', timings, 'connectStart');
 
