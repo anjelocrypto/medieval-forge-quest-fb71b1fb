@@ -80,7 +80,8 @@ export function WarScoreboard({ playerX, playerZ, territories, challenges, myCla
   useEffect(() => {
     if (!activeChallenge) { setKillStats(null); setRecentKills([]); return; }
     fetchKills();
-    const pollMs = isActive ? 10000 : 30000;
+    // Reduced from 10s/30s to 15s/45s — each poll fires 2 RPCs (stats + recent kills)
+    const pollMs = isActive ? 15000 : 45000;
     const interval = setInterval(() => { if (!document.hidden) fetchKills(); }, pollMs);
     return () => clearInterval(interval);
   }, [fetchKills, activeChallenge?.id, isActive]);

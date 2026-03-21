@@ -198,10 +198,11 @@ export function GameScene({ multiplayer, onLeaveWorld, onSceneReady }: GameScene
     }, trencheri.SPAWN_INTERVAL_MS);
 
     // Periodically fetch all active coins (so you see coins from other players too)
+    // Increased from 60s to 90s — spawn loop already returns fresh coins for local player
     const fetchInterval = setInterval(() => {
       if (document.hidden) return; // COST: skip when tab hidden
       trencheri.fetchActiveCoins();
-    }, trencheri.FETCH_INTERVAL_MS);
+    }, 90_000);
 
     return () => {
       clearInterval(spawnInterval);
