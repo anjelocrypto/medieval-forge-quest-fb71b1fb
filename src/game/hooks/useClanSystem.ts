@@ -234,12 +234,13 @@ export function useClanSystem() {
     };
   }, [loadTerritories, loadChallenges]);
 
-  // Fallback poll for challenges every 30s (challenges table not on Realtime)
+  // Fallback poll for challenges every 60s (challenges table not on Realtime)
+  // Reduced from 30s — realtime territory sub already triggers loadChallenges on state changes
   useEffect(() => {
     const iv = setInterval(async () => {
       if (document.hidden) return;
       await loadChallenges();
-    }, 30000);
+    }, 60000);
     return () => clearInterval(iv);
   }, [loadChallenges]);
 
