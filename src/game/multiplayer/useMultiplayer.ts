@@ -164,6 +164,9 @@ export function useMultiplayer() {
   const metaTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const localStateRef = useRef<NetworkPlayerState | null>(null);
   const lastSentMetaRef = useRef<SentMeta | null>(null);
+  // COST: Track last sent position to skip idle broadcasts
+  const lastSentPosRef = useRef<{ x: number; y: number; z: number; r: number } | null>(null);
+  const idleTickCountRef = useRef(0); // count idle ticks to send heartbeat every ~2s
   const staleCleanupRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timingsRef = useRef<StartupTimings>(createTimings());
   const firstRemoteReceivedRef = useRef(false);
@@ -283,6 +286,8 @@ export function useMultiplayer() {
     scheduleRemotePlayersCommit(true);
     initialStateSentRef.current = false;
     lastSentMetaRef.current = null;
+    lastSentPosRef.current = null;
+    idleTickCountRef.current = 0;
 
     logTiming('Channel creating', timings, 'connectStart');
 
@@ -455,13 +460,43 @@ export function useMultiplayer() {
         }
       });
 
-      // ===== HIGH-FREQ broadcast timer (movement) — paused when tab hidden =====
+      // ===== HIGH-FREQ broadcast timer (movement) — IDLE SKIP OPTIMIZATION =====
+      // Only sends when position/rotation actually changed, or a heartbeat every ~2s
+      const IDLE_POS_THRESHOLD = 0.05;  // world units
+      const IDLE_ROT_THRESHOLD = 0.02;  // radians
+      const IDLE_HEARTBEAT_TICKS = 10;  // send heartbeat every 10 idle ticks (2s at 5Hz)
+
       if (moveTimerRef.current) clearInterval(moveTimerRef.current);
       moveTimerRef.current = setInterval(() => {
         if (document.hidden) return; // COST: skip when tab not visible
         const state = localStateRef.current;
         const ch = channelRef.current;
         if (!state || !ch) return;
+
+        // Check if position/rotation actually changed
+        const lastP = lastSentPosRef.current;
+        if (lastP) {
+          const dx = Math.abs(state.position[0] - lastP.x);
+          const dy = Math.abs(state.position[1] - lastP.y);
+          const dz = Math.abs(state.position[2] - lastP.z);
+          const dr = Math.abs(state.rotation - lastP.r);
+          const moved = dx > IDLE_POS_THRESHOLD || dy > IDLE_POS_THRESHOLD || dz > IDLE_POS_THRESHOLD || dr > IDLE_ROT_THRESHOLD;
+
+          if (!moved && state.moveSpeed < 0.1) {
+            // Player is idle — only send heartbeat every ~2s so remotes don't mark us stale
+            idleTickCountRef.current++;
+            if (idleTickCountRef.current < IDLE_HEARTBEAT_TICKS) return; // SKIP
+            idleTickCountRef.current = 0;
+          } else {
+            idleTickCountRef.current = 0;
+          }
+        }
+
+        // Update last sent position
+        lastSentPosRef.current = {
+          x: state.position[0], y: state.position[1],
+          z: state.position[2], r: state.rotation,
+        };
 
         const payload: MovePayload = {
           i: state.playerId,
