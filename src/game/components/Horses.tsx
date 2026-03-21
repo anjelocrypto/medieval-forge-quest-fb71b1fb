@@ -3,8 +3,11 @@
  * Position/rotation are ref-driven during approach. React state only for
  * high-level transitions (called→approaching→waiting→idle).
  * Animation is driven by actual velocity, not state labels.
+ * 
+ * LAZY LOADING: Horse GLB models (~10MB) are deferred until the player
+ * is within 30u of the horse or calls it. Before that, a wireframe box is shown.
  */
-import { useRef, useEffect, Suspense } from 'react';
+import { useRef, useEffect, useState, Suspense } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { HorseData, HORSE_APPROACH_SPEED, HORSE_APPROACH_STOP_DIST } from '../systems/HorseData';
@@ -12,6 +15,8 @@ import { getTerrainHeight } from './Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
 import { resolveCollision } from '../systems/CollisionSystem';
 import { HorseGLBModel } from './HorseGLBModel';
+
+const HORSE_MODEL_LOAD_DIST = 30; // Only load full GLB model within this distance
 
 interface Props {
   horse: HorseData;
