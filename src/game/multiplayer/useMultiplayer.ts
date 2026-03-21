@@ -164,6 +164,9 @@ export function useMultiplayer() {
   const metaTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const localStateRef = useRef<NetworkPlayerState | null>(null);
   const lastSentMetaRef = useRef<SentMeta | null>(null);
+  // COST: Track last sent position to skip idle broadcasts
+  const lastSentPosRef = useRef<{ x: number; y: number; z: number; r: number } | null>(null);
+  const idleTickCountRef = useRef(0); // count idle ticks to send heartbeat every ~2s
   const staleCleanupRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timingsRef = useRef<StartupTimings>(createTimings());
   const firstRemoteReceivedRef = useRef(false);
