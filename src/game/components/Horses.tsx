@@ -44,11 +44,30 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse, isMounted }: Pr
     }
   }, [horse.state, horse.position, horse.rotation]);
 
+  // Trigger horse model load when called or player is close
+  useEffect(() => {
+    if (!horseModelNeeded && horse.state !== 'idle') {
+      setHorseModelNeeded(true);
+    }
+  }, [horse.state, horseModelNeeded]);
+
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
     animTimeRef.current += dt;
 
     if (horse.state === 'mounted' || isMounted) return;
+
+    // Check proximity for lazy horse model loading
+    if (!horseModelNeeded) {
+      const pp = playerPositionRef.current;
+      if (pp) {
+        const pdx = pp.x - posRef.current[0];
+        const pdz = pp.z - posRef.current[2];
+        if (pdx * pdx + pdz * pdz < HORSE_MODEL_LOAD_DIST * HORSE_MODEL_LOAD_DIST) {
+          setHorseModelNeeded(true);
+        }
+      }
+    }
 
     const playerPos = playerPositionRef.current;
     if (!playerPos) return;
