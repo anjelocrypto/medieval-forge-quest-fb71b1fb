@@ -33,6 +33,7 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse, isMounted }: Pr
   const posRef = useRef<[number, number, number]>([...horse.position]);
   const lastStateRef = useRef(horse.state);
   const smoothYRef = useRef(horse.position[1]);
+  const [horseModelNeeded, setHorseModelNeeded] = useState(false);
 
   useEffect(() => {
     if (horse.state !== lastStateRef.current) {
