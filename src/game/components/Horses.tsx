@@ -3,8 +3,11 @@
  * Position/rotation are ref-driven during approach. React state only for
  * high-level transitions (called→approaching→waiting→idle).
  * Animation is driven by actual velocity, not state labels.
+ * 
+ * LAZY LOADING: Horse GLB models (~10MB) are deferred until the player
+ * is within 30u of the horse or calls it. Before that, a wireframe box is shown.
  */
-import { useRef, useEffect, Suspense } from 'react';
+import { useRef, useEffect, useState, Suspense } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { HorseData, HORSE_APPROACH_SPEED, HORSE_APPROACH_STOP_DIST } from '../systems/HorseData';
@@ -12,6 +15,8 @@ import { getTerrainHeight } from './Terrain';
 import { getBridgeHeight } from '../world/BridgeData';
 import { resolveCollision } from '../systems/CollisionSystem';
 import { HorseGLBModel } from './HorseGLBModel';
+
+const HORSE_MODEL_LOAD_DIST = 30; // Only load full GLB model within this distance
 
 interface Props {
   horse: HorseData;
@@ -28,6 +33,7 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse, isMounted }: Pr
   const posRef = useRef<[number, number, number]>([...horse.position]);
   const lastStateRef = useRef(horse.state);
   const smoothYRef = useRef(horse.position[1]);
+  const [horseModelNeeded, setHorseModelNeeded] = useState(false);
 
   useEffect(() => {
     if (horse.state !== lastStateRef.current) {
@@ -38,11 +44,30 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse, isMounted }: Pr
     }
   }, [horse.state, horse.position, horse.rotation]);
 
+  // Trigger horse model load when called or player is close
+  useEffect(() => {
+    if (!horseModelNeeded && horse.state !== 'idle') {
+      setHorseModelNeeded(true);
+    }
+  }, [horse.state, horseModelNeeded]);
+
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
     animTimeRef.current += dt;
 
     if (horse.state === 'mounted' || isMounted) return;
+
+    // Check proximity for lazy horse model loading
+    if (!horseModelNeeded) {
+      const pp = playerPositionRef.current;
+      if (pp) {
+        const pdx = pp.x - posRef.current[0];
+        const pdz = pp.z - posRef.current[2];
+        if (pdx * pdx + pdz * pdz < HORSE_MODEL_LOAD_DIST * HORSE_MODEL_LOAD_DIST) {
+          setHorseModelNeeded(true);
+        }
+      }
+    }
 
     const playerPos = playerPositionRef.current;
     if (!playerPos) return;
@@ -145,16 +170,20 @@ export function Horse({ horse, playerPositionRef, onUpdateHorse, isMounted }: Pr
     if (dx * dx + dz * dz > 200 * 200) return null;
   }
 
+  const horsePlaceholder = (
+    <mesh>
+      <boxGeometry args={[1, 2, 2]} />
+      <meshStandardMaterial color="brown" wireframe />
+    </mesh>
+  );
+
   return (
     <group ref={groupRef} position={[posRef.current[0], posRef.current[1], posRef.current[2]]}>
-      <Suspense fallback={
-        <mesh>
-          <boxGeometry args={[1, 2, 2]} />
-          <meshStandardMaterial color="brown" wireframe />
-        </mesh>
-      }>
-        <HorseGLBModel moveSpeed={moveSpeedRef} renderPath="world-horse" />
-      </Suspense>
+      {horseModelNeeded ? (
+        <Suspense fallback={horsePlaceholder}>
+          <HorseGLBModel moveSpeed={moveSpeedRef} renderPath="world-horse" />
+        </Suspense>
+      ) : horsePlaceholder}
     </group>
   );
 }

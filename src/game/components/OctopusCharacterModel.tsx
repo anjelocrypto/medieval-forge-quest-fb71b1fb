@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useCallback, useState, Suspense } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -7,8 +7,8 @@ import octopusWalkingUrl from '@/assets/octopuswalking.glb?url';
 import octopusRunningUrl from '@/assets/octopusrunning.glb?url';
 import octopusJumpUrl from '@/assets/octopusjump.glb?url';
 import octopusGetHitUrl from '@/assets/octopusgethit.glb?url';
-import octopusDanceUrl from '@/assets/octopusdance.glb?url';
 import octopusKickUrl from '@/assets/octopuskick.glb?url';
+import { OctopusEmotes } from './OctopusEmotes';
 
 interface OctopusGLBModelProps {
   moveSpeedRef: React.MutableRefObject<number>;
@@ -184,8 +184,9 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   const runGltf = useGLTF(octopusRunningUrl);
   const jumpGltf = useGLTF(octopusJumpUrl);
   const hitGltf = useGLTF(octopusGetHitUrl);
-  const danceGltf = useGLTF(octopusDanceUrl);
   const fightGltf = useGLTF(octopusKickUrl);
+
+  const [emoteEverUsed, setEmoteEverUsed] = useState(false);
 
   const idleVisibleRef = useRef<THREE.Group>(null);
   const walkVisibleRef = useRef<THREE.Group>(null);
@@ -193,7 +194,6 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   const jumpVisibleRef = useRef<THREE.Group>(null);
   const hitVisibleRef = useRef<THREE.Group>(null);
   const fightVisibleRef = useRef<THREE.Group>(null);
-  const danceVisibleRef = useRef<THREE.Group>(null);
 
   const lastEmoteIdRef = useRef<number>(0);
   const hitStartTimeRef = useRef(0);
@@ -209,7 +209,6 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   const sanitizedJumpClips = useMemo(() => sanitizeClips(jumpGltf.animations), [jumpGltf.animations]);
   const sanitizedHitClips = useMemo(() => sanitizeClips(hitGltf.animations), [hitGltf.animations]);
   const sanitizedFightClips = useMemo(() => sanitizeClips(fightGltf.animations), [fightGltf.animations]);
-  const sanitizedDanceClips = useMemo(() => sanitizeClips(danceGltf.animations), [danceGltf.animations]);
 
   // Inspections
   const idleInspection = useMemo(() => inspectModel('octopus_idle', idleGltf.scene), [idleGltf.scene]);
@@ -218,7 +217,6 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   const jumpInspection = useMemo(() => inspectModel('octopus_jump', jumpGltf.scene), [jumpGltf.scene]);
   const hitInspection = useMemo(() => inspectModel('octopus_hit', hitGltf.scene), [hitGltf.scene]);
   const fightInspection = useMemo(() => inspectModel('octopus_fight', fightGltf.scene), [fightGltf.scene]);
-  const danceInspection = useMemo(() => inspectModel('octopus_dance', danceGltf.scene), [danceGltf.scene]);
 
   const canonicalHeight = useMemo(() => {
     if (walkInspection.height > 0.01) return walkInspection.height;
@@ -236,7 +234,6 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   const jumpNorm = useMemo(() => buildNormalization(jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [jumpInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const hitNorm = useMemo(() => buildNormalization(hitInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [hitInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
   const fightNorm = useMemo(() => buildNormalization(fightInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [fightInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
-  const danceNorm = useMemo(() => buildNormalization(danceInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight), [danceInspection, canonicalHeight, canonicalYawCorrection, controllerHalfHeight]);
 
   // Animation setups
   const { actions: idleActions, clips: idleClips } = useAnimations(sanitizedIdleClips, idleGltf.scene);
@@ -254,17 +251,14 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
   const { actions: hitActions, clips: hitClips } = useAnimations(sanitizedHitClips, hitGltf.scene);
   const hitClipName = useMemo(() => getFirstClipName(hitClips, /hit|hurt|damage/i), [hitClips]);
 
-  const { actions: danceActions, clips: danceClips } = useAnimations(sanitizedDanceClips, danceGltf.scene);
-  const danceClipName = useMemo(() => getFirstClipName(danceClips, /dance/i), [danceClips]);
-
   const { actions: fightActions, clips: fightClips } = useAnimations(sanitizedFightClips, fightGltf.scene);
   const fightClipName = useMemo(() => getFirstClipName(fightClips, /kick|fight|attack/i), [fightClips]);
 
   // Enable shadows
   useEffect(() => {
-    [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hitGltf.scene, fightGltf.scene, danceGltf.scene].forEach(enableMeshShadows);
-    console.log('[Octopus] Clip names — idle:', idleClipName, 'walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName, 'hit:', hitClipName, 'fight:', fightClipName, 'dance:', danceClipName);
-  }, [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hitGltf.scene, fightGltf.scene, danceGltf.scene, idleClipName, walkClipName, runClipName, jumpClipName, hitClipName, fightClipName, danceClipName]);
+    [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hitGltf.scene, fightGltf.scene].forEach(enableMeshShadows);
+    console.log('[Octopus] Clip names — idle:', idleClipName, 'walk:', walkClipName, 'run:', runClipName, 'jump:', jumpClipName, 'hit:', hitClipName, 'fight:', fightClipName);
+  }, [idleGltf.scene, walkGltf.scene, runGltf.scene, jumpGltf.scene, hitGltf.scene, fightGltf.scene, idleClipName, walkClipName, runClipName, jumpClipName, hitClipName, fightClipName]);
 
   // Initialize idle (looping)
   useEffect(() => {
@@ -306,25 +300,36 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
     if (jumpVisibleRef.current) jumpVisibleRef.current.visible = false;
     if (hitVisibleRef.current) hitVisibleRef.current.visible = false;
     if (fightVisibleRef.current) fightVisibleRef.current.visible = false;
-    if (danceVisibleRef.current) danceVisibleRef.current.visible = false;
   }, []);
 
-  const setVisibleState = useCallback((state: OctopusState) => {
-    const showIdle = state === 'idle';
-    const showWalk = state === 'walk';
-    const showRun = state === 'run';
-    const showJump = state === 'jump';
-    const showHit = state === 'hit';
-    const showFight = state === 'fight';
-    const showDance = state === 'emote_dance';
-    if (idleVisibleRef.current) idleVisibleRef.current.visible = showIdle;
-    if (walkVisibleRef.current) walkVisibleRef.current.visible = showWalk;
-    if (runVisibleRef.current) runVisibleRef.current.visible = showRun;
-    if (jumpVisibleRef.current) jumpVisibleRef.current.visible = showJump;
-    if (hitVisibleRef.current) hitVisibleRef.current.visible = showHit;
-    if (fightVisibleRef.current) fightVisibleRef.current.visible = showFight;
-    if (danceVisibleRef.current) danceVisibleRef.current.visible = showDance;
+  const setVisibleState = useCallback((state: OctopusState | string) => {
+    if (idleVisibleRef.current) idleVisibleRef.current.visible = state === 'idle';
+    if (walkVisibleRef.current) walkVisibleRef.current.visible = state === 'walk';
+    if (runVisibleRef.current) runVisibleRef.current.visible = state === 'run';
+    if (jumpVisibleRef.current) jumpVisibleRef.current.visible = state === 'jump';
+    if (hitVisibleRef.current) hitVisibleRef.current.visible = state === 'hit';
+    if (fightVisibleRef.current) fightVisibleRef.current.visible = state === 'fight';
   }, []);
+
+  // Detect first emote request to lazy-load emote GLBs
+  useEffect(() => {
+    if (activeEmote && !emoteEverUsed) setEmoteEverUsed(true);
+  }, [activeEmote, emoteEverUsed]);
+
+  const parentHideLocomotion = useCallback(() => {
+    if (idleVisibleRef.current) idleVisibleRef.current.visible = false;
+    if (walkVisibleRef.current) walkVisibleRef.current.visible = false;
+    if (runVisibleRef.current) runVisibleRef.current.visible = false;
+    if (jumpVisibleRef.current) jumpVisibleRef.current.visible = false;
+    if (hitVisibleRef.current) hitVisibleRef.current.visible = false;
+    if (fightVisibleRef.current) fightVisibleRef.current.visible = false;
+  }, []);
+
+  const onEmoteEnd = useCallback(() => {
+    stateRef.current = 'idle';
+    setVisibleState('idle');
+    onEmoteComplete();
+  }, [setVisibleState, onEmoteComplete]);
 
   useFrame(() => {
     const state = stateRef.current;
@@ -398,36 +403,8 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
       return;
     }
 
-    // Handle emote trigger
-    const emoteId = activeEmoteId ?? 0;
-    if (activeEmote === 'octopusdance' && emoteId !== lastEmoteIdRef.current) {
-      lastEmoteIdRef.current = emoteId;
-      stateRef.current = 'emote_dance';
-      setVisibleState('emote_dance');
-      if (danceClipName) {
-        const a = danceActions[danceClipName];
-        if (a) { a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.enabled = true; a.play(); a.paused = false; }
-      }
-      return;
-    }
-
-    // ===== DANCE EMOTE STATE =====
-    if (state === 'emote_dance') {
-      if (danceClipName) {
-        const a = danceActions[danceClipName];
-        if (a && a.time >= a.getClip().duration - 0.05) {
-          a.paused = true;
-          stateRef.current = 'idle';
-          setVisibleState('idle');
-          onEmoteComplete();
-        }
-      } else {
-        stateRef.current = 'idle';
-        setVisibleState('idle');
-        onEmoteComplete();
-      }
-      return;
-    }
+    // ===== EMOTE STATE — managed by lazy emote sub-component =====
+    if (state.startsWith('emote_')) return;
 
     // ===== NORMAL LOCOMOTION =====
     let newState: OctopusState;
@@ -507,8 +484,20 @@ export function OctopusGLBModel({ moveSpeedRef, controllerHalfHeight, isGrounded
       {renderModel(jumpVisibleRef, jumpNorm, jumpGltf.scene)}
       {renderModel(hitVisibleRef, hitNorm, hitGltf.scene)}
       {renderModel(fightVisibleRef, fightNorm, fightGltf.scene)}
-      {renderModel(danceVisibleRef, danceNorm, danceGltf.scene)}
+      {emoteEverUsed && (
+        <Suspense fallback={null}>
+          <OctopusEmotes
+            activeEmote={activeEmote}
+            activeEmoteId={activeEmoteId}
+            stateRef={stateRef as React.MutableRefObject<string>}
+            onEmoteEnd={onEmoteEnd}
+            parentHideLocomotion={parentHideLocomotion}
+            controllerHalfHeight={controllerHalfHeight}
+            canonicalHeight={canonicalHeight}
+            canonicalYawCorrection={canonicalYawCorrection}
+          />
+        </Suspense>
+      )}
     </group>
   );
 }
-
