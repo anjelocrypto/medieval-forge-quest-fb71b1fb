@@ -6,7 +6,6 @@
 import { useState, useEffect } from 'react';
 import { loadWalletSession } from '../hooks/usePlayerAccount';
 import {
-  useClanSystem,
   ClanColor,
   CLAN_COLOR_HEX,
   TerritoryInfo,
@@ -16,11 +15,15 @@ import {
 } from '../hooks/useClanSystem';
 import { FACTIONS, getFactionById } from '../systems/FactionData';
 
+// Accept the shared clanSystem instance from GameScene to avoid duplicate polling
+type ClanSystemReturn = ReturnType<typeof import('../hooks/useClanSystem').useClanSystem>;
+
 interface Props {
   open: boolean;
   onClose: () => void;
   playerX: number;
   playerZ: number;
+  clanSystem: ClanSystemReturn;
 }
 
 type Tab = 'my_faction' | 'kingdoms' | 'wars' | 'history';
